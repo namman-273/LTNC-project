@@ -17,6 +17,7 @@ public class Auction extends Entity {
     private double currentPrice;
     private AuctionStatus status;
     private final ReentrantLock lock = new ReentrantLock();
+    private List<Observer> observers;
 
     public Auction(String id, Item item) {
         super(id);
@@ -24,11 +25,31 @@ public class Auction extends Entity {
         this.currentPrice = item.getStartingPrice();
         this.history = new ArrayList<>();
         //AuctionStatus của thằng nger mặc định là phiên mới nên open
-        this.status=AuctionSatus.OPEN;
+        this.status=AuctionStatus.OPEN;
+    }
+
+    public void addObserver(Observer obs) { observers.add(obs); }
+
+    private void notifyObservers(String msg) {
+        for (Observer obs : observers) obs.update(msg);
     }
     //Khi này là bat dau vao phien chay
     public void startAuction() {
-        this.status = AuctionStatus.RUNNING;
+        lock.lock();
+        try {
+            if (status == AuctionStatus.OPEN) {
+                status = AuctionStatus.RUNNING;
+                notifyObservers("Phiên đấu giá " + getId() + " đã bắt đầu !");
+            }
+        } finally { lock.unlock(); }
+    }
+
+    public void endAuction() {
+        lock.lock();
+        try {
+            status = AuctionStatus.FINISHED;
+            notifyObservers("Phiên đấu giá " + getId() + " đã kết thúc !");
+        } finally { lock.unlock(); }
     }
     public void processNewBid(Bidder bidder, double bidAmount) {
         lock.lock();
@@ -45,8 +66,8 @@ public class Auction extends Entity {
                 history.add(tx);
 
                 System.out.println("Đặt giá thành công: " + bidAmount + " bởi " + bidder.getName());
-
-                //  notifyObservers() của hiếu lợn ở đây (Phần 1) sau này
+                //notify khi co bid moi dc dat thanh cong
+                notifyObservers("Giá mới: " + bidAmount + " bởi " + bidder.getName());
             } else {
                 System.out.println("Giá đặt " + bidAmount + " phải cao hơn giá hiện tại " + currentPrice);
             }
