@@ -15,6 +15,10 @@ public class Auction extends Entity {
     private List<BidTransaction> history;
     private double currentPrice;
 
+    private List<AuctionObserver> observers = new ArrayList<>();
+    public void addObserver(AuctionObserver observer) {
+        observers.add(observer);
+    }
     public Auction(String id, Item item) {
         super(id);
         this.item = item;
@@ -26,6 +30,10 @@ public class Auction extends Entity {
             this.currentPrice = bidAmount;
             BidTransaction tx = new BidTransaction(bidder, bidAmount);
             history.add(tx);
+
+            for (AuctionObserver obs : observers) {
+                obs.updatePrice(this.currentPrice, bidder.getUsername());
+            }
             System.out.println("Đặt giá thành công: " + bidAmount + " bởi " + bidder.getUsername());
         } else {
             System.out.println("Giá đặt phải cao hơn giá hiện tại!");
