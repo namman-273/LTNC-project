@@ -5,4 +5,5 @@ public class Bidder extends User{
     public void displayInfo() {
         System.out.println("[Bidder] ID: " + id + ", Name: " + username);
     }
+    public String getName(){return username;}
 }
