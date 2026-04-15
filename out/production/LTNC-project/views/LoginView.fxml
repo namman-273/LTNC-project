@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.LoginController">
+   <children>
+      <Button layoutX="238.0" layoutY="254.0" mnemonicParsing="false" onAction="#handleLogin" text="Đăng nhập để đấu giá" />
+      <Label layoutX="215.0" layoutY="100.0" text="CHÀO MỪNG ĐẾN VỚI ĐẤU GIÁ 1388" />
+      <TextField fx:id="usernameField" layoutX="230.0" layoutY="160.0" text="Tên đăng nhập" />
+      <PasswordField fx:id="passwordField" layoutX="230.0" layoutY="200.0" text="Mật khẩu" />
+   </children>
+</AnchorPane>
