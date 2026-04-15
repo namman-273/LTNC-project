@@ -1,0 +1,70 @@
+/* Tổng thể nền và font chữ */
+.root {
+    -fx-font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    -fx-background-color: #f5f6fa;
+}
+
+/* Làm đẹp cái Bảng (TableView) */
+.table-view {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: #dcdde1;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);
+}
+
+/* Làm đẹp tiêu đề cột của bảng */
+.table-view .column-header {
+    -fx-background-color: #3498db;
+    -fx-size: 45;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+/* Làm đẹp các dòng trong bảng */
+.table-row-cell:odd {
+    -fx-background-color: #f9f9f9;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #ecf0f1;
+}
+
+/* Làm đẹp Nút bấm chung */
+.button {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-background-radius: 20; /* Bo tròn hẳn nhìn cho hiện đại */
+    -fx-font-weight: bold;
+    -fx-padding: 8 20;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);
+}
+
+.button:hover {
+    -fx-background-color: #2980b9;
+    -fx-translate-y: -1; /* Hiệu ứng nhấn nhẹ khi di chuột */
+}
+
+/* Nút Xóa (Màu đỏ) */
+.button-delete {
+    -fx-background-color: #e74c3c;
+}
+
+.button-delete:hover {
+    -fx-background-color: #c0392b;
+}
+
+/* Nút Làm mới (Màu xanh lá hoặc màu khác để phân biệt) */
+.button-refresh {
+    -fx-background-color: #2ecc71;
+}
+
+.button-refresh:hover {
+    -fx-background-color: #27ae60;
+}
