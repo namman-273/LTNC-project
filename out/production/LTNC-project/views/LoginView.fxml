@@ -2,33 +2,42 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.geometry.Insets?>
 
-<StackPane xmlns="http://javafx.com/javafx"
-           xmlns:fx="http://javafx.com/fxml"
-           fx:controller="controllers.LoginController"
-           stylesheets="@style.css"
-           style="-fx-background-color: #f5f6fa;"
-           prefHeight="400.0" prefWidth="600.0">
+<HBox prefHeight="450.0" prefWidth="800.0" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml" fx:controller="controllers.LoginController"
+      stylesheets="@style.css">
 
-   <VBox spacing="20.0" alignment="CENTER" maxWidth="350" maxHeight="300"
-         style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 20, 0, 0, 10);">
+   <VBox alignment="CENTER" prefWidth="380.0" styleClass="login-sidebar" HBox.hgrow="ALWAYS" spacing="20">
+      <ImageView fitHeight="150.0" fitWidth="150.0" preserveRatio="true">
+         <image>
+            <Image url="@logo.png" />
+         </image>
+      </ImageView>
+      <Label text="HỆ THỐNG ĐẤU GIÁ" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+      <Label text="1388AUCTION System" style="-fx-text-fill: white; -fx-opacity: 0.8;"/>
+   </VBox>
 
+   <VBox alignment="CENTER" prefWidth="420.0" spacing="20.0" style="-fx-background-color: white;">
       <padding>
-         <Insets top="40" right="40" bottom="40" left="40"/>
+         <Insets left="40.0" right="40.0" />
       </padding>
 
-      <Label text="ĐĂNG NHẬP"
-             style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-
-      <VBox spacing="10.0">
-         <TextField fx:id="usernameField" promptText="Tên đăng nhập" prefHeight="40" />
-         <PasswordField fx:id="passwordField" promptText="Mật khẩu" prefHeight="40" />
+      <VBox alignment="CENTER" spacing="10">
+         <Label text="👤" style="-fx-font-size: 50px; -fx-text-fill: #3498db;"/>
+         <Label text="Welcome Back 1388AUCTION" wrapText="true" textAlignment="CENTER"
+                style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
       </VBox>
 
-      <Button text="VÀO HỆ THỐNG" fx:id="loginButton"
-              prefWidth="Infinity" prefHeight="45" />
+      <VBox spacing="15.0">
+         <TextField fx:id="usernameField" promptText="Tên đăng nhập" styleClass="login-input" prefHeight="45"/>
+         <PasswordField fx:id="passwordField" promptText="Mật khẩu" styleClass="login-input" prefHeight="45"/>
+      </VBox>
 
-      <Label text="Quên mật khẩu?" style="-fx-text-fill: #3498db; -fx-cursor: hand;"/>
+      <Button fx:id="loginButton" text="ĐĂNG NHẬP" onAction="#handleLogin"
+              prefWidth="Infinity" prefHeight="45.0" styleClass="login-btn-sync" />
+
+      <Label text="Quên mật khẩu?" style="-fx-text-fill: #7f8c8d; -fx-cursor: hand;"/>
    </VBox>
-</StackPane>
+</HBox>
