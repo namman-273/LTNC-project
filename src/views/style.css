@@ -68,3 +68,16 @@
 .button-refresh:hover {
     -fx-background-color: #27ae60;
 }
+/* Làm đẹp ô nhập liệu Login */
+.text-field, .password-field {
+    -fx-background-color: #f1f2f6;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-padding: 0 15;
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-background-color: white;
+    -fx-border-color: #3498db;
+    -fx-border-width: 2;
+}
