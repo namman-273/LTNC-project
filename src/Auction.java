@@ -17,15 +17,20 @@ public class Auction extends Entity {
     private double currentPrice;
     private AuctionStatus status;
     private final ReentrantLock lock = new ReentrantLock();
-    private List<Observer> observers;
+    private List<Observer> observers=new ArrayList<>();
 
     public Auction(String id, Item item) {
         super(id);
         this.item = item;
         this.currentPrice = item.getStartingPrice();
         this.history = new ArrayList<>();
-        //AuctionStatus của thằng nger mặc định là phiên mới nên open
         this.status=AuctionStatus.OPEN;
+    }
+    public double getCurrentPrice() {
+        if (this.item != null) {
+            return this.item.getCurrentPrice();
+        }
+        return 0.0;
     }
 
     public void addObserver(Observer obs) { observers.add(obs); }
@@ -51,10 +56,11 @@ public class Auction extends Entity {
             notifyObservers("Phiên đấu giá " + getId() + " đã kết thúc !");
         } finally { lock.unlock(); }
     }
-    public void processNewBid(Bidder bidder, double bidAmount) throws InvalidBidException,AuctionClosedException {
+    public void processNewBid(Bidder bidder, double bidAmount) throws InvalidBidException,AuctionClosedException,AuthenticationException {
         lock.lock();
         try {
             //dam bao ocp
+            validateAuthentication(bidder);
             validateAuctionStatus();
             validateBidAmount(bidAmount);
 
@@ -72,13 +78,19 @@ public class Auction extends Entity {
     }
     private void validateBidAmount(double amount) throws InvalidBidException {
         if (amount <= currentPrice) {
-            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại.");
+            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: "+this.getCurrentPrice());
         }
     }
+    private void validateAuthentication(Bidder bidder) throws AuthenticationException {
+    //  Kiểm tra đăng nhập (người dùng tồn tại)
+    if (bidder == null) {
+        throw new AuthenticationException("Lỗi: Người dùng không tồn tại hoặc chưa đăng nhập.");
+    }
+}
 
     private void updateAuctionState(Bidder bidder, double amount) {
-        this.currentPrice = amount;
+        this.item.setCurrentPrice(amount);
         this.history.add(new BidTransaction(bidder, amount));
-        notifyObservers("Mức giá mới: " + amount);
+        notifyObservers("Mức giá mới: " + this.getCurrentPrice()+" bởi "+bidder.getUsername());
     }
 }
