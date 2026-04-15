@@ -51,30 +51,34 @@ public class Auction extends Entity {
             notifyObservers("Phiên đấu giá " + getId() + " đã kết thúc !");
         } finally { lock.unlock(); }
     }
-    public void processNewBid(Bidder bidder, double bidAmount) {
+    public void processNewBid(Bidder bidder, double bidAmount) throws InvalidBidException,AuctionClosedException {
         lock.lock();
         try {
+            //dam bao ocp
+            validateAuctionStatus();
+            validateBidAmount(bidAmount);
 
-            if (this.status != AuctionStatus.RUNNING) {
-                System.out.println("Phiên đấu giá chưa bắt đầu hoặc đã kết thúc!");
-                return;
-            }
-
-            if (bidAmount > currentPrice) {
-                this.currentPrice = bidAmount;
-                BidTransaction tx = new BidTransaction(bidder, bidAmount);
-                history.add(tx);
-
-                System.out.println("Đặt giá thành công: " + bidAmount + " bởi " + bidder.getName());
-                //notify khi co bid moi dc dat thanh cong
-                notifyObservers("Giá mới: " + bidAmount + " bởi " + bidder.getName());
-            } else {
-                System.out.println("Giá đặt " + bidAmount + " phải cao hơn giá hiện tại " + currentPrice);
-            }
+            updateAuctionState(bidder, bidAmount);
         } finally {
             // Phải luôn luôn mở khóa trong khối finally
             // đảm bảo  có lỗi xảy ra, khóa vẫn  giải phóng cho người sau
             lock.unlock();
         }
+    }
+    private void validateAuctionStatus() throws AuctionClosedException {
+        if (this.status != AuctionStatus.RUNNING) {
+            throw new AuctionClosedException("Trạng thái " + status + " không cho phép đặt giá.");
+        }
+    }
+    private void validateBidAmount(double amount) throws InvalidBidException {
+        if (amount <= currentPrice) {
+            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại.");
+        }
+    }
+
+    private void updateAuctionState(Bidder bidder, double amount) {
+        this.currentPrice = amount;
+        this.history.add(new BidTransaction(bidder, amount));
+        notifyObservers("Mức giá mới: " + amount);
     }
 }
