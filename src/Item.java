@@ -1,6 +1,7 @@
 public abstract class Item extends Entity {
     protected String itemName;
     protected double startingPrice;
+    private volatile double currentPrice;
 
     public Item(String id, String itemName, double startingPrice) {
         super(id);
@@ -9,4 +10,11 @@ public abstract class Item extends Entity {
     }
     public String getItemName() { return itemName; }
     public double getStartingPrice() { return startingPrice;}
+    public void setCurrentPrice(double currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public double getCurrentPrice() {
+        return currentPrice;
+    }
 }
