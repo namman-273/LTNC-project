@@ -9,7 +9,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         // Gọi file thiết kế giao diện từ thư mục views
-        Parent root = FXMLLoader.load(getClass().getResource("/views/LoginView.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/views/AuctionRoomView.fxml"));
 
         // Cài đặt tiêu đề và kích thước cho cửa sổ
         primaryStage.setTitle("Hệ thống Đấu giá 1388");

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.Insets?>
+
+<HBox prefHeight="550.0" prefWidth="850.0" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml" fx:controller="controllers.RegisterController"
+      stylesheets="@style.css">
+
+    <VBox alignment="CENTER" prefWidth="350.0" spacing="20"
+          style="-fx-background-color: linear-gradient(to bottom right, #3498db, #2980b9);">
+        <ImageView fitHeight="120.0" fitWidth="120.0" preserveRatio="true">
+            <image>
+                <Image url="@logo.png" />
+            </image>
+        </ImageView>
+        <Label text="ĐĂNG KÝ THÀNH VIÊN" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        <Label text="Gia nhập cộng đồng 1388" style="-fx-text-fill: white; -fx-opacity: 0.8;"/>
+    </VBox>
+
+    <VBox alignment="CENTER" prefWidth="500.0" spacing="15.0" style="-fx-background-color: white;" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets left="50.0" right="50.0" />
+        </padding>
+
+        <Label text="TẠO TÀI KHOẢN MỚI" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+        <VBox spacing="10.0">
+            <TextField fx:id="fullNameField" promptText="Họ và tên" styleClass="login-input" prefHeight="40"/>
+            <TextField fx:id="emailField" promptText="Email" styleClass="login-input" prefHeight="40"/>
+            <TextField fx:id="regUsernameField" promptText="Tên đăng nhập" styleClass="login-input" prefHeight="40"/>
+            <PasswordField fx:id="regPasswordField" promptText="Mật khẩu" styleClass="login-input" prefHeight="40"/>
+            <PasswordField fx:id="confirmPasswordField" promptText="Xác nhận mật khẩu" styleClass="login-input" prefHeight="40"/>
+        </VBox>
+
+        <Button text="ĐĂNG KÝ NGAY" onAction="#handleRegister"
+                prefWidth="Infinity" prefHeight="45.0" styleClass="login-btn-sync"
+                style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
+
+        <Hyperlink text="Đã có tài khoản? Đăng nhập tại đây" onAction="#backToLogin" style="-fx-text-fill: #3498db;"/>
+    </VBox>
+</HBox>

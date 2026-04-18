@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Text?>
+
+<VBox prefHeight="650.0" prefWidth="450.0" spacing="15" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml" fx:controller="controllers.AuctionRoomController"
+      style="-fx-background-color: #2c3e50;">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <VBox alignment="CENTER" spacing="5" style="-fx-background-color: #e74c3c; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 0);">
+        <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+        <Label text="THỜI GIAN CÒN LẠI" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;"/>
+        <Label fx:id="timerLabel" text="00:10:00" style="-fx-text-fill: white; -fx-font-size: 45px; -fx-font-weight: bold; -fx-font-family: 'Courier New';"/>
+    </VBox>
+
+    <VBox alignment="CENTER" spacing="10" style="-fx-background-color: #34495e; -fx-background-radius: 15; -fx-padding: 20;">
+        <Label text="GIÁ CAO NHẤT HIỆN TẠI" style="-fx-text-fill: #bdc3c7; -fx-font-size: 16px;"/>
+        <Label fx:id="livePriceLabel" text="2,500,000 VNĐ" style="-fx-text-fill: #f1c40f; -fx-font-size: 35px; -fx-font-weight: bold;"/>
+        <HBox alignment="CENTER" spacing="10">
+            <Label text="Người dẫn đầu:" style="-fx-text-fill: white;"/>
+            <Label fx:id="topBidderLabel" text="Dương_Pro" style="-fx-text-fill: #2ecc71; -fx-font-weight: bold;"/>
+        </HBox>
+    </VBox>
+
+    <VBox VBox.vgrow="ALWAYS" spacing="10">
+        <Label text="LỊCH SỬ ĐẶT GIÁ" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+        <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS" style="-fx-background-radius: 10; -fx-background-color: #ecf0f1;"/>
+    </VBox>
+
+    <VBox spacing="10">
+        <Label text="ĐẶT GIÁ NHANH" style="-fx-text-fill: white; -fx-font-size: 12px;"/>
+        <HBox spacing="10">
+            <Button text="+50k" onAction="#add50k" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="50" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+            <Button text="+100k" onAction="#add100k" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="50" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+            <Button text="+500k" onAction="#add500k" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="50" style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+        </HBox>
+    </VBox>
+</VBox>
