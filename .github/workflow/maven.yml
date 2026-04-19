@@ -2,9 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -22,4 +22,4 @@ jobs:
 
       - name: Build with Maven
 
-        run: mvn -B clean install
+        run: cd first && mvn -B clean install
