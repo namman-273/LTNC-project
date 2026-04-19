@@ -22,4 +22,4 @@ jobs:
         
     - name: Build with Maven
     
-      run: cd first && mvn -B clean install
+      run:  mvn -B clean install
