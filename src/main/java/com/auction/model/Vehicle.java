@@ -10,6 +10,6 @@ public class Vehicle extends Item {
     @Override
     public void displayInfo() {
         System.out.println("[com.auction.model.Vehicle] "+itemName+" - Mẫu:"+ model);
-        System.out.println("Giá khởi điểm:"+startingPrice);
+        System.out.println("Giá khởi điểm:"+getStartingPrice());
     }
 }

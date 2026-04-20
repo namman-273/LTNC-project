@@ -19,8 +19,8 @@ class BidTransaction{
 public class Auction extends Entity {
     private Item item;
     private List<BidTransaction> history;
-    private double currentPrice;
     private AuctionStatus status;
+    private double currentPrice;
     private final ReentrantLock lock = new ReentrantLock();
     private List<Observer> observers=new ArrayList<>();
 
@@ -31,6 +31,9 @@ public class Auction extends Entity {
         this.history = new ArrayList<>();
         this.status= AuctionStatus.OPEN;
     }
+    public Item getItem() {
+        return this.item;
+    }
     public double getCurrentPrice() {
         if (this.item != null) {
             return this.item.getCurrentPrice();
@@ -39,7 +42,17 @@ public class Auction extends Entity {
     }
 
     public void addObserver(Observer obs) { observers.add(obs); }
-
+    public void removeObserver(Observer obs) {
+        lock.lock();
+        try {
+            if (observers.contains(obs)) {
+                observers.remove(obs);
+                System.out.println("DEBUG: Đã gỡ 1 Observer khỏi phiên " + getId());
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
     private void notifyObservers(String msg) {
         for (Observer obs : observers) obs.update(msg);
     }
@@ -83,7 +96,7 @@ public class Auction extends Entity {
     }
     private void validateBidAmount(double amount) throws InvalidBidException {
         if (amount <= currentPrice) {
-            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: "+this.getCurrentPrice());
+            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: "+ this.item.getCurrentPrice());
         }
     }
     private void validateAuthentication(Bidder bidder) throws AuthenticationException {
@@ -96,6 +109,6 @@ public class Auction extends Entity {
     private void updateAuctionState(Bidder bidder, double amount) {
         this.item.setCurrentPrice(amount);
         this.history.add(new BidTransaction(bidder, amount));
-        notifyObservers("Mức giá mới: " + this.getCurrentPrice()+" bởi "+bidder.getUsername());
+        notifyObservers("UPDATE|" + this.item.getId() + "|" + amount + "|" + bidder.getUsername());
     }
 }

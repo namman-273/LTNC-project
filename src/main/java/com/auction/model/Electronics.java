@@ -11,6 +11,6 @@ public class Electronics extends Item {
     @Override
     public void displayInfo() {
         System.out.println("[com.auction.model.Electronics] " + itemName + " - Bảo hành: " + warrantyMonths + " tháng");
-        System.out.println("Giá khởi điểm:"+startingPrice);
+        System.out.println("Giá khởi điểm:"+getStartingPrice());
     }
 }

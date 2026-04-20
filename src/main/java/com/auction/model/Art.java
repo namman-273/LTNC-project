@@ -11,6 +11,6 @@ public class Art extends Item {
     @Override
     public void displayInfo() {
         System.out.println("[com.auction.model.Art] " + itemName + " - Tác giả: " + artist);
-        System.out.println("Giá khởi điểm:"+startingPrice);
+        System.out.println("Giá khởi điểm:"+getStartingPrice());
     }
 }
