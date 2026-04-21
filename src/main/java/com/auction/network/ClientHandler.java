@@ -11,14 +11,14 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class ClentHandler implements Runnable, Observer {
+public class ClientHandler implements Runnable, Observer {
     private Socket socket;
     private AuctionService auctionService;
     private PrintWriter out;
     private BufferedReader in;
     private Bidder currentBidder;
 
-    private ClentHandler(Socket socket,AuctionService service){
+    public ClientHandler(Socket socket,AuctionService service){
         this.socket=socket;this.auctionService=service;
     }
 
