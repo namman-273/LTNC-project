@@ -47,13 +47,14 @@ public class Auction extends Entity {
         try {
             if (observers.contains(obs)) {
                 observers.remove(obs);
-                System.out.println("DEBUG: Đã gỡ 1 Observer khỏi phiên " + getId());
+            
             }
         } finally {
             lock.unlock();
         }
     }
     private void notifyObservers(String msg) {
+    
         for (Observer obs : observers) obs.update(msg);
     }
     //Khi này là bat dau vao phien chay
@@ -83,7 +84,7 @@ public class Auction extends Entity {
             validateBidAmount(bidAmount);
 
             updateAuctionState(bidder, bidAmount);
-        } finally {
+        }finally {
             // Phải luôn luôn mở khóa trong khối finally
             // đảm bảo  có lỗi xảy ra, khóa vẫn  giải phóng cho người sau
             lock.unlock();
@@ -95,10 +96,11 @@ public class Auction extends Entity {
         }
     }
     private void validateBidAmount(double amount) throws InvalidBidException {
-        if (amount <= currentPrice) {
-            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: "+ this.item.getCurrentPrice());
-        }
+    double priceToCompare = (item != null) ? item.getCurrentPrice() : currentPrice;
+    if (amount <= priceToCompare) {
+        throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: " + priceToCompare);
     }
+}
     private void validateAuthentication(Bidder bidder) throws AuthenticationException {
     //  Kiểm tra đăng nhập (người dùng tồn tại)
     if (bidder == null) {
@@ -107,6 +109,7 @@ public class Auction extends Entity {
 }
 
     private void updateAuctionState(Bidder bidder, double amount) {
+        this.currentPrice=amount;
         this.item.setCurrentPrice(amount);
         this.history.add(new BidTransaction(bidder, amount));
         notifyObservers("UPDATE|" + this.item.getId() + "|" + amount + "|" + bidder.getUsername());
