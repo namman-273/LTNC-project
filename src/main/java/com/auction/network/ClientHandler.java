@@ -1,4 +1,4 @@
-ppackage com.auction.network;
+package com.auction.network;
 
 import com.auction.model.Auction;
 import com.auction.model.Bidder;
