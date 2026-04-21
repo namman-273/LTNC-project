@@ -1,6 +1,5 @@
 package com.auction.model;
 
-import java.util.Map;
 
 public class CreateItem {
     public static Item createItem(String type, String id, String name, double price) {
