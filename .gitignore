@@ -1,3 +1,17 @@
+# Loại bỏ các file đã biên dịch (Compiled files)
+*.class
+
+# Loại bỏ toàn bộ thư mục target của Maven (Nơi chứa file dịch)
 target/
-*.iml
+
+# Loại bỏ các file cấu hình của IDE (Nếu bạn muốn sạch sẽ hơn)
 .idea/
+.settings/
+.project/
+.classpath/
+bin/
+*.iml
+
+# Loại bỏ các file tạm của hệ điều hành
+.DS_Store
+Thumbs.db
