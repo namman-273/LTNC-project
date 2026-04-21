@@ -12,9 +12,7 @@ public class CreateItem {
                 int warranty = (value instanceof Integer) ? (Integer) value : 0;
                 return new Electronics(id, name, price,warranty);
             case "art":
-                Object value2 = details.get("artist");
-                String artist=(value2 instanceof String) ? (String) value2:"";
-                return new Art(id, name, price,artist);
+                return new Art(id, name, price);
             case "vehicle":
                 Object value3 = details.get("model");
                 int model = (value3 instanceof Integer) ? (Integer) value3 : 0;
