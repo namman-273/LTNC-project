@@ -1,6 +1,8 @@
 package com.auction.model;
 
-public class Bidder extends User {
+import java.io.Serializable;
+
+public class Bidder extends User implements Serializable{
     public Bidder(String id, String username) { super(id, username); }
 
     @Override

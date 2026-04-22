@@ -1,6 +1,8 @@
 package com.auction.model;
 
-public class Vehicle extends Item {
+import java.io.Serializable;
+
+public class Vehicle extends Item implements Serializable {
 
     public Vehicle(String id, String name, double price) {
         super(id, name, price);

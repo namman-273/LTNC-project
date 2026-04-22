@@ -1,6 +1,6 @@
 package com.auction.model;
-
-public abstract class User extends Entity implements Observer {
+import java.io.Serializable;
+public abstract class User extends Entity implements Observer ,Serializable {
         protected String username;
 
         public User(String id, String username) {

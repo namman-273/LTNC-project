@@ -1,6 +1,8 @@
 package com.auction.model;
 
-public abstract class Item extends Entity {
+import java.io.Serializable;
+
+public abstract class Item extends Entity implements Serializable{
     protected String itemName;
     private double startingPrice;
     private volatile double currentPrice;

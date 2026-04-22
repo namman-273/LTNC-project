@@ -1,6 +1,6 @@
 package com.auction.model;
 
-
+//To-do:chuyen design pattern sang factory method
 public class CreateItem {
     public static Item createItem(String type, String id, String name, double price) {
         if (type == null) return null;
