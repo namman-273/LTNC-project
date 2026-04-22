@@ -25,7 +25,7 @@ public class SimpleClient {
                 }
             }).start();
 
-            // Luồng chính: Cho phép bạn nhập LOGIN, BID từ bàn phím
+            // Luồng chính: Cho phép  nhập LOGIN, BID từ bàn phím
             Scanner scanner = new Scanner(System.in);
             while (true) {
                 String cmd = scanner.nextLine();
