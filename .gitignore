@@ -4,7 +4,7 @@
 # Loại bỏ toàn bộ thư mục target của Maven (Nơi chứa file dịch)
 target/
 
-# Loại bỏ các file cấu hình của IDE (Nếu bạn muốn sạch sẽ hơn)
+# Loại bỏ các file cấu hình của IDE (sạch sẽ hơn)
 .idea/
 .settings/
 .project/
