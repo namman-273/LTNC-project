@@ -10,7 +10,7 @@ import com.auction.service.AuctionService;
 public class Main {
     public static void main(String[] args) {
     // 1. Tạo Service
-    AuctionService service = new AuctionService();
+    AuctionService service = AuctionService.getInstance();
 
     // 2. Thêm vài món đồ "High-end" để test
     // Giả sử bạn có class Art kế thừa Item
