@@ -6,7 +6,8 @@ import com.auction.exception.InvalidBidException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-class BidTransaction{
+import java.io.Serializable;
+class BidTransaction implements Serializable {
     private Bidder bidder;
     private double amount;
     private long timestamp;
@@ -16,20 +17,27 @@ class BidTransaction{
         this.timestamp = System.currentTimeMillis();
     }
 }
-public class Auction extends Entity {
+public class Auction extends Entity implements Serializable {
     private Item item;
     private List<BidTransaction> history;
     private AuctionStatus status;
     private double currentPrice;
-    private final ReentrantLock lock = new ReentrantLock();
-    private List<Observer> observers=new ArrayList<>();
+    //transient cho những thứ ko lưu đc
+    private transient ReentrantLock lock ;
+    private transient List<Observer> observers;
 
     public Auction(String id, Item item) {
         super(id);
         this.item = item;
+        this.lock=new ReentrantLock();
+        this.observers=new ArrayList<>();
         this.currentPrice = item.getStartingPrice();
         this.history = new ArrayList<>();
         this.status= AuctionStatus.OPEN;
+    }
+    public void restoreTransients() {
+       this.lock = new ReentrantLock();
+       this.observers = new ArrayList<>();
     }
     public Item getItem() {
         return this.item;

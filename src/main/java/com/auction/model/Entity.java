@@ -1,6 +1,7 @@
 package com.auction.model;
+import java.io.Serializable;
 
-public abstract class Entity {
+public abstract class Entity implements java.io.Serializable {
     protected String id;
 
     public Entity(String id) {

@@ -1,6 +1,8 @@
 package com.auction.model;
 
-public class Admin extends User {
+import java.io.Serializable;
+
+public class Admin extends User implements Serializable {
     public Admin(String id, String username) { super(id, username); }
 
     @Override
