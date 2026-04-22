@@ -23,5 +23,5 @@ public class Main {
     // 3. Khởi động Server
     AuctionServer server = new AuctionServer(8080, service);
     server.start();
-}
+    }
 }

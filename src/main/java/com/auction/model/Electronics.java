@@ -1,10 +1,9 @@
 package com.auction.model;
 
-import java.io.Serializable;
 
-public class Electronics extends Item implements Serializable{
+public class Electronics extends Item  {
 
-
+    private static final long serialVersionUID = 1L;
     public Electronics(String id, String name, double price) {
         super(id, name, price);
         

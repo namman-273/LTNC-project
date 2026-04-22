@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AuctionService implements Serializable {
+    //phong ngua th doi ten bien,java se tinh ra id moi co the k khop voi id file cu dc serialize len
+    private static final long serialVersionUID = 1L;
     // Dùng ConcurrentHashMap để đảm bảo an toàn khi nhiều ClientHandler cùng truy cập
     private  final Map<String, Auction> auctions=new ConcurrentHashMap<>();
     // Singleton pattern,Instance (Sử dụng từ khóa volatile để an toàn đa luồng)
