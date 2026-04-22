@@ -3,7 +3,7 @@ package com.auction.model;
 import java.io.Serializable;
 
 public class Vehicle extends Item implements Serializable {
-
+    private static final long serialVersionUID = 1L;
     public Vehicle(String id, String name, double price) {
         super(id, name, price);
     }

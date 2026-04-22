@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.io.Serializable;
 class BidTransaction implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Bidder bidder;
     private double amount;
     private long timestamp;
@@ -17,7 +18,8 @@ class BidTransaction implements Serializable {
         this.timestamp = System.currentTimeMillis();
     }
 }
-public class Auction extends Entity implements Serializable {
+public class Auction extends Entity  {
+    private static final long serialVersionUID = 1L;
     private Item item;
     private List<BidTransaction> history;
     private AuctionStatus status;
