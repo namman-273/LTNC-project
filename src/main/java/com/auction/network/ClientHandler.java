@@ -32,7 +32,7 @@ public class ClientHandler implements Runnable, Observer {
             while ((request = in.readLine()) != null) {
                 String[] parts = request.split("\\|");
                 String cmd = parts[0];
-
+                //To-do:update các case khác,kết thúc phiên
                 if ("LOGIN".equals(cmd)) {
                     handleLogin(parts);
                 } else if ("BID".equals(cmd)) {
