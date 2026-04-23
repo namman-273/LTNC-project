@@ -18,7 +18,7 @@ class BidTransaction implements Serializable {
         this.timestamp = System.currentTimeMillis();
     }
 }
-public class Auction extends Entity  {
+public class Auction extends Entity {
     private static final long serialVersionUID = 1L;
     private Item item;
     private List<BidTransaction> history;
