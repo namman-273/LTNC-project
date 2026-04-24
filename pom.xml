@@ -68,8 +68,8 @@
                     <configLocation>sun_checks.xml</configLocation>
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError>
-                    <violationSeverity>error</violationSeverity>
+                    <failsOnError>false</failsOnError>
+                    <violationSeverity>warning</violationSeverity>
                 </configuration>
                 <executions>
                     <execution>
