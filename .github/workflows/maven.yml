@@ -9,24 +9,32 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
+    # 1. Checkout dùng v4 thay vì v3
+    - name: Checkout Code
+      uses: actions/checkout@v4 
     
+    # 2. Setup Java dùng v4
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
         
+    # 3. Kiểm tra Convention (Sẽ fail nếu sai Tab/Javadoc)
     - name: Verify Code Style (Checkstyle)
       run: mvn checkstyle:check
 
-    - name: Run Tests & Generate Coverage Report
+    # 4. Chạy Test và đo Coverage
+    - name: Run Tests with JaCoCo
       run: mvn test
       
-    - name: Upload Coverage Report
-      uses: actions/upload-artifact@v3
+    # 5. Lưu báo cáo Coverage dùng v4
+    - name: Upload JaCoCo Report
+      if: always() # Luôn chạy kể cả khi test fail để Leader xem lỗi
+      uses: actions/upload-artifact@v4
       with:
         name: jacoco-report
         path: target/site/jacoco/
