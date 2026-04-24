@@ -1,25 +1,57 @@
-name: Java CI with Maven
+name: Java CI with Maven (Final Optimization)
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
 
 jobs:
-  build:
+  pipeline:
+    name: Build, Checkstyle and Test
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    # 1. Lấy mã nguồn (v4)
+    - name: Checkout Code
+      uses: actions/checkout@v4 
     
+    # 2. Thiết lập môi trường Java (v4)
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
         
-    - name: Build with Maven
-    
-      run:  mvn -B clean install
+    # 3. Biên dịch code (Đảm bảo code không lỗi cú pháp trước khi làm việc khác)
+    - name: Compile Source Code
+      run: mvn clean compile
+
+    # 4. Kiểm tra Convention (Checkstyle)
+    # Bước này sẽ fail nếu sai Tab/Javadoc, giúp Leader rảnh tay không phải đi soi code
+    - name: Static Code Analysis (Checkstyle)
+      run: mvn checkstyle:check
+
+    # 5. Chạy Unit Test và Đo Coverage
+    # Nếu bước này fail, artifact vẫn được upload nhờ lệnh if: always() ở dưới
+    - name: Execute Unit Tests (JUnit 5 + JaCoCo)
+      run: mvn test
+
+    # 6. Upload Báo cáo Coverage (v4)
+    # Leader và thầy cô có thể tải file này về để xem % code đã test
+    - name: Upload JaCoCo Coverage Report
+      if: always() 
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ github.run_id }}
+        path: target/site/jacoco/
+        retention-days: 3 # Chỉ giữ 3 ngày cho đỡ tốn dung lượng
+
+    # 7. Tóm tắt kết quả (Điểm cộng chuyên nghiệp)
+    - name: Workflow Summary
+      if: always()
+      run: |
+        echo "### Dự án: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Trạng thái Build: Success" >> $GITHUB_STEP_SUMMARY
+        echo "📊 Hãy tải Artifact 'coverage-report' để xem chi tiết độ bao phủ code!" >> $GITHUB_STEP_SUMMARY

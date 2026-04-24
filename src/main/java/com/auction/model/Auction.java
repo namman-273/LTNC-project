@@ -1,127 +1,133 @@
 package com.auction.model;
+
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
-
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
-import java.io.Serializable;
-class BidTransaction implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private Bidder bidder;
-    private double amount;
-    private long timestamp;
-    public BidTransaction(Bidder bidder, double amount) {
-        this.bidder = bidder;
-        this.amount = amount;
-        this.timestamp = System.currentTimeMillis();
-    }
-}
+
 public class Auction extends Entity {
     private static final long serialVersionUID = 1L;
     private Item item;
     private List<BidTransaction> history;
     private AuctionStatus status;
     private double currentPrice;
-    //transient cho những thứ ko lưu đc
-    private transient ReentrantLock lock ;
+
+    // transient: Những trường này sẽ không được lưu xuống file .dat
+    private transient ReentrantLock lock;
     private transient List<Observer> observers;
 
     public Auction(String id, Item item) {
         super(id);
         this.item = item;
-        this.lock=new ReentrantLock();
-        this.observers=new ArrayList<>();
+        this.lock = new ReentrantLock();
+        this.observers = new ArrayList<>();
         this.currentPrice = item.getStartingPrice();
         this.history = new ArrayList<>();
-        this.status= AuctionStatus.OPEN;
+        this.status = AuctionStatus.OPEN; // Mới tạo thì để OPEN
     }
+
+    /**
+     * FIX LỖI: Sau khi deserialize, các trường transient bị null.
+     * Cần gọi hàm này trong DataManager hoặc readObject.
+     */
     public void restoreTransients() {
-       this.lock = new ReentrantLock();
-       this.observers = new ArrayList<>();
+        if (this.lock == null)
+            this.lock = new ReentrantLock();
+        if (this.observers == null)
+            this.observers = new ArrayList<>();
     }
+
+    // --- CÁC GETTER/SETTER QUAN TRỌNG ---
+
+    public AuctionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AuctionStatus status) {
+        this.lock.lock();
+        try {
+            this.status = status;
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    public List<BidTransaction> getBidHistory() {
+        return this.history;
+    }
+
     public Item getItem() {
         return this.item;
     }
-    public double getCurrentPrice() {
-        if (this.item != null) {
-            return this.item.getCurrentPrice();
-        }
-        return 0.0;
+
+    // --- LOGIC QUẢN LÝ OBSERVER (Public để Service gọi được) ---
+
+    public void addObserver(Observer obs) {
+        if (observers == null)
+            restoreTransients();
+        observers.add(obs);
     }
 
-    public void addObserver(Observer obs) { observers.add(obs); }
     public void removeObserver(Observer obs) {
-        lock.lock();
-        try {
-            if (observers.contains(obs)) {
-                observers.remove(obs);
-            
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-    private void notifyObservers(String msg) {
-    
-        for (Observer obs : observers) obs.update(msg);
-    }
-    //Khi này là bat dau vao phien chay
-    public void startAuction() {
-        lock.lock();
-        try {
-            if (status == AuctionStatus.OPEN) {
-                status = AuctionStatus.RUNNING;
-                notifyObservers("Phiên đấu giá " + getId() + " đã bắt đầu !");
-            }
-        } finally { lock.unlock(); }
+        if (observers != null)
+            observers.remove(obs);
     }
 
-    public void endAuction() {
-        lock.lock();
-        try {
-            status = AuctionStatus.FINISHED;
-            notifyObservers("Phiên đấu giá " + getId() + " đã kết thúc !");
-        } finally { lock.unlock(); }
+    public void notifyObservers(String msg) {
+        if (observers == null)
+            return;
+        for (Observer obs : observers) {
+            obs.update(msg);
+        }
     }
-    public void processNewBid(Bidder bidder, double bidAmount) throws InvalidBidException, AuctionClosedException, AuthenticationException {
+
+    // --- LOGIC PHIÊN ĐẤU GIÁ ---
+
+    public void processNewBid(User bidder, double bidAmount)
+            throws InvalidBidException, AuctionClosedException, AuthenticationException {
         lock.lock();
         try {
-            //dam bao ocp
             validateAuthentication(bidder);
             validateAuctionStatus();
             validateBidAmount(bidAmount);
 
             updateAuctionState(bidder, bidAmount);
-        }finally {
-            // Phải luôn luôn mở khóa trong khối finally
-            // đảm bảo  có lỗi xảy ra, khóa vẫn  giải phóng cho người sau
+        } finally {
             lock.unlock();
         }
     }
+
     private void validateAuctionStatus() throws AuctionClosedException {
-        if (this.status != AuctionStatus.RUNNING) {
-            throw new AuctionClosedException("Trạng thái " + status + " không cho phép đặt giá.");
+        // Nếu trạng thái là FINISHED, PAID hoặc CANCELED thì không cho BID nữa
+        if (this.status == AuctionStatus.FINISHED ||
+                this.status == AuctionStatus.PAID ||
+                this.status == AuctionStatus.CANCELED) {
+            throw new AuctionClosedException("Phiên đấu giá không còn trong thời gian đặt giá.");
         }
     }
-    private void validateBidAmount(double amount) throws InvalidBidException {
-    double priceToCompare = (item != null) ? item.getCurrentPrice() : currentPrice;
-    if (amount <= priceToCompare) {
-        throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: " + priceToCompare);
-    }
-}
-    private void validateAuthentication(Bidder bidder) throws AuthenticationException {
-    //  Kiểm tra đăng nhập (người dùng tồn tại)
-    if (bidder == null) {
-        throw new AuthenticationException("Lỗi: Người dùng không tồn tại hoặc chưa đăng nhập.");
-    }
-}
 
-    private void updateAuctionState(Bidder bidder, double amount) {
-        this.currentPrice=amount;
-        this.item.setCurrentPrice(amount);
+    private void validateBidAmount(double amount) throws InvalidBidException {
+        if (amount <= currentPrice) {
+            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: " + currentPrice);
+        }
+    }
+
+    private void validateAuthentication(User bidder) throws AuthenticationException {
+        if (bidder == null) {
+            throw new AuthenticationException("Người dùng chưa đăng nhập!");
+        }
+    }
+
+    private void updateAuctionState(User bidder, double amount) {
+        this.currentPrice = amount;
+        if (this.item != null) {
+            this.item.setCurrentPrice(amount);
+        }
+        // Lưu lịch sử giao dịch
         this.history.add(new BidTransaction(bidder, amount));
-        notifyObservers("UPDATE|" + this.item.getId() + "|" + amount + "|" + bidder.getUsername());
+
+        notifyObservers("UPDATE|" + getId() + "|" + amount + "|" + bidder.getUsername());
     }
 }

@@ -2,7 +2,7 @@ package com.auction.model;
 
 public class Bidder extends User {
     private static final long serialVersionUID = 1L;
-    public Bidder(String id, String username) { super(id, username); }
+    public Bidder(String username, String password) { super(username, password,"BIDDER"); }
 
     @Override
     public void displayInfo() {
