@@ -1,7 +1,10 @@
 package com.auction.network;
 
-import com.auction.model.*;
+import com.auction.model.User;
+import com.auction.model.Auction;
+import com.auction.model.Bidder;
 import com.auction.service.AuctionService;
+import com.auction.model.Observer;
 import com.auction.service.UserManager; // Import UserManager Singleton
 
 import java.io.BufferedReader;
@@ -9,22 +12,22 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.List;
 
 public class ClientHandler implements Runnable, Observer {
     private Socket socket;
     private AuctionService auctionService;
     private PrintWriter out;
     private BufferedReader in;
-    private User currentUser; // Thay Bidder bằng User để đa dạng vai trò (Admin/Seller/Bidder)
 
-    public ClientHandler(Socket socket, AuctionService service) {
+    private User currentUser;
+
+    public ClientHandler(final Socket socket, final AuctionService service) {
         this.socket = socket;
         this.auctionService = service;
     }
 
     @Override
-    public void run() {
+    public final void run() {
         try {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
@@ -64,7 +67,7 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 
-    private void handleRegister(String[] parts) {
+    private void handleRegister(final String[] parts) {
         // REGISTER|username|password|role
         boolean success = UserManager.getInstance().register(parts[1], parts[2], parts[3]);
         if (success) {
@@ -74,7 +77,7 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 
-    private void handleLogin(String[] parts) {
+    private void handleLogin(final String[] parts) {
         // LOGIN|username|password
         String username = parts[1];
         String password = parts[2];
@@ -99,7 +102,7 @@ public class ClientHandler implements Runnable, Observer {
         out.println("LIST_AUCTIONS_SUCCESS|" + auctionService.getAllAuctions().toString());
     }
 
-    private void handleCreateAuction(String[] parts) {
+    private void handleCreateAuction(final String[] parts) {
         // Kiểm tra quyền: Chỉ Seller hoặc Admin mới được tạo
         if (currentUser == null || "BIDDER".equals(currentUser.getRole())) {
             out.println("ERROR|Bạn không có quyền tạo phiên đấu giá.");
@@ -110,7 +113,7 @@ public class ClientHandler implements Runnable, Observer {
         out.println("SUCCESS|Yêu cầu tạo phiên đã được ghi nhận.");
     }
 
-    private void handleEndAuction(String[] parts) {
+    private void handleEndAuction(final String[] parts) {
         // Kiểm tra quyền: Chỉ Admin mới được đóng phiên thủ công
         if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
             out.println("ERROR|Chỉ Admin mới có quyền đóng phiên.");
@@ -120,7 +123,7 @@ public class ClientHandler implements Runnable, Observer {
         out.println("END_SUCCESS|Đã đóng phiên " + parts[1]);
     }
 
-    private void handleBid(String[] parts) {
+    private void handleBid(final String[] parts) {
         if (this.currentUser == null) {
             out.println("ERROR|Bạn phải đăng nhập trước khi đấu giá!");
             return;
@@ -139,12 +142,13 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 
-    public void sendMessage(String msg) {
-        if (out != null)
+    public final void sendMessage(final String msg) {
+        if (out != null) {
             out.println(msg);
+        }
     }
 
-    public void update(String msg) {
+    public final void update(final String msg) {
         this.sendMessage(msg);
     }
 
@@ -155,8 +159,9 @@ public class ClientHandler implements Runnable, Observer {
                     a.removeObserver(this);
                 }
             }
-            if (socket != null)
+            if (socket != null) {
                 socket.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
