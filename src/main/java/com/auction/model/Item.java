@@ -1,12 +1,12 @@
 package com.auction.model;
 
-import java.io.Serializable;
 
-public abstract class Item extends Entity implements Serializable{
+public abstract class Item extends Entity{
     protected String itemName;
     private double startingPrice;
     private volatile double currentPrice;
     public String highestBidder;
+    private static final long serialVersionUID = 1L;
 
     public Item(String id, String itemName, double startingPrice) {
         super(id);

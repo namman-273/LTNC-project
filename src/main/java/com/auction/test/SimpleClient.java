@@ -17,6 +17,7 @@ public class SimpleClient {
                 try {
                     String response;
                     while ((response = in.readLine()) != null) {
+                        //To-do:update case response
                         System.out.println("\n[SERVER GỬI ĐẾN]: " + response);
                         System.out.print("> Nhập lệnh: ");
                     }
