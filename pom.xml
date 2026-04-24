@@ -47,10 +47,12 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${checkstyle.version}</version>
                 <configuration>
-                    <configLocation>sun_checks.xml</configLocation>
+                    <configLocation>checkstyle.xml</configLocation>
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError> <violationSeverity>warning</violationSeverity>
+                    <failsOnError>true</failsOnError> 
+                    <violationSeverity>error</violationSeverity>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
                 </configuration>
                 <executions>
                     <execution>
