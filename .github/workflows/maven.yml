@@ -1,15 +1,14 @@
-name: Java CI with Maven
+name: Java CI with Maven (Target A+)
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     
@@ -20,6 +19,14 @@ jobs:
         distribution: 'temurin'
         cache: maven
         
-    - name: Build with Maven
-    
-      run:  mvn -B clean install
+    - name: Verify Code Style (Checkstyle)
+      run: mvn checkstyle:check
+
+    - name: Run Tests & Generate Coverage Report
+      run: mvn test
+      
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: jacoco-report
+        path: target/site/jacoco/
