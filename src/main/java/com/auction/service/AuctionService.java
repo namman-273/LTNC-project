@@ -55,7 +55,7 @@ public class AuctionService implements Serializable {
         if (auction != null) {
             auctions.put(auction.getId(), auction);
 
-            // TỰ ĐỘNG ĐÓNG PHIÊN SAU 5 PHÚT(tạm thời để 20s) 
+            // TỰ ĐỘNG ĐÓNG PHIÊN SAU 5 PHÚT(tạm thời để 20s)
             scheduler.schedule(() -> {
                 endAuction(auction.getId());
             }, 20000, TimeUnit.MILLISECONDS);
@@ -84,7 +84,7 @@ public class AuctionService implements Serializable {
 
             // Gửi thông báo kết quả cho các Observers (FE nhận qua socket)
             String msg = (winner != null)
-                    ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid: " +maxPrice +"$"
+                    ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid: " + maxPrice + "$"
                     : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
 
             a.notifyObservers(msg);

@@ -78,7 +78,7 @@ public class ClientHandler implements Runnable, Observer {
         // LOGIN|username|password
         String username = parts[1];
         String password = parts[2];
-        
+
         // Kiểm tra đăng nhập thực sự từ UserManager
         User user = UserManager.getInstance().login(username, password);
 
@@ -130,24 +130,35 @@ public class ClientHandler implements Runnable, Observer {
             String auctionId = parts[1];
             double amount = Double.parseDouble(parts[2]);
             Auction auction = auctionService.getAuctionById(auctionId);
-            
+
             // Ép kiểu currentUser về Bidder để khớp với method cũ hoặc sửa method nhận User
-            auction.processNewBid((Bidder)currentUser, amount); 
+            auction.processNewBid((Bidder) currentUser, amount);
             out.println("BID_SUCCESS|" + auctionId + "|" + amount);
         } catch (Exception e) {
             out.println("ERROR|" + e.getMessage());
         }
     }
 
-    public void sendMessage(String msg) { if (out != null) out.println(msg); }
-    public void update(String msg) { this.sendMessage(msg); }
+    public void sendMessage(String msg) {
+        if (out != null)
+            out.println(msg);
+    }
+
+    public void update(String msg) {
+        this.sendMessage(msg);
+    }
 
     private void cleanUp() {
         try {
             if (auctionService != null) {
-                for (Auction a : auctionService.getAllAuctions()) { a.removeObserver(this); }
+                for (Auction a : auctionService.getAllAuctions()) {
+                    a.removeObserver(this);
+                }
             }
-            if (socket != null) socket.close();
-        } catch (IOException e) { e.printStackTrace(); }
+            if (socket != null)
+                socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -53,9 +53,9 @@ public class BidTransaction implements Serializable {
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        return String.format("[%s] %s bid: %.2f", 
-                timestamp.format(formatter), 
-                bidder.getUsername(), 
+        return String.format("[%s] %s bid: %.2f",
+                timestamp.format(formatter),
+                bidder.getUsername(),
                 amount);
     }
 }

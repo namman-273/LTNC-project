@@ -1,7 +1,6 @@
 package com.auction.model;
 
-
-public abstract class Item extends Entity{
+public abstract class Item extends Entity {
     protected String itemName;
     private double startingPrice;
     private volatile double currentPrice;
@@ -12,11 +11,18 @@ public abstract class Item extends Entity{
         super(id);
         this.itemName = itemName;
         this.startingPrice = startingPrice;
-        this.currentPrice=startingPrice;
-        this.highestBidder="No bids yet";
+        this.currentPrice = startingPrice;
+        this.highestBidder = "No bids yet";
     }
-    public String getItemName() { return itemName; }
-    public double getStartingPrice() { return startingPrice;}
+
+    public String getItemName() {
+        return itemName;
+    }
+
+    public double getStartingPrice() {
+        return startingPrice;
+    }
+
     public synchronized void setCurrentPrice(double currentPrice) {
         this.currentPrice = currentPrice;
     }
@@ -24,6 +30,7 @@ public abstract class Item extends Entity{
     public double getCurrentPrice() {
         return currentPrice;
     }
+
     public String getHighestBidder() {
         return highestBidder;
     }

@@ -33,10 +33,10 @@ public class DataManager {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(DATA_FILE))) {
             // Đọc đối tượng từ file
             AuctionService loadedService = (AuctionService) ois.readObject();
-            
+
             // Cập nhật lại "Ngai vàng" Singleton bằng bản vừa load
             AuctionService.setInstance(loadedService);
-            
+
             System.out.println(">>> [DataManager] Khôi phục dữ liệu thành công.");
         } catch (Exception e) {
             System.err.println(">>> [DataManager] Lỗi load file: " + e.getMessage());
