@@ -4,8 +4,9 @@ import com.auction.service.AuctionService;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import com.auction.service.UserManager;
 
-public class AuctionServer {
+public class AuctionServer {   
     private final int port;
     private final AuctionService auctionService;
 
@@ -31,5 +32,14 @@ public class AuctionServer {
         } catch (IOException e) {
             System.err.println("SERVER ERROR: " + e.getMessage());
         }
+    }
+    public static void main(String[] args) {
+        // Khởi tạo UserManager trước
+        UserManager.getInstance();
+    
+        AuctionService auctionService = AuctionService.getInstance();
+        AuctionServer server = new AuctionServer(9999, auctionService);
+        System.out.println("Khoi dong server tai port 9999...");
+        server.start();
     }
 }

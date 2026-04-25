@@ -5,18 +5,14 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
 
 public class LoginController {
 
-    @FXML
-    private TextField usernameField;
-
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private Label errorLabel;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Label errorLabel;
 
     @FXML
     private void handleLogin() {
@@ -28,9 +24,24 @@ public class LoginController {
             return;
         }
 
-        // Mock: tuần sau sẽ thay bằng kết nối server thật
-        Stage stage = (Stage) usernameField.getScene().getWindow();
-        AuctionListView listView = new AuctionListView(stage, username);
-        listView.show();
+        
+        ServerConnection conn = ServerConnection.getInstance();
+        if (!conn.connect()) {
+            errorLabel.setText("Không thể kết nối server!");
+            return;
+        }
+
+        
+        String response = conn.sendAndReceive("LOGIN|" + username + "|" + password);
+        System.out.println("Server trả về: " + response);
+
+        if (response != null && response.startsWith("LOGIN_SUCCESS")) {
+            
+            Stage stage = (Stage) usernameField.getScene().getWindow();
+            AuctionListView listView = new AuctionListView(stage, username);
+            listView.show();
+        } else {
+            errorLabel.setText("Sai tên đăng nhập hoặc mật khẩu!");
+        }
     }
 }

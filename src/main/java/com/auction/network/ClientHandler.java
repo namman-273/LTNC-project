@@ -78,6 +78,9 @@ public class ClientHandler implements Runnable, Observer {
         // LOGIN|username|password
         String username = parts[1];
         String password = parts[2];
+
+        System.out.println("DEBUG username='" + username + "' password='" + password + "'");
+        System.out.println("DEBUG user found: " + UserManager.getInstance().findUserById(username));
         
         // Kiểm tra đăng nhập thực sự từ UserManager
         User user = UserManager.getInstance().login(username, password);
