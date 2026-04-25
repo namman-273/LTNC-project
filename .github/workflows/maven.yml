@@ -29,7 +29,7 @@ jobs:
       run: mvn clean compile
 
     # 4. Kiểm tra Convention (Checkstyle)
-    # Bước này sẽ fail nếu sai Tab/Javadoc, giúp Leader rảnh tay không phải đi soi code
+  
     - name: Static Code Analysis (Checkstyle)
       run: mvn checkstyle:check
 
@@ -39,7 +39,7 @@ jobs:
       run: mvn test
 
     # 6. Upload Báo cáo Coverage (v4)
-    # Leader và thầy cô có thể tải file này về để xem % code đã test
+    # có thể tải file này về để xem % code đã test
     - name: Upload JaCoCo Coverage Report
       if: always() 
       uses: actions/upload-artifact@v4
