@@ -3,8 +3,11 @@ package com.auction.service;
 import com.auction.model.Auction;
 import com.auction.model.AuctionStatus;
 import com.auction.model.BidTransaction;
+import com.auction.model.CreateItem;
 import com.auction.model.Item;
 import com.auction.model.User;
+import com.auction.util.DataManager;
+import com.auction.factory.ItemFactory;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -39,6 +42,28 @@ public class AuctionService implements Serializable {
         return instance;
     }
 
+    public synchronized void createNewAuction(String itemType, String itemName, double startingPrice,
+            long durationMinutes) {
+        // 1. Tạo ID duy nhất cho phiên đấu giá (Ví dụ: AUC_171400...)
+        String auctionId = "AUC_" + System.currentTimeMillis();
+
+        // 2. Sử dụng Factory để tạo Item
+        ItemFactory factory =  CreateItem.getFactory(itemType);
+        Item newItem = factory.create(auctionId, itemName, startingPrice);
+
+        // 3. Khởi tạo đối tượng Auction mới
+        Auction newAuction = new Auction(auctionId, newItem, durationMinutes);
+
+        // 4. Lưu vào bộ nhớ (HashMap/List trong Service)
+        this.auctions.put(auctionId, newAuction);
+
+        // 5. Lưu xuống file .dat ngay lập tức
+        DataManager.getInstance().saveData();
+
+        // 6. Thông báo cho tất cả người dùng đang kết nối về sản phẩm mới
+        // (Optional: Nếu bạn có hệ thống Global Observer)
+    }
+
     /**
      * FIX LỖI: Singleton bị phá khi deserialize
      * Java sẽ gọi hàm này sau khi load file để đảm bảo chỉ có 1 instance duy nhất.
@@ -55,7 +80,7 @@ public class AuctionService implements Serializable {
         if (auction != null) {
             auctions.put(auction.getId(), auction);
 
-            // TỰ ĐỘNG ĐÓNG PHIÊN SAU 5 PHÚT(tạm thời để 20s) 
+            // TỰ ĐỘNG ĐÓNG PHIÊN SAU 5 PHÚT(tạm thời để 20s)
             scheduler.schedule(() -> {
                 endAuction(auction.getId());
             }, 20000, TimeUnit.MILLISECONDS);
@@ -84,7 +109,7 @@ public class AuctionService implements Serializable {
 
             // Gửi thông báo kết quả cho các Observers (FE nhận qua socket)
             String msg = (winner != null)
-                    ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid: " +maxPrice +"$"
+                    ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid: " + maxPrice + "$"
                     : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
 
             a.notifyObservers(msg);
@@ -108,6 +133,19 @@ public class AuctionService implements Serializable {
     public static void setInstance(AuctionService loadedInstance) {
         synchronized (AuctionService.class) {
             instance = loadedInstance;
+        }
+    }
+
+    // Dùng để lấy toàn bộ dữ liệu Map auctions để lưu xuống file
+    public Map<String, Auction> getAuctionsMap() {
+        return this.auctions; // auctions là cái Map<String, Auction>
+    }
+
+    // Dùng để khôi phục dữ liệu sau khi đọc từ file .dat lên
+    public void setAuctions(Map<String, Auction> loadedAuctions) {
+        if (loadedAuctions != null) {
+            this.auctions.clear(); // Xóa sạch dữ liệu trắng hiện tại
+            this.auctions.putAll(loadedAuctions); // Đổ toàn bộ dữ liệu từ file vào
         }
     }
 }

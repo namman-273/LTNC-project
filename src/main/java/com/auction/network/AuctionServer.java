@@ -18,15 +18,14 @@ public class AuctionServer {
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("SERVER: Đang chạy trên cổng " + port);
-            
+
             while (true) {
-                
+
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("SERVER: Có khách hàng mới kết nối!");
 
-                
                 ClientHandler handler = new ClientHandler(clientSocket, auctionService);
-                
+
                 new Thread(handler).start();
             }
         } catch (IOException e) {
