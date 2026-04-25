@@ -107,24 +107,24 @@ public class ClientHandler implements Runnable, Observer {
     }
 
     private void handleCreateAuction(final String[] parts) {
-    // CREATE_AUCTION|type|name|startingPrice|durationMinutes
-    if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
-        out.println("ERROR|Quyền hạn không đủ.");
-        return;
-    }
-    try {
-        String type = parts[1];
-        String name = parts[2];
-        double price = Double.parseDouble(parts[3]);
-        long duration = Long.parseLong(parts[4]);
+        // CREATE_AUCTION|type|name|startingPrice|durationMinutes
+        if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
+            out.println("ERROR|Quyền hạn không đủ.");
+            return;
+        }
+        try {
+            String type = parts[1];
+            String name = parts[2];
+            double price = Double.parseDouble(parts[3]);
+            long duration = Long.parseLong(parts[4]);
 
-        // Giả sử auctionService có hàm create mới
-        auctionService.createNewAuction(type, name, price, duration);
-        out.println("SUCCESS|Sản phẩm " + name + " đã được đăng sàn.");
-    } catch (Exception e) {
-        out.println("ERROR|Dữ liệu tạo sản phẩm không hợp lệ.");
+            
+            auctionService.createNewAuction(type, name, price, duration);
+            out.println("SUCCESS|Sản phẩm " + name + " đã được đăng sàn.");
+        } catch (Exception e) {
+            out.println("ERROR|Dữ liệu tạo sản phẩm không hợp lệ.");
+        }
     }
-}
 
     private void handleEndAuction(final String[] parts) {
         // Kiểm tra quyền: Chỉ Admin mới được đóng phiên thủ công
@@ -155,19 +155,39 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 
-    private void handleGetHistory(final String[] parts) {
+    /**
+     * Xử lý yêu cầu lấy lịch sử giá của một phiên đấu giá.
+     * Trả về danh sách BidTransaction dưới dạng JSON để FE vẽ biểu đồ.
+     */
+    private void handleGetHistory(String[] parts) {
+        // Kiểm tra tham số đầu vào (Lệnh|auctionId)
+        if (parts.length < 2) {
+            out.println("ERROR|Thiếu mã phiên đấu giá.");
+            return;
+        }
+
         String auctionId = parts[1];
         Auction auction = auctionService.getAuctionById(auctionId);
+
+        // Kiểm tra phiên đấu giá có tồn tại không
         if (auction != null) {
-            StringBuilder historyData = new StringBuilder("HISTORY_RES|" + auctionId);
-            // Duyệt lịch sử để gửi về cho FE vẽ LineChart
-            for (BidTransaction tx : auction.getBidHistory()) {
-                historyData.append("|").append(tx.getBidder().getUsername())
-                        .append(",").append(tx.getAmount());
+            try {
+                // Lấy danh sách lịch sử (BidTransaction)
+                var history = auction.getBidHistory();
+
+                // Sử dụng Gson để chuyển đổi List sang JSON
+
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                String jsonHistory = gson.toJson(history);
+
+                //  Trả về cho Client với tiền tố HISTORY_RES
+                out.println("HISTORY_RES|" + auctionId + "|" + jsonHistory);
+
+            } catch (Exception e) {
+                out.println("ERROR|Lỗi xử lý dữ liệu lịch sử: " + e.getMessage());
             }
-            out.println(historyData.toString());
         } else {
-            out.println("ERROR|Không tìm thấy phiên đấu giá.");
+            out.println("ERROR|Không tìm thấy phiên đấu giá với ID: " + auctionId);
         }
     }
 

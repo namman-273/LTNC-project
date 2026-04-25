@@ -1,6 +1,7 @@
 package com.auction.factory;
 
-import com.auction.model.*;
+import com.auction.model.Electronics;
+import com.auction.model.Item;
 
 public class ElectronicsFactory extends ItemFactory {
     @Override
