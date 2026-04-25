@@ -4,7 +4,6 @@ import com.auction.model.*;
 
 public class ArtFactory extends ItemFactory {
 
-    public int a_b=0;
 
     @Override
     public Item create(String id, String name, double price) {
