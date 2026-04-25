@@ -1,9 +1,10 @@
 package com.auction.factory;
 
-import com.auction.model.*;
+import com.auction.model.Item;
+import com.auction.model.Art;
+
 
 public class ArtFactory extends ItemFactory {
-
 
     @Override
     public Item create(String id, String name, double price) {
