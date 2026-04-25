@@ -2,6 +2,7 @@ package com.auction.network;
 
 import com.auction.model.User;
 import com.auction.model.Auction;
+import com.auction.model.BidTransaction;
 import com.auction.model.Bidder;
 import com.auction.service.AuctionService;
 import com.auction.model.Observer;
@@ -56,6 +57,9 @@ public class ClientHandler implements Runnable, Observer {
                     case "END_AUCTION": // Lệnh mới: Đóng phiên (Chỉ Admin)
                         handleEndAuction(parts);
                         break;
+                    case "GET_HISTORY": // Lệnh: GET_HISTORY|auctionId
+                        handleGetHistory(parts);
+                        break;
                     default:
                         out.println("ERROR|Lệnh không hợp lệ");
                 }
@@ -103,15 +107,24 @@ public class ClientHandler implements Runnable, Observer {
     }
 
     private void handleCreateAuction(final String[] parts) {
-        // Kiểm tra quyền: Chỉ Seller hoặc Admin mới được tạo
-        if (currentUser == null || "BIDDER".equals(currentUser.getRole())) {
-            out.println("ERROR|Bạn không có quyền tạo phiên đấu giá.");
-            return;
-        }
-        // Logic tạo Item bằng Factory Method ở Bước 1 và thêm vào AuctionService
-        // CREATE_AUCTION|type|id|name|price
-        out.println("SUCCESS|Yêu cầu tạo phiên đã được ghi nhận.");
+    // CREATE_AUCTION|type|name|startingPrice|durationMinutes
+    if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
+        out.println("ERROR|Quyền hạn không đủ.");
+        return;
     }
+    try {
+        String type = parts[1];
+        String name = parts[2];
+        double price = Double.parseDouble(parts[3]);
+        long duration = Long.parseLong(parts[4]);
+
+        // Giả sử auctionService có hàm create mới
+        auctionService.createNewAuction(type, name, price, duration);
+        out.println("SUCCESS|Sản phẩm " + name + " đã được đăng sàn.");
+    } catch (Exception e) {
+        out.println("ERROR|Dữ liệu tạo sản phẩm không hợp lệ.");
+    }
+}
 
     private void handleEndAuction(final String[] parts) {
         // Kiểm tra quyền: Chỉ Admin mới được đóng phiên thủ công
@@ -139,6 +152,22 @@ public class ClientHandler implements Runnable, Observer {
             out.println("BID_SUCCESS|" + auctionId + "|" + amount);
         } catch (Exception e) {
             out.println("ERROR|" + e.getMessage());
+        }
+    }
+
+    private void handleGetHistory(final String[] parts) {
+        String auctionId = parts[1];
+        Auction auction = auctionService.getAuctionById(auctionId);
+        if (auction != null) {
+            StringBuilder historyData = new StringBuilder("HISTORY_RES|" + auctionId);
+            // Duyệt lịch sử để gửi về cho FE vẽ LineChart
+            for (BidTransaction tx : auction.getBidHistory()) {
+                historyData.append("|").append(tx.getBidder().getUsername())
+                        .append(",").append(tx.getAmount());
+            }
+            out.println(historyData.toString());
+        } else {
+            out.println("ERROR|Không tìm thấy phiên đấu giá.");
         }
     }
 

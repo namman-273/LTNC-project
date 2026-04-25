@@ -109,7 +109,7 @@ public class Auction extends Entity {
             updateAuctionState(bidder, bidAmount);
             long timeLeft = this.endTime - System.currentTimeMillis();
             if (timeLeft > 0 && timeLeft < 60000) { // < 60s
-                this.endTime += 90000; // Gia hạn thêm 90s
+                this.endTime += 120000; // Gia hạn thêm 120s
                 notifyObservers("SNIPING|" + getId() + "|" + this.endTime);
             }
 
