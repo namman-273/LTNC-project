@@ -118,7 +118,7 @@ public class ClientHandler implements Runnable, Observer {
             double price = Double.parseDouble(parts[3]);
             long duration = Long.parseLong(parts[4]);
 
-            // Giả sử auctionService có hàm create mới
+            
             auctionService.createNewAuction(type, name, price, duration);
             out.println("SUCCESS|Sản phẩm " + name + " đã được đăng sàn.");
         } catch (Exception e) {
