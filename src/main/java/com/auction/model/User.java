@@ -7,10 +7,9 @@ public abstract class User extends Entity implements Observer {
     private static final long serialVersionUID = 1L;
 
     public User(String username, String password, String role) {
-        // Gọi constructor của Entity để gán username vào trường id
         super(username);
         this.username = username;
-        this.password = password;
+        this.password = hashPassword(password);  // ← thêm hash
         this.role = role;
     }
 
