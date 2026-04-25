@@ -7,8 +7,8 @@ import java.util.Scanner;
 public class SimpleClient {
     public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 8080);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
             System.out.println("--- ĐÃ KẾT NỐI SERVER ---");
 
@@ -17,6 +17,7 @@ public class SimpleClient {
                 try {
                     String response;
                     while ((response = in.readLine()) != null) {
+                        // To-do:update case response
                         System.out.println("\n[SERVER GỬI ĐẾN]: " + response);
                         System.out.print("> Nhập lệnh: ");
                     }
@@ -25,7 +26,7 @@ public class SimpleClient {
                 }
             }).start();
 
-            // Luồng chính: Cho phép  nhập LOGIN, BID từ bàn phím
+            // Luồng chính: Cho phép nhập LOGIN, BID từ bàn phím
             Scanner scanner = new Scanner(System.in);
             while (true) {
                 String cmd = scanner.nextLine();

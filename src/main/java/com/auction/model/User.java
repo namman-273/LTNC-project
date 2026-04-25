@@ -1,17 +1,47 @@
 package com.auction.model;
-import java.io.Serializable;
-public abstract class User extends Entity implements Observer ,Serializable {
-        protected String username;
 
-        public User(String id, String username) {
-            super(id);
-            this.username = username;
-        }
+public abstract class User extends Entity implements Observer {
+    protected String username;
+    private String password; // Lưu trữ dưới dạng hash đơn giản
+    private String role; // "ADMIN", "SELLER", hoặc "BIDDER"
+    private static final long serialVersionUID = 1L;
 
-        public String getUsername() { return username; }
-        public void update(String message) {
+    public User(String username, String password, String role) {
+        // Gọi constructor của Entity để gán username vào trường id
+        super(username);
+        this.username = username;
+        this.password = password;
+        this.role = role;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    private String hashPassword(String password) {
+        if (password == null)
+            return "";
+        return String.valueOf(password.hashCode());
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public boolean checkPassword(String inputPassword) {
+        return this.password.equals(hashPassword(inputPassword));
+    }
+
+    public void update(String message) {
         // Sau này chỗ này sẽ hiển thị lên màn hình JavaFX
-           System.out.println("[NOTIFY - " + username + "]: " + message);
-        }
-}
+        System.out.println("[NOTIFY - " + username + "]: " + message);
+    }
 
+    public String toString() {
+        return "User{" + "username='" + username + '\'' + ", role='" + role + '\'' + '}';
+    }
+}

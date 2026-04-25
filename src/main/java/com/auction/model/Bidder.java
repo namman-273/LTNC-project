@@ -1,13 +1,18 @@
 package com.auction.model;
 
-import java.io.Serializable;
+public class Bidder extends User {
+    private static final long serialVersionUID = 1L;
 
-public class Bidder extends User implements Serializable{
-    public Bidder(String id, String username) { super(id, username); }
+    public Bidder(String username, String password) {
+        super(username, password, "BIDDER");
+    }
 
     @Override
     public void displayInfo() {
         System.out.println("[com.auction.model.Bidder] ID: " + id + ", Name: " + username);
     }
-    public String getName(){return username;}
+
+    public String getName() {
+        return username;
+    }
 }
