@@ -7,6 +7,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
+import com.auction.views.RegisterView;
 
 public class LoginController {
 
@@ -43,5 +44,11 @@ public class LoginController {
         } else {
             errorLabel.setText("Sai tên đăng nhập hoặc mật khẩu!");
         }
+    }
+    @FXML
+    private void handleRegister() {
+        Stage stage = (Stage) usernameField.getScene().getWindow();
+        RegisterView registerView = new RegisterView(stage);
+        registerView.show();
     }
 }
