@@ -1,4 +1,4 @@
-name: Java CI with Maven (Final Optimization)
+name: Java CI with Maven
 
 on:
   push:
@@ -8,37 +8,57 @@ on:
 
 jobs:
   pipeline:
-    name: Build, Checkstyle and Test
+    name: Build, Checkstyle, Test & Coverage
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4 
-    
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-        
-    # Chạy verify để quét tất cả cùng lúc (Compile + Checkstyle + Test)
-    # Điều này đảm bảo toàn bộ quy trình được thực hiện đúng chuẩn Maven Lifecycle
-    - name: Build and Verify Project
-      run: mvn clean verify
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    # Vẫn giữ Upload Report để lấy điểm Visualization (Artifact)
-    - name: Upload JaCoCo Coverage Report
-      if: always() 
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report-${{ github.run_id }}
-        path: target/site/jacoco/
-        retention-days: 3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
-    # Tóm tắt kết quả chuyên nghiệp
-    - name: Workflow Summary
-      if: always()
-      run: |
-        echo "### Dự án: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-        echo "📊 Báo cáo Checkstyle và JaCoCo đã sẵn sàng trong phần Artifacts!" >> $GITHUB_STEP_SUMMARY
+      # Chạy toàn bộ pipeline: compile → test → checkstyle → jacoco threshold
+      - name: Build and Verify Project
+        run: mvn clean verify --batch-mode --no-transfer-progress
+
+      # Upload báo cáo JaCoCo để xem trực tiếp trên GitHub
+      - name: Upload JaCoCo Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_id }}
+          path: target/site/jacoco/
+          retention-days: 7
+
+      # Upload kết quả test để debug khi CI fail
+      - name: Upload Surefire Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_id }}
+          path: target/surefire-reports/
+          retention-days: 7
+
+      # Tóm tắt kết quả hiển thị trên trang Actions
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "## Ket qua CI/CD" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Buoc | Trang thai |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Compile | Da chay |" >> $GITHUB_STEP_SUMMARY
+          echo "| Checkstyle | Da chay |" >> $GITHUB_STEP_SUMMARY
+          echo "| JUnit Tests | Da chay |" >> $GITHUB_STEP_SUMMARY
+          echo "| JaCoCo Coverage (>=60%) | Da chay |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Xem bao cao JaCoCo va Test Results trong phan **Artifacts** phia tren." >> $GITHUB_STEP_SUMMARY

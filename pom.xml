@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.auction.app</groupId>
     <artifactId>AuctionSystem</artifactId>
@@ -14,9 +15,14 @@
         <checkstyle.core.version>10.12.1</checkstyle.core.version>
         <jacoco.version>0.8.11</jacoco.version>
         <javafx.version>17.0.8</javafx.version>
+        <junit.version>5.10.0</junit.version>
+        <gson.version>2.10.1</gson.version>
+        <!-- Coverage tối thiểu 60% theo yêu cầu BTL tuần 10 -->
+        <jacoco.minimum.coverage>0.60</jacoco.minimum.coverage>
     </properties>
 
     <dependencies>
+        <!-- JavaFX -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -28,38 +34,69 @@
             <version>${javafx.version}</version>
         </dependency>
 
+        <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.10.0</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.10.0</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-        
+        <!-- Hỗ trợ @ParameterizedTest -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.10.1</version>
+            <version>${gson.version}</version>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- ==================== COMPILER ==================== -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
             </plugin>
 
+            <!-- ==================== SUREFIRE (chạy JUnit 5) ==================== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.1.2</version>
+                <configuration>
+                    <!-- Bắt buộc để Surefire nhận JUnit 5 -->
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- ==================== CHECKSTYLE ==================== -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${checkstyle.version}</version> <dependencies>
+                <version>${checkstyle.version}</version>
+                <dependencies>
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
@@ -70,29 +107,37 @@
                     <configLocation>checkstyle.xml</configLocation>
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError> 
+                    <!-- Build FAIL nếu có lỗi checkstyle -->
+                    <failsOnError>true</failsOnError>
                     <linkXRef>false</linkXRef>
+                    <!-- Bỏ qua file test (tuỳ chọn - có thể xoá dòng này để check cả test) -->
+                    <excludes>**/test/**</excludes>
                 </configuration>
                 <executions>
                     <execution>
                         <id>validate</id>
-                        <phase>verify</phase> <goals>
+                        <phase>verify</phase>
+                        <goals>
                             <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
 
+            <!-- ==================== JACOCO (Coverage) ==================== -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
                 <executions>
+                    <!-- Bước 1: Chuẩn bị agent đo coverage trước khi test -->
                     <execution>
+                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
+                    <!-- Bước 2: Tạo báo cáo HTML sau khi test xong -->
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
@@ -100,14 +145,46 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+                    <!-- Bước 3: Kiểm tra ngưỡng coverage tối thiểu 60% -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.minimum.coverage}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>CLASS</counter>
+                                            <value>MISSEDCOUNT</value>
+                                            <!-- Tối đa 5 class không được test -->
+                                            <maximum>5</maximum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <!-- Loại trừ các class không cần test: Main, FXML view, enum -->
+                            <excludes>
+                                <exclude>com/auction/MainApp.class</exclude>
+                                <exclude>Main.class</exclude>
+                                <exclude>com/auction/views/**</exclude>
+                                <exclude>com/auction/model/AuctionStatus.class</exclude>
+                                <exclude>com/auction/test/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.1.2</version>
-            </plugin>
+            <!-- ==================== JAVAFX PLUGIN ==================== -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
