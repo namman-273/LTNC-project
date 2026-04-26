@@ -176,7 +176,7 @@ public class Auction extends Entity {
             return;
 
         // Lấy người có maxBid cao nhất ra xem xét
-        AutoBid top = autoBidQueue.peek();
+        AutoBid top = autoBidQueue.poll();
 
         // Lấy ID người vừa đặt giá cao nhất hiện tại
         String lastBidderId = history.isEmpty() ? "" : history.get(history.size() - 1).getBidder().getUsername();
@@ -195,10 +195,16 @@ public class Auction extends Entity {
 
             // Cập nhật trạng thái (Sử dụng hàm update để notify luôn)
             updateAuctionState(autoUser, nextAutoPrice);
-
+            // Đưa cấu hình trở lại hàng đợi để tiếp tục cạnh tranh ở lượt sau
+            autoBidQueue.add(top);
             // Đệ quy: Sau khi máy bid, kiểm tra xem có cấu hình Auto-bid nào khác cao hơn
             // nữa không
             executeAutoBids();
+        } else {
+            // TRƯỜNG HỢP DỪNG:
+            // Nếu ngân sách không đủ (nextAutoPrice > maxBid), cấu hình sẽ KHÔNG được
+            // add lại vào queue -> Tự động remove AutoBid
+            System.out.println("AutoBid stop for: " + top.getBidderId());
         }
     }
 
