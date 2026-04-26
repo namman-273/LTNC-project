@@ -11,6 +11,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import com.auction.views.LoginView;
 import com.auction.util.ServerConnection;
+import com.auction.views.BidView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -98,9 +99,18 @@ public class AuctionListController implements Initializable {
             System.out.println("Chưa chọn phiên nào!");
             return;
         }
-        System.out.println("Xem chi tiết: " + selected.getItemName());
-    }
 
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        BidView bidView = new BidView(
+            stage,
+            selected.getId(),
+            selected.getItemName(),
+            selected.getCurrentPrice(),
+            selected.getStatus(),
+            username
+        );
+        bidView.show();
+    }
     @FXML
     private void handleLogout() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
