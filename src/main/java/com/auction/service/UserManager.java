@@ -4,6 +4,9 @@ import com.auction.model.*;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import com.auction.exception.AuthenticationException;
+import com.auction.util.DataManager;
+import com.auction.util.SecurityUtils;;
 
 public class UserManager implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -55,23 +58,33 @@ public class UserManager implements Serializable {
         }
 
         users.put(username, newUser);
+        //lưu file sau khi register thành công
+        DataManager.getInstance().saveData();
         return true;
     }
 
     /**
      * Kiểm tra đăng nhập thực sựs
      */
-    public User login(String username, String password) {
+    public User login(String username, String password) throws AuthenticationException {
         User user = users.get(username);
-        if (user != null && user.checkPassword(password)) {
-            return user;
+        if (user == null) {
+            throw new AuthenticationException("Người dùng không tồn tại");
         }
-        return null;
+
+        // PHẢI dùng username của user đó làm Salt để băm lại mật khẩu nhập vào
+        String hashedInput = SecurityUtils.hashPassword(password,username);
+
+        if (!user.getPassword().equals(hashedInput)) {
+            throw new AuthenticationException("Sai mật khẩu");
+        }
+
+        return user;
     }
 
-    // Tìm user theo ID (username)
-    public User findUserById(String id) {
-        return users.get(id);
+    // Tìm user theo username
+    public User findUserByUsername(String username) {
+        return users.get(username);
     }
 
     // Cập nhật instance khi load từ DataManager
