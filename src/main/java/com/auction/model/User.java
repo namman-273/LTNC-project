@@ -11,7 +11,7 @@ public abstract class User extends Entity implements Observer {
     public User(String username, String password, String role) {
         super(username);
         this.username = username;
-        this.password = SecurityUtils.hashPassword(password,username); // ← thêm hash
+        this.password = password;
         this.role = role;
     }
 

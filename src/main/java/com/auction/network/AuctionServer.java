@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import com.auction.service.UserManager;
+import com.auction.util.DataManager;
 
 public class AuctionServer {
     private final int port;
@@ -38,7 +39,6 @@ public class AuctionServer {
             serverSocket = new ServerSocket(port);
             System.out.println("SERVER: Đang chạy trên cổng " + port);
 
-            // Thay while(true) bằng running
             while (running) {
                 try {
                     Socket clientSocket = serverSocket.accept();
@@ -63,7 +63,10 @@ public class AuctionServer {
 
     public static void main(String[] args) {
         // Khởi tạo các Manager
-        UserManager.getInstance();
+        DataManager.getInstance().loadData();
+
+        // Kiểm tra nếu chưa có admin thì mới tạo
+        UserManager.getInstance().initDefaultData();
         AuctionServer server = new AuctionServer(9999);
         System.out.println("Khởi động server tại port 9999...");
         server.start();
