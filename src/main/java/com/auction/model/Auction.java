@@ -248,9 +248,6 @@ public class Auction extends Entity {
         return super.getId();
     }
 
-    public double getCurrentPrice() {
-        return currentPrice;
-    }
 
     @Override
     public String toString() {
