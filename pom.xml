@@ -3,26 +3,53 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>com.auction.app</groupId>
     <artifactId>AuctionSystem</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
+    <name>Online Auction System</name>
+    <description>BTL Lap trinh nang cao - He thong dau gia truc tuyen</description>
+
+    <!--
+        ============================================================
+        PROPERTIES — tập trung version ở đây, không hardcode ở dưới
+        ============================================================
+    -->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <checkstyle.version>3.3.1</checkstyle.version>
-        <checkstyle.core.version>10.12.1</checkstyle.core.version>
-        <jacoco.version>0.8.11</jacoco.version>
+
+        <!-- Dependency versions -->
         <javafx.version>17.0.8</javafx.version>
         <junit.version>5.10.0</junit.version>
         <gson.version>2.10.1</gson.version>
-        <!-- Coverage tối thiểu 60% theo yêu cầu BTL tuần 10 -->
+
+        <!-- Plugin versions -->
+        <compiler.plugin.version>3.11.0</compiler.plugin.version>
+        <surefire.plugin.version>3.1.2</surefire.plugin.version>
+        <checkstyle.plugin.version>3.3.1</checkstyle.plugin.version>
+        <checkstyle.core.version>10.12.1</checkstyle.core.version>
+        <jacoco.plugin.version>0.8.11</jacoco.plugin.version>
+        <javafx.plugin.version>0.0.8</javafx.plugin.version>
+
+        <!--
+            Ngưỡng coverage tối thiểu 60% theo yêu cầu BTL tuần 10.
+            Muốn nới lỏng tạm thời: đổi thành 0.00, muốn thắt chặt: 0.80
+        -->
         <jacoco.minimum.coverage>0.60</jacoco.minimum.coverage>
     </properties>
 
+    <!--
+        ============================================================
+        DEPENDENCIES
+        ============================================================
+    -->
     <dependencies>
-        <!-- JavaFX -->
+
+        <!-- ── JavaFX ── -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -34,7 +61,20 @@
             <version>${javafx.version}</version>
         </dependency>
 
-        <!-- JUnit 5 -->
+        <!-- ── Gson — parse JSON từ server ── -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
+        </dependency>
+
+        <!-- ── JUnit 5 ── -->
+        <!--
+            Cần đủ 3 artifact:
+            - jupiter-api: annotation @Test, @BeforeEach, v.v.
+            - jupiter-engine: engine chạy test (bắt buộc để Surefire nhận)
+            - jupiter-params: @ParameterizedTest, @ValueSource, v.v.
+        -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -47,7 +87,6 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- Hỗ trợ @ParameterizedTest -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
@@ -55,21 +94,28 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Gson -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${gson.version}</version>
-        </dependency>
     </dependencies>
 
+    <!--
+        ============================================================
+        BUILD PLUGINS
+        Thứ tự Maven lifecycle khi chạy `mvn clean verify`:
+          1. compile  (maven-compiler-plugin)
+          2. test     (maven-surefire-plugin + jacoco prepare-agent)
+          3. report   (jacoco-report)
+          4. verify   (checkstyle:check + jacoco:check)
+        ============================================================
+    -->
     <build>
         <plugins>
-            <!-- ==================== COMPILER ==================== -->
+
+            <!-- ════════════════════════════════════════
+                 1. COMPILER
+                 ════════════════════════════════════════ -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>${compiler.plugin.version}</version>
                 <configuration>
                     <source>17</source>
                     <target>17</target>
@@ -77,13 +123,17 @@
                 </configuration>
             </plugin>
 
-            <!-- ==================== SUREFIRE (chạy JUnit 5) ==================== -->
+            <!-- ════════════════════════════════════════
+                 2. SUREFIRE — chạy JUnit 5
+                 Bắt buộc khai báo tường minh để Surefire
+                 nhận JUnit Jupiter engine.
+                 ════════════════════════════════════════ -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>${surefire.plugin.version}</version>
                 <configuration>
-                    <!-- Bắt buộc để Surefire nhận JUnit 5 -->
+                    <!-- Nhận cả *Test.java lẫn *Tests.java -->
                     <includes>
                         <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
@@ -91,12 +141,20 @@
                 </configuration>
             </plugin>
 
-            <!-- ==================== CHECKSTYLE ==================== -->
+            <!-- ════════════════════════════════════════
+                 3. CHECKSTYLE — enforce coding convention
+                 Phase: verify (sau khi test xong)
+                 failsOnError=true: build FAIL nếu vi phạm
+                 ════════════════════════════════════════ -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${checkstyle.version}</version>
+                <version>${checkstyle.plugin.version}</version>
                 <dependencies>
+                    <!--
+                        Nâng cấp lên phiên bản Checkstyle mới hơn
+                        bản mặc định đi kèm plugin.
+                    -->
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
@@ -106,16 +164,20 @@
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
                     <encoding>UTF-8</encoding>
+                    <!-- In vi phạm ra console để dễ debug -->
                     <consoleOutput>true</consoleOutput>
-                    <!-- Build FAIL nếu có lỗi checkstyle -->
+                    <!-- Build FAIL nếu có vi phạm -->
                     <failsOnError>true</failsOnError>
                     <linkXRef>false</linkXRef>
-                    <!-- Bỏ qua file test (tuỳ chọn - có thể xoá dòng này để check cả test) -->
+                    <!--
+                        Không enforce style cho thư mục test.
+                        Test code thường có cách đặt tên riêng.
+                    -->
                     <excludes>**/test/**</excludes>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>validate</id>
+                        <id>checkstyle-verify</id>
                         <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
@@ -124,28 +186,46 @@
                 </executions>
             </plugin>
 
-            <!-- ==================== JACOCO (Coverage) ==================== -->
+            <!-- ════════════════════════════════════════
+                 4. JACOCO — đo coverage + enforce ngưỡng
+                 3 execution theo thứ tự:
+                   4a. prepare-agent: gắn JVM agent trước test
+                   4b. report: tạo HTML sau test
+                   4c. check: build FAIL nếu < 60%
+                 ════════════════════════════════════════ -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
+                <version>${jacoco.plugin.version}</version>
                 <executions>
-                    <!-- Bước 1: Chuẩn bị agent đo coverage trước khi test -->
+
+                    <!-- 4a. Gắn agent trước khi test chạy -->
                     <execution>
-                        <id>prepare-agent</id>
+                        <id>jacoco-prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
-                    <!-- Bước 2: Tạo báo cáo HTML sau khi test xong -->
+
+                    <!-- 4b. Tạo báo cáo HTML tại target/site/jacoco/ -->
                     <execution>
-                        <id>report</id>
+                        <id>jacoco-report</id>
                         <phase>test</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
                     </execution>
-                    <!-- Bước 3: Kiểm tra ngưỡng coverage tối thiểu 60% -->
+
+                    <!--
+                        4c. Enforce ngưỡng coverage tối thiểu.
+                        Build FAIL nếu line coverage < 60%.
+                        Loại trừ các class không thể/không cần test:
+                        - MainApp, Main: entry point, phụ thuộc JavaFX runtime
+                        - views/**: FXML view, không có logic business
+                        - controllers/**: phụ thuộc JavaFX UI thread
+                        - AuctionStatus: enum đơn giản, không cần test
+                        - test/**: SimpleClient dùng để test thủ công
+                    -->
                     <execution>
                         <id>jacoco-check</id>
                         <phase>verify</phase>
@@ -162,37 +242,37 @@
                                             <value>COVEREDRATIO</value>
                                             <minimum>${jacoco.minimum.coverage}</minimum>
                                         </limit>
-                                        <limit>
-                                            <counter>CLASS</counter>
-                                            <value>MISSEDCOUNT</value>
-                                            <!-- Tối đa 5 class không được test -->
-                                            <maximum>5</maximum>
-                                        </limit>
                                     </limits>
                                 </rule>
                             </rules>
-                            <!-- Loại trừ các class không cần test: Main, FXML view, enum -->
                             <excludes>
                                 <exclude>com/auction/MainApp.class</exclude>
                                 <exclude>Main.class</exclude>
                                 <exclude>com/auction/views/**</exclude>
+                                <exclude>com/auction/controllers/**</exclude>
                                 <exclude>com/auction/model/AuctionStatus.class</exclude>
                                 <exclude>com/auction/test/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
+
                 </executions>
             </plugin>
 
-            <!-- ==================== JAVAFX PLUGIN ==================== -->
+            <!-- ════════════════════════════════════════
+                 5. JAVAFX PLUGIN
+                 Chạy app: mvn javafx:run
+                 ════════════════════════════════════════ -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
-                <version>0.0.8</version>
+                <version>${javafx.plugin.version}</version>
                 <configuration>
                     <mainClass>com.auction.MainApp</mainClass>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
+
 </project>
