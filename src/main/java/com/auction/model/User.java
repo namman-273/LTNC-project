@@ -1,5 +1,7 @@
 package com.auction.model;
 
+import com.auction.util.SecurityUtils;
+
 public abstract class User extends Entity implements Observer {
     protected String username;
     private String password; // Lưu trữ dưới dạng hash đơn giản
@@ -9,18 +11,12 @@ public abstract class User extends Entity implements Observer {
     public User(String username, String password, String role) {
         super(username);
         this.username = username;
-        this.password = hashPassword(password);  // ← thêm hash
+        this.password = SecurityUtils.hashPassword(password,username); // ← thêm hash
         this.role = role;
     }
 
     public String getUsername() {
         return username;
-    }
-
-    private String hashPassword(String password) {
-        if (password == null)
-            return "";
-        return String.valueOf(password.hashCode());
     }
 
     public String getPassword() {
@@ -32,7 +28,7 @@ public abstract class User extends Entity implements Observer {
     }
 
     public boolean checkPassword(String inputPassword) {
-        return this.password.equals(hashPassword(inputPassword));
+        return this.password.equals(SecurityUtils.hashPassword(inputPassword,username));
     }
 
     public void update(String message) {
