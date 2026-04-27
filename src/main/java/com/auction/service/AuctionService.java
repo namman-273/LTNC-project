@@ -5,6 +5,7 @@ import com.auction.model.AuctionStatus;
 import com.auction.model.BidTransaction;
 import com.auction.model.CreateItem;
 import com.auction.model.Item;
+import com.auction.model.Observer;
 import com.auction.model.User;
 import com.auction.util.DataManager;
 import com.auction.factory.ItemFactory;
@@ -48,7 +49,7 @@ public class AuctionService implements Serializable {
         String auctionId = "AUC_" + System.currentTimeMillis();
 
         // 2. Sử dụng Factory để tạo Item
-        ItemFactory factory =  CreateItem.getFactory(itemType);
+        ItemFactory factory = CreateItem.getFactory(itemType);
         Item newItem = factory.create(auctionId, itemName, startingPrice);
 
         // 3. Khởi tạo đối tượng Auction mới
@@ -68,12 +69,17 @@ public class AuctionService implements Serializable {
      * FIX LỖI: Singleton bị phá khi deserialize
      * Java sẽ gọi hàm này sau khi load file để đảm bảo chỉ có 1 instance duy nhất.
      */
+    // Sửa lại hàm readResolve để không làm mất dữ liệu đã load
     protected Object readResolve() {
-        // Sau khi deserialize, khởi tạo lại scheduler vì nó bị transient
-        if (this.scheduler == null) {
+        // Khi load từ file, gán instance hiện tại chính là đối tượng vừa load
+        instance = this;
+
+        // Khởi tạo lại scheduler vì nó là transient (không được lưu xuống file)
+        if (this.scheduler == null || this.scheduler.isShutdown()) {
             this.scheduler = Executors.newScheduledThreadPool(5);
         }
-        return getInstance();
+
+        return instance;
     }
 
     public void addAuction(Auction auction) {
@@ -146,6 +152,43 @@ public class AuctionService implements Serializable {
         if (loadedAuctions != null) {
             this.auctions.clear(); // Xóa sạch dữ liệu trắng hiện tại
             this.auctions.putAll(loadedAuctions); // Đổ toàn bộ dữ liệu từ file vào
+        }
+    }
+
+    public void shutdown() {
+        System.out.println("[SERVICE] Đang tiến hành dọn dẹp và lưu dữ liệu...");
+
+        // Dừng ScheduledExecutorService để không tạo thêm thread mới
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+            try {
+                // Đợi tối đa 5 giây cho các tác vụ đang chạy hoàn tất
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        for (Auction auction : auctions.values()) {
+            auction.shutdownNotifier();
+        }
+
+        // QUAN TRỌNG: Lưu toàn bộ dữ liệu hiện tại xuống file .dat
+        // Điều này đảm bảo giá thầu và trạng thái phiên đấu giá được bảo toàn
+        try {
+            DataManager.getInstance().saveData();
+            System.out.println("[SERVICE] Dữ liệu đã được lưu an toàn vào file .dat.");
+        } catch (Exception e) {
+            System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: " + e.getMessage());
+        }
+    }
+
+    // Trong AuctionService.java
+    public void removeObserverFromAll(Observer obs) {
+        for (Auction auction : auctions.values()) {
+            auction.removeObserver(obs);
         }
     }
 }

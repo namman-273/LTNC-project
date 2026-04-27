@@ -2,11 +2,10 @@ package com.auction.network;
 
 import com.auction.model.User;
 import com.auction.model.Auction;
-import com.auction.model.BidTransaction;
-import com.auction.model.Bidder;
 import com.auction.service.AuctionService;
 import com.auction.model.Observer;
 import com.auction.service.UserManager; // Import UserManager Singleton
+import com.auction.exception.AuthenticationException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,19 +15,18 @@ import java.net.Socket;
 
 public class ClientHandler implements Runnable, Observer {
     private Socket socket;
-    private AuctionService auctionService;
     private PrintWriter out;
     private BufferedReader in;
 
     private User currentUser;
 
-    public ClientHandler(final Socket socket, final AuctionService service) {
+    public ClientHandler(final Socket socket) {
         this.socket = socket;
-        this.auctionService = service;
     }
 
     @Override
     public final void run() {
+        AuctionService auctionService = AuctionService.getInstance();
         try {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
@@ -43,22 +41,22 @@ public class ClientHandler implements Runnable, Observer {
                         handleRegister(parts);
                         break;
                     case "LOGIN": // Sửa lại: LOGIN|username|password
-                        handleLogin(parts);
+                        handleLogin(parts, auctionService);
                         break;
                     case "LIST_AUCTIONS": // Lệnh mới: Xem danh sách phiên
-                        handleListAuctions();
+                        handleListAuctions(auctionService);
                         break;
                     case "BID":
-                        handleBid(parts);
+                        handleBid(parts, auctionService);
                         break;
                     case "CREATE_AUCTION": // Lệnh mới: Tạo phiên (Chỉ Seller/Admin)
-                        handleCreateAuction(parts);
+                        handleCreateAuction(parts, auctionService);
                         break;
                     case "END_AUCTION": // Lệnh mới: Đóng phiên (Chỉ Admin)
-                        handleEndAuction(parts);
+                        handleEndAuction(parts, auctionService);
                         break;
                     case "GET_HISTORY": // Lệnh: GET_HISTORY|auctionId
-                        handleGetHistory(parts);
+                        handleGetHistory(parts, auctionService);
                         break;
                     default:
                         out.println("ERROR|Lệnh không hợp lệ");
@@ -81,32 +79,34 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 
-    private void handleLogin(final String[] parts) {
+    private void handleLogin(final String[] parts, AuctionService auctionService) {
         // LOGIN|username|password
         String username = parts[1];
         String password = parts[2];
+        try {
+            // Kiểm tra đăng nhập thực sự từ UserManager
+            User user = UserManager.getInstance().login(username, password);
 
-        // Kiểm tra đăng nhập thực sự từ UserManager
-        User user = UserManager.getInstance().login(username, password);
-
-        if (user != null) {
-            this.currentUser = user;
-            // Tự động cho người dùng theo dõi các phiên đấu giá
-            for (Auction auction : auctionService.getAllAuctions()) {
-                auction.addObserver(this);
+            if (user != null) {
+                this.currentUser = user;
+                // Tự động cho người dùng theo dõi các phiên đấu giá
+                for (Auction auction : auctionService.getAllAuctions()) {
+                    auction.addObserver(this);
+                }
+                out.println("LOGIN_SUCCESS|" + user.getRole() + "|Chào " + user.getUsername());
             }
-            out.println("LOGIN_SUCCESS|" + user.getRole() + "|Chào " + user.getUsername());
-        } else {
-            out.println("LOGIN_FAILED|Sai tên đăng nhập hoặc mật khẩu.");
+        } catch (AuthenticationException e) {
+            // Phản hồi lỗi cụ thể về cho Client (Sai pass, không tồn tại...)
+            out.println("LOGIN_FAILED|" + e.getMessage());
         }
     }
 
-    private void handleListAuctions() {
+    private void handleListAuctions(AuctionService auctionService) {
         // Trả về danh sách thô (Trong thực tế nên dùng JSON hoặc toString chuẩn)
         out.println("LIST_AUCTIONS_SUCCESS|" + auctionService.getAllAuctions().toString());
     }
 
-    private void handleCreateAuction(final String[] parts) {
+    private void handleCreateAuction(final String[] parts, AuctionService auctionService) {
         // CREATE_AUCTION|type|name|startingPrice|durationMinutes
         if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
             out.println("ERROR|Quyền hạn không đủ.");
@@ -118,7 +118,6 @@ public class ClientHandler implements Runnable, Observer {
             double price = Double.parseDouble(parts[3]);
             long duration = Long.parseLong(parts[4]);
 
-            
             auctionService.createNewAuction(type, name, price, duration);
             out.println("SUCCESS|Sản phẩm " + name + " đã được đăng sàn.");
         } catch (Exception e) {
@@ -126,7 +125,7 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 
-    private void handleEndAuction(final String[] parts) {
+    private void handleEndAuction(final String[] parts, AuctionService auctionService) {
         // Kiểm tra quyền: Chỉ Admin mới được đóng phiên thủ công
         if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
             out.println("ERROR|Chỉ Admin mới có quyền đóng phiên.");
@@ -136,20 +135,31 @@ public class ClientHandler implements Runnable, Observer {
         out.println("END_SUCCESS|Đã đóng phiên " + parts[1]);
     }
 
-    private void handleBid(final String[] parts) {
+    private void handleBid(final String[] parts, AuctionService auctionService) {
         if (this.currentUser == null) {
             out.println("ERROR|Bạn phải đăng nhập trước khi đấu giá!");
             return;
         }
-        // Giữ nguyên logic bid cũ nhưng đổi currentBidder thành currentUser
+        if (parts.length < 3) {
+            out.println("ERROR|Sai định dạng. Cấu trúc: BID|auctionId|amount");
+            return;
+        }
+
         try {
             String auctionId = parts[1];
             double amount = Double.parseDouble(parts[2]);
+            if (amount <= 0) {
+                out.println("ERROR|Giá bid phải lớn hơn 0");
+                return;
+            }
             Auction auction = auctionService.getAuctionById(auctionId);
 
-            // Ép kiểu currentUser về Bidder để khớp với method cũ hoặc sửa method nhận User
-            auction.processNewBid((Bidder) currentUser, amount);
+            auction.processNewBid(currentUser, amount);
             out.println("BID_SUCCESS|" + auctionId + "|" + amount);
+        } catch (NumberFormatException e) {
+            out.println("ERROR|Giá tiền phải là con số hợp lệ");
+        } catch (NullPointerException e) {
+            out.println("ERROR|Không tìm thấy phiên đấu giá này");
         } catch (Exception e) {
             out.println("ERROR|" + e.getMessage());
         }
@@ -159,7 +169,7 @@ public class ClientHandler implements Runnable, Observer {
      * Xử lý yêu cầu lấy lịch sử giá của một phiên đấu giá.
      * Trả về danh sách BidTransaction dưới dạng JSON để FE vẽ biểu đồ.
      */
-    private void handleGetHistory(String[] parts) {
+    private void handleGetHistory(String[] parts, AuctionService auctionService) {
         // Kiểm tra tham số đầu vào (Lệnh|auctionId)
         if (parts.length < 2) {
             out.println("ERROR|Thiếu mã phiên đấu giá.");
@@ -180,7 +190,7 @@ public class ClientHandler implements Runnable, Observer {
                 com.google.gson.Gson gson = new com.google.gson.Gson();
                 String jsonHistory = gson.toJson(history);
 
-                //  Trả về cho Client với tiền tố HISTORY_RES
+                // Trả về cho Client với tiền tố HISTORY_RES
                 out.println("HISTORY_RES|" + auctionId + "|" + jsonHistory);
 
             } catch (Exception e) {
@@ -203,16 +213,17 @@ public class ClientHandler implements Runnable, Observer {
 
     private void cleanUp() {
         try {
-            if (auctionService != null) {
-                for (Auction a : auctionService.getAllAuctions()) {
-                    a.removeObserver(this);
-                }
-            }
-            if (socket != null) {
+            AuctionService.getInstance().removeObserverFromAll(this);
+
+            if (in != null)
+                in.close();
+            if (out != null)
+                out.close();
+            if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Lỗi khi đóng tài nguyên Client: " + e.getMessage());
         }
     }
 }

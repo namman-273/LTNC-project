@@ -3,8 +3,12 @@ package com.auction.model;
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
+import com.auction.service.UserManager;
+
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.PriorityQueue;
 
@@ -20,6 +24,7 @@ public class Auction extends Entity {
     // transient: Những trường này sẽ không được lưu xuống file .dat
     private transient ReentrantLock lock;
     private transient List<Observer> observers;
+    private final transient ExecutorService notifyExecutor = Executors.newFixedThreadPool(10);
 
     public Auction(String id, Item item, long durationMinutes) {
         super(id);
@@ -89,10 +94,26 @@ public class Auction extends Entity {
     }
 
     public void notifyObservers(String msg) {
-        if (observers == null)
+        if (observers == null || observers.isEmpty())
             return;
-        for (Observer obs : observers) {
-            obs.update(msg);
+
+        for (Observer observer : observers) {
+            // Gửi thông báo bất đồng bộ
+            notifyExecutor.submit(() -> {
+                try {
+                    observer.update(msg);
+                } catch (Exception e) {
+                    System.err.println("[OBSERVER ERROR] Không thể gửi thông báo cho 1 client: " + e.getMessage());
+                    this.removeObserver(observer);
+                }
+            });
+        }
+    }
+
+    // giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng
+    public void shutdownNotifier() {
+        if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
+            notifyExecutor.shutdown();
         }
     }
 
@@ -107,11 +128,7 @@ public class Auction extends Entity {
             validateBidAmount(bidAmount);
 
             updateAuctionState(bidder, bidAmount);
-            long timeLeft = this.endTime - System.currentTimeMillis();
-            if (timeLeft > 0 && timeLeft < 60000) { // < 60s
-                this.endTime += 120000; // Gia hạn thêm 120s
-                notifyObservers("SNIPING|" + getId() + "|" + this.endTime);
-            }
+            handleAntiSniping();
 
             // Kích hoạt hệ thống tự động trả giá
             executeAutoBids();
@@ -161,9 +178,13 @@ public class Auction extends Entity {
         try {
             if (this.autoBidQueue == null)
                 restoreTransients();
-            this.autoBidQueue.add(new AutoBid(bidderId, maxBid, increment));
 
-            // Thử chạy ngay xem có outbid được giá hiện tại không
+            // Xóa cấu hình cũ của người này nếu có (để cập nhật cấu hình mới)
+            autoBidQueue.removeIf(config -> config.getBidderId().equals(bidderId));
+
+            this.autoBidQueue.add(new AutoBid(bidderId, maxBid, increment));
+            System.out.println("SERVER: Đã nhận cấu hình Auto-bid cho " + bidderId);
+
             executeAutoBids();
         } finally {
             lock.unlock();
@@ -184,22 +205,25 @@ public class Auction extends Entity {
         // ĐIỀU KIỆN:
         // - Không tự outbid chính mình
         // - Giá mới (current + increment) không vượt quá giới hạn (maxBid)
+        if (top.getBidderId().equals(lastBidderId)) {
+            autoBidQueue.add(top);
+            return; // Dừng đệ quy ở đây, đợi người khác bid thì queue mới chạy tiếp
+        }
         double nextAutoPrice = currentPrice + top.getIncrement();
 
-        if (!top.getBidderId().equals(lastBidderId) && nextAutoPrice <= top.getMaxBid()) {
+        if (nextAutoPrice <= top.getMaxBid()) {
 
-            // Giả lập một User đại diện cho người đặt Auto-bid
-            User autoUser = new User(top.getBidderId(), "SYSTEM_AUTO", "CLIENT") {
-                // Để trống vì ta chỉ cần các hàm có sẵn của User/Entity
-            };
-
-            // Cập nhật trạng thái (Sử dụng hàm update để notify luôn)
-            updateAuctionState(autoUser, nextAutoPrice);
-            // Đưa cấu hình trở lại hàng đợi để tiếp tục cạnh tranh ở lượt sau
-            autoBidQueue.add(top);
-            // Đệ quy: Sau khi máy bid, kiểm tra xem có cấu hình Auto-bid nào khác cao hơn
-            // nữa không
-            executeAutoBids();
+            // Lấy User thật từ UserManager để tránh băm lại mật khẩu
+            User autoUser = UserManager.getInstance().findUserByUsername(lastBidderId);
+            if (autoUser != null) {
+                // Cập nhật trạng thái (Sử dụng hàm update để notify luôn)
+                updateAuctionState(autoUser, nextAutoPrice);
+                // Đưa cấu hình trở lại hàng đợi để tiếp tục cạnh tranh ở lượt sau
+                autoBidQueue.add(top);
+                // Đệ quy: Sau khi máy bid, kiểm tra xem có cấu hình Auto-bid nào khác cao hơn
+                // nữa không
+                executeAutoBids();
+            }
         } else {
             // TRƯỜNG HỢP DỪNG:
             // Nếu ngân sách không đủ (nextAutoPrice > maxBid), cấu hình sẽ KHÔNG được
@@ -208,10 +232,19 @@ public class Auction extends Entity {
         }
     }
 
+    private void handleAntiSniping() {
+        long timeLeft = this.endTime - System.currentTimeMillis();
+        if (timeLeft > 0 && timeLeft < 60000) { // < 1 phút
+            this.endTime += 120000; // Cộng thêm 2 phút
+            notifyObservers("SNIPING|" + getId() + "|" + this.endTime);
+        }
+    }
+
     private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
         in.defaultReadObject(); // Load các trường không phải transient
         restoreTransients(); // Tự động hồi sinh các trường bị null
     }
+<<<<<<< HEAD
     public String getId() {
         return super.getId();
     }
@@ -226,5 +259,22 @@ public class Auction extends Entity {
             + ",itemName=" + (item != null ? item.getItemName() : "---")
             + ",currentPrice=" + currentPrice
             + ",status=" + status;
+=======
+
+    public void closeAuction() {
+        this.status = AuctionStatus.FINISHED;
+        // Ngắt đội ngũ "shipper" thông báo của riêng phiên này
+        shutdownNotifier();
+
+        //  Xóa danh sách người theo dõi để giải phóng bộ nhớ
+        if (observers != null) {
+            observers.clear();
+        }
+
+        //  Xóa hàng chờ Auto-bid vì phiên đã đóng
+        if (autoBidQueue != null) {
+            autoBidQueue.clear();
+        }
+>>>>>>> 1b8ec1a2063ca94b87dcd3327d611cc2d693c482
     }
 }
