@@ -119,6 +119,7 @@ public class AuctionService implements Serializable {
                     : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
 
             a.notifyObservers(msg);
+            a.closeAuction();
             System.out.println("[System] " + msg);
         }
     }
@@ -172,7 +173,7 @@ public class AuctionService implements Serializable {
             }
         }
         for (Auction auction : auctions.values()) {
-            auction.shutdownNotifier();
+            auction.closeAuction();
         }
 
         // QUAN TRỌNG: Lưu toàn bộ dữ liệu hiện tại xuống file .dat
