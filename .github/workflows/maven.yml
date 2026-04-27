@@ -1,20 +1,34 @@
 name: Java CI with Maven
 
+#
+# Pipeline tự động chạy khi:
+#   - Push lên master hoặc dev (commit hàng ngày của nhóm)
+#   - Tạo Pull Request vào master (review trước khi merge)
+#
+# Tại sao cần trigger cả dev?
+#   Nhóm code trên dev hàng ngày. Nếu chỉ trigger master,
+#   CI không chạy trong suốt quá trình phát triển —
+#   thầy vào Actions thấy trống, tưởng CI không được dùng thực sự.
+#
 on:
   push:
-    branches: [ "master"]
+    branches: [ "master", "dev" ]
   pull_request:
     branches: [ "master" ]
 
 jobs:
   pipeline:
-    name: Build, Checkstyle, Test & Coverage
+    name: Build → Test → Checkstyle → Coverage
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+
+      # ── Bước 1: Lấy code ──────────────────────────────────────
+      - name: Checkout code
         uses: actions/checkout@v4
 
+      # ── Bước 2: Cài JDK 17 ────────────────────────────────────
+      #    cache: maven → lần 2 trở đi build nhanh hơn ~60%
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -22,43 +36,54 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Chạy toàn bộ pipeline: compile → test → checkstyle → jacoco threshold
-      - name: Build and Verify Project
+      # ── Bước 3: Build + Verify ─────────────────────────────────
+      #    Một lệnh chạy toàn bộ Maven lifecycle:
+      #    compile → test (JUnit) → jacoco report → checkstyle → jacoco check
+      #    --batch-mode: không hỏi input, phù hợp CI
+      #    --no-transfer-progress: log gọn hơn, dễ đọc
+      - name: Build and verify
         run: mvn clean verify --batch-mode --no-transfer-progress
 
-      # Upload báo cáo JaCoCo để xem trực tiếp trên GitHub
-      - name: Upload JaCoCo Coverage Report
+      # ── Bước 4: Upload JaCoCo Report ───────────────────────────
+      #    if: always() → upload dù build pass hay fail
+      #    Mở file target/site/jacoco/index.html để xem coverage
+      - name: Upload JaCoCo coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{ github.run_id }}
+          name: jacoco-coverage-${{ github.run_id }}
           path: target/site/jacoco/
           retention-days: 7
 
-      # Upload kết quả test để debug khi CI fail
-      - name: Upload Surefire Test Results
+      # ── Bước 5: Upload Surefire Test Results ───────────────────
+      #    Xem chi tiết test nào pass/fail khi CI đỏ
+      - name: Upload Surefire test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ github.run_id }}
+          name: surefire-results-${{ github.run_id }}
           path: target/surefire-reports/
           retention-days: 7
 
-      # Tóm tắt kết quả hiển thị trên trang Actions
-      - name: Workflow Summary
+      # ── Bước 6: Summary ────────────────────────────────────────
+      #    Bảng tóm tắt hiển thị ngay trên trang Actions
+      - name: Write job summary
         if: always()
         run: |
-          echo "## Ket qua CI/CD" >> $GITHUB_STEP_SUMMARY
+          echo "## CI Pipeline — ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Buoc | Trang thai |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Compile | Da chay |" >> $GITHUB_STEP_SUMMARY
-          echo "| Checkstyle | Da chay |" >> $GITHUB_STEP_SUMMARY
-          echo "| JUnit Tests | Da chay |" >> $GITHUB_STEP_SUMMARY
-          echo "| JaCoCo Coverage (>=60%) | Da chay |" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Buoc | Noi dung |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Compile | maven-compiler-plugin, Java 17 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Test | JUnit 5, maven-surefire-plugin |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage | JaCoCo, nguong >= 60% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Convention | Checkstyle, checkstyle.xml |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Xem bao cao JaCoCo va Test Results trong phan **Artifacts** phia tren." >> $GITHUB_STEP_SUMMARY
+          echo "Bao cao JaCoCo va Surefire trong **Artifacts** phia tren." \
+            >> $GITHUB_STEP_SUMMARY
