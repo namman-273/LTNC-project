@@ -64,8 +64,6 @@ public class AuctionServer {
     public static void main(String[] args) {
         // Khởi tạo các Manager
         UserManager.getInstance();
-        AuctionService auctionService = AuctionService.getInstance();
-
         AuctionServer server = new AuctionServer(9999);
         System.out.println("Khởi động server tại port 9999...");
         server.start();
