@@ -258,7 +258,7 @@ public class Auction extends Entity {
             + ",itemName=" + (item != null ? item.getItemName() : "---")
             + ",currentPrice=" + currentPrice
             + ",status=" + status;
-
+    }
     public void closeAuction() {
         this.status = AuctionStatus.FINISHED;
         // Ngắt đội ngũ "shipper" thông báo của riêng phiên này
