@@ -1,6 +1,9 @@
 package com.auction.model;
 
-public class AutoBid implements Comparable<AutoBid> {
+import java.io.Serializable;
+
+public class AutoBid implements Comparable<AutoBid>, Serializable {
+    private static final long serialVersionUID = 1L;
     private final String bidderId;
     private final double maxBid; // Giá tối đa người dùng sẵn sàng trả
     private final double increment; // Bước giá người dùng muốn hệ thống tự tăng
