@@ -1,19 +1,88 @@
 <?xml version="1.0"?>
-<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <module name="Checker">
-    <property name="severity" value="warning"/>
 
+    <property name="severity" value="warning"/>
+    <property name="fileExtensions" value="java"/>
+
+    <!-- Không dùng tab, phải dùng space -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
 
+    <!-- Mỗi file phải kết thúc bằng newline -->
+    <module name="NewlineAtEndOfFile"/>
+
+    <!--
+        LineLength phải ở đây — cấp Checker, KHÔNG được đặt trong TreeWalker.
+        Tối đa 150 ký tự/dòng, bỏ qua import và URL.
+    -->
+    <module name="LineLength">
+        <property name="max" value="150"/>
+        <property name="ignorePattern"
+            value="^package.*|^import.*|http://|https://|ftp://"/>
+    </module>
+
     <module name="TreeWalker">
-        <module name="JavadocMethod">
-            <property name="accessModifiers" value="private"/>
-            <property name="allowMissingParamTags" value="true"/>
-            <property name="allowMissingReturnTag" value="true"/>
+
+        <!-- ========== NAMING ========== -->
+        <module name="TypeName"/>
+        <module name="MemberName"/>
+        <module name="MethodName"/>
+        <module name="ParameterName"/>
+        <module name="LocalVariableName"/>
+        <module name="StaticVariableName"/>
+        <module name="ConstantName"/>
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
         </module>
+
+        <!-- ========== IMPORTS ========== -->
+        <module name="AvoidStarImport"/>
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+
+        <!-- ========== SIZE ========== -->
+        <module name="MethodLength">
+            <property name="max" value="80"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="8"/>
+        </module>
+
+        <!-- ========== WHITESPACE ========== -->
+        <module name="WhitespaceAfter"/>
+        <module name="NoWhitespaceBefore"/>
+        <module name="GenericWhitespace"/>
+
+        <!-- ========== BLOCKS ========== -->
+        <module name="NeedBraces"/>
+        <module name="LeftCurly"/>
+        <module name="RightCurly"/>
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+        <module name="EmptyCatchBlock">
+            <property name="exceptionVariableName" value="expected|ignore"/>
+        </module>
+
+        <!-- ========== CODING ========== -->
+        <module name="MultipleVariableDeclarations"/>
+        <module name="StringLiteralEquality"/>
+        <module name="MissingOverride"/>
+        <module name="FallThrough"/>
+        <module name="MagicNumber">
+            <property name="ignoreNumbers"
+                value="-1, 0, 1, 2, 3, 4, 5, 8, 10, 16,
+                       60, 100, 120, 1000, 9999, 8080, 17"/>
+            <property name="ignoreAnnotation" value="true"/>
+            <property name="ignoreHashCodeMethod" value="true"/>
+            <property name="ignoreFieldDeclaration" value="true"/>
+        </module>
+
+        <!-- ========== JAVADOC — tắt hoàn toàn ========== -->
         <module name="MissingJavadocMethod">
             <property name="scope" value="nothing"/>
         </module>
@@ -21,12 +90,5 @@
             <property name="scope" value="nothing"/>
         </module>
 
-        <module name="ConstantName"/>
-        <module name="LocalVariableName"/>
-        <module name="MethodName"/>
-        <module name="PackageName"/>
-        <module name="ParameterName"/>
-        <module name="TypeName"/>
-        <module name="MemberName"/>
     </module>
 </module>
