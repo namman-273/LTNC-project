@@ -35,7 +35,11 @@ public class Auction extends Entity {
 
     public Auction(String id, Item item, long durationMinutes) {
         super(id);
-        this.item = item;
+        if (item == null) {
+            throw new IllegalArgumentException("Item cannot be null. Mỗi phiên đấu giá phải có một món hàng!");
+        } else {
+            this.item = item;
+        }
         this.currentPrice = item.getStartingPrice();
         this.history = new ArrayList<>();
         this.status = AuctionStatus.OPEN;
@@ -109,21 +113,21 @@ public class Auction extends Entity {
             observers.remove(obs);
     }
 
-    public void notifyObservers(String msg) {
-        if (observers == null || observers.isEmpty())
-            return;
-
-        for (Observer observer : observers) {
-            // Gửi thông báo bất đồng bộ
-            notifyExecutor.submit(() -> {
-                try {
-                    observer.update(msg);
-                } catch (Exception e) {
-                    System.err.println("[OBSERVER ERROR] Không thể gửi thông báo cho 1 client: " + e.getMessage());
-                    this.removeObserver(observer);
+    public void notifyObservers(String message) {
+    for (Observer observer : observers) {
+        notifyExecutor.submit(() -> {
+            try {
+                // Kiểm tra null hoặc trạng thái kết nối nếu cần
+                if (observer != null) {
+                    observer.update(message);
                 }
-            });
-        }
+            } catch (Exception e) {
+                // Nếu update lỗi (do client mất kết nối đột ngột), tự động xóa observer
+                removeObserver(observer);
+                System.out.println("Removed faulty observer: " + e.getMessage());
+            }
+        });
+    }
     }
 
     // --- LOGIC PHIÊN ĐẤU GIÁ ---
@@ -260,7 +264,17 @@ public class Auction extends Entity {
         in.defaultReadObject(); // Load các trường không phải transient
         restoreTransients(); // Tự động hồi sinh các trường bị null
     }
+    public String getId() {
+        return super.getId();
+    }
 
+
+    @Override
+    public String toString() {
+        return "id=" + getId()
+            + ",itemName=" + (item != null ? item.getItemName() : "---")
+            + ",currentPrice=" + currentPrice
+            + ",status=" + status;}
     // giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng
     public void closeAuction() {
         this.status = AuctionStatus.FINISHED;
