@@ -55,4 +55,12 @@ public class ServerConnection {
             e.printStackTrace();
         }
     }
+    public String receive() {
+        try {
+            return in.readLine();
+        } catch (Exception e) {
+            System.err.println("Lỗi nhận: " + e.getMessage());
+            return null;
+        }
+    }
 }
