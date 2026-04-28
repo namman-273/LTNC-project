@@ -5,6 +5,7 @@ import com.auction.model.Auction;
 import com.auction.service.AuctionService;
 import com.auction.model.Observer;
 import com.auction.service.UserManager; // Import UserManager Singleton
+import com.google.gson.Gson;
 import com.auction.exception.AuthenticationException;
 
 import java.io.BufferedReader;
@@ -14,14 +15,34 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class ClientHandler implements Runnable, Observer {
+
+    private static final int REQ_REGISTER = 4; // REGISTER|user|pass|role
+    private static final int REQ_LOGIN = 3; // LOGIN|user|pass
+    private static final int REQ_BID = 3; // BID|auctionId|amount
+    private static final int REQ_CREATE = 5; // CREATE_AUCTION|type|name|price|min
+    private static final int REQ_END = 2; // END_AUCTION|auctionId
+    private static final int REQ_HISTORY = 2; // GET_HISTORY|auctionId
+
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
-
+    private final Gson gson = new Gson();
     private User currentUser;
 
     public ClientHandler(final Socket socket) {
         this.socket = socket;
+    }
+
+    /**
+     * Hàm Helper kiểm tra độ dài Payload để chống ArrayIndexOutOfBoundsException.
+     * 
+     */
+    private boolean validatePayload(String[] parts, int expectedLength) {
+        if (parts == null || parts.length < expectedLength) {
+            sendMessage("ERROR|Thiếu tham số yêu cầu. Cần ít nhất " + expectedLength + " phần.");
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -33,33 +54,41 @@ public class ClientHandler implements Runnable, Observer {
 
             String request;
             while ((request = in.readLine()) != null) {
-                String[] parts = request.split("\\|");
+                String[] parts = request.trim().split("\\|");
+                if (parts.length == 0)
+                    continue;
                 String cmd = parts[0];
 
                 switch (cmd) {
-                    case "REGISTER": // Lệnh mới: REGISTER|username|password|role
-                        handleRegister(parts);
+                    case Protocol.CMD_REGISTER:
+                        if (validatePayload(parts, REQ_REGISTER))
+                            handleRegister(parts);
                         break;
-                    case "LOGIN": // Sửa lại: LOGIN|username|password
-                        handleLogin(parts, auctionService);
+                    case Protocol.CMD_LOGIN:
+                        if (validatePayload(parts, REQ_LOGIN))
+                            handleLogin(parts, auctionService);
                         break;
-                    case "LIST_AUCTIONS": // Lệnh mới: Xem danh sách phiên
+                    case Protocol.CMD_LIST_AUCTIONS:
                         handleListAuctions(auctionService);
                         break;
-                    case "BID":
-                        handleBid(parts, auctionService);
+                    case Protocol.CMD_BID:
+                        if (validatePayload(parts, REQ_BID))
+                            handleBid(parts, auctionService);
                         break;
-                    case "CREATE_AUCTION": // Lệnh mới: Tạo phiên (Chỉ Seller/Admin)
-                        handleCreateAuction(parts, auctionService);
+                    case Protocol.CMD_CREATE_AUCTION:
+                        if (validatePayload(parts, REQ_CREATE))
+                            handleCreateAuction(parts, auctionService);
                         break;
-                    case "END_AUCTION": // Lệnh mới: Đóng phiên (Chỉ Admin)
-                        handleEndAuction(parts, auctionService);
+                    case Protocol.CMD_END_AUCTION:
+                        if (validatePayload(parts, REQ_END))
+                            handleEndAuction(parts, auctionService);
                         break;
-                    case "GET_HISTORY": // Lệnh: GET_HISTORY|auctionId
-                        handleGetHistory(parts, auctionService);
+                    case Protocol.CMD_GET_HISTORY:
+                        if (validatePayload(parts, REQ_HISTORY))
+                            handleGetHistory(parts, auctionService);
                         break;
                     default:
-                        out.println("ERROR|Lệnh không hợp lệ");
+                        sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lệnh không hợp lệ");
                 }
             }
         } catch (IOException e) {
@@ -73,43 +102,39 @@ public class ClientHandler implements Runnable, Observer {
         // REGISTER|username|password|role
         boolean success = UserManager.getInstance().register(parts[1], parts[2], parts[3]);
         if (success) {
-            out.println("REGISTER_SUCCESS|Đăng ký thành công.");
+            sendMessage(Protocol.RES_REGISTER_SUCCESS + Protocol.SEPARATOR + "Đăng ký thành công.");
         } else {
-            out.println("REGISTER_FAILED|Tên người dùng đã tồn tại.");
+            sendMessage(Protocol.RES_REGISTER_FAILED + Protocol.SEPARATOR + "Tên người dùng đã tồn tại.");
         }
     }
 
     private void handleLogin(final String[] parts, AuctionService auctionService) {
         // LOGIN|username|password
-        String username = parts[1];
-        String password = parts[2];
         try {
-            // Kiểm tra đăng nhập thực sự từ UserManager
-            User user = UserManager.getInstance().login(username, password);
-
+            User user = UserManager.getInstance().login(parts[1], parts[2]);
             if (user != null) {
                 this.currentUser = user;
-                // Tự động cho người dùng theo dõi các phiên đấu giá
                 for (Auction auction : auctionService.getAllAuctions()) {
                     auction.addObserver(this);
                 }
-                out.println("LOGIN_SUCCESS|" + user.getRole() + "|Chào " + user.getUsername());
+                sendMessage(Protocol.RES_LOGIN_SUCCESS + Protocol.SEPARATOR + user.getRole() + Protocol.SEPARATOR
+                        + "Chào " + user.getUsername());
             }
         } catch (AuthenticationException e) {
-            // Phản hồi lỗi cụ thể về cho Client (Sai pass, không tồn tại...)
-            out.println("LOGIN_FAILED|" + e.getMessage());
+            sendMessage(Protocol.RES_LOGIN_FAILED + Protocol.SEPARATOR + e.getMessage());
         }
     }
 
     private void handleListAuctions(AuctionService auctionService) {
         // Trả về danh sách thô (Trong thực tế nên dùng JSON hoặc toString chuẩn)
-        out.println("LIST_AUCTIONS_SUCCESS|" + auctionService.getAllAuctions().toString());
+        sendMessage(Protocol.RES_LIST_SUCCESS + Protocol.SEPARATOR + auctionService.getAllAuctions().toString());
+
     }
 
     private void handleCreateAuction(final String[] parts, AuctionService auctionService) {
         // CREATE_AUCTION|type|name|startingPrice|durationMinutes
         if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
-            out.println("ERROR|Quyền hạn không đủ.");
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Quyền hạn không đủ.");
             return;
         }
         try {
@@ -119,29 +144,25 @@ public class ClientHandler implements Runnable, Observer {
             long duration = Long.parseLong(parts[4]);
 
             auctionService.createNewAuction(type, name, price, duration);
-            out.println("SUCCESS|Sản phẩm " + name + " đã được đăng sàn.");
+            sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Sản phẩm " + name + " đã được đăng sàn.");
         } catch (Exception e) {
-            out.println("ERROR|Dữ liệu tạo sản phẩm không hợp lệ.");
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Dữ liệu tạo sản phẩm không hợp lệ.");
         }
     }
 
     private void handleEndAuction(final String[] parts, AuctionService auctionService) {
         // Kiểm tra quyền: Chỉ Admin mới được đóng phiên thủ công
         if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
-            out.println("ERROR|Chỉ Admin mới có quyền đóng phiên.");
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ Admin mới có quyền đóng phiên.");
             return;
         }
-        auctionService.endAuction(parts[1]); // parts[1] là auctionId
-        out.println("END_SUCCESS|Đã đóng phiên " + parts[1]);
+        auctionService.endAuction(parts[1]);
+        sendMessage(Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + "Đã đóng phiên " + parts[1]);
     }
 
     private void handleBid(final String[] parts, AuctionService auctionService) {
         if (this.currentUser == null) {
-            out.println("ERROR|Bạn phải đăng nhập trước khi đấu giá!");
-            return;
-        }
-        if (parts.length < 3) {
-            out.println("ERROR|Sai định dạng. Cấu trúc: BID|auctionId|amount");
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn phải đăng nhập trước khi đấu giá!");
             return;
         }
 
@@ -149,19 +170,28 @@ public class ClientHandler implements Runnable, Observer {
             String auctionId = parts[1];
             double amount = Double.parseDouble(parts[2]);
             if (amount <= 0) {
-                out.println("ERROR|Giá bid phải lớn hơn 0");
+                sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá bid phải lớn hơn 0");
                 return;
             }
+            if (Double.isNaN(amount) || Double.isInfinite(amount)) {
+                sendMessage(Protocol.ERROR + Protocol.SEPARATOR +"Giá tiền không hợp lệ (NaN/Infinite)");
+                return;
+            }
+
             Auction auction = auctionService.getAuctionById(auctionId);
+            if (auction == null) {
+                sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá này");
+                return;
+            }
 
             auction.processNewBid(currentUser, amount);
-            out.println("BID_SUCCESS|" + auctionId + "|" + amount);
-        } catch (NumberFormatException e) {
-            out.println("ERROR|Giá tiền phải là con số hợp lệ");
-        } catch (NullPointerException e) {
-            out.println("ERROR|Không tìm thấy phiên đấu giá này");
+            sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amount);
+        } catch (
+
+        NumberFormatException e) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền phải là con số hợp lệ");
         } catch (Exception e) {
-            out.println("ERROR|" + e.getMessage());
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + e.getMessage());
         }
     }
 
@@ -170,35 +200,21 @@ public class ClientHandler implements Runnable, Observer {
      * Trả về danh sách BidTransaction dưới dạng JSON để FE vẽ biểu đồ.
      */
     private void handleGetHistory(String[] parts, AuctionService auctionService) {
-        // Kiểm tra tham số đầu vào (Lệnh|auctionId)
-        if (parts.length < 2) {
-            out.println("ERROR|Thiếu mã phiên đấu giá.");
-            return;
-        }
 
         String auctionId = parts[1];
         Auction auction = auctionService.getAuctionById(auctionId);
 
-        // Kiểm tra phiên đấu giá có tồn tại không
         if (auction != null) {
             try {
-                // Lấy danh sách lịch sử (BidTransaction)
-                var history = auction.getBidHistory();
-
-                // Sử dụng Gson để chuyển đổi List sang JSON
-
-                com.google.gson.Gson gson = new com.google.gson.Gson();
-                String jsonHistory = gson.toJson(history);
-
-                // Trả về cho Client với tiền tố HISTORY_RES
-                out.println("HISTORY_RES|" + auctionId + "|" + jsonHistory);
-
+                String jsonHistory = gson.toJson(auction.getBidHistory());
+                sendMessage(Protocol.RES_HISTORY + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + jsonHistory);
             } catch (Exception e) {
-                out.println("ERROR|Lỗi xử lý dữ liệu lịch sử: " + e.getMessage());
+                sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lỗi xử lý dữ liệu lịch sử: " + e.getMessage());
             }
         } else {
-            out.println("ERROR|Không tìm thấy phiên đấu giá với ID: " + auctionId);
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá với ID: " + auctionId);
         }
+
     }
 
     public final void sendMessage(final String msg) {
@@ -227,3 +243,4 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 }
+// To-do:chỉnh sang Logger
