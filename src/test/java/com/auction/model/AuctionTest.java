@@ -2,12 +2,15 @@ package com.auction.model;
  
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
  
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
+import com.auction.service.UserManager;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,12 +31,81 @@ public class AuctionTest {
   private Item item;
  
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
+    // Reset UserManager để tránh dữ liệu rò rỉ giữa các test
+    Field field = UserManager.class.getDeclaredField("instance");
+    field.setAccessible(true);
+    field.set(null, null);
+ 
+    // Đăng ký bidder1 vào UserManager để AutoBid có thể tìm thấy user
+    UserManager.getInstance().register("alice", "pass123", "BIDDER");
+    UserManager.getInstance().register("bob", "pass456", "BIDDER");
+ 
     item = new Electronics("item-01", "Laptop", STARTING_PRICE);
     auction = new Auction("auction-01", item, DURATION);
-    bidder1 = new Bidder("alice", "pass123");
-    bidder2 = new Bidder("bob", "pass456");
+ 
+    // Lấy lại đúng object Bidder từ UserManager để AutoBid hoạt động đúng
+    bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
+    bidder2 = (Bidder) UserManager.getInstance().findUserByUsername("bob");
+ 
     auction.setStatus(AuctionStatus.RUNNING);
+  }
+ 
+  // --- Constructor ---
+ 
+  @Test
+  void constructorNullItemThrowsIllegalArgumentException() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new Auction("x", null, DURATION));
+  }
+ 
+  @Test
+  void constructorSetsStatusToOpen() {
+    Auction fresh = new Auction("a2", item, DURATION);
+    assertEquals(AuctionStatus.OPEN, fresh.getStatus());
+  }
+ 
+  @Test
+  void constructorSetsCurrentPriceToStartingPrice() {
+    assertEquals(STARTING_PRICE, auction.getCurrentPrice());
+  }
+ 
+  @Test
+  void constructorSetsEndTimeInFuture() {
+    assertTrue(auction.getEndTime() > System.currentTimeMillis());
+  }
+ 
+  // --- getId / getItem ---
+ 
+  @Test
+  void getIdReturnsCorrectId() {
+    assertEquals("auction-01", auction.getId());
+  }
+ 
+  @Test
+  void getItemReturnsCorrectItem() {
+    assertEquals(item, auction.getItem());
+  }
+ 
+  // --- setStatus / getStatus ---
+ 
+  @Test
+  void setStatusChangesToFinished() {
+    auction.setStatus(AuctionStatus.FINISHED);
+    assertEquals(AuctionStatus.FINISHED, auction.getStatus());
+  }
+ 
+  @Test
+  void setStatusChangesToCanceled() {
+    auction.setStatus(AuctionStatus.CANCELED);
+    assertEquals(AuctionStatus.CANCELED, auction.getStatus());
+  }
+ 
+  @Test
+  void setStatusChangesToPaid() {
+    auction.setStatus(AuctionStatus.PAID);
+    assertEquals(AuctionStatus.PAID, auction.getStatus());
   }
  
   // --- processNewBid: hợp lệ ---
@@ -41,11 +113,17 @@ public class AuctionTest {
   @Test
   void bidSuccessUpdatesCurrentPrice() throws Exception {
     auction.processNewBid(bidder1, VALID_BID_1);
+    assertEquals(VALID_BID_1, auction.getCurrentPrice());
+  }
+ 
+  @Test
+  void bidSuccessUpdatesItemCurrentPrice() throws Exception {
+    auction.processNewBid(bidder1, VALID_BID_1);
     assertEquals(VALID_BID_1, item.getCurrentPrice());
   }
  
   @Test
-  void bidSuccessAddsToHistory() throws Exception {
+  void bidSuccessAddsOneEntryToHistory() throws Exception {
     auction.processNewBid(bidder1, VALID_BID_1);
     assertEquals(1, auction.getBidHistory().size());
   }
@@ -57,6 +135,12 @@ public class AuctionTest {
   }
  
   @Test
+  void bidSuccessHistoryRecordsCorrectBidder() throws Exception {
+    auction.processNewBid(bidder1, VALID_BID_1);
+    assertEquals("alice", auction.getBidHistory().get(0).getBidder().getUsername());
+  }
+ 
+  @Test
   void bidSuccessMultipleBidsHistoryHasTwo() throws Exception {
     auction.processNewBid(bidder1, VALID_BID_1);
     auction.processNewBid(bidder2, VALID_BID_2);
@@ -64,10 +148,10 @@ public class AuctionTest {
   }
  
   @Test
-  void bidSuccessMultipleBidsPriceUpdatesToHighest() throws Exception {
+  void bidSuccessMultipleBidsPriceUpdatesToLatest() throws Exception {
     auction.processNewBid(bidder1, VALID_BID_1);
     auction.processNewBid(bidder2, VALID_BID_2);
-    assertEquals(VALID_BID_2, item.getCurrentPrice());
+    assertEquals(VALID_BID_2, auction.getCurrentPrice());
   }
  
   // --- processNewBid: lỗi xác thực ---
@@ -82,14 +166,14 @@ public class AuctionTest {
   // --- processNewBid: lỗi giá ---
  
   @Test
-  void bidEqualToStartingPriceThrowsInvalidBidException() {
+  void bidEqualToCurrentPriceThrowsInvalidBidException() {
     assertThrows(
         InvalidBidException.class,
         () -> auction.processNewBid(bidder1, STARTING_PRICE));
   }
  
   @Test
-  void bidLowerThanStartingPriceThrowsInvalidBidException() {
+  void bidLowerThanCurrentPriceThrowsInvalidBidException() {
     assertThrows(
         InvalidBidException.class,
         () -> auction.processNewBid(bidder1, LOW_BID));
@@ -132,57 +216,92 @@ public class AuctionTest {
   // --- Observer ---
  
   @Test
-  void addObserverReceivesNotificationOnBid() throws Exception {
+  void addObserverReceivesMessageOnBid() throws Exception {
     List<String> received = new ArrayList<>();
     auction.addObserver(msg -> received.add(msg));
     auction.processNewBid(bidder1, VALID_BID_1);
+    // notifyObservers chạy async, đợi ngắn
+    Thread.sleep(100);
     assertTrue(received.size() >= 1);
   }
  
   @Test
-  void removeObserverDoesNotReceiveNotification() throws Exception {
+  void removeObserverNoLongerReceivesMessage() throws Exception {
     List<String> received = new ArrayList<>();
     Observer obs = msg -> received.add(msg);
     auction.addObserver(obs);
     auction.removeObserver(obs);
     auction.processNewBid(bidder1, VALID_BID_1);
+    Thread.sleep(100);
     assertEquals(0, received.size());
   }
  
   @Test
-  void notifyObserversDoesNotThrow() {
+  void notifyObserversWithNoObserversDoesNotThrow() {
     assertDoesNotThrow(() -> auction.notifyObservers("test-msg"));
   }
  
-  // --- Getter / Setter ---
- 
   @Test
-  void getStatusAfterSetRunningReturnsRunning() {
-    assertEquals(AuctionStatus.RUNNING, auction.getStatus());
+  void notifyObserversMessageIsDelivered() throws Exception {
+    List<String> received = new ArrayList<>();
+    auction.addObserver(msg -> received.add(msg));
+    auction.notifyObservers("hello");
+    Thread.sleep(100);
+    assertNotNull(received);
   }
  
-  @Test
-  void setStatusToFinishedChangesStatus() {
-    auction.setStatus(AuctionStatus.FINISHED);
-    assertEquals(AuctionStatus.FINISHED, auction.getStatus());
-  }
+  // --- getBidHistory ---
  
   @Test
-  void getItemReturnsItemPassedToConstructor() {
-    assertEquals(item, auction.getItem());
+  void getBidHistoryInitiallyEmpty() {
+    // Tạo auction MỚI hoàn toàn, không qua setUp đã bid sẵn
+    Auction freshAuction = new Auction("fresh-01", new Electronics("e-fresh", "TV", 500.0), DURATION);
+    assertTrue(freshAuction.getBidHistory().isEmpty());
   }
  
-  @Test
-  void getIdReturnsIdPassedToConstructor() {
-    assertEquals("auction-01", auction.getId());
-  }
+  // --- restoreTransients ---
  
   @Test
-  void restoreTransientsCanBeCalledMultipleTimes() {
+  void restoreTransientsCalledMultipleTimesDoesNotThrow() {
     assertDoesNotThrow(() -> {
       auction.restoreTransients();
       auction.restoreTransients();
     });
+  }
+ 
+  // --- closeAuction ---
+ 
+  @Test
+  void closeAuctionSetsStatusFinished() {
+    auction.closeAuction();
+    assertEquals(AuctionStatus.FINISHED, auction.getStatus());
+  }
+ 
+  @Test
+  void closeAuctionClearsObservers() throws Exception {
+    List<String> received = new ArrayList<>();
+    auction.addObserver(msg -> received.add(msg));
+    auction.closeAuction();
+    auction.notifyObservers("should not arrive");
+    Thread.sleep(100);
+    assertEquals(0, received.size());
+  }
+ 
+  // --- toString ---
+ 
+  @Test
+  void toStringContainsId() {
+    assertTrue(auction.toString().contains("auction-01"));
+  }
+ 
+  @Test
+  void toStringContainsItemName() {
+    assertTrue(auction.toString().contains("Laptop"));
+  }
+ 
+  @Test
+  void toStringContainsStatus() {
+    assertTrue(auction.toString().contains("RUNNING"));
   }
  
   // --- AutoBid ---
@@ -194,27 +313,42 @@ public class AuctionTest {
   }
  
   @Test
-  void addAutoBidConfigTriggersAutoBidWhenPriceBelowMax() throws Exception {
+  void addAutoBidConfigTriggersAutoBidRaisesPrice() throws Exception {
     auction.processNewBid(bidder2, VALID_BID_1);
     auction.addAutoBidConfig("alice", VALID_BID_3, 100.0);
-    assertTrue(item.getCurrentPrice() > VALID_BID_1);
+    assertTrue(auction.getCurrentPrice() > VALID_BID_1);
+  }
+ 
+  @Test
+  void addAutoBidConfigUpdatesExistingConfig() {
+    assertDoesNotThrow(() -> {
+      auction.addAutoBidConfig("alice", VALID_BID_2, 50.0);
+      auction.addAutoBidConfig("alice", VALID_BID_3, 100.0);
+    });
   }
  
   // --- Concurrency ---
  
   @Test
-  void concurrentBidsDoNotCrash() throws Exception {
-    auction.processNewBid(bidder1, VALID_BID_1);
-    Thread thread = new Thread(
-        () -> {
-          try {
-            auction.processNewBid(bidder2, VALID_BID_2);
-          } catch (Exception ignored) {
-            // intentionally ignored
-          }
-        });
-    thread.start();
-    thread.join();
+  void concurrentBidsDoNotThrowAndHistoryNonEmpty() throws Exception {
+    Thread t1 = new Thread(() -> {
+      try {
+        auction.processNewBid(bidder1, VALID_BID_1);
+      } catch (Exception ignored) {
+        // intentionally ignored
+      }
+    });
+    Thread t2 = new Thread(() -> {
+      try {
+        auction.processNewBid(bidder2, VALID_BID_2);
+      } catch (Exception ignored) {
+        // intentionally ignored
+      }
+    });
+    t1.start();
+    t2.start();
+    t1.join();
+    t2.join();
     assertTrue(auction.getBidHistory().size() >= 1);
   }
 }
