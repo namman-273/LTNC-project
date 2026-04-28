@@ -2,37 +2,32 @@
 <!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
-<!--
-    Checkstyle configuration cho AuctionSystem BTL LTNC 2026
-    Mục tiêu: enforce đủ để thầy thấy có convention, nhưng không quá khắt khe
-    để build không bị fail vì những thứ không quan trọng.
-    Dựa trên Google Java Style Guide (đề yêu cầu).
--->
 <module name="Checker">
 
-    <!--
-        severity="warning" nghĩa là vi phạm chỉ in ra cảnh báo.
-        failsOnError=true trong pom.xml sẽ quyết định build có fail không.
-        Hai thứ này phối hợp với nhau để kiểm soát chặt/lỏng.
-    -->
     <property name="severity" value="warning"/>
     <property name="fileExtensions" value="java"/>
 
-    <!-- Toàn bộ file: không dùng tab, phải dùng space -->
+    <!-- Không dùng tab, phải dùng space -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
 
-    <!-- Mỗi file phải có newline ở cuối -->
+    <!-- Mỗi file phải kết thúc bằng newline -->
     <module name="NewlineAtEndOfFile"/>
+
+    <!--
+        LineLength phải ở đây — cấp Checker, KHÔNG được đặt trong TreeWalker.
+        Tối đa 150 ký tự/dòng, bỏ qua import và URL.
+    -->
+    <module name="LineLength">
+        <property name="max" value="150"/>
+        <property name="ignorePattern"
+            value="^package.*|^import.*|http://|https://|ftp://"/>
+    </module>
 
     <module name="TreeWalker">
 
-        <!-- ===================================================
-             NHÓM 1: ĐẶT TÊN (Naming Conventions)
-             Google Java Style: camelCase cho biến/method,
-             PascalCase cho class, UPPER_SNAKE cho hằng số.
-             =================================================== -->
+        <!-- ========== NAMING ========== -->
         <module name="TypeName"/>
         <module name="MemberName"/>
         <module name="MethodName"/>
@@ -41,55 +36,31 @@
         <module name="StaticVariableName"/>
         <module name="ConstantName"/>
         <module name="PackageName">
-            <!-- package phải viết thường hoàn toàn -->
             <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
         </module>
 
-        <!-- ===================================================
-             NHÓM 2: IMPORT
-             =================================================== -->
-        <!-- Cấm import * — phải import từng class cụ thể -->
+        <!-- ========== IMPORTS ========== -->
         <module name="AvoidStarImport"/>
-        <!-- Cấm import nhưng không dùng -->
         <module name="UnusedImports"/>
-        <!-- Cấm import trùng nhau -->
         <module name="RedundantImport"/>
 
-        <!-- ===================================================
-             NHÓM 3: ĐỘ DÀI — nới lỏng hợp lý
-             =================================================== -->
-        <!--
-            150 ký tự/dòng: thoải mái với màn hình rộng,
-            bỏ qua import và URL.
-        -->
-        <module name="LineLength">
-            <property name="max" value="180"/>
-            <property name="ignorePattern"
-                value="^package.*|^import.*|http://|https://|ftp://"/>
-        </module>
-        <!-- Method tối đa 80 dòng: khuyến khích tách method nhỏ -->
+        <!-- ========== SIZE ========== -->
         <module name="MethodLength">
             <property name="max" value="80"/>
         </module>
+        <module name="ParameterNumber">
+            <property name="max" value="8"/>
+        </module>
 
-        <!-- ===================================================
-             NHÓM 4: KHOẢNG TRẮNG (Whitespace)
-             =================================================== -->
+        <!-- ========== WHITESPACE ========== -->
         <module name="WhitespaceAfter"/>
         <module name="NoWhitespaceBefore"/>
         <module name="GenericWhitespace"/>
 
-        <!-- ===================================================
-             NHÓM 5: DẤU NGOẶC NHỌN (Braces)
-             Google Style: bắt buộc {} cho mọi block
-             =================================================== -->
+        <!-- ========== BLOCKS ========== -->
         <module name="NeedBraces"/>
         <module name="LeftCurly"/>
         <module name="RightCurly"/>
-        <!--
-            Block rỗng phải có comment giải thích tại sao để trống.
-            Ví dụ: catch (Exception e) { // intentionally ignored }
-        -->
         <module name="EmptyBlock">
             <property name="option" value="text"/>
         </module>
@@ -97,30 +68,11 @@
             <property name="exceptionVariableName" value="expected|ignore"/>
         </module>
 
-        <!-- ===================================================
-             NHÓM 6: CODING RULES
-             =================================================== -->
-        <!-- Không khai báo nhiều biến trên cùng 1 dòng -->
+        <!-- ========== CODING ========== -->
         <module name="MultipleVariableDeclarations"/>
-        <!-- Cấm so sánh String bằng == (phải dùng .equals()) -->
         <module name="StringLiteralEquality"/>
-        <!-- Override phải có annotation @Override -->
         <module name="MissingOverride"/>
-        <!--
-            Switch fall-through phải có comment rõ ràng.
-            Tránh lỗi quên break.
-        -->
         <module name="FallThrough"/>
-
-        <!--
-            Magic Number — nới lỏng tối đa.
-            ignoreFieldDeclaration: hằng số ở đầu class không bị flag.
-            Danh sách ignore bao gồm các số phổ biến trong project:
-            - Network: 9999, 8080
-            - Thời gian: 60, 120, 1000
-            - Java phổ biến: -1, 0, 1, 2, 3, 4, 5, 10, 100
-            - JDK version: 17
-        -->
         <module name="MagicNumber">
             <property name="ignoreNumbers"
                 value="-1, 0, 1, 2, 3, 4, 5, 8, 10, 16,
@@ -130,10 +82,7 @@
             <property name="ignoreFieldDeclaration" value="true"/>
         </module>
 
-        <!-- ===================================================
-             NHÓM 7: JAVADOC — tắt hoàn toàn
-             Không bắt buộc viết Javadoc, tránh mất điểm vì thiếu doc.
-             =================================================== -->
+        <!-- ========== JAVADOC — tắt hoàn toàn ========== -->
         <module name="MissingJavadocMethod">
             <property name="scope" value="nothing"/>
         </module>
