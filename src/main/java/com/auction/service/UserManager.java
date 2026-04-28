@@ -1,15 +1,13 @@
 package com.auction.service;
 
 import com.auction.model.*;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import com.auction.exception.AuthenticationException;
 import com.auction.util.DataManager;
-import com.auction.util.SecurityUtils;;
+import com.auction.util.SecurityUtils;
 
-public class UserManager implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class UserManager {
 
     // Singleton instance
     private static UserManager instance;
@@ -17,9 +15,11 @@ public class UserManager implements Serializable {
     // Yêu cầu: lưu Map<String, User>
     private Map<String, User> users = new HashMap<>();
 
+    private static final String DEFAULT_ADMIN_USER = "admin";
+    private static final String DEFAULT_ADMIN_PASS = "admin123";
+    private static final String ROLE_ADMIN = "ADMIN";
+
     private UserManager() {
-        // Tạo sẵn Admin mặc định để hệ thống luôn có người quản trị
-        register("admin", "admin123", "ADMIN");
     }
 
     public static UserManager getInstance() {
@@ -30,10 +30,19 @@ public class UserManager implements Serializable {
     }
 
     /**
-     * Fix lỗi Singleton bị phá vỡ khi Deserialize
+     * Lấy toàn bộ Map users để DataManager có thể lưu xuống file.
      */
-    protected Object readResolve() {
-        return getInstance();
+    public Map<String, User> getUsers() {
+        return users;
+    }
+
+    /**
+     * Cập nhật lại Map users sau khi DataManager load từ file lên.
+     */
+    public void setUsers(Map<String, User> users) {
+        if (users != null) {
+            this.users = users;
+        }
     }
 
     /**
@@ -42,23 +51,23 @@ public class UserManager implements Serializable {
     public boolean register(String username, String password, String role) {
         if (users.containsKey(username))
             return false;
-
+        String hashedPassword = SecurityUtils.hashPassword(password, username);
         User newUser;
         // Phân quyền tạo đúng Object tương ứng
         switch (role.toUpperCase()) {
             case "ADMIN":
-                newUser = new Admin(username, password);
+                newUser = new Admin(username, hashedPassword);
                 break;
             case "SELLER":
-                newUser = new Seller(username, password);
+                newUser = new Seller(username, hashedPassword);
                 break;
             default:
-                newUser = new Bidder(username, password);
+                newUser = new Bidder(username, hashedPassword);
                 break;
         }
 
         users.put(username, newUser);
-        //lưu file sau khi register thành công
+        // lưu file sau khi register thành công
         DataManager.getInstance().saveData();
         return true;
     }
@@ -73,7 +82,7 @@ public class UserManager implements Serializable {
         }
 
         // PHẢI dùng username của user đó làm Salt để băm lại mật khẩu nhập vào
-        String hashedInput = SecurityUtils.hashPassword(password,username);
+        String hashedInput = SecurityUtils.hashPassword(password, username);
 
         if (!user.getPassword().equals(hashedInput)) {
             throw new AuthenticationException("Sai mật khẩu");
@@ -87,8 +96,13 @@ public class UserManager implements Serializable {
         return users.get(username);
     }
 
-    // Cập nhật instance khi load từ DataManager
-    public static void setInstance(UserManager manager) {
-        instance = manager;
+    /**
+     * Khởi tạo admin mặc định nếu dữ liệu trống.
+     */
+    public void initDefaultData() {
+        if (users.isEmpty()) {
+            register(DEFAULT_ADMIN_USER, DEFAULT_ADMIN_PASS, ROLE_ADMIN);
+            System.out.println("Hệ thống trống. Đã tạo tài khoản admin mặc định.");
+        }
     }
 }

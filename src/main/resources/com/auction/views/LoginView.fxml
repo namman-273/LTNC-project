@@ -49,6 +49,9 @@
 
         <Label text="Quên mật khẩu?"
                style="-fx-text-fill: #888888; -fx-font-size: 12px;"/>
+        <Button text="Chưa có tài khoản? Đăng ký" onAction="#handleRegister"
+                prefWidth="300" prefHeight="35"
+                style="-fx-background-color: transparent; -fx-text-fill: #2196F3; -fx-font-size: 12px;"/>       
     </VBox>
 
 </HBox>
