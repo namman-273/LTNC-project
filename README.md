@@ -5,7 +5,7 @@
     Ví dụ: nhom5-ltnc/AuctionSystem
     Badge sẽ tự động hiển thị xanh/đỏ theo kết quả CI mới nhất.
 -->
-![CI](https://github.com/TEN_NGUOI_DUNG/TEN_REPO/actions/workflows/maven.yml/badge.svg)
+![CI](https://github.com/namman-273/LTNC-project/actions/workflows/maven.yml/badge.svg)
 ![Java](https://img.shields.io/badge/Java-17-007396?logo=java)
 ![JavaFX](https://img.shields.io/badge/JavaFX-17.0.8-orange)
 ![JUnit](https://img.shields.io/badge/JUnit-5-25A162?logo=junit5)

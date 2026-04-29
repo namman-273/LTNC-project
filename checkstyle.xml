@@ -2,32 +2,54 @@
 <!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
+<!--
+    Checkstyle — Google Java Style Guide
+    https://google.github.io/styleguide/javaguide.html
+
+    Phối hợp với pom.xml:
+      severity="error" + failOnViolation=true + violationSeverity=error
+      → build FAIL khi có bất kỳ vi phạm nào
+-->
 <module name="Checker">
 
-    <property name="severity" value="warning"/>
+    <property name="severity" value="error"/>
     <property name="fileExtensions" value="java"/>
 
-    <!-- Không dùng tab, phải dùng space -->
+    <!-- ============================================================
+         FILE-LEVEL — đặt ở Checker, KHÔNG được đặt trong TreeWalker
+         ============================================================ -->
+
+    <!-- Cấm tab, dùng space (Google Style §4.2) -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
 
-    <!-- Mỗi file phải kết thúc bằng newline -->
+    <!-- File phải có newline cuối (POSIX) -->
     <module name="NewlineAtEndOfFile"/>
 
-    <!--
-        LineLength phải ở đây — cấp Checker, KHÔNG được đặt trong TreeWalker.
-        Tối đa 150 ký tự/dòng, bỏ qua import và URL.
-    -->
+    <!-- Tối đa 150 ký tự/dòng (Google Style §4.4 cho phép 100, ta nới 150) -->
     <module name="LineLength">
         <property name="max" value="150"/>
         <property name="ignorePattern"
             value="^package.*|^import.*|http://|https://|ftp://"/>
     </module>
 
+    <!-- ============================================================
+         TOKEN-LEVEL — bắt buộc nằm trong TreeWalker
+         ============================================================ -->
     <module name="TreeWalker">
 
-        <!-- ========== NAMING ========== -->
+        <!-- ── 1. NAMING (Google Style §5) ─────────────────────────
+             TypeName      : PascalCase  → class, interface, enum, annotation
+             MemberName    : camelCase   → instance field
+             MethodName    : camelCase   → method
+             ParameterName : camelCase   → parameter
+             LocalVariable : camelCase   → local variable
+             StaticVariable: camelCase   → static non-constant field
+             ConstantName  : UPPER_SNAKE → static final field
+             PackageName   : lowercase   → com.auction.model
+             CatchParam    : e, ex, exception, err, hoặc camelCase
+             ────────────────────────────────────────────────────── -->
         <module name="TypeName"/>
         <module name="MemberName"/>
         <module name="MethodName"/>
@@ -38,13 +60,42 @@
         <module name="PackageName">
             <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
         </module>
+        <module name="CatchParameterName">
+            <property name="format"
+                value="^(e|ex|exception|err|[a-z][a-zA-Z0-9]+)$"/>
+        </module>
 
-        <!-- ========== IMPORTS ========== -->
+        <!-- ── 2. MODIFIER ORDER (Google Style §4.8.7) ──────────────
+             public/protected/private → abstract → static → final →
+             transient → volatile → synchronized → native → strictfp
+             Ví dụ SAI : static public final int X = 1;
+             Ví dụ ĐÚNG: public static final int X = 1;
+             ────────────────────────────────────────────────────── -->
+        <module name="ModifierOrder"/>
+        <!-- Cấm modifier thừa (public trong interface, final trong enum) -->
+        <module name="RedundantModifier"/>
+
+        <!-- ── 3. VISIBILITY / ENCAPSULATION ────────────────────────
+             Field không được public, trừ static final constant.
+             Bỏ qua @FXML field vì JavaFX yêu cầu.
+             ────────────────────────────────────────────────────── -->
+        <module name="VisibilityModifier">
+            <property name="allowPublicFinalFields" value="true"/>
+            <property name="ignoreAnnotationCanonicalNames"
+                value="javafx.fxml.FXML"/>
+        </module>
+
+        <!-- ── 4. IMPORTS ────────────────────────────────────────────
+             Cấm wildcard, unused, trùng, nội bộ JDK
+             ────────────────────────────────────────────────────── -->
         <module name="AvoidStarImport"/>
         <module name="UnusedImports"/>
         <module name="RedundantImport"/>
+        <module name="IllegalImport"/>
 
-        <!-- ========== SIZE ========== -->
+        <!-- ── 5. SIZE ───────────────────────────────────────────────
+             Method max 80 dòng, max 8 tham số
+             ────────────────────────────────────────────────────── -->
         <module name="MethodLength">
             <property name="max" value="80"/>
         </module>
@@ -52,37 +103,74 @@
             <property name="max" value="8"/>
         </module>
 
-        <!-- ========== WHITESPACE ========== -->
+        <!-- ── 6. WHITESPACE ─────────────────────────────────────────
+             WhitespaceAfter  : khoảng trắng SAU dấu phẩy, chấm phẩy
+                                Sai: foo(a,b)    Đúng: foo(a, b)
+
+             WhitespaceAround : khoảng trắng QUANH toán tử gán/so sánh
+                                Sai: int x=1+2   Đúng: int x = 1 + 2
+                                (Rule quan trọng — thiếu ở bản cũ)
+
+             NoWhitespaceBefore: cấm khoảng trắng TRƯỚC dấu phẩy/chấm phẩy
+                                Sai: foo(a , b)  Đúng: foo(a, b)
+
+             NoWhitespaceAfter : cấm khoảng trắng sau toán tử MỘT NGÔI
+                                ! ~ ++ -- . (unary operators)
+                                Sai: ! flag      Đúng: !flag
+                                (KHÔNG phải dấu phẩy — đó là WhitespaceAfter)
+             ────────────────────────────────────────────────────── -->
         <module name="WhitespaceAfter"/>
+        <module name="WhitespaceAround">
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods"      value="true"/>
+            <property name="allowEmptyTypes"        value="true"/>
+            <property name="allowEmptyLoops"        value="true"/>
+            <property name="allowEmptyCatches"      value="true"/>
+        </module>
         <module name="NoWhitespaceBefore"/>
+        <module name="NoWhitespaceAfter"/>
         <module name="GenericWhitespace"/>
 
-        <!-- ========== BLOCKS ========== -->
+        <!-- ── 7. BRACES (Google Style §4.1) ────────────────────────
+             Bắt buộc {} cho mọi if/else/for/while/do
+             ────────────────────────────────────────────────────── -->
         <module name="NeedBraces"/>
         <module name="LeftCurly"/>
         <module name="RightCurly"/>
+        <!-- Block rỗng phải có comment -->
         <module name="EmptyBlock">
             <property name="option" value="text"/>
         </module>
+        <!-- Catch rỗng phải có comment, trừ biến tên expected/ignore -->
         <module name="EmptyCatchBlock">
             <property name="exceptionVariableName" value="expected|ignore"/>
         </module>
 
-        <!-- ========== CODING ========== -->
+        <!-- ── 8. CODING RULES ───────────────────────────────────────  -->
+        <!-- Không khai báo nhiều biến 1 dòng: int a, b; → SAI -->
         <module name="MultipleVariableDeclarations"/>
+        <!-- Không dùng == so sánh String -->
         <module name="StringLiteralEquality"/>
+        <!-- @Override bắt buộc -->
         <module name="MissingOverride"/>
+        <!-- Switch fall-through phải có comment -->
         <module name="FallThrough"/>
+        <!-- 1 câu lệnh mỗi dòng -->
+        <module name="OneStatementPerLine"/>
+        <!-- 1 top-level class mỗi file -->
+        <module name="OneTopLevelClass"/>
+
+        <!-- Magic Number: nới lỏng hợp lý cho project networking + thời gian -->
         <module name="MagicNumber">
             <property name="ignoreNumbers"
                 value="-1, 0, 1, 2, 3, 4, 5, 8, 10, 16,
                        60, 100, 120, 1000, 9999, 8080, 17"/>
-            <property name="ignoreAnnotation" value="true"/>
-            <property name="ignoreHashCodeMethod" value="true"/>
-            <property name="ignoreFieldDeclaration" value="true"/>
+            <property name="ignoreAnnotation"        value="true"/>
+            <property name="ignoreHashCodeMethod"    value="true"/>
+            <property name="ignoreFieldDeclaration"  value="true"/>
         </module>
 
-        <!-- ========== JAVADOC — tắt hoàn toàn ========== -->
+        <!-- ── 9. JAVADOC — tắt hoàn toàn ───────────────────────── -->
         <module name="MissingJavadocMethod">
             <property name="scope" value="nothing"/>
         </module>
