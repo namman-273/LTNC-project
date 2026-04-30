@@ -107,7 +107,6 @@ public class AdminDashboardController implements Initializable {
             conn.connectDirect();
             conn.sendAndReceive("LOGIN|admin|admin123");
             String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
-            conn.disconnect();
             System.out.println("End auction: " + response);
 
             Platform.runLater(() -> {
