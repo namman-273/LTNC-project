@@ -21,7 +21,7 @@ public class Protocol {
     public static final String RES_END_SUCCESS = "END_SUCCESS";
     public static final String RES_SUCCESS = "SUCCESS";
     public static final String ERROR = "ERROR";
-    
+
     // Delimiter (Ký tự phân tách)
     public static final String SEPARATOR = " | ";
 }
