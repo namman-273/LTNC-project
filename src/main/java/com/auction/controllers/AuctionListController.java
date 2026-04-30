@@ -12,6 +12,7 @@ import javafx.stage.Stage;
 import com.auction.views.LoginView;
 import com.auction.util.ServerConnection;
 import com.auction.views.BidView;
+import com.auction.views.CreateAuctionView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -137,5 +138,11 @@ public class AuctionListController implements Initializable {
         public String getItemName() { return itemName; }
         public String getCurrentPrice() { return currentPrice; }
         public String getStatus() { return status; }
+    }
+    @FXML
+    private void handleCreateAuction() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        CreateAuctionView createView = new CreateAuctionView(stage, username);
+        createView.show();
     }
 }

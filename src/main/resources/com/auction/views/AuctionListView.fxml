@@ -8,6 +8,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.geometry.Insets?>
 
+
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.AuctionListController"
       prefWidth="700" prefHeight="500" spacing="15"
@@ -40,6 +41,9 @@
 
     <!-- NÚT BÊN DƯỚI -->
     <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="➕ Tạo phiên" onAction="#handleCreateAuction"
+                prefHeight="35" prefWidth="130"
+                style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-background-radius: 5;"/>
         <Button text="🔄 Làm mới" onAction="#handleRefresh"
                 prefHeight="35" prefWidth="120"
                 style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-background-radius: 5;"/>
