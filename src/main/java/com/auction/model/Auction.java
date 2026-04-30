@@ -264,10 +264,8 @@ public class Auction extends Entity {
         return super.getId();
     }
 
-<<<<<<< HEAD
-    public double getCurrentPrice() {
-        return currentPrice;
-    }
+
+
 
     @Override
     public String toString() {
@@ -275,9 +273,7 @@ public class Auction extends Entity {
             + ",itemName=" + (item != null ? item.getItemName() : "---")
             + ",currentPrice=" + currentPrice
             + ",status=" + status;}
-=======
-    // giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng
->>>>>>> 8cb0e0420272348ef8f8db187427647fb497fa05
+
     public void closeAuction() {
         this.status = AuctionStatus.FINISHED;
 
