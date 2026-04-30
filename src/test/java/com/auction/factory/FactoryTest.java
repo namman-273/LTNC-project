@@ -2,6 +2,7 @@ package com.auction.factory;
  
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
  
 import com.auction.model.Art;
 import com.auction.model.CreateItem;
@@ -14,106 +15,120 @@ public class FactoryTest {
  
   private static final double PRICE = 500.0;
  
-  // ----------------------------------------------------------------
-  // CreateItem — getFactory (selector đúng loại)
-  // ----------------------------------------------------------------
+  // --- CreateItem.getFactory ---
  
   @Test
-  void testGetFactory_art_returnsArtFactory() {
+  void getFactoryArtReturnsArtFactory() {
     assertInstanceOf(ArtFactory.class, CreateItem.getFactory("ART"));
   }
  
   @Test
-  void testGetFactory_electronics_returnsElectronicsFactory() {
+  void getFactoryElectronicsReturnsElectronicsFactory() {
     assertInstanceOf(ElectronicsFactory.class, CreateItem.getFactory("ELECTRONICS"));
   }
  
   @Test
-  void testGetFactory_vehicle_returnsVehicleFactory() {
+  void getFactoryVehicleReturnsVehicleFactory() {
     assertInstanceOf(VehicleFactory.class, CreateItem.getFactory("VEHICLE"));
   }
  
   @Test
-  void testGetFactory_caseInsensitiveArt_returnsArtFactory() {
+  void getFactoryArtLowercaseReturnsArtFactory() {
     assertInstanceOf(ArtFactory.class, CreateItem.getFactory("art"));
   }
  
   @Test
-  void testGetFactory_caseInsensitiveElectronics_returnsElectronicsFactory() {
+  void getFactoryElectronicsLowercaseReturnsElectronicsFactory() {
     assertInstanceOf(ElectronicsFactory.class, CreateItem.getFactory("electronics"));
   }
  
   @Test
-  void testGetFactory_unknownType_returnsVehicleFactoryAsDefault() {
+  void getFactoryVehicleLowercaseReturnsVehicleFactory() {
+    assertInstanceOf(VehicleFactory.class, CreateItem.getFactory("vehicle"));
+  }
+ 
+  @Test
+  void getFactoryUnknownTypeReturnsVehicleFactoryAsDefault() {
     assertInstanceOf(VehicleFactory.class, CreateItem.getFactory("UNKNOWN"));
   }
  
-  // ----------------------------------------------------------------
-  // ArtFactory — create
-  // ----------------------------------------------------------------
+  // --- ArtFactory ---
  
   @Test
-  void testArtFactory_create_returnsArtInstance() {
+  void artFactoryCreateReturnsArtInstance() {
     assertInstanceOf(Art.class, new ArtFactory().create("a1", "Mona Lisa", PRICE));
   }
  
   @Test
-  void testArtFactory_create_hasCorrectId() {
+  void artFactoryCreateHasCorrectId() {
     Item item = new ArtFactory().create("a1", "Mona Lisa", PRICE);
     assertEquals("a1", item.getId());
   }
  
   @Test
-  void testArtFactory_create_hasCorrectName() {
+  void artFactoryCreateHasCorrectName() {
     Item item = new ArtFactory().create("a1", "Mona Lisa", PRICE);
     assertEquals("Mona Lisa", item.getItemName());
   }
  
   @Test
-  void testArtFactory_create_hasCorrectStartingPrice() {
+  void artFactoryCreateHasCorrectStartingPrice() {
     Item item = new ArtFactory().create("a1", "Mona Lisa", PRICE);
     assertEquals(PRICE, item.getStartingPrice());
   }
  
-  // ----------------------------------------------------------------
-  // ElectronicsFactory — create
-  // ----------------------------------------------------------------
+  @Test
+  void artFactoryCreateIsNotNull() {
+    assertNotNull(new ArtFactory().create("a1", "Mona Lisa", PRICE));
+  }
+ 
+  // --- ElectronicsFactory ---
  
   @Test
-  void testElectronicsFactory_create_returnsElectronicsInstance() {
+  void electronicsFactoryCreateReturnsElectronicsInstance() {
     assertInstanceOf(Electronics.class, new ElectronicsFactory().create("e1", "Laptop", PRICE));
   }
  
   @Test
-  void testElectronicsFactory_create_hasCorrectId() {
+  void electronicsFactoryCreateHasCorrectId() {
     Item item = new ElectronicsFactory().create("e1", "Laptop", PRICE);
     assertEquals("e1", item.getId());
   }
  
   @Test
-  void testElectronicsFactory_create_hasCorrectName() {
+  void electronicsFactoryCreateHasCorrectName() {
     Item item = new ElectronicsFactory().create("e1", "Laptop", PRICE);
     assertEquals("Laptop", item.getItemName());
   }
  
-  // ----------------------------------------------------------------
-  // VehicleFactory — create
-  // ----------------------------------------------------------------
+  @Test
+  void electronicsFactoryCreateHasCorrectPrice() {
+    Item item = new ElectronicsFactory().create("e1", "Laptop", PRICE);
+    assertEquals(PRICE, item.getStartingPrice());
+  }
+ 
+  // --- VehicleFactory ---
  
   @Test
-  void testVehicleFactory_create_returnsVehicleInstance() {
+  void vehicleFactoryCreateReturnsVehicleInstance() {
     assertInstanceOf(Vehicle.class, new VehicleFactory().create("v1", "Honda", PRICE));
   }
  
   @Test
-  void testVehicleFactory_create_hasCorrectId() {
+  void vehicleFactoryCreateHasCorrectId() {
     Item item = new VehicleFactory().create("v1", "Honda", PRICE);
     assertEquals("v1", item.getId());
   }
  
   @Test
-  void testVehicleFactory_create_hasCorrectName() {
+  void vehicleFactoryCreateHasCorrectName() {
     Item item = new VehicleFactory().create("v1", "Honda", PRICE);
     assertEquals("Honda", item.getItemName());
+  }
+ 
+  @Test
+  void vehicleFactoryCreateHasCorrectPrice() {
+    Item item = new VehicleFactory().create("v1", "Honda", PRICE);
+    assertEquals(PRICE, item.getStartingPrice());
   }
 }
