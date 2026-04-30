@@ -62,7 +62,12 @@ public class AuctionListController implements Initializable {
                         String itemName = extractField(a, "itemName=");
                         String price = extractField(a, "currentPrice=");
                         String status = extractField(a, "status=");
-                        data.add(new AuctionRow(id, itemName, price, status));
+                        try {
+                            String formattedPrice = String.format("%,.0f VND", Double.parseDouble(price));
+                            data.add(new AuctionRow(id, itemName, formattedPrice, status));
+                        } catch (NumberFormatException e) {
+                            data.add(new AuctionRow(id, itemName, price, status));
+                        }
                     }
                 }
             }

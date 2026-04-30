@@ -21,34 +21,45 @@ public class LoginController {
         String password = passwordField.getText().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
-            errorLabel.setText("Vui lòng nhập đầy đủ thông tin!");
+            showError("Vui lòng nhập đầy đủ thông tin!");
             return;
         }
 
-        
+        // Reset connection mỗi lần login
+        ServerConnection.getInstance().disconnect();
         ServerConnection conn = ServerConnection.getInstance();
+
         if (!conn.connect()) {
-            errorLabel.setText("Không thể kết nối server!");
+            showError("Không thể kết nối server! Vui lòng thử lại.");
             return;
         }
 
-        
         String response = conn.sendAndReceive("LOGIN|" + username + "|" + password);
         System.out.println("Server trả về: " + response);
 
-        if (response != null && response.startsWith("LOGIN_SUCCESS")) {
-            
+        if (response == null) {
+            showError("Mất kết nối server!");
+            return;
+        }
+
+        if (response.startsWith("LOGIN_SUCCESS")) {
             Stage stage = (Stage) usernameField.getScene().getWindow();
             AuctionListView listView = new AuctionListView(stage, username);
             listView.show();
         } else {
-            errorLabel.setText("Sai tên đăng nhập hoặc mật khẩu!");
+            showError("Sai tên đăng nhập hoặc mật khẩu!");
         }
     }
+
     @FXML
     private void handleRegister() {
         Stage stage = (Stage) usernameField.getScene().getWindow();
         RegisterView registerView = new RegisterView(stage);
         registerView.show();
+    }
+
+    private void showError(String msg) {
+        errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        errorLabel.setText(msg);
     }
 }

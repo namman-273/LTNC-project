@@ -35,7 +35,12 @@ public class BidController implements Initializable {
         this.username = username;
         auctionTitleLabel.setText("Phiên: " + auctionId);
         itemNameLabel.setText("Tên: " + itemName);
-        currentPriceLabel.setText("Giá hiện tại: " + currentPrice);
+        try {
+            double price = Double.parseDouble(currentPrice.replace(",", "").replace(" VND", ""));
+            currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", price));
+        } catch (NumberFormatException e) {
+            currentPriceLabel.setText("Giá hiện tại: " + currentPrice);
+        }
         statusLabel.setText("Trạng thái: " + status);
         bidHistoryList.setItems(historyItems);
 
@@ -64,7 +69,7 @@ public class BidController implements Initializable {
                             String newPrice = parts[2];
                             String bidder = parts[3];
                             Platform.runLater(() -> {
-                                currentPriceLabel.setText("Giá hiện tại: " + newPrice);
+                                currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
                                 historyItems.add(0, bidder + " đặt: " + newPrice);
                             });
                         }
@@ -107,7 +112,7 @@ public class BidController implements Initializable {
             System.out.println("BID response: " + response);
 
             Platform.runLater(() -> {
-                if (response != null && response.startsWith("BID_SUCCESS")) {
+                if (response != null && (response.startsWith("BID_SUCCESS") || response.startsWith("UPDATE"))) {
                     showSuccess("Đặt giá thành công!");
                     bidAmountField.clear();
                 } else {

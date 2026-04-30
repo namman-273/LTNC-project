@@ -27,6 +27,10 @@ public class ServerConnection {
 
     public boolean connect() {
         try {
+            // Nếu đã kết nối rồi thì không kết nối lại
+            if (socket != null && !socket.isClosed() && socket.isConnected()) {
+                return true;
+            }
             socket = new Socket(HOST, PORT);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -34,33 +38,47 @@ public class ServerConnection {
             return true;
         } catch (Exception e) {
             System.err.println("Không thể kết nối server: " + e.getMessage());
+            socket = null;
             return false;
         }
     }
 
     public String sendAndReceive(String message) {
         try {
+            if (!isConnected()) {
+                return "ERROR|Mất kết nối server!";
+            }
             out.println(message);
             return in.readLine();
         } catch (Exception e) {
             System.err.println("Lỗi gửi/nhận: " + e.getMessage());
+            socket = null;
+            return "ERROR|Mất kết nối server!";
+        }
+    }
+
+    public String receive() {
+        try {
+            if (!isConnected()) return null;
+            return in.readLine();
+        } catch (Exception e) {
+            System.err.println("Lỗi nhận: " + e.getMessage());
+            socket = null;
             return null;
         }
+    }
+
+    public boolean isConnected() {
+        return socket != null && !socket.isClosed() && socket.isConnected();
     }
 
     public void disconnect() {
         try {
             if (socket != null) socket.close();
+            socket = null;
+            instance = null;
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-    public String receive() {
-        try {
-            return in.readLine();
-        } catch (Exception e) {
-            System.err.println("Lỗi nhận: " + e.getMessage());
-            return null;
         }
     }
 }
