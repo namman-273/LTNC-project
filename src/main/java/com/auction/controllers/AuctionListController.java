@@ -13,6 +13,7 @@ import com.auction.views.LoginView;
 import com.auction.util.ServerConnection;
 import com.auction.views.BidView;
 import com.auction.views.CreateAuctionView;
+import com.auction.views.AdminDashboardView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -146,5 +147,11 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         CreateAuctionView createView = new CreateAuctionView(stage, username);
         createView.show();
+    }
+    @FXML
+    private void handleAdminDashboard() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        AdminDashboardView adminView = new AdminDashboardView(stage, username);
+        adminView.show();
     }
 }

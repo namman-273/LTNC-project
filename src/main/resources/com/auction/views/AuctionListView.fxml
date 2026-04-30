@@ -50,6 +50,9 @@
         <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
                 prefHeight="35" prefWidth="140"
                 style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 5;"/>
+        <Button text="⚙️ Admin" onAction="#handleAdminDashboard"
+                prefHeight="35" prefWidth="120"
+                style="-fx-background-color: #e53935; -fx-text-fill: white; -fx-background-radius: 5;"/>
     </HBox>
 
 </VBox>
