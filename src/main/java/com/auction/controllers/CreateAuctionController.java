@@ -54,10 +54,18 @@ public class CreateAuctionController implements Initializable {
         }
 
         new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
+            ServerConnection conn = new ServerConnection("localhost", 9999);
+            if (!conn.connectDirect()) {
+                javafx.application.Platform.runLater(() -> showError("Không thể kết nối server!"));
+                return;
+            }
+// Login trước khi tạo phiên
+            conn.sendAndReceive("LOGIN|admin|admin123");
             String response = conn.sendAndReceive(
                     "CREATE_AUCTION|" + type + "|" + name + "|" + price + "|" + duration
             );
+
+
             System.out.println("Create auction response: " + response);
 
             javafx.application.Platform.runLater(() -> {

@@ -9,6 +9,8 @@ public class ServerConnection {
 
     private static final String HOST = "localhost";
     private static final int PORT = 9999;
+    private String host;
+    private int port;
 
     private Socket socket;
     private PrintWriter out;
@@ -79,6 +81,22 @@ public class ServerConnection {
             instance = null;
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    public ServerConnection(String host, int port) {
+        this.host = host;
+        this.port = port;
+    }
+    public boolean connectDirect() {
+        try {
+            socket = new Socket(this.host, this.port);
+            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            System.out.println("Kết nối trực tiếp thành công!");
+            return true;
+        } catch (Exception e) {
+            System.err.println("Không thể kết nối: " + e.getMessage());
+            return false;
         }
     }
 }
