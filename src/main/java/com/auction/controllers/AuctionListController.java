@@ -46,29 +46,26 @@ public class AuctionListController implements Initializable {
         try {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("LIST_AUCTIONS");
-            System.out.println("Server tra ve: " + response);
-
+            System.out.println("RAW: [" + response + "]");
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
-            if (response != null && response.startsWith("LIST_AUCTIONS_SUCCESS|")) {
-                String content = response.substring("LIST_AUCTIONS_SUCCESS|".length());
-                content = content.replaceAll("^\\[|\\]$", "").trim();
+            if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
+                String content = response.substring(response.indexOf("[") + 1, response.lastIndexOf("]"));
 
                 if (!content.isEmpty()) {
-                    String[] auctions = content.split("(?=id=)");
+                    String[] auctions = content.split(",\\s*(?=id=)");
                     for (String a : auctions) {
-                        a = a.replaceAll(",\\s*$", "").trim();
-                        if (a.isEmpty()) continue;
+                        a = a.trim();
+                        if (a.isEmpty() || !a.contains("id=")) continue;
                         String id = extractField(a, "id=");
                         String itemName = extractField(a, "itemName=");
                         String price = extractField(a, "currentPrice=");
                         String status = extractField(a, "status=");
                         try {
-                            String formattedPrice = String.format("%,.0f VND", Double.parseDouble(price));
-                            data.add(new AuctionRow(id, itemName, formattedPrice, status));
-                        } catch (NumberFormatException e) {
-                            data.add(new AuctionRow(id, itemName, price, status));
-                        }
+                            double p = Double.parseDouble(price);
+                            price = String.format("%,.0f VND", p);
+                        } catch (NumberFormatException ignored) {}
+                        data.add(new AuctionRow(id, itemName, price, status));
                     }
                 }
             }
@@ -76,7 +73,6 @@ public class AuctionListController implements Initializable {
             if (data.isEmpty()) {
                 data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
             }
-
             auctionTable.setItems(data);
 
         } catch (Exception e) {
@@ -88,8 +84,14 @@ public class AuctionListController implements Initializable {
         int start = text.indexOf(key);
         if (start == -1) return "---";
         start += key.length();
-        int end = text.indexOf(",", start);
-        if (end == -1) end = text.length();
+        int end = text.length();
+        String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
+        for (String nextKey : nextKeys) {
+            int pos = text.indexOf("," + nextKey, start);
+            if (pos != -1 && pos < end) {
+                end = pos;
+            }
+        }
         return text.substring(start, end).trim();
     }
 
