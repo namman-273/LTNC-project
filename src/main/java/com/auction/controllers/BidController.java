@@ -44,6 +44,8 @@ public class BidController implements Initializable {
         statusLabel.setText("Trạng thái: " + status);
         bidHistoryList.setItems(historyItems);
 
+        // Load lịch sử đặt giá
+        loadHistory();
         // Bắt đầu lắng nghe update từ server
         startListening();
     }
@@ -138,5 +140,41 @@ public class BidController implements Initializable {
     private void showSuccess(String msg) {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
         messageLabel.setText(msg);
+    }
+    private void loadHistory() {
+        new Thread(() -> {
+            try {
+                ServerConnection conn = new ServerConnection("localhost", 9999);
+                conn.connectDirect();
+                conn.sendAndReceive("LOGIN|" + username + "|dummy");
+                String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
+                conn.disconnect();
+                System.out.println("History: " + response);
+
+                if (response != null && response.startsWith("HISTORY_RES")) {
+                    String[] parts = response.split("\\|", 3);
+                    if (parts.length >= 3) {
+                        String json = parts[2];
+                        // Parse JSON đơn giản
+                        String[] entries = json.replace("[", "").replace("]", "").split("\\},\\{");
+                        javafx.application.Platform.runLater(() -> {
+                            for (String entry : entries) {
+                                if (entry.contains("amount")) {
+                                    String amount = entry.replaceAll(".*\"amount\":(\\d+\\.?\\d*).*", "$1");
+                                    String bidder = entry.replaceAll(".*\"username\":\"([^\"]+)\".*", "$1");
+                                    try {
+                                        historyItems.add(bidder + " đặt: " + String.format("%,.0f VND", Double.parseDouble(amount)));
+                                    } catch (Exception e) {
+                                        historyItems.add(entry);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi load history: " + e.getMessage());
+            }
+        }).start();
     }
 }
