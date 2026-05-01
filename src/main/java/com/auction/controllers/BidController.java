@@ -126,10 +126,15 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleBack() {
-        if (listenerThread != null) listenerThread.interrupt();
-        Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        AuctionListView listView = new AuctionListView(stage, username);
-        listView.show();
+        if (listenerThread != null) {
+            listenerThread.interrupt();
+            listenerThread = null;
+        }
+        javafx.application.Platform.runLater(() -> {
+            Stage stage = (Stage) bidAmountField.getScene().getWindow();
+            AuctionListView listView = new AuctionListView(stage, username);
+            listView.show();
+        });
     }
 
     private void showError(String msg) {
@@ -148,14 +153,12 @@ public class BidController implements Initializable {
                 conn.connectDirect();
                 conn.sendAndReceive("LOGIN|" + username + "|dummy");
                 String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
-                conn.disconnect();
                 System.out.println("History: " + response);
 
                 if (response != null && response.startsWith("HISTORY_RES")) {
                     String[] parts = response.split("\\|", 3);
                     if (parts.length >= 3) {
                         String json = parts[2];
-                        // Parse JSON đơn giản
                         String[] entries = json.replace("[", "").replace("]", "").split("\\},\\{");
                         javafx.application.Platform.runLater(() -> {
                             for (String entry : entries) {
