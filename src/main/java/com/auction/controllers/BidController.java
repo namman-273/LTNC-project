@@ -58,11 +58,13 @@ public class BidController implements Initializable {
     private void startListening() {
         listenerThread = new Thread(() -> {
             try {
-                ServerConnection conn = ServerConnection.getInstance();
-                while (true) {
-                    String message = conn.receive();
-                    if (message == null) break;
+                ServerConnection listenerConn = new ServerConnection("localhost", 9999);
+                listenerConn.connectDirect();
+                listenerConn.sendAndReceive("LOGIN|" + username + "|dummy");
 
+                while (!Thread.currentThread().isInterrupted()) {
+                    String message = listenerConn.receive();
+                    if (message == null) break;
                     System.out.println("Realtime: " + message);
 
                     if (message.startsWith("UPDATE|")) {
@@ -72,7 +74,7 @@ public class BidController implements Initializable {
                             String bidder = parts[3];
                             Platform.runLater(() -> {
                                 currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
-                                historyItems.add(0, bidder + " đặt: " + newPrice);
+                                historyItems.add(0, bidder + " đặt: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
                             });
                         }
                     } else if (message.startsWith("END_AUCTION_SUCCESS|")) {
