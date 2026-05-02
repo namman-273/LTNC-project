@@ -8,6 +8,7 @@ import javafx.stage.Stage;
 import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
 import com.auction.views.RegisterView;
+import com.auction.util.SessionManager;
 
 public class LoginController {
 
@@ -42,6 +43,10 @@ public class LoginController {
 
         if (response.startsWith("LOGIN_SUCCESS")) {
             Stage stage = (Stage) usernameField.getScene().getWindow();
+            // Lưu session
+            String[] parts = response.split("\\|");
+            String role = parts.length > 1 ? parts[1].trim() : "BIDDER";
+            SessionManager.getInstance().setSession(username, password, role);
             AuctionListView listView = new AuctionListView(stage, username);
             listView.show();
         } else {
