@@ -33,7 +33,7 @@ public class BidView {
             Parent root = loader.load();
 
             BidController controller = loader.getController();
-            controller.setData(auctionId, itemName, currentPrice, status, username);
+            controller.setData(auctionId, itemName, currentPrice, status, username, "");
 
             Scene scene = new Scene(root);
             stage.setTitle("Đấu giá - " + itemName);

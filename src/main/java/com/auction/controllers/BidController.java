@@ -29,8 +29,10 @@ public class BidController implements Initializable {
     private String username;
     private ObservableList<String> historyItems = FXCollections.observableArrayList();
     private Thread listenerThread;
+    private String password;
 
-    public void setData(String auctionId, String itemName, String currentPrice, String status, String username) {
+    public void setData(String auctionId, String itemName, String currentPrice, String status, String username, String password) {
+        this.password = password;
         this.auctionId = auctionId;
         this.username = username;
         auctionTitleLabel.setText("Phiên: " + auctionId);
@@ -60,7 +62,7 @@ public class BidController implements Initializable {
             try {
                 ServerConnection listenerConn = new ServerConnection("localhost", 9999);
                 listenerConn.connectDirect();
-                listenerConn.sendAndReceive("LOGIN|" + username + "|dummy");
+                listenerConn.sendAndReceive("LOGIN|" + username + "|" + password);
 
                 while (!Thread.currentThread().isInterrupted()) {
                     String message = listenerConn.receive();

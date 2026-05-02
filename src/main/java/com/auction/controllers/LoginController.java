@@ -25,8 +25,6 @@ public class LoginController {
             return;
         }
 
-        // Reset connection mỗi lần login
-        ServerConnection.getInstance().disconnect();
         ServerConnection conn = ServerConnection.getInstance();
 
         if (!conn.connect()) {
