@@ -29,16 +29,25 @@ public class BidController implements Initializable {
     private String username;
     private ObservableList<String> historyItems = FXCollections.observableArrayList();
     private Thread listenerThread;
+    private String password;
 
-    public void setData(String auctionId, String itemName, String currentPrice, String status, String username) {
+    public void setData(String auctionId, String itemName, String currentPrice, String status, String username, String password) {
+        this.password = password;
         this.auctionId = auctionId;
         this.username = username;
         auctionTitleLabel.setText("Phiên: " + auctionId);
         itemNameLabel.setText("Tên: " + itemName);
-        currentPriceLabel.setText("Giá hiện tại: " + currentPrice);
+        try {
+            double price = Double.parseDouble(currentPrice.replace(",", "").replace(" VND", ""));
+            currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", price));
+        } catch (NumberFormatException e) {
+            currentPriceLabel.setText("Giá hiện tại: " + currentPrice);
+        }
         statusLabel.setText("Trạng thái: " + status);
         bidHistoryList.setItems(historyItems);
 
+        // Load lịch sử đặt giá
+        loadHistory();
         // Bắt đầu lắng nghe update từ server
         startListening();
     }
@@ -51,11 +60,13 @@ public class BidController implements Initializable {
     private void startListening() {
         listenerThread = new Thread(() -> {
             try {
-                ServerConnection conn = ServerConnection.getInstance();
-                while (true) {
-                    String message = conn.receive();
-                    if (message == null) break;
+                ServerConnection listenerConn = new ServerConnection("localhost", 9999);
+                listenerConn.connectDirect();
+                listenerConn.sendAndReceive("LOGIN|" + username + "|" + password);
 
+                while (!Thread.currentThread().isInterrupted()) {
+                    String message = listenerConn.receive();
+                    if (message == null) break;
                     System.out.println("Realtime: " + message);
 
                     if (message.startsWith("UPDATE|")) {
@@ -64,8 +75,8 @@ public class BidController implements Initializable {
                             String newPrice = parts[2];
                             String bidder = parts[3];
                             Platform.runLater(() -> {
-                                currentPriceLabel.setText("Giá hiện tại: " + newPrice);
-                                historyItems.add(0, bidder + " đặt: " + newPrice);
+                                currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
+                                historyItems.add(0, bidder + " đặt: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
                             });
                         }
                     } else if (message.startsWith("END_AUCTION_SUCCESS|")) {
@@ -107,7 +118,7 @@ public class BidController implements Initializable {
             System.out.println("BID response: " + response);
 
             Platform.runLater(() -> {
-                if (response != null && response.startsWith("BID_SUCCESS")) {
+                if (response != null && (response.startsWith("BID_SUCCESS") || response.startsWith("UPDATE"))) {
                     showSuccess("Đặt giá thành công!");
                     bidAmountField.clear();
                 } else {
@@ -119,10 +130,15 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleBack() {
-        if (listenerThread != null) listenerThread.interrupt();
-        Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        AuctionListView listView = new AuctionListView(stage, username);
-        listView.show();
+        if (listenerThread != null) {
+            listenerThread.interrupt();
+            listenerThread = null;
+        }
+        javafx.application.Platform.runLater(() -> {
+            Stage stage = (Stage) bidAmountField.getScene().getWindow();
+            AuctionListView listView = new AuctionListView(stage, username);
+            listView.show();
+        });
     }
 
     private void showError(String msg) {
@@ -133,5 +149,40 @@ public class BidController implements Initializable {
     private void showSuccess(String msg) {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
         messageLabel.setText(msg);
+    }
+    private void loadHistory() {
+        new Thread(() -> {
+            try {
+                ServerConnection conn = new ServerConnection("localhost", 9999);
+                conn.connectDirect();
+                conn.sendAndReceive("LOGIN|" + username + "|dummy");
+                String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
+                System.out.println("History: " + response);
+                System.out.println("History detail: [" + response + "]");
+
+                if (response != null && response.startsWith("HISTORY_RES")) {
+                    String[] parts = response.split("\\|", 3);
+                    if (parts.length >= 3) {
+                        String json = parts[2];
+                        String[] entries = json.replace("[", "").replace("]", "").split("\\},\\{");
+                        javafx.application.Platform.runLater(() -> {
+                            for (String entry : entries) {
+                                if (entry.contains("amount")) {
+                                    String amount = entry.replaceAll(".*\"amount\":(\\d+\\.?\\d*).*", "$1");
+                                    String bidder = entry.replaceAll(".*\"username\":\"([^\"]+)\".*", "$1");
+                                    try {
+                                        historyItems.add(bidder + " đặt: " + String.format("%,.0f VND", Double.parseDouble(amount)));
+                                    } catch (Exception e) {
+                                        historyItems.add(entry);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi load history: " + e.getMessage());
+            }
+        }).start();
     }
 }

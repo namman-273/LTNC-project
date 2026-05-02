@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.controllers.CreateAuctionController"
+      prefWidth="500" prefHeight="450" spacing="15"
+      style="-fx-background-color: #f5f5f5;">
+    <padding><Insets top="30" right="40" bottom="30" left="40"/></padding>
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="10"
+          style="-fx-background-color: #2196F3; -fx-background-radius: 8;"
+          prefHeight="55">
+        <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
+        <Button text="← Quay lại" onAction="#handleBack"
+                style="-fx-background-color: white; -fx-text-fill: #2196F3; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+        <Label text="Tạo Phiên Đấu Giá Mới"
+               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+    </HBox>
+
+    <!-- FORM -->
+    <VBox spacing="12" style="-fx-background-color: white; -fx-background-radius: 8; -fx-padding: 20;">
+
+        <Label text="Loại sản phẩm:"/>
+        <ComboBox fx:id="typeComboBox" prefWidth="420" prefHeight="38"/>
+
+        <Label text="Tên sản phẩm:"/>
+        <TextField fx:id="nameField" promptText="Nhập tên sản phẩm..."
+                   prefHeight="38"
+                   style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5;"/>
+
+        <Label text="Giá khởi điểm (VND):"/>
+        <TextField fx:id="priceField" promptText="Ví dụ: 5000000"
+                   prefHeight="38"
+                   style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5;"/>
+
+        <Label text="Thời gian (phút):"/>
+        <TextField fx:id="durationField" promptText="Ví dụ: 60"
+                   prefHeight="38"
+                   style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5;"/>
+
+        <Label fx:id="messageLabel" text=""
+               style="-fx-font-size: 12px;"/>
+
+        <Button text="🚀 TẠO PHIÊN ĐẤU GIÁ" onAction="#handleCreate"
+                prefWidth="420" prefHeight="43"
+                style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+    </VBox>
+
+</VBox>
