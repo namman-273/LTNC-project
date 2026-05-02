@@ -22,6 +22,8 @@ public class ClientHandler implements Runnable, Observer {
     private static final int REQ_CREATE = 5; // CREATE_AUCTION|type|name|price|min
     private static final int REQ_END = 2; // END_AUCTION|auctionId
     private static final int REQ_HISTORY = 2; // GET_HISTORY|auctionId
+    private static final int REQ_DEPOSIT = 2; // DEPOSIT|amount
+    private static final int REQ_GET_BALANCE = 1; // GET_BALANCE
 
     private Socket socket;
     private PrintWriter out;
@@ -87,6 +89,14 @@ public class ClientHandler implements Runnable, Observer {
                         if (validatePayload(parts, REQ_HISTORY))
                             handleGetHistory(parts, auctionService);
                         break;
+                    case Protocol.CMD_DEPOSIT:
+                        if (validatePayload(parts, REQ_DEPOSIT))
+                            handleDeposit(parts);
+                        break;
+                    case Protocol.CMD_GET_BALANCE:
+                        if (validatePayload(parts, REQ_GET_BALANCE))
+                            handleGetBalance();
+                        break;
                     default:
                         sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lệnh không hợp lệ");
                 }
@@ -133,8 +143,14 @@ public class ClientHandler implements Runnable, Observer {
 
     private void handleCreateAuction(final String[] parts, AuctionService auctionService) {
         // CREATE_AUCTION|type|name|startingPrice|durationMinutes
-        if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
-            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Quyền hạn không đủ.");
+        if (currentUser == null) {
+            sendMessage(Protocol.ERROR + "|Bạn phải đăng nhập.");
+            return;
+        }
+
+        // Chỉ ADMIN hoặc SELLER mới được tạo ()
+        if (!"ADMIN".equals(currentUser.getRole()) && !"SELLER".equals(currentUser.getRole())) {
+            sendMessage(Protocol.ERROR + "|Quyền hạn không đủ.");
             return;
         }
         try {
@@ -142,8 +158,9 @@ public class ClientHandler implements Runnable, Observer {
             String name = parts[2];
             double price = Double.parseDouble(parts[3]);
             long duration = Long.parseLong(parts[4]);
+            String sellerId = currentUser.getUsername();
 
-            auctionService.createNewAuction(type, name, price, duration);
+            auctionService.createNewAuction(type, name, price, duration, sellerId);
             sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Sản phẩm " + name + " đã được đăng sàn.");
         } catch (Exception e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Dữ liệu tạo sản phẩm không hợp lệ.");
@@ -174,7 +191,7 @@ public class ClientHandler implements Runnable, Observer {
                 return;
             }
             if (Double.isNaN(amount) || Double.isInfinite(amount)) {
-                sendMessage(Protocol.ERROR + Protocol.SEPARATOR +"Giá tiền không hợp lệ (NaN/Infinite)");
+                sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền không hợp lệ (NaN/Infinite)");
                 return;
             }
 
@@ -193,6 +210,42 @@ public class ClientHandler implements Runnable, Observer {
         } catch (Exception e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + e.getMessage());
         }
+    }
+
+    // --- Xử lý nạp tiền ---
+    private void handleDeposit(String[] parts) {
+        if (currentUser == null) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Vui lòng đăng nhập để nạp tiền.");
+            return;
+        }
+        try {
+            double amount = Double.parseDouble(parts[1]);
+            if (amount > 0 && !Double.isNaN(amount) && !Double.isInfinite(amount)) {
+                currentUser.addBalance(amount);
+
+                // Lưu dữ liệu ngay lập tức để tránh mất tiền của khách
+                com.auction.util.DataManager.getInstance().saveData();
+
+                sendMessage(Protocol.RES_DEPOSIT_SUCCESS + Protocol.SEPARATOR +
+                        currentUser.getBalance() + Protocol.SEPARATOR +
+                        "Đã nạp thành công: " + amount + "$");
+            } else {
+                sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Số tiền nạp không hợp lệ.");
+            }
+        } catch (NumberFormatException e) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá nạp phải là con số.");
+        }
+    }
+
+    // --- Kiểm tra số dư ---
+    private void handleGetBalance() {
+        if (currentUser == null) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn chưa đăng nhập.");
+            return;
+        }
+        // Trả về số dư hiện tại theo đúng Protocol
+        sendMessage(Protocol.RES_BALANCE_INFO + Protocol.SEPARATOR + currentUser.getBalance());
+
     }
 
     /**
