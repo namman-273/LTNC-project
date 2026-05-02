@@ -9,6 +9,8 @@ public class Protocol {
     public static final String CMD_CREATE_AUCTION = "CREATE_AUCTION";
     public static final String CMD_END_AUCTION = "END_AUCTION";
     public static final String CMD_GET_HISTORY = "GET_HISTORY";
+    public static final String CMD_DEPOSIT = "DEPOSIT";       
+    public static final String CMD_GET_BALANCE = "GET_BALANCE"; 
 
     // --- RESPONSES (Phản hồi từ Server về Client) ---
     public static final String RES_REGISTER_SUCCESS = "REGISTER_SUCCESS";
@@ -18,9 +20,15 @@ public class Protocol {
     public static final String RES_LIST_SUCCESS = "LIST_AUCTIONS_SUCCESS";
     public static final String RES_BID_SUCCESS = "BID_SUCCESS";
     public static final String RES_HISTORY = "HISTORY_RES";
+    public static final String RES_DEPOSIT_SUCCESS = "DEPOSIT_SUCCESS"; 
+    public static final String RES_BALANCE_INFO = "BALANCE_INFO";
     public static final String RES_END_SUCCESS = "END_SUCCESS";
     public static final String RES_SUCCESS = "SUCCESS";
     public static final String ERROR = "ERROR";
+
+    // --- THÔNG BÁO BIẾN ĐỘNG (PUSH NOTIFICATIONS) ---
+    // Dùng để báo cho Client biết tiền vừa bị trừ hoặc vừa được hoàn
+    public static final String NOTI_BALANCE_CHANGED = "BALANCE_CHANGED";
 
     // Delimiter (Ký tự phân tách)
     public static final String SEPARATOR = " | ";
