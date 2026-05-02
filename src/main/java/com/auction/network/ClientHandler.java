@@ -26,7 +26,11 @@ public class ClientHandler implements Runnable, Observer {
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
-    private final Gson gson = new Gson();
+    private final Gson gson = new com.google.gson.GsonBuilder()
+            .registerTypeAdapter(java.time.LocalDateTime.class,
+                    (com.google.gson.JsonSerializer<java.time.LocalDateTime>) (src, typeOfSrc, context) ->
+                            new com.google.gson.JsonPrimitive(src.toString()))
+            .create();
     private User currentUser;
 
     public ClientHandler(final Socket socket) {

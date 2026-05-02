@@ -17,13 +17,20 @@ import java.util.ResourceBundle;
 
 public class BidController implements Initializable {
 
-    @FXML private Label auctionTitleLabel;
-    @FXML private Label itemNameLabel;
-    @FXML private Label currentPriceLabel;
-    @FXML private Label statusLabel;
-    @FXML private Label messageLabel;
-    @FXML private TextField bidAmountField;
-    @FXML private ListView<String> bidHistoryList;
+    @FXML
+    private Label auctionTitleLabel;
+    @FXML
+    private Label itemNameLabel;
+    @FXML
+    private Label currentPriceLabel;
+    @FXML
+    private Label statusLabel;
+    @FXML
+    private Label messageLabel;
+    @FXML
+    private TextField bidAmountField;
+    @FXML
+    private ListView<String> bidHistoryList;
 
     private String auctionId;
     private String username;
@@ -150,34 +157,38 @@ public class BidController implements Initializable {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
+
+
     private void loadHistory() {
         new Thread(() -> {
             try {
+                String pwd = com.auction.util.SessionManager.getInstance().getPassword();
                 ServerConnection conn = new ServerConnection("localhost", 9999);
                 conn.connectDirect();
-                conn.sendAndReceive("LOGIN|" + username + "|dummy");
+                conn.sendAndReceive("LOGIN|" + username + "|" + pwd);
                 String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
                 System.out.println("History: " + response);
-                System.out.println("History detail: [" + response + "]");
 
-                if (response != null && response.startsWith("HISTORY_RES")) {
+                if (response != null && response.contains("HISTORY_RES")) {
                     String[] parts = response.split("\\|", 3);
                     if (parts.length >= 3) {
-                        String json = parts[2];
-                        String[] entries = json.replace("[", "").replace("]", "").split("\\},\\{");
-                        javafx.application.Platform.runLater(() -> {
-                            for (String entry : entries) {
-                                if (entry.contains("amount")) {
-                                    String amount = entry.replaceAll(".*\"amount\":(\\d+\\.?\\d*).*", "$1");
-                                    String bidder = entry.replaceAll(".*\"username\":\"([^\"]+)\".*", "$1");
+                        String json = parts[2].trim();
+                        if (!json.equals("[]") && !json.isEmpty()) {
+                            String[] entries = json.substring(1, json.length() - 1).split("\\},\\{");
+                            javafx.application.Platform.runLater(() -> {
+                                historyItems.clear();
+                                for (String entry : entries) {
                                     try {
-                                        historyItems.add(bidder + " đặt: " + String.format("%,.0f VND", Double.parseDouble(amount)));
+                                        String amount = entry.replaceAll(".*\"amount\":(\\S+?)[,}].*", "$1");
+                                        String bidder = entry.replaceAll(".*\"username\":\"([^\"]+)\".*", "$1");
+                                        double price = Double.parseDouble(amount);
+                                        historyItems.add(bidder + " đặt: " + String.format("%,.0f VND", price));
                                     } catch (Exception e) {
-                                        historyItems.add(entry);
+                                        System.err.println("Parse error: " + e.getMessage());
                                     }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 }
             } catch (Exception e) {

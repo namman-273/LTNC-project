@@ -71,7 +71,7 @@ public class CreateAuctionController implements Initializable {
                     showSuccess("Tạo phiên thành công! Đang chuyển về danh sách...");
                     new Thread(() -> {
                         try {
-                            Thread.sleep(1000);
+                            Thread.sleep(1500);
                             javafx.application.Platform.runLater(() -> {
                                 Stage stage = (Stage) nameField.getScene().getWindow();
                                 AuctionListView listView = new AuctionListView(stage, username);

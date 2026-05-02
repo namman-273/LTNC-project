@@ -14,7 +14,6 @@
       style="-fx-background-color: #f5f5f5;">
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
-    <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="10"
           style="-fx-background-color: #e53935; -fx-background-radius: 8;"
           prefHeight="60">
@@ -28,7 +27,6 @@
                 style="-fx-background-color: white; -fx-text-fill: #e53935; -fx-font-weight: bold; -fx-background-radius: 5;"/>
     </HBox>
 
-    <!-- BẢNG DANH SÁCH -->
     <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS">
         <columns>
             <TableColumn fx:id="idCol" text="ID" prefWidth="200"/>
@@ -38,7 +36,9 @@
         </columns>
     </TableView>
 
-    <!-- NÚT BÊN DƯỚI -->
+    <Label fx:id="messageLabel" text=""
+           style="-fx-font-size: 12px;" wrapText="true"/>
+
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button text="🔴 Kết thúc phiên" onAction="#handleEndAuction"
                 prefHeight="38" prefWidth="160"

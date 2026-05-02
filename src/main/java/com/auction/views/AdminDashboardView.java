@@ -27,11 +27,12 @@ public class AdminDashboardView {
             controller.setUsername(username);
 
             Scene scene = new Scene(root);
-            stage.setTitle("Admin Dashboard");
+            stage.setTitle("Admin Dashboard - Auction System");
             stage.setScene(scene);
             stage.show();
+
         } catch (Exception e) {
-            System.err.println("Lỗi load FXML: " + e.getMessage());
+            System.err.println("Lỗi load AdminDashboard: " + e.getMessage());
             e.printStackTrace();
         }
     }
