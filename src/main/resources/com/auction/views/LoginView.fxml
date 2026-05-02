@@ -10,7 +10,8 @@
 
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.LoginController"
-      prefWidth="700" prefHeight="450">
+      prefWidth="700" prefHeight="500"
+      stylesheets="@style.css">
 
     <!-- CỘT TRÁI: xanh -->
     <VBox prefWidth="320" prefHeight="450" alignment="CENTER" spacing="15"
@@ -33,11 +34,11 @@
 
         <TextField fx:id="usernameField" promptText="Tên đăng nhập"
                    prefHeight="40"
-                   style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5; -fx-font-size: 13px;"/>
+                   styleClass="text-field-modern"/>
 
         <PasswordField fx:id="passwordField" promptText="Mật khẩu"
                        prefHeight="40"
-                       style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5; -fx-font-size: 13px;"/>
+                       styleClass="text-field-modern"/>
 
         <Label fx:id="errorLabel" text=""
                style="-fx-text-fill: red; -fx-font-size: 12px;"/>
@@ -45,7 +46,7 @@
         <Button fx:id="loginButton" text="ĐĂNG NHẬP"
                 prefWidth="300" prefHeight="43"
                 onAction="#handleLogin"
-                style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                styleClass="btn-primary"/>
 
         <Label text="Quên mật khẩu?"
                style="-fx-text-fill: #888888; -fx-font-size: 12px;"/>
