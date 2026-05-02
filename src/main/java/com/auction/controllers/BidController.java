@@ -11,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
+import com.auction.views.BidChartView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -195,5 +196,22 @@ public class BidController implements Initializable {
                 System.err.println("Lỗi load history: " + e.getMessage());
             }
         }).start();
+    }
+    @FXML
+    private void handleViewChart() {
+        if (listenerThread != null) {
+            listenerThread.interrupt();
+            listenerThread = null;
+        }
+        Stage stage = (Stage) bidAmountField.getScene().getWindow();
+        BidChartView chartView = new BidChartView(
+                stage,
+                auctionId,
+                itemNameLabel.getText().replace("Tên: ", ""),
+                currentPriceLabel.getText().replace("Giá hiện tại: ", ""),
+                statusLabel.getText().replace("Trạng thái: ", ""),
+                username
+        );
+        chartView.show();
     }
 }
