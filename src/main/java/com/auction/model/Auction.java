@@ -293,7 +293,17 @@ public class Auction extends Entity {
         in.defaultReadObject(); // Load các trường không phải transient
         restoreTransients(); // Tự động hồi sinh các trường bị null
     }
+    public String getId() {
+        return super.getId();
+    }
 
+
+    @Override
+    public String toString() {
+        return "id=" + getId()
+            + ",itemName=" + (item != null ? item.getItemName() : "---")
+            + ",currentPrice=" + currentPrice
+            + ",status=" + status;}
     // giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng
     public void closeAuction() {
         this.status = AuctionStatus.FINISHED;
