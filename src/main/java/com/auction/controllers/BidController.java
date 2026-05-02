@@ -158,6 +158,7 @@ public class BidController implements Initializable {
                 conn.sendAndReceive("LOGIN|" + username + "|dummy");
                 String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
                 System.out.println("History: " + response);
+                System.out.println("History detail: [" + response + "]");
 
                 if (response != null && response.startsWith("HISTORY_RES")) {
                     String[] parts = response.split("\\|", 3);
