@@ -1,98 +1,78 @@
-name: Java CI with Maven
+name: Java CI — Build, Checkstyle, Test & Coverage
 
-# ======================================================================
-# TRIGGER
-# push → master  : merge chính thức, bắt buộc xanh trước khi merge
-# push → dev     : commit hàng ngày, phát hiện lỗi sớm
-# pull_request   : kiểm tra lần cuối trước khi merge vào master
-# ======================================================================
+# Trigger trên tất cả các nhánh quan trọng của nhóm
 on:
   push:
-    branches: [ "master", "dev" ]
+    branches: [ "master", "main", "dev" ]
   pull_request:
-    branches: [ "master" ]
-
-# ======================================================================
-# PERMISSIONS — tối thiểu cần thiết (least privilege principle)
-# ======================================================================
-permissions:
-  contents: read
+    # Kiểm tra mọi PR merge vào main/master từ nhánh dev
+    branches: [ "master", "main" ]
 
 jobs:
-  pipeline:
-    name: Build, Checkstyle, Test, Coverage
-    # Pin version cụ thể — tránh ubuntu-latest thay đổi gây build không ổn định
-    runs-on: ubuntu-22.04
-    # Tự huỷ nếu treo quá 15 phút
-    timeout-minutes: 15
+  build-and-verify:
+    name: Build, Checkstyle, Test & Coverage Check
+    runs-on: ubuntu-latest
 
     steps:
-
-      # ── Step 1: Checkout ────────────────────────────────────────────
-      - name: Checkout code
+      # ── 1. Lấy code ──────────────────────────────────────────────────
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      # ── Step 2: JDK 17 ──────────────────────────────────────────────
-      # cache: maven → tận dụng cache dependency, build nhanh hơn ~60%
-      - name: Set up JDK 17
+      # ── 2. Cài JDK 17 ────────────────────────────────────────────────
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
 
-      # ── Step 3: Checkstyle ──────────────────────────────────────────
-      # Chạy RIÊNG checkstyle trước để log lỗi convention rõ ràng,
-      # tách biệt với lỗi compile hay test.
-      # Nếu step này fail → log chỉ chứa vi phạm convention, dễ đọc.
-      - name: Run Checkstyle
-        run: mvn checkstyle:check --batch-mode --no-transfer-progress
+      # ── 3. Build + Checkstyle + Test + Coverage (toàn bộ lifecycle) ──
+      #
+      #  mvn clean verify chạy theo thứ tự Maven lifecycle:
+      #    compile → test-compile → test (JUnit + JaCoCo agent)
+      #    → report (JaCoCo HTML) → verify (Checkstyle check + JaCoCo threshold)
+      #
+      #  -B     : batch mode (không màu, không tương tác — phù hợp CI)
+      #  -e     : in stack trace khi lỗi (dễ debug trên CI log)
+      #  -Djava.awt.headless=true : chạy không cần màn hình (bắt buộc cho CI)
+      #
+      - name: Run full verification (compile → test → checkstyle → coverage)
+        run: mvn clean verify -B -e -Djava.awt.headless=true
 
-      # ── Step 4: Build, Test, Coverage ───────────────────────────────
-      # Chạy toàn bộ lifecycle: compile → test → jacoco report → jacoco check
-      # --batch-mode         : tắt interactive prompt
-      # --no-transfer-progress: tắt progress bar download
-      # -e                   : in stack trace đầy đủ khi có lỗi
-      - name: Build, Test and Verify Coverage
-        run: mvn clean verify --batch-mode --no-transfer-progress -e
-
-      # ── Step 5: Upload JaCoCo Report ────────────────────────────────
-      # if: always() → upload dù pass hay fail
-      # retention-days: 30 → giữ 30 ngày (đủ để chấm điểm cuối kỳ)
+      # ── 4. Upload JaCoCo HTML report làm Artifact ────────────────────
+      #
+      #  Luôn upload kể cả khi build fail (if: always()) để đọc báo cáo
+      #  và biết test nào chưa đủ coverage.
+      #  retention-days: 30 — đủ để giảng viên xem khi chấm điểm tuần 15.
+      #
       - name: Upload JaCoCo coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jacoco-coverage-${{ github.run_id }}
+          name: jacoco-coverage-report-${{ github.run_id }}
           path: target/site/jacoco/
           retention-days: 30
 
-      # ── Step 6: Upload Surefire Results ─────────────────────────────
-      # Xem chi tiết test nào pass/fail khi CI đỏ
-      - name: Upload Surefire test results
+      # ── 5. Upload Checkstyle XML report ──────────────────────────────
+      - name: Upload Checkstyle report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-results-${{ github.run_id }}
-          path: target/surefire-reports/
+          name: checkstyle-report-${{ github.run_id }}
+          path: target/checkstyle-result.xml
           retention-days: 30
 
-      # ── Step 7: Job Summary ──────────────────────────────────────────
-      # Dùng printf thay echo để tránh lỗi ký tự đặc biệt.
-      # Không thụt đầu dòng trong heredoc — thụt vào = markdown code block.
+      # ── 6. Tóm tắt kết quả trên GitHub UI ───────────────────────────
       - name: Write job summary
         if: always()
         run: |
-          printf "## CI Pipeline — %s\n\n" "${{ github.repository }}" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Thông tin | Giá trị |\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "|---|---|\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Branch | \`%s\` |\n" "${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Commit | \`%s\` |\n" "${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Actor  | %s |\n\n" "${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Bước | Nội dung |\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "|---|---|\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Checkstyle | Google Java Style, checkstyle.xml |\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Compile | maven-compiler-plugin, Java 17 |\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Unit Test | JUnit 5, maven-surefire-plugin |\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "| Coverage | JaCoCo, ngưỡng tối thiểu 60%% |\n\n" >> "$GITHUB_STEP_SUMMARY"
-          printf "> Xem báo cáo chi tiết trong **Artifacts** phía trên.\n" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Ket qua CI — ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Buoc | Trang thai |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Compile | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Checkstyle (Google Style) | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JUnit Tests | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JaCoCo Coverage (>= 60%) | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Xem bao cao chi tiet trong tab **Artifacts** phia tren." >> $GITHUB_STEP_SUMMARY
