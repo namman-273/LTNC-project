@@ -133,6 +133,15 @@ public class Auction extends Entity {
     }
 
     // --- LOGIC PHIÊN ĐẤU GIÁ ---
+    private double getMinimumIncrement(double price) {
+        if (price < 1000000)
+            return 50000; // < 1 triệu: bước 50k
+        if (price < 5000000)
+            return 100000; // < 5 triệu: bước 100k
+        if (price < 10000000)
+            return 250000; // < 10 triệu: bước 250k
+        return 500000; // >= 10 triệu: bước 500k
+    }
 
     public void processNewBid(User bidder, double bidAmount)
             throws InvalidBidException, AuctionClosedException, AuthenticationException {
@@ -165,8 +174,13 @@ public class Auction extends Entity {
     }
 
     private void validateBidAmount(double amount) throws InvalidBidException {
-        if (amount <= currentPrice) {
-            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: " + currentPrice);
+        double minInc = getMinimumIncrement(currentPrice);
+        double minRequired = currentPrice + minInc;
+
+        if (amount < minRequired) {
+            // Việt hóa thông báo lỗi với đơn vị VNĐ
+            throw new InvalidBidException("Giá đặt không hợp lệ. Bạn cần đặt tối thiểu: "
+                    + (long) minRequired + " VNĐ (Bước giá tối thiểu: " + (long) minInc + " VNĐ)");
         }
     }
 
@@ -211,7 +225,7 @@ public class Auction extends Entity {
     }
 
     // Hàm để người dùng đăng ký Auto-bid từ giao diện
-    public void addAutoBidConfig(String bidderId, double maxBid, double increment) {
+    public void addAutoBidConfig(String bidderId, double maxBid) {
         lock.lock();
         try {
             if (this.autoBidQueue == null)
@@ -220,7 +234,7 @@ public class Auction extends Entity {
             // Xóa cấu hình cũ của người này nếu có (để cập nhật cấu hình mới)
             autoBidQueue.removeIf(config -> config.getBidderId().equals(bidderId));
 
-            this.autoBidQueue.add(new AutoBid(bidderId, maxBid, increment));
+            this.autoBidQueue.add(new AutoBid(bidderId, maxBid));
             System.out.println("SERVER: Đã nhận cấu hình Auto-bid cho " + bidderId);
 
             executeAutoBids();
@@ -258,7 +272,8 @@ public class Auction extends Entity {
         }
 
         // 3. Logic đặt giá cho người đang đuổi theo (giữ nguyên)
-        double nextPrice = currentPrice + top.getIncrement();
+        double systemMinIncrement = getMinimumIncrement(currentPrice);
+        double nextPrice = currentPrice + systemMinIncrement;
         if (nextPrice <= top.getMaxBid()) {
             User user = UserManager.getInstance().findUserByUsername(top.getBidderId());
             if (user != null) {
@@ -293,17 +308,19 @@ public class Auction extends Entity {
         in.defaultReadObject(); // Load các trường không phải transient
         restoreTransients(); // Tự động hồi sinh các trường bị null
     }
+
     public String getId() {
         return super.getId();
     }
 
-
     @Override
     public String toString() {
         return "id=" + getId()
-            + ",itemName=" + (item != null ? item.getItemName() : "---")
-            + ",currentPrice=" + currentPrice
-            + ",status=" + status;}
+                + ",itemName=" + (item != null ? item.getItemName() : "---")
+                + ",currentPrice=" + currentPrice
+                + ",status=" + status;
+    }
+
     // giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng
     public void closeAuction() {
         this.status = AuctionStatus.FINISHED;

@@ -2,9 +2,11 @@ package com.auction.network;
 
 import com.auction.model.User;
 import com.auction.model.Auction;
+import com.auction.model.Bidder;
 import com.auction.service.AuctionService;
 import com.auction.model.Observer;
 import com.auction.service.UserManager; // Import UserManager Singleton
+import com.auction.util.DataManager;
 import com.google.gson.Gson;
 import com.auction.exception.AuthenticationException;
 
@@ -13,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 
 public class ClientHandler implements Runnable, Observer {
 
@@ -24,6 +27,10 @@ public class ClientHandler implements Runnable, Observer {
     private static final int REQ_HISTORY = 2; // GET_HISTORY|auctionId
     private static final int REQ_DEPOSIT = 2; // DEPOSIT|amount
     private static final int REQ_GET_BALANCE = 1; // GET_BALANCE
+    private static final int REQ_WATCH = 2; // WATCH|auctionId
+    private static final int REQ_AUTO_BID = 3; // ADD_AUTO_BID|auctionId|maxBid
+    private static final int REQ_UNWATCH = 2; // UNWATCH|auctionId
+    private static final int REQ_GET_WATCHLIST = 1; // GET_WATCHLIST
 
     private Socket socket;
     private PrintWriter out;
@@ -100,6 +107,25 @@ public class ClientHandler implements Runnable, Observer {
                     case Protocol.CMD_GET_BALANCE:
                         if (validatePayload(parts, REQ_GET_BALANCE))
                             handleGetBalance();
+                        break;
+                    case Protocol.CMD_WATCH:
+                        if (validatePayload(parts, REQ_WATCH))
+                            handleWatch(parts);
+                        break;
+
+                    case Protocol.CMD_UNWATCH:
+                        if (validatePayload(parts, REQ_UNWATCH))
+                            handleUnwatch(parts);
+                        break;
+
+                    case Protocol.CMD_GET_WATCHLIST:
+                        if (validatePayload(parts, REQ_GET_WATCHLIST))
+                            handleGetWatchlist(auctionService);
+                        break;
+
+                    case Protocol.CMD_ADD_AUTO_BID:
+                        if (validatePayload(parts, REQ_AUTO_BID))
+                            handleAddAutoBid(parts, auctionService);
                         break;
                     default:
                         sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lệnh không hợp lệ");
@@ -207,6 +233,7 @@ public class ClientHandler implements Runnable, Observer {
 
             auction.processNewBid(currentUser, amount);
             sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amount);
+            DataManager.getInstance().saveData();
         } catch (
 
         NumberFormatException e) {
@@ -228,7 +255,7 @@ public class ClientHandler implements Runnable, Observer {
                 currentUser.addBalance(amount);
 
                 // Lưu dữ liệu ngay lập tức để tránh mất tiền của khách
-                com.auction.util.DataManager.getInstance().saveData();
+                DataManager.getInstance().saveData();
 
                 sendMessage(Protocol.RES_DEPOSIT_SUCCESS + Protocol.SEPARATOR +
                         currentUser.getBalance() + Protocol.SEPARATOR +
@@ -272,6 +299,80 @@ public class ClientHandler implements Runnable, Observer {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá với ID: " + auctionId);
         }
 
+    }
+
+    // --- LOGIC XỬ LÝ WATCHLIST ---
+    private void handleWatch(String[] parts) {
+        if (!(currentUser instanceof Bidder)) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ người mua mới có thể theo dõi sản phẩm.");
+            return;
+        }
+
+        String auctionId = parts[1];
+        ((Bidder) currentUser).addToWatchlist(auctionId);
+
+        // Lưu dữ liệu để bảo toàn danh sách theo dõi
+        DataManager.getInstance().saveData();
+
+        sendMessage(Protocol.RES_WATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
+    }
+
+    private void handleUnwatch(String[] parts) {
+        if (currentUser instanceof Bidder) {
+            String auctionId = parts[1];
+            ((Bidder) currentUser).removeFromWatchlist(auctionId);
+            sendMessage("UNWATCH_SUCCESS|" + auctionId);
+            DataManager.getInstance().saveData();
+            sendMessage(Protocol.RES_UNWATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
+        }
+    }
+
+    private void handleGetWatchlist(AuctionService auctionService) {
+        if (!(currentUser instanceof Bidder)) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn chưa đăng nhập hoặc không phải bidder.");
+            return;
+        }
+
+        List<Auction> watchlist = auctionService.getWatchlistForUser(currentUser.getUsername());
+        String jsonWatchlist = gson.toJson(watchlist);
+
+        sendMessage(Protocol.RES_WATCHLIST + Protocol.SEPARATOR + jsonWatchlist);
+    }
+
+    private void handleAddAutoBid(final String[] parts, AuctionService auctionService) {
+        if (!(currentUser instanceof Bidder)) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ người mua mới có quyền cài đặt Robot.");
+            return;
+        }
+
+        try {
+            String auctionId = parts[1];
+            double maxBid = Double.parseDouble(parts[2]); // Ngân sách tối đa của khách
+
+            Auction auction = auctionService.getAuctionById(auctionId);
+            if (auction == null) {
+                sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá.");
+                return;
+            }
+
+            
+            auction.addAutoBidConfig(currentUser.getUsername(), maxBid);
+
+        
+            DataManager.getInstance().saveData();
+
+            // Phản hồi cho FE để hiển thị thông báo
+            sendMessage(Protocol.RES_AUTO_BID_SUCCESS + Protocol.SEPARATOR +
+                    auctionId + Protocol.SEPARATOR + "Autobid bot đã sẵn sàng với hạn mức: " + (long) maxBid + " VNĐ");
+
+            System.out.println(
+                    "[AUTOBID] Người dùng " + currentUser.getUsername() + " đã kích hoạt Autobid cho phiên " + auctionId);
+
+        } catch (NumberFormatException e) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Ngân sách tối đa phải là một con số.");
+        } catch (Exception e) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lỗi hệ thống: " + e.getMessage());
+        }
     }
 
     public final void sendMessage(final String msg) {
