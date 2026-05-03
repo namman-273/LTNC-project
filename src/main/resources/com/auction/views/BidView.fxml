@@ -56,6 +56,9 @@
             <Button text="🔨 ĐẶT GIÁ" onAction="#handleBid"
                     prefWidth="280" prefHeight="43"
                     style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+            <Button text="📊 Xem biểu đồ" onAction="#handleViewChart"
+                    prefWidth="280" prefHeight="38"
+                    style="-fx-background-color: #9C27B0; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 5;"/>
         </VBox>
 
     </HBox>

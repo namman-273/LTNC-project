@@ -24,6 +24,7 @@ public class AdminDashboardController implements Initializable {
     @FXML private TableColumn<AuctionRow, String> nameCol;
     @FXML private TableColumn<AuctionRow, String> priceCol;
     @FXML private TableColumn<AuctionRow, String> statusCol;
+    @FXML private Label messageLabel;
 
     private String username;
 
@@ -40,7 +41,7 @@ public class AdminDashboardController implements Initializable {
         loadFromServer();
     }
 
-    private void loadFromServer() {
+    public void loadFromServer() {
         try {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("LIST_AUCTIONS");
@@ -48,23 +49,24 @@ public class AdminDashboardController implements Initializable {
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
             if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                String content = response.substring(response.indexOf("[") + 1, response.lastIndexOf("]"));
+                int start = response.indexOf("[");
+                if (start != -1) {
+                    String content = response.substring(start)
+                            .replace("[", "").replace("]", "").trim();
 
-                if (!content.isEmpty()) {
-                    String[] auctions = content.split("(?=id=)");
+                    String[] auctions = content.split(",\\s*(?=id=)");
                     for (String a : auctions) {
-                        a = a.replaceAll(",\\s*$", "").trim();
-                        if (a.isEmpty()) continue;
-                        String id = extractField(a, "id=");
+                        a = a.trim();
+                        if (a.isEmpty() || !a.contains("id=")) continue;
+                        String id       = extractField(a, "id=");
                         String itemName = extractField(a, "itemName=");
-                        String price = extractField(a, "currentPrice=");
-                        String status = extractField(a, "status=");
+                        String price    = extractField(a, "currentPrice=");
+                        String status   = extractField(a, "status=");
                         try {
-                            String formattedPrice = String.format("%,.0f VND", Double.parseDouble(price));
-                            data.add(new AuctionRow(id, itemName, formattedPrice, status));
-                        } catch (NumberFormatException e) {
-                            data.add(new AuctionRow(id, itemName, price, status));
-                        }
+                            double p = Double.parseDouble(price);
+                            price = String.format("%,.0f VND", p);
+                        } catch (NumberFormatException ignored) {}
+                        data.add(new AuctionRow(id, itemName, price, status));
                     }
                 }
             }
@@ -72,7 +74,6 @@ public class AdminDashboardController implements Initializable {
             if (data.isEmpty()) {
                 data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
             }
-
             auctionTable.setItems(data);
 
         } catch (Exception e) {
@@ -84,8 +85,12 @@ public class AdminDashboardController implements Initializable {
         int start = text.indexOf(key);
         if (start == -1) return "---";
         start += key.length();
-        int end = text.indexOf(",", start);
-        if (end == -1) end = text.length();
+        int end = text.length();
+        String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
+        for (String nextKey : nextKeys) {
+            int pos = text.indexOf("," + nextKey, start);
+            if (pos != -1 && pos < end) end = pos;
+        }
         return text.substring(start, end).trim();
     }
 
@@ -98,20 +103,30 @@ public class AdminDashboardController implements Initializable {
     private void handleEndAuction() {
         AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            System.out.println("Chưa chọn phiên nào!");
+            showMessage("Vui lòng chọn một phiên để kết thúc!", "red");
             return;
         }
+        if ("FINISHED".equals(selected.getStatus())) {
+            showMessage("Phiên này đã kết thúc rồi!", "red");
+            return;
+        }
+        showMessage("Đang kết thúc phiên...", "orange");
 
         new Thread(() -> {
-            ServerConnection conn = new ServerConnection("localhost", 9999);
-            conn.connectDirect();
-            conn.sendAndReceive("LOGIN|admin|admin123");
+            ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
             System.out.println("End auction: " + response);
-
+            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
             Platform.runLater(() -> {
-                loadFromServer();
+                if (response != null && response.contains("SUCCESS")) {
+                    showMessage("✅ Kết thúc phiên thành công!", "green");
+                } else {
+                    showMessage("❌ Lỗi: " + response, "red");
+                }
             });
+// Load sau thêm 500ms nữa
+            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+            Platform.runLater(() -> loadFromServer());
         }).start();
     }
 
@@ -127,6 +142,13 @@ public class AdminDashboardController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         AuctionListView listView = new AuctionListView(stage, username);
         listView.show();
+    }
+
+    private void showMessage(String msg, String color) {
+        if (messageLabel != null) {
+            messageLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 12px;");
+            messageLabel.setText(msg);
+        }
     }
 
     public static class AuctionRow {

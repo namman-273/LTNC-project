@@ -96,10 +96,6 @@ public class AuctionListController implements Initializable {
         return text.substring(start, end).trim();
     }
 
-    @FXML
-    private void handleRefresh() {
-        loadFromServer();
-    }
 
     @FXML
     private void handleViewDetail() {
@@ -153,5 +149,13 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         AdminDashboardView adminView = new AdminDashboardView(stage, username);
         adminView.show();
+    }
+    @FXML
+    public void handleRefresh() {
+        loadFromServer();
+    }
+
+    public void refreshList() {
+        loadFromServer();
     }
 }
