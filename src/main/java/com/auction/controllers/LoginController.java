@@ -8,6 +8,7 @@ import javafx.stage.Stage;
 import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
 import com.auction.views.RegisterView;
+import com.auction.util.SessionManager;
 
 public class LoginController {
 
@@ -21,34 +22,47 @@ public class LoginController {
         String password = passwordField.getText().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
-            errorLabel.setText("Vui lòng nhập đầy đủ thông tin!");
+            showError("Vui lòng nhập đầy đủ thông tin!");
             return;
         }
 
-        
         ServerConnection conn = ServerConnection.getInstance();
+
         if (!conn.connect()) {
-            errorLabel.setText("Không thể kết nối server!");
+            showError("Không thể kết nối server! Vui lòng thử lại.");
             return;
         }
 
-        
         String response = conn.sendAndReceive("LOGIN|" + username + "|" + password);
         System.out.println("Server trả về: " + response);
 
-        if (response != null && response.startsWith("LOGIN_SUCCESS")) {
-            
+        if (response == null) {
+            showError("Mất kết nối server!");
+            return;
+        }
+
+        if (response.startsWith("LOGIN_SUCCESS")) {
             Stage stage = (Stage) usernameField.getScene().getWindow();
+            // Lưu session
+            String[] parts = response.split("\\|");
+            String role = parts.length > 1 ? parts[1].trim() : "BIDDER";
+            SessionManager.getInstance().setSession(username, password, role);
             AuctionListView listView = new AuctionListView(stage, username);
             listView.show();
         } else {
-            errorLabel.setText("Sai tên đăng nhập hoặc mật khẩu!");
+            showError("Sai tên đăng nhập hoặc mật khẩu!");
         }
     }
+
     @FXML
     private void handleRegister() {
         Stage stage = (Stage) usernameField.getScene().getWindow();
         RegisterView registerView = new RegisterView(stage);
         registerView.show();
+    }
+
+    private void showError(String msg) {
+        errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        errorLabel.setText(msg);
     }
 }

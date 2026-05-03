@@ -27,19 +27,21 @@ public class Auction extends Entity {
     private long endTime; // Thời điểm kết thúc (ms)
     private PriorityQueue<AutoBid> autoBidQueue; // Hàng đợi ưu tiên
     private int extensionCount = 0;
+    private String sellerId; // ID người tạo phiên đấu giá
 
     // transient: Những trường này sẽ không được lưu xuống file .dat
     private transient ReentrantLock lock;
     private transient List<Observer> observers;
     private transient ExecutorService notifyExecutor;
 
-    public Auction(String id, Item item, long durationMinutes) {
+    public Auction(String id, Item item, long durationMinutes, String sellerId) {
         super(id);
         if (item == null) {
             throw new IllegalArgumentException("Item cannot be null. Mỗi phiên đấu giá phải có một món hàng!");
         } else {
             this.item = item;
         }
+        this.sellerId = sellerId;
         this.currentPrice = item.getStartingPrice();
         this.history = new ArrayList<>();
         this.status = AuctionStatus.OPEN;
@@ -114,23 +116,32 @@ public class Auction extends Entity {
     }
 
     public void notifyObservers(String message) {
-    for (Observer observer : observers) {
-        notifyExecutor.submit(() -> {
-            try {
-                // Kiểm tra null hoặc trạng thái kết nối nếu cần
-                if (observer != null) {
-                    observer.update(message);
+        for (Observer observer : observers) {
+            notifyExecutor.submit(() -> {
+                try {
+                    // Kiểm tra null hoặc trạng thái kết nối nếu cần
+                    if (observer != null) {
+                        observer.update(message);
+                    }
+                } catch (Exception e) {
+                    // Nếu update lỗi (do client mất kết nối đột ngột), tự động xóa observer
+                    removeObserver(observer);
+                    System.out.println("Removed faulty observer: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                // Nếu update lỗi (do client mất kết nối đột ngột), tự động xóa observer
-                removeObserver(observer);
-                System.out.println("Removed faulty observer: " + e.getMessage());
-            }
-        });
-    }
+            });
+        }
     }
 
     // --- LOGIC PHIÊN ĐẤU GIÁ ---
+    private double getMinimumIncrement(double price) {
+        if (price < 1000000)
+            return 50000; // < 1 triệu: bước 50k
+        if (price < 5000000)
+            return 100000; // < 5 triệu: bước 100k
+        if (price < 10000000)
+            return 250000; // < 10 triệu: bước 250k
+        return 500000; // >= 10 triệu: bước 500k
+    }
 
     public void processNewBid(User bidder, double bidAmount)
             throws InvalidBidException, AuctionClosedException, AuthenticationException {
@@ -163,8 +174,13 @@ public class Auction extends Entity {
     }
 
     private void validateBidAmount(double amount) throws InvalidBidException {
-        if (amount <= currentPrice) {
-            throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại: " + currentPrice);
+        double minInc = getMinimumIncrement(currentPrice);
+        double minRequired = currentPrice + minInc;
+
+        if (amount < minRequired) {
+            // Việt hóa thông báo lỗi với đơn vị VNĐ
+            throw new InvalidBidException("Giá đặt không hợp lệ. Bạn cần đặt tối thiểu: "
+                    + (long) minRequired + " VNĐ (Bước giá tối thiểu: " + (long) minInc + " VNĐ)");
         }
     }
 
@@ -174,7 +190,30 @@ public class Auction extends Entity {
         }
     }
 
-    private void updateAuctionState(User bidder, double amount) {
+    private void updateAuctionState(User bidder, double amount) throws InvalidBidException {
+        // 1. CHỐT CHẶN BẢO MẬT: Người bán không được tự đấu giá
+        if (bidder.getUsername().equals(this.sellerId)) {
+            throw new InvalidBidException("Bạn không thể đấu giá sản phẩm của chính mình!");
+        }
+        if (Double.isNaN(amount) || Double.isInfinite(amount)) {
+            throw new InvalidBidException("Giá đặt không hợp lệ (NaN/Infinite)");
+        }
+
+        // HOÀN TIỀN CHO NGƯỜI CŨ (Nếu có người đang giữ giá trước đó)
+        if (!history.isEmpty()) {
+            BidTransaction lastTransaction = history.get(history.size() - 1);
+            User oldBidder = lastTransaction.getBidder();
+            if (oldBidder != null) {
+                oldBidder.addBalance(lastTransaction.getAmount());
+                // Thông báo tiền về ví cho người cũ
+                oldBidder.update("REFUND|Phiên " + getId() + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount());
+            }
+        }
+
+        // TRỪ TIỀN TẠM GIỮ CỦA NGƯỜI MỚI
+        if (!bidder.deductBalance(amount)) {
+            throw new InvalidBidException("Số dư tài khoản không đủ để đặt mức giá này!");
+        }
         this.currentPrice = amount;
         if (this.item != null) {
             this.item.setCurrentPrice(amount);
@@ -186,7 +225,7 @@ public class Auction extends Entity {
     }
 
     // Hàm để người dùng đăng ký Auto-bid từ giao diện
-    public void addAutoBidConfig(String bidderId, double maxBid, double increment) {
+    public void addAutoBidConfig(String bidderId, double maxBid) {
         lock.lock();
         try {
             if (this.autoBidQueue == null)
@@ -195,7 +234,7 @@ public class Auction extends Entity {
             // Xóa cấu hình cũ của người này nếu có (để cập nhật cấu hình mới)
             autoBidQueue.removeIf(config -> config.getBidderId().equals(bidderId));
 
-            this.autoBidQueue.add(new AutoBid(bidderId, maxBid, increment));
+            this.autoBidQueue.add(new AutoBid(bidderId, maxBid));
             System.out.println("SERVER: Đã nhận cấu hình Auto-bid cho " + bidderId);
 
             executeAutoBids();
@@ -233,13 +272,18 @@ public class Auction extends Entity {
         }
 
         // 3. Logic đặt giá cho người đang đuổi theo (giữ nguyên)
-        double nextPrice = currentPrice + top.getIncrement();
+        double systemMinIncrement = getMinimumIncrement(currentPrice);
+        double nextPrice = currentPrice + systemMinIncrement;
         if (nextPrice <= top.getMaxBid()) {
             User user = UserManager.getInstance().findUserByUsername(top.getBidderId());
             if (user != null) {
-                updateAuctionState(user, nextPrice);
-                autoBidQueue.add(top); // Trả lại để chờ đối thủ vượt mặt
-                executeAutoBids(); // Tiếp tục vòng đấu cho đến khi có người chạm giới hạn
+                try {
+                    updateAuctionState(user, nextPrice);
+                    autoBidQueue.add(top); // Trả lại để chờ đối thủ vượt mặt
+                    executeAutoBids(); // Tiếp tục vòng đấu cho đến khi có người chạm giới hạn
+                } catch (InvalidBidException e) {
+                    System.out.println("AutoBid failed for " + user.getUsername() + ": " + e.getMessage());
+                }
             }
         }
 
@@ -264,17 +308,19 @@ public class Auction extends Entity {
         in.defaultReadObject(); // Load các trường không phải transient
         restoreTransients(); // Tự động hồi sinh các trường bị null
     }
+
     public String getId() {
         return super.getId();
     }
 
-
     @Override
     public String toString() {
         return "id=" + getId()
-            + ",itemName=" + (item != null ? item.getItemName() : "---")
-            + ",currentPrice=" + currentPrice
-            + ",status=" + status;}
+                + ",itemName=" + (item != null ? item.getItemName() : "---")
+                + ",currentPrice=" + currentPrice
+                + ",status=" + status;
+    }
+
     // giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng
     public void closeAuction() {
         this.status = AuctionStatus.FINISHED;
@@ -291,6 +337,10 @@ public class Auction extends Entity {
         if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
             notifyExecutor.shutdown(); // Giải phóng 10 threads ngay lập tức
         }
+    }
+
+    public String getSellerId() {
+        return this.sellerId;
     }
 
 }

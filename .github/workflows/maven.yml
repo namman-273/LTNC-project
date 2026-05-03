@@ -3,10 +3,9 @@ name: Java CI — Build, Checkstyle, Test & Coverage
 # Trigger trên tất cả các nhánh quan trọng của nhóm
 on:
   push:
-    branches: [ "master", "main", "dev" ]
+    branches: [ "master"]
   pull_request:
-    # Kiểm tra mọi PR merge vào main/master từ nhánh dev
-    branches: [ "master", "main" ]
+    branches: [ "master"]
 
 jobs:
   build-and-verify:

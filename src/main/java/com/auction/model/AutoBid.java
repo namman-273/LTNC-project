@@ -6,13 +6,11 @@ public class AutoBid implements Comparable<AutoBid>, Serializable {
     private static final long serialVersionUID = 1L;
     private final String bidderId;
     private final double maxBid; // Giá tối đa người dùng sẵn sàng trả
-    private final double increment; // Bước giá người dùng muốn hệ thống tự tăng
     private final long timestamp; // Thời điểm đăng ký để ưu tiên người đến trước
 
-    public AutoBid(String bidderId, double maxBid, double increment) {
+    public AutoBid(String bidderId, double maxBid) {
         this.bidderId = bidderId;
         this.maxBid = maxBid;
-        this.increment = increment;
         this.timestamp = System.currentTimeMillis();
     }
 
@@ -35,7 +33,4 @@ public class AutoBid implements Comparable<AutoBid>, Serializable {
         return maxBid;
     }
 
-    public double getIncrement() {
-        return increment;
-    }
 }

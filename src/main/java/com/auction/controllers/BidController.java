@@ -11,34 +11,51 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
+import com.auction.views.BidChartView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class BidController implements Initializable {
 
-    @FXML private Label auctionTitleLabel;
-    @FXML private Label itemNameLabel;
-    @FXML private Label currentPriceLabel;
-    @FXML private Label statusLabel;
-    @FXML private Label messageLabel;
-    @FXML private TextField bidAmountField;
-    @FXML private ListView<String> bidHistoryList;
+    @FXML
+    private Label auctionTitleLabel;
+    @FXML
+    private Label itemNameLabel;
+    @FXML
+    private Label currentPriceLabel;
+    @FXML
+    private Label statusLabel;
+    @FXML
+    private Label messageLabel;
+    @FXML
+    private TextField bidAmountField;
+    @FXML
+    private ListView<String> bidHistoryList;
 
     private String auctionId;
     private String username;
     private ObservableList<String> historyItems = FXCollections.observableArrayList();
     private Thread listenerThread;
+    private String password;
 
-    public void setData(String auctionId, String itemName, String currentPrice, String status, String username) {
+    public void setData(String auctionId, String itemName, String currentPrice, String status, String username, String password) {
+        this.password = password;
         this.auctionId = auctionId;
         this.username = username;
         auctionTitleLabel.setText("Phiên: " + auctionId);
         itemNameLabel.setText("Tên: " + itemName);
-        currentPriceLabel.setText("Giá hiện tại: " + currentPrice);
+        try {
+            double price = Double.parseDouble(currentPrice.replace(",", "").replace(" VND", ""));
+            currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", price));
+        } catch (NumberFormatException e) {
+            currentPriceLabel.setText("Giá hiện tại: " + currentPrice);
+        }
         statusLabel.setText("Trạng thái: " + status);
         bidHistoryList.setItems(historyItems);
 
+        // Load lịch sử đặt giá
+        loadHistory();
         // Bắt đầu lắng nghe update từ server
         startListening();
     }
@@ -51,11 +68,13 @@ public class BidController implements Initializable {
     private void startListening() {
         listenerThread = new Thread(() -> {
             try {
-                ServerConnection conn = ServerConnection.getInstance();
-                while (true) {
-                    String message = conn.receive();
-                    if (message == null) break;
+                ServerConnection listenerConn = new ServerConnection("localhost", 9999);
+                listenerConn.connectDirect();
+                listenerConn.sendAndReceive("LOGIN|" + username + "|" + password);
 
+                while (!Thread.currentThread().isInterrupted()) {
+                    String message = listenerConn.receive();
+                    if (message == null) break;
                     System.out.println("Realtime: " + message);
 
                     if (message.startsWith("UPDATE|")) {
@@ -64,8 +83,8 @@ public class BidController implements Initializable {
                             String newPrice = parts[2];
                             String bidder = parts[3];
                             Platform.runLater(() -> {
-                                currentPriceLabel.setText("Giá hiện tại: " + newPrice);
-                                historyItems.add(0, bidder + " đặt: " + newPrice);
+                                currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
+                                historyItems.add(0, bidder + " đặt: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
                             });
                         }
                     } else if (message.startsWith("END_AUCTION_SUCCESS|")) {
@@ -107,7 +126,7 @@ public class BidController implements Initializable {
             System.out.println("BID response: " + response);
 
             Platform.runLater(() -> {
-                if (response != null && response.startsWith("BID_SUCCESS")) {
+                if (response != null && (response.startsWith("BID_SUCCESS") || response.startsWith("UPDATE"))) {
                     showSuccess("Đặt giá thành công!");
                     bidAmountField.clear();
                 } else {
@@ -119,10 +138,15 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleBack() {
-        if (listenerThread != null) listenerThread.interrupt();
-        Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        AuctionListView listView = new AuctionListView(stage, username);
-        listView.show();
+        if (listenerThread != null) {
+            listenerThread.interrupt();
+            listenerThread = null;
+        }
+        javafx.application.Platform.runLater(() -> {
+            Stage stage = (Stage) bidAmountField.getScene().getWindow();
+            AuctionListView listView = new AuctionListView(stage, username);
+            listView.show();
+        });
     }
 
     private void showError(String msg) {
@@ -133,5 +157,61 @@ public class BidController implements Initializable {
     private void showSuccess(String msg) {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
         messageLabel.setText(msg);
+    }
+
+
+    private void loadHistory() {
+        new Thread(() -> {
+            try {
+                String pwd = com.auction.util.SessionManager.getInstance().getPassword();
+                ServerConnection conn = new ServerConnection("localhost", 9999);
+                conn.connectDirect();
+                conn.sendAndReceive("LOGIN|" + username + "|" + pwd);
+                String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
+                System.out.println("History: " + response);
+
+                if (response != null && response.contains("HISTORY_RES")) {
+                    String[] parts = response.split("\\|", 3);
+                    if (parts.length >= 3) {
+                        String json = parts[2].trim();
+                        if (!json.equals("[]") && !json.isEmpty()) {
+                            String[] entries = json.substring(1, json.length() - 1).split("\\},\\{");
+                            javafx.application.Platform.runLater(() -> {
+                                historyItems.clear();
+                                for (String entry : entries) {
+                                    try {
+                                        String amount = entry.replaceAll(".*\"amount\":(\\S+?)[,}].*", "$1");
+                                        String bidder = entry.replaceAll(".*\"username\":\"([^\"]+)\".*", "$1");
+                                        double price = Double.parseDouble(amount);
+                                        historyItems.add(bidder + " đặt: " + String.format("%,.0f VND", price));
+                                    } catch (Exception e) {
+                                        System.err.println("Parse error: " + e.getMessage());
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi load history: " + e.getMessage());
+            }
+        }).start();
+    }
+    @FXML
+    private void handleViewChart() {
+        if (listenerThread != null) {
+            listenerThread.interrupt();
+            listenerThread = null;
+        }
+        Stage stage = (Stage) bidAmountField.getScene().getWindow();
+        BidChartView chartView = new BidChartView(
+                stage,
+                auctionId,
+                itemNameLabel.getText().replace("Tên: ", ""),
+                currentPriceLabel.getText().replace("Giá hiện tại: ", ""),
+                statusLabel.getText().replace("Trạng thái: ", ""),
+                username
+        );
+        chartView.show();
     }
 }

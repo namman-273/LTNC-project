@@ -4,9 +4,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import com.auction.controllers.BidController;
+import com.auction.controllers.BidChartController;
 
-public class BidView {
+public class BidChartView {
 
     private Stage stage;
     private String auctionId;
@@ -15,8 +15,8 @@ public class BidView {
     private String status;
     private String username;
 
-    public BidView(Stage stage, String auctionId, String itemName, 
-                   String currentPrice, String status, String username) {
+    public BidChartView(Stage stage, String auctionId, String itemName,
+                        String currentPrice, String status, String username) {
         this.stage = stage;
         this.auctionId = auctionId;
         this.itemName = itemName;
@@ -28,16 +28,15 @@ public class BidView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/com/auction/views/BidView.fxml")
+                    getClass().getResource("/com/auction/views/BidChartView.fxml")
             );
             Parent root = loader.load();
 
-            BidController controller = loader.getController();
-            String password = com.auction.util.SessionManager.getInstance().getPassword();
-            controller.setData(auctionId, itemName, currentPrice, status, username, password);
+            BidChartController controller = loader.getController();
+            controller.setData(auctionId, itemName, currentPrice, status, username);
 
             Scene scene = new Scene(root);
-            stage.setTitle("Đấu giá - " + itemName);
+            stage.setTitle("Biểu đồ giá - " + itemName);
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
