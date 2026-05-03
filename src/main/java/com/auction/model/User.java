@@ -57,7 +57,7 @@ public abstract class User extends Entity implements Observer {
     /**
      * Lấy số dư hiện tại
      */
-    public synchronized double getBalance() {
+    public  double getBalance() {
         return balance;
     }
 
