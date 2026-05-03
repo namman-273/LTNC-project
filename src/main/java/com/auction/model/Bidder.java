@@ -23,18 +23,29 @@ public class Bidder extends User {
     }
     // --- LOGIC WATCHLIST ---
 
-    public void addToWatchlist(String auctionId) {
-        if (auctionId != null && !auctionId.isEmpty()) {
-            watchlist.add(auctionId);
+    public boolean addToWatchlist(String auctionId) {
+        if (auctionId == null || auctionId.isEmpty()) {
+            return false;
         }
+
+        Set<String> currentWatchlist = getWatchlist();
+
+        if (currentWatchlist.contains(auctionId)) {
+            return false; // Đã có sẵn thì coi sai
+        }
+
+        currentWatchlist.add(auctionId);
+        return true; // Thêm thành công
     }
 
     public void removeFromWatchlist(String auctionId) {
-        watchlist.remove(auctionId);
+        getWatchlist().remove(auctionId);
     }
 
     public Set<String> getWatchlist() {
-        // Trả về một bản sao để bảo vệ tính đóng gói của dữ liệu gốc
-        return new HashSet<>(watchlist);
+        if (watchlist == null) {
+            watchlist = new HashSet<>(); // Chỉ khởi tạo khi thực sự cần dùng
+        }
+        return watchlist;
     }
 }
