@@ -11,14 +11,15 @@
 
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.RegisterController"
-      prefWidth="700" prefHeight="500">
+      prefWidth="700" prefHeight="500"
+      stylesheets="@style.css">
 
     <!-- CỘT TRÁI: xanh -->
     <VBox prefWidth="320" prefHeight="500" alignment="CENTER" spacing="15"
-          style="-fx-background-color: #2196F3;">
+          style="-fx-background-color: linear-gradient(to bottom, #1565C0, #2196F3);">
         <padding><Insets top="40" right="30" bottom="40" left="30"/></padding>
 
-        <Label text="HỆ THỐNG ĐẤU GIÁ"
+        <Label text="🏛️ HỆ THỐNG ĐẤU GIÁ"
                style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         <Label text="Tạo tài khoản mới"
                style="-fx-font-size: 13px; -fx-text-fill: #e0f0ff;"/>
@@ -31,20 +32,20 @@
           style="-fx-background-color: white;">
         <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
 
-        <Label text="Đăng Ký"
-               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
+        <Label text="👤 Đăng Ký"
+               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
 
         <TextField fx:id="usernameField" promptText="Tên đăng nhập"
-                   prefHeight="40"
-                   style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5;"/>
+                   prefHeight="42" prefWidth="300"
+                   styleClass="text-field-modern"/>
 
         <PasswordField fx:id="passwordField" promptText="Mật khẩu"
-                       prefHeight="40"
-                       style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5;"/>
+                       prefHeight="42" prefWidth="300"
+                       styleClass="text-field-modern"/>
 
         <PasswordField fx:id="confirmPasswordField" promptText="Xác nhận mật khẩu"
-                       prefHeight="40"
-                       style="-fx-border-color: #cccccc; -fx-border-radius: 5; -fx-background-radius: 5;"/>
+                       prefHeight="42" prefWidth="300"
+                       styleClass="text-field-modern"/>
 
         <ComboBox fx:id="roleComboBox" promptText="Chọn vai trò"
                   prefWidth="300" prefHeight="40"/>
@@ -54,11 +55,11 @@
 
         <Button text="ĐĂNG KÝ" onAction="#handleRegister"
                 prefWidth="300" prefHeight="43"
-                style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                styleClass="btn-primary"/>
 
         <Button text="Đã có tài khoản? Đăng nhập" onAction="#handleBackToLogin"
                 prefWidth="300" prefHeight="35"
-                style="-fx-background-color: transparent; -fx-text-fill: #2196F3; -fx-font-size: 12px;"/>
+                style="-fx-background-color: transparent; -fx-text-fill: #2196F3; -fx-font-size: 12px; -fx-cursor: hand;"/>
 
     </VBox>
 
