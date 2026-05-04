@@ -11,11 +11,13 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.AdminDashboardController"
       prefWidth="750" prefHeight="550" spacing="15"
-      style="-fx-background-color: #f5f5f5;">
+      stylesheets="@style.css"
+      style="-fx-background-color: #f0f2f5;">
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
+    <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="10"
-          style="-fx-background-color: #e53935; -fx-background-radius: 8;"
+          style="-fx-background-color: linear-gradient(to right, #b71c1c, #e53935); -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);"
           prefHeight="60">
         <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
         <Button text="← Quay lại" onAction="#handleBack"
@@ -27,7 +29,9 @@
                 style="-fx-background-color: white; -fx-text-fill: #e53935; -fx-font-weight: bold; -fx-background-radius: 5;"/>
     </HBox>
 
-    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS">
+    <!-- BẢNG DANH SÁCH -->
+    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
+               styleClass="table-view">
         <columns>
             <TableColumn fx:id="idCol" text="ID" prefWidth="200"/>
             <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="180"/>
@@ -36,16 +40,14 @@
         </columns>
     </TableView>
 
-    <Label fx:id="messageLabel" text=""
-           style="-fx-font-size: 12px;" wrapText="true"/>
-
+    <!-- NÚT BÊN DƯỚI -->
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button text="🔴 Kết thúc phiên" onAction="#handleEndAuction"
                 prefHeight="38" prefWidth="160"
-                style="-fx-background-color: #e53935; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                styleClass="btn-danger"/>
         <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"
                 prefHeight="38" prefWidth="160"
-                style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                styleClass="btn-primary"/>
     </HBox>
 
 </VBox>
