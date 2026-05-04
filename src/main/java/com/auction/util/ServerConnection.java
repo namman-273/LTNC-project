@@ -61,7 +61,10 @@ public class ServerConnection {
 
     public String receive() {
         try {
-            if (!isConnected()) return null;
+            // FIX [NeedBraces]: thêm {} cho if một dòng
+            if (!isConnected()) {
+                return null;
+            }
             return in.readLine();
         } catch (Exception e) {
             System.err.println("Lỗi nhận: " + e.getMessage());
@@ -76,17 +79,21 @@ public class ServerConnection {
 
     public void disconnect() {
         try {
-            if (socket != null) socket.close();
+            if (socket != null) {
+                socket.close();
+            }
             socket = null;
             instance = null;
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     public ServerConnection(String host, int port) {
         this.host = host;
         this.port = port;
     }
+
     public boolean connectDirect() {
         try {
             socket = new Socket(this.host, this.port);

@@ -48,8 +48,7 @@ public final class DataManager {
         Map<String, Auction> loadedAuctions = loadMapFromFile(AUCTION_DATA_FILE);
         if (loadedAuctions != null) {
             AuctionService.getInstance().setAuctions(loadedAuctions);
-            // Quan trọng: Sau khi load Auction, phải khôi phục transient (lock,
-            // executor...)
+            // Quan trọng: Sau khi load Auction, phải khôi phục transient (lock, executor...)
             for (Auction a : loadedAuctions.values()) {
                 a.restoreTransients();
             }
@@ -88,8 +87,10 @@ public final class DataManager {
     @SuppressWarnings("unchecked")
     private <K, V> Map<K, V> loadMapFromFile(String fileName) {
         File file = new File(fileName);
-        if (!file.exists())
+        // FIX [NeedBraces]: thêm {} cho if một dòng
+        if (!file.exists()) {
             return null;
+        }
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             return (Map<K, V>) ois.readObject();

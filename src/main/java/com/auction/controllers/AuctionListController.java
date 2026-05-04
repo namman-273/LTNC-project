@@ -68,7 +68,9 @@ public class AuctionListController implements Initializable {
                         try {
                             double p = Double.parseDouble(price);
                             price = String.format("%,.0f VND", p);
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException ignored) {
+                            // ignored
+                        }
                         data.add(new AuctionRow(id, itemName, price, status));
                     }
                 }
@@ -101,7 +103,6 @@ public class AuctionListController implements Initializable {
         }
         return text.substring(start, end).trim();
     }
-
 
     @FXML
     private void handleViewDetail() {
@@ -145,10 +146,22 @@ public class AuctionListController implements Initializable {
             this.status = status;
         }
 
-        public String getId() { return id; }
-        public String getItemName() { return itemName; }
-        public String getCurrentPrice() { return currentPrice; }
-        public String getStatus() { return status; }
+        // FIX [LeftCurly]: mở rộng getter thành nhiều dòng
+        public String getId() {
+            return id;
+        }
+
+        public String getItemName() {
+            return itemName;
+        }
+
+        public String getCurrentPrice() {
+            return currentPrice;
+        }
+
+        public String getStatus() {
+            return status;
+        }
     }
 
     @FXML
