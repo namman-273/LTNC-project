@@ -162,11 +162,10 @@
                     <consoleOutput>true</consoleOutput>
                     <!--
                         failOnViolation=true => Build THỰC SỰ fail khi có vi phạm.
-                        violationSeverity=warning: Google checks mặc định là warning,
-                        đặt thành warning để bắt tất cả vi phạm.
+                    
                     -->
                     <failOnViolation>true</failOnViolation>
-                    <violationSeverity>warning</violationSeverity>
+                    <violationSeverity>error</violationSeverity>
                     <linkXRef>false</linkXRef>
                     <!-- Bỏ qua file generated (nếu có) -->
                     <excludes>**/generated/**/*</excludes>
