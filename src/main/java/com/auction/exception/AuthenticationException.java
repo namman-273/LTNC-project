@@ -1,8 +1,16 @@
 package com.auction.exception;
 
+/**
+ * Exception thrown when authentication fails.
+ */
 public class AuthenticationException extends Exception {
-    public AuthenticationException(String message) {
-        super(message);
-    }
+  /**
+   * Constructs an AuthenticationException with the specified message.
+   *
+   * @param message the detail message
+   */
+  public AuthenticationException(String message) {
+    super(message);
+  }
 }
 //
