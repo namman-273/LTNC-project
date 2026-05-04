@@ -1,5 +1,8 @@
 package com.auction.util;
 
+/**
+ * SessionManager class.
+ */
 public class SessionManager {
 
     private static SessionManager instance;
@@ -22,9 +25,18 @@ public class SessionManager {
         this.role = role;
     }
 
-    public String getUsername() { return username; }
-    public String getPassword() { return password; }
-    public String getRole() { return role; }
+    // FIX [LeftCurly]: mở rộng getter thành nhiều dòng
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getRole() {
+        return role;
+    }
 
     public void clear() {
         username = null;
