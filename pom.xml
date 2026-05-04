@@ -17,7 +17,7 @@
         <checkstyle.plugin.version>3.3.1</checkstyle.plugin.version>
         <checkstyle.core.version>10.18.1</checkstyle.core.version>
         <jacoco.version>0.8.12</jacoco.version>
-        <javafx.version>17.0.8</javafx.version>
+        <javafx.version>17.0.6</javafx.version>
         <junit.version>5.10.2</junit.version>
         <mockito.version>5.11.0</mockito.version>
         <surefire.version>3.1.2</surefire.version>
