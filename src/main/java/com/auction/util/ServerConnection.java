@@ -9,6 +9,7 @@ public class ServerConnection {
 
     private static final String HOST = "localhost";
     private static final int PORT = 9999;
+
     private String host;
     private int port;
 
@@ -16,36 +17,62 @@ public class ServerConnection {
     private PrintWriter out;
     private BufferedReader in;
 
-    private static ServerConnection instance;
+    private static volatile ServerConnection instance;
 
-    private ServerConnection() {}
+    private ServerConnection() {
+        this.host = HOST;
+        this.port = PORT;
+    }
 
     public static ServerConnection getInstance() {
         if (instance == null) {
-            instance = new ServerConnection();
+            synchronized (ServerConnection.class) {
+                if (instance == null) {
+                    instance = new ServerConnection();
+                }
+            }
         }
         return instance;
     }
 
+    public ServerConnection(String host, int port) {
+        this.host = host;
+        this.port = port;
+    }
+
     public boolean connect() {
-        try {
-            // Nếu đã kết nối rồi thì không kết nối lại
-            if (socket != null && !socket.isClosed() && socket.isConnected()) {
+        synchronized (this) {
+            try {
+                if (socket != null && !socket.isClosed() && socket.isConnected()) {
+                    return true;
+                }
+                socket = new Socket(host, port);
+                out = new PrintWriter(socket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                System.out.println("Kết nối server thành công!");
                 return true;
+            } catch (Exception e) {
+                System.err.println("Không thể kết nối server: " + e.getMessage());
+                socket = null;
+                return false;
             }
-            socket = new Socket(HOST, PORT);
+        }
+    }
+
+    public boolean connectDirect() {
+        try {
+            socket = new Socket(this.host, this.port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            System.out.println("Kết nối server thành công!");
+            System.out.println("Kết nối trực tiếp thành công!");
             return true;
         } catch (Exception e) {
-            System.err.println("Không thể kết nối server: " + e.getMessage());
-            socket = null;
+            System.err.println("Không thể kết nối: " + e.getMessage());
             return false;
         }
     }
 
-    public String sendAndReceive(String message) {
+    public synchronized String sendAndReceive(String message) {
         try {
             if (!isConnected()) {
                 return "ERROR|Mất kết nối server!";
@@ -74,29 +101,26 @@ public class ServerConnection {
         return socket != null && !socket.isClosed() && socket.isConnected();
     }
 
+    // Dùng cho singleton (reset instance)
     public void disconnect() {
+        synchronized (ServerConnection.class) {
+            try {
+                if (socket != null) socket.close();
+                socket = null;
+                instance = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Dùng cho connection phụ (listener, chart, bid riêng) — KHÔNG reset singleton
+    public void disconnectDirect() {
         try {
             if (socket != null) socket.close();
             socket = null;
-            instance = null;
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-    public ServerConnection(String host, int port) {
-        this.host = host;
-        this.port = port;
-    }
-    public boolean connectDirect() {
-        try {
-            socket = new Socket(this.host, this.port);
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            System.out.println("Kết nối trực tiếp thành công!");
-            return true;
-        } catch (Exception e) {
-            System.err.println("Không thể kết nối: " + e.getMessage());
-            return false;
         }
     }
 }

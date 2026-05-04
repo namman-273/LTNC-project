@@ -35,35 +35,31 @@ public class RegisterController implements Initializable {
         String confirmPassword = confirmPasswordField.getText().trim();
         String role = roleComboBox.getValue();
 
-        // Kiểm tra đầu vào
         if (username.isEmpty() || password.isEmpty()) {
             showError("Vui lòng nhập đầy đủ thông tin!");
             return;
         }
-
         if (!password.equals(confirmPassword)) {
             showError("Mật khẩu xác nhận không khớp!");
             return;
         }
-
         if (role == null) {
             showError("Vui lòng chọn vai trò!");
             return;
         }
 
-        // Gửi lệnh REGISTER lên server
         ServerConnection conn = ServerConnection.getInstance();
         if (!conn.connect()) {
             showError("Không thể kết nối server!");
             return;
         }
 
-        String response = conn.sendAndReceive("REGISTER|" + username + "|" + password + "|" + role);
-        System.out.println("Server tra ve: " + response);
+        String response = conn.sendAndReceive(
+                "REGISTER|" + username + "|" + password + "|" + role);
+        System.out.println("Server trả về: " + response);
 
         if (response != null && response.startsWith("REGISTER_SUCCESS")) {
             showSuccess("Đăng ký thành công! Đang chuyển về đăng nhập...");
-            // Chờ 1 giây rồi chuyển về Login
             new Thread(() -> {
                 try {
                     Thread.sleep(1000);

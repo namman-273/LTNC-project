@@ -44,14 +44,13 @@ public class AdminDashboardController implements Initializable {
 
     public void loadFromServer() {
         new Thread(() -> {
+            ServerConnection conn = new ServerConnection("localhost", 9999);
             try {
-                ServerConnection conn = new ServerConnection("localhost", 9999);
                 if (!conn.connectDirect()) return;
                 String user = SessionManager.getInstance().getUsername();
                 String pwd  = SessionManager.getInstance().getPassword();
                 conn.sendAndReceive("LOGIN|" + user + "|" + pwd);
                 String response = conn.sendAndReceive("LIST_AUCTIONS");
-                conn.disconnect();
 
                 ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
@@ -60,7 +59,6 @@ public class AdminDashboardController implements Initializable {
                     if (start != -1) {
                         String content = response.substring(start)
                                 .replace("[", "").replace("]", "").trim();
-
                         String[] auctions = content.split(",\\s*(?=id=)");
                         for (String a : auctions) {
                             a = a.trim();
@@ -86,6 +84,8 @@ public class AdminDashboardController implements Initializable {
 
             } catch (Exception e) {
                 System.err.println("Lỗi load danh sách: " + e.getMessage());
+            } finally {
+                conn.disconnectDirect();
             }
         }).start();
     }
@@ -104,61 +104,54 @@ public class AdminDashboardController implements Initializable {
     }
 
     @FXML
-    private void handleRefresh() {
-        loadFromServer();
-    }
+    private void handleRefresh() { loadFromServer(); }
 
     @FXML
     private void handleEndAuction() {
         AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showMessage("Vui lòng chọn một phiên để kết thúc!", "red");
-            return;
-        }
-        if ("FINISHED".equals(selected.getStatus())) {
-            showMessage("Phiên này đã kết thúc rồi!", "red");
-            return;
-        }
+        if (selected == null) { showMessage("Vui lòng chọn một phiên để kết thúc!", "red"); return; }
+        if ("FINISHED".equals(selected.getStatus())) { showMessage("Phiên này đã kết thúc rồi!", "red"); return; }
         showMessage("Đang kết thúc phiên...", "orange");
 
         new Thread(() -> {
             ServerConnection conn = new ServerConnection("localhost", 9999);
-            if (!conn.connectDirect()) {
-                Platform.runLater(() -> showMessage("Không thể kết nối server!", "red"));
-                return;
-            }
-            String user = SessionManager.getInstance().getUsername();
-            String pwd  = SessionManager.getInstance().getPassword();
-            conn.sendAndReceive("LOGIN|" + user + "|" + pwd);
-            String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
-            System.out.println("End auction: " + response);
-            conn.disconnect();
-
-            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
-
-            Platform.runLater(() -> {
-                if (response != null && response.contains("SUCCESS")) {
-                    showMessage("✅ Kết thúc phiên thành công!", "green");
-                } else {
-                    showMessage("❌ Lỗi: " + response, "red");
+            try {
+                if (!conn.connectDirect()) {
+                    Platform.runLater(() -> showMessage("Không thể kết nối server!", "red"));
+                    return;
                 }
-                loadFromServer();
-            });
+                String user = SessionManager.getInstance().getUsername();
+                String pwd  = SessionManager.getInstance().getPassword();
+                conn.sendAndReceive("LOGIN|" + user + "|" + pwd);
+                String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
+                System.out.println("End auction: " + response);
+
+                try { Thread.sleep(300); } catch (InterruptedException ignored) {}
+
+                Platform.runLater(() -> {
+                    if (response != null && response.contains("SUCCESS")) {
+                        showMessage("✅ Kết thúc phiên thành công!", "green");
+                    } else {
+                        showMessage("❌ Lỗi: " + response, "red");
+                    }
+                    loadFromServer();
+                });
+            } finally {
+                conn.disconnectDirect();
+            }
         }).start();
     }
 
     @FXML
     private void handleCreateAuction() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
-        CreateAuctionView createView = new CreateAuctionView(stage, username);
-        createView.show();
+        new CreateAuctionView(stage, username).show();
     }
 
     @FXML
     private void handleBack() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
-        AuctionListView listView = new AuctionListView(stage, username);
-        listView.show();
+        new AuctionListView(stage, username).show();
     }
 
     private void showMessage(String msg, String color) {
@@ -172,10 +165,8 @@ public class AdminDashboardController implements Initializable {
         private String id, itemName, currentPrice, status;
 
         public AuctionRow(String id, String itemName, String currentPrice, String status) {
-            this.id = id;
-            this.itemName = itemName;
-            this.currentPrice = currentPrice;
-            this.status = status;
+            this.id = id; this.itemName = itemName;
+            this.currentPrice = currentPrice; this.status = status;
         }
 
         public String getId() { return id; }

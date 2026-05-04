@@ -2,16 +2,20 @@ package com.auction.util;
 
 public class SessionManager {
 
-    private static SessionManager instance;
+    private static volatile SessionManager instance;
     private String username;
-    private String password; // Chỉ dùng nội bộ, không expose ra ngoài
+    private String password;
     private String role;
 
     private SessionManager() {}
 
     public static SessionManager getInstance() {
         if (instance == null) {
-            instance = new SessionManager();
+            synchronized (SessionManager.class) {
+                if (instance == null) {
+                    instance = new SessionManager();
+                }
+            }
         }
         return instance;
     }
@@ -24,9 +28,6 @@ public class SessionManager {
 
     public String getUsername() { return username; }
     public String getRole() { return role; }
-
-    // Package-private - chỉ dùng nội bộ trong package util
-    public String getPasswordInternal() { return password; }
     public String getPassword() { return password; }
 
     public void clear() {

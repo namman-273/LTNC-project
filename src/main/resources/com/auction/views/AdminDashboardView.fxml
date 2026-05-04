@@ -10,12 +10,11 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.AdminDashboardController"
-      prefWidth="750" prefHeight="550" spacing="15"
+      prefWidth="750" prefHeight="580" spacing="15"
       stylesheets="@style.css"
       style="-fx-background-color: #f0f2f5;">
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
-    <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="10"
           style="-fx-background-color: linear-gradient(to right, #b71c1c, #e53935); -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);"
           prefHeight="60">
@@ -29,9 +28,7 @@
                 style="-fx-background-color: white; -fx-text-fill: #e53935; -fx-font-weight: bold; -fx-background-radius: 5;"/>
     </HBox>
 
-    <!-- BẢNG DANH SÁCH -->
-    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
-               styleClass="table-view">
+    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS" styleClass="table-view">
         <columns>
             <TableColumn fx:id="idCol" text="ID" prefWidth="200"/>
             <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="180"/>
@@ -40,14 +37,14 @@
         </columns>
     </TableView>
 
-    <!-- NÚT BÊN DƯỚI -->
+    <!-- FIX: thêm messageLabel -->
+    <Label fx:id="messageLabel" text="" style="-fx-font-size: 12px; -fx-min-height: 18px;"/>
+
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button text="🔴 Kết thúc phiên" onAction="#handleEndAuction"
-                prefHeight="38" prefWidth="160"
-                styleClass="btn-danger"/>
+                prefHeight="38" prefWidth="160" styleClass="btn-danger"/>
         <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"
-                prefHeight="38" prefWidth="160"
-                styleClass="btn-primary"/>
+                prefHeight="38" prefWidth="160" styleClass="btn-primary"/>
     </HBox>
 
 </VBox>

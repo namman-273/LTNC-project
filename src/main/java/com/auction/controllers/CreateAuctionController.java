@@ -1,5 +1,6 @@
 package com.auction.controllers;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -23,9 +24,7 @@ public class CreateAuctionController implements Initializable {
 
     private String username;
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    public void setUsername(String username) { this.username = username; }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -41,45 +40,36 @@ public class CreateAuctionController implements Initializable {
         String duration = durationField.getText().trim();
 
         if (name.isEmpty() || price.isEmpty() || duration.isEmpty()) {
-            showError("Vui lòng nhập đầy đủ thông tin!");
-            return;
+            showError("Vui lòng nhập đầy đủ thông tin!"); return;
         }
-
         try {
             Double.parseDouble(price);
             Long.parseLong(duration);
         } catch (NumberFormatException e) {
-            showError("Giá và thời gian phải là số!");
-            return;
+            showError("Giá và thời gian phải là số!"); return;
         }
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             if (!conn.isConnected()) {
-                javafx.application.Platform.runLater(() -> showError("Mất kết nối server!"));
+                Platform.runLater(() -> showError("Mất kết nối server!"));
                 return;
             }
             String response = conn.sendAndReceive(
-                    "CREATE_AUCTION|" + type + "|" + name + "|" + price + "|" + duration
-            );
-
-
+                    "CREATE_AUCTION|" + type + "|" + name + "|" + price + "|" + duration);
             System.out.println("Create auction response: " + response);
 
-            javafx.application.Platform.runLater(() -> {
+            Platform.runLater(() -> {
                 if (response != null && response.startsWith("SUCCESS")) {
                     showSuccess("Tạo phiên thành công! Đang chuyển về danh sách...");
                     new Thread(() -> {
                         try {
                             Thread.sleep(1500);
-                            javafx.application.Platform.runLater(() -> {
+                            Platform.runLater(() -> {
                                 Stage stage = (Stage) nameField.getScene().getWindow();
-                                AuctionListView listView = new AuctionListView(stage, username);
-                                listView.show();
+                                new AuctionListView(stage, username).show();
                             });
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                        } catch (InterruptedException e) { e.printStackTrace(); }
                     }).start();
                 } else {
                     showError("Tạo phiên thất bại! " + (response != null ? response : ""));
@@ -91,8 +81,7 @@ public class CreateAuctionController implements Initializable {
     @FXML
     private void handleBack() {
         Stage stage = (Stage) nameField.getScene().getWindow();
-        AuctionListView listView = new AuctionListView(stage, username);
-        listView.show();
+        new AuctionListView(stage, username).show();
     }
 
     private void showError(String msg) {
