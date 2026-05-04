@@ -12,14 +12,14 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <!-- Phiên bản plugin được ghim cứng để build tái lặp (reproducible) -->
         <checkstyle.plugin.version>3.3.1</checkstyle.plugin.version>
-        <checkstyle.core.version>10.12.1</checkstyle.core.version>
-        <jacoco.version>0.8.11</jacoco.version>
+        <checkstyle.core.version>10.18.1</checkstyle.core.version>
+        <jacoco.version>0.8.12</jacoco.version>
         <javafx.version>17.0.8</javafx.version>
-        <junit.version>5.10.0</junit.version>
+        <junit.version>5.10.2</junit.version>
+        <mockito.version>5.11.0</mockito.version>
         <surefire.version>3.1.2</surefire.version>
         <!-- Ngưỡng coverage tối thiểu: 60% instruction coverage -->
         <jacoco.minimum.coverage>0.60</jacoco.minimum.coverage>
@@ -27,7 +27,18 @@
 
     <!-- ===== DEPENDENCIES ===== -->
     <dependencies>
+
         <!-- JavaFX UI -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -66,21 +77,39 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!--
+            Mockito — mock AuctionManager, Socket, DAO, v.v. trong unit test.
+            mockito-junit-jupiter tích hợp sẵn @ExtendWith(MockitoExtension.class)
+            nên không cần gọi MockitoAnnotations.openMocks() thủ công.
+        -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <!-- ===== BUILD PLUGINS ===== -->
     <build>
         <plugins>
 
-            <!-- 1. COMPILER: tường minh encoding UTF-8, tương thích JDK 17 -->
+            <!-- 1. COMPILER: dùng <release> thay cho source+target để tránh khai báo trùng -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
+                    <release>17</release>
                     <encoding>UTF-8</encoding>
-                    <source>17</source>
-                    <target>17</target>
                     <!-- Bật warning đầy đủ khi compile -->
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
@@ -129,14 +158,12 @@
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <!--
-                        FIX: failOnViolation=true + severity="error" trong checkstyle.xml
+                        failOnViolation=true + severity="error" trong checkstyle.xml
                         => Build THỰC SỰ fail khi có vi phạm.
                         (failsOnError chỉ fail khi Checkstyle crash, không phải khi có violation)
                     -->
                     <failOnViolation>true</failOnViolation>
                     <violationSeverity>error</violationSeverity>
-                    <!-- Bỏ qua file Main.java rỗng (xóa file này khỏi project là tốt nhất) -->
-                    <excludes>**/Main.java</excludes>
                     <linkXRef>false</linkXRef>
                 </configuration>
                 <executions>

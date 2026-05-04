@@ -37,8 +37,8 @@ public class ClientHandler implements Runnable, Observer {
     private BufferedReader in;
     private final Gson gson = new com.google.gson.GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
-                    (com.google.gson.JsonSerializer<java.time.LocalDateTime>) (src, typeOfSrc, context) ->
-                            new com.google.gson.JsonPrimitive(src.toString()))
+                    (com.google.gson.JsonSerializer<java.time.LocalDateTime>) (src, typeOfSrc,
+                            context) -> new com.google.gson.JsonPrimitive(src.toString()))
             .create();
     private User currentUser;
 
@@ -110,7 +110,7 @@ public class ClientHandler implements Runnable, Observer {
                         break;
                     case Protocol.CMD_WATCH:
                         if (validatePayload(parts, REQ_WATCH))
-                            handleWatch(parts);
+                            handleWatch(parts, auctionService);
                         break;
 
                     case Protocol.CMD_UNWATCH:
@@ -302,19 +302,30 @@ public class ClientHandler implements Runnable, Observer {
     }
 
     // --- LOGIC XỬ LÝ WATCHLIST ---
-    private void handleWatch(String[] parts) {
+    private void handleWatch(String[] parts, AuctionService auctionService) {
         if (!(currentUser instanceof Bidder)) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ người mua mới có thể theo dõi sản phẩm.");
             return;
         }
 
         String auctionId = parts[1];
-        ((Bidder) currentUser).addToWatchlist(auctionId);
+        boolean isSuccess = ((Bidder) currentUser).addToWatchlist(auctionId);
+        if (isSuccess) {
+            // Lưu dữ liệu để bảo toàn danh sách theo dõi
+            DataManager.getInstance().saveData();
 
-        // Lưu dữ liệu để bảo toàn danh sách theo dõi
-        DataManager.getInstance().saveData();
-
-        sendMessage(Protocol.RES_WATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
+            sendMessage(Protocol.RES_WATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
+            Auction targetAuction = auctionService.getAuctionById(auctionId);
+            if (targetAuction != null) {
+                targetAuction.addObserver(this); // Đăng ký chính ClientHandler này để nhận tin nhắn
+                System.out.println("[WATCHLIST] User " + currentUser.getUsername()
+                        + " đã bắt đầu nhận thông báo từ phiên " + auctionId);
+            }
+        } else {
+            // Thêm phản hồi nếu Watchlist đầy hoặc sản phẩm đã có sẵn
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+                    + "Theo dõi thất bại! (Sản phẩm đã có trong danh sách hoặc không tồn tại)");
+        }
     }
 
     private void handleUnwatch(String[] parts) {
@@ -355,10 +366,8 @@ public class ClientHandler implements Runnable, Observer {
                 return;
             }
 
-            
             auction.addAutoBidConfig(currentUser.getUsername(), maxBid);
 
-        
             DataManager.getInstance().saveData();
 
             // Phản hồi cho FE để hiển thị thông báo
@@ -366,7 +375,8 @@ public class ClientHandler implements Runnable, Observer {
                     auctionId + Protocol.SEPARATOR + "Autobid bot đã sẵn sàng với hạn mức: " + (long) maxBid + " VNĐ");
 
             System.out.println(
-                    "[AUTOBID] Người dùng " + currentUser.getUsername() + " đã kích hoạt Autobid cho phiên " + auctionId);
+                    "[AUTOBID] Người dùng " + currentUser.getUsername() + " đã kích hoạt Autobid cho phiên "
+                            + auctionId);
 
         } catch (NumberFormatException e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Ngân sách tối đa phải là một con số.");
@@ -401,4 +411,3 @@ public class ClientHandler implements Runnable, Observer {
         }
     }
 }
-// To-do:chỉnh sang Logger
