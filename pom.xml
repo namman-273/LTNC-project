@@ -49,6 +49,12 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <!-- JavaFX Charts — cần cho LineChart (Bid History Visualization) -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-charts</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
 
         <!-- JSON serialization -->
         <dependency>
@@ -108,7 +114,6 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <release>17</release>
                     <encoding>UTF-8</encoding>
                     <!-- Bật warning đầy đủ khi compile -->
                     <compilerArgs>
