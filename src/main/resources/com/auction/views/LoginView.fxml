@@ -14,45 +14,55 @@
       stylesheets="@style.css">
 
     <!-- CỘT TRÁI: xanh -->
-    <VBox prefWidth="320" prefHeight="450" alignment="CENTER" spacing="15"
-          style="-fx-background-color: #2196F3;">
+    <VBox prefWidth="320" prefHeight="500" alignment="CENTER" spacing="15"
+          style="-fx-background-color: linear-gradient(to bottom, #1565C0, #2196F3);">
         <padding><Insets top="40" right="30" bottom="40" left="30"/></padding>
 
+        <Label text="🏛️"
+               style="-fx-font-size: 50px;"/>
         <Label text="HỆ THỐNG ĐẤU GIÁ"
-               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         <Label text="1388AUCTION System"
                style="-fx-font-size: 13px; -fx-text-fill: #e0f0ff;"/>
     </VBox>
 
     <!-- CỘT PHẢI: trắng -->
-    <VBox prefWidth="380" prefHeight="450" alignment="CENTER" spacing="15"
+    <VBox prefWidth="380" prefHeight="500" alignment="CENTER" spacing="15"
           style="-fx-background-color: white;">
         <padding><Insets top="50" right="40" bottom="50" left="40"/></padding>
 
+        <Label text="👤"
+               style="-fx-font-size: 40px; -fx-text-fill: #2196F3;"/>
+
         <Label text="Welcome Back"
-               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
+               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+
+        <Label text="1388AUCTION"
+               style="-fx-font-size: 13px; -fx-text-fill: #888888;"/>
 
         <TextField fx:id="usernameField" promptText="Tên đăng nhập"
-                   prefHeight="40"
+                   prefHeight="42" prefWidth="300"
                    styleClass="text-field-modern"/>
 
         <PasswordField fx:id="passwordField" promptText="Mật khẩu"
-                       prefHeight="40"
+                       prefHeight="42" prefWidth="300"
                        styleClass="text-field-modern"/>
 
         <Label fx:id="errorLabel" text=""
                style="-fx-text-fill: red; -fx-font-size: 12px;"/>
 
         <Button fx:id="loginButton" text="ĐĂNG NHẬP"
-                prefWidth="300" prefHeight="43"
+                prefWidth="300" prefHeight="45"
                 onAction="#handleLogin"
                 styleClass="btn-primary"/>
 
-        <Label text="Quên mật khẩu?"
-               style="-fx-text-fill: #888888; -fx-font-size: 12px;"/>
-        <Button text="Chưa có tài khoản? Đăng ký" onAction="#handleRegister"
+        <Button text="Chưa có tài khoản? Đăng ký"
+                onAction="#handleRegister"
                 prefWidth="300" prefHeight="35"
-                style="-fx-background-color: transparent; -fx-text-fill: #2196F3; -fx-font-size: 12px;"/>       
+                style="-fx-background-color: transparent; -fx-text-fill: #2196F3; -fx-font-size: 12px; -fx-cursor: hand;"/>
+
+        <Label text="Quên mật khẩu?"
+               style="-fx-text-fill: #888888; -fx-font-size: 12px; -fx-cursor: hand;"/>
     </VBox>
 
 </HBox>
