@@ -4,7 +4,6 @@ import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
 import com.auction.service.UserManager;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -12,10 +11,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Represents an auction entity for managing item bidding with concurrent access
+ * support.
+ * Handles auction lifecycle, auto-bidding, and observer notifications.
+ */
 public class Auction extends Entity {
   private static final long serialVersionUID = 1L;
+
   private static final int THREAD_POOL_SIZE = 10;
-  private static final long TWO_MINUTES_MS = 120000L;
+  private static final long TWO_MINUTES_MS = 120000L; // ep kieu sang long
   private static final long ONE_MINUTE_MS = 600000L;
   private static final int MAX_EXTENSIONS = 3;
 
@@ -175,10 +180,10 @@ public class Auction extends Entity {
     // Nếu trạng thái là FINISHED, PAID hoặc CANCELED hoặc hết giờ thì không cho BID
     // nữa
     long currentTime = System.currentTimeMillis();
-    if (currentTime > endTime ||
-        this.status == AuctionStatus.FINISHED ||
-        this.status == AuctionStatus.PAID ||
-        this.status == AuctionStatus.CANCELED) {
+    if (currentTime > endTime
+        || this.status == AuctionStatus.FINISHED
+        || this.status == AuctionStatus.PAID
+        || this.status == AuctionStatus.CANCELED) {
       throw new AuctionClosedException("Phiên đấu giá không còn trong thời gian đặt giá.");
     }
   }
@@ -220,7 +225,8 @@ public class Auction extends Entity {
       if (oldBidder != null && !oldBidder.equals(bidder)) {
         oldBidder.addBalance(lastTransaction.getAmount());
         // Thông báo tiền về ví cho người cũ
-        oldBidder.update("REFUND|Phiên " + getId() + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount());
+        String refundMessage = "REFUND|Phiên " + getId() + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount();
+        oldBidder.update(refundMessage);
       }
     }
 

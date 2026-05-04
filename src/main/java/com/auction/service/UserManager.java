@@ -49,7 +49,7 @@ public class UserManager {
   }
 
   /**
-   * Hỗ trợ đăng ký người dùng mới
+   * Hỗ trợ đăng ký người dùng mới.
    */
   public boolean register(String username, String password, String role) {
     if (users.containsKey(username)) {

@@ -1,5 +1,8 @@
 package com.auction.model;
 
+/**
+ * Art class representing artwork items in the auction system.
+ */
 public class Art extends Item {
 
   private static final long serialVersionUID = 1L;

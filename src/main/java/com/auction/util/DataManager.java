@@ -80,7 +80,6 @@ public final class DataManager {
       Path source = Paths.get(tempFileName);
       Path target = Paths.get(fileName);
       Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-
     } catch (IOException e) {
       System.err.println(">>> [DataManager] Lỗi lưu " + fileName + ": " + e.getMessage());
       if (tempFile.exists()) {
