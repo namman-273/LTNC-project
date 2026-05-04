@@ -7,8 +7,10 @@ import java.util.Base64;
 // Hàm hỗ trợ băm mật khẩu chuẩn SHA-256
 public class SecurityUtils {
     public static String hashPassword(String password, String salt) {
-        if (password == null || salt == null)
+        // FIX [NeedBraces]: thêm {} cho if một dòng
+        if (password == null || salt == null) {
             return null;
+        }
         try {
             // Sử dụng thuật toán SHA-256 (Tiêu chuẩn phổ biến)
             MessageDigest md = MessageDigest.getInstance("SHA-256");

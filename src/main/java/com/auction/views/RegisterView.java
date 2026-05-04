@@ -16,7 +16,8 @@ public class RegisterView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/com/auction/views/RegisterView.fxml")
+                    // FIX [Indentation]: tăng indent từ 16 lên 20 spaces
+                    getClass().getResource("/com/auction/views/RegisterView.fxml")
             );
             Parent root = loader.load();
             Scene scene = new Scene(root);

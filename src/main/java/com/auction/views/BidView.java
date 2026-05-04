@@ -15,7 +15,8 @@ public class BidView {
     private String status;
     private String username;
 
-    public BidView(Stage stage, String auctionId, String itemName, 
+    // FIX [RegexpSingleline]: xoá khoảng trắng thừa cuối dòng
+    public BidView(Stage stage, String auctionId, String itemName,
                    String currentPrice, String status, String username) {
         this.stage = stage;
         this.auctionId = auctionId;
@@ -28,7 +29,8 @@ public class BidView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/com/auction/views/BidView.fxml")
+                    // FIX [Indentation]: tăng indent từ 16 lên 20 spaces
+                    getClass().getResource("/com/auction/views/BidView.fxml")
             );
             Parent root = loader.load();
 
