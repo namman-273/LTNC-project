@@ -9,8 +9,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import com.auction.views.LoginView;
 import com.auction.util.ServerConnection;
+import com.auction.views.LoginView;
 import com.auction.views.BidView;
 import com.auction.views.CreateAuctionView;
 import com.auction.views.AdminDashboardView;
@@ -46,22 +46,28 @@ public class AuctionListController implements Initializable {
     private void loadFromServer() {
         try {
             ServerConnection conn = ServerConnection.getInstance();
+            if (!conn.isConnected()) {
+                conn.connect();
+            }
             String response = conn.sendAndReceive("LIST_AUCTIONS");
-            System.out.println("RAW: [" + response + "]");
+            System.out.println("RAW: " + response);
+
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
             if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                String content = response.substring(response.indexOf("[") + 1, response.lastIndexOf("]"));
+                int start = response.indexOf("[");
+                if (start != -1) {
+                    String content = response.substring(start)
+                            .replace("[", "").replace("]", "").trim();
 
-                if (!content.isEmpty()) {
                     String[] auctions = content.split(",\\s*(?=id=)");
                     for (String a : auctions) {
                         a = a.trim();
                         if (a.isEmpty() || !a.contains("id=")) continue;
-                        String id = extractField(a, "id=");
+                        String id       = extractField(a, "id=");
                         String itemName = extractField(a, "itemName=");
-                        String price = extractField(a, "currentPrice=");
-                        String status = extractField(a, "status=");
+                        String price    = extractField(a, "currentPrice=");
+                        String status   = extractField(a, "status=");
                         try {
                             double p = Double.parseDouble(price);
                             price = String.format("%,.0f VND", p);
@@ -89,13 +95,19 @@ public class AuctionListController implements Initializable {
         String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
         for (String nextKey : nextKeys) {
             int pos = text.indexOf("," + nextKey, start);
-            if (pos != -1 && pos < end) {
-                end = pos;
-            }
+            if (pos != -1 && pos < end) end = pos;
         }
         return text.substring(start, end).trim();
     }
 
+    @FXML
+    public void handleRefresh() {
+        loadFromServer();
+    }
+
+    public void refreshList() {
+        loadFromServer();
+    }
 
     @FXML
     private void handleViewDetail() {
@@ -104,23 +116,38 @@ public class AuctionListController implements Initializable {
             System.out.println("Chưa chọn phiên nào!");
             return;
         }
-
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         BidView bidView = new BidView(
-            stage,
-            selected.getId(),
-            selected.getItemName(),
-            selected.getCurrentPrice(),
-            selected.getStatus(),
-            username
+                stage,
+                selected.getId(),
+                selected.getItemName(),
+                selected.getCurrentPrice(),
+                selected.getStatus(),
+                username
         );
         bidView.show();
     }
+
     @FXML
     private void handleLogout() {
+        ServerConnection.getInstance().disconnect();
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         LoginView loginView = new LoginView(stage);
         loginView.show();
+    }
+
+    @FXML
+    private void handleCreateAuction() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        CreateAuctionView createView = new CreateAuctionView(stage, username);
+        createView.show();
+    }
+
+    @FXML
+    private void handleAdminDashboard() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        AdminDashboardView adminView = new AdminDashboardView(stage, username);
+        adminView.show();
     }
 
     public static class AuctionRow {
@@ -137,25 +164,5 @@ public class AuctionListController implements Initializable {
         public String getItemName() { return itemName; }
         public String getCurrentPrice() { return currentPrice; }
         public String getStatus() { return status; }
-    }
-    @FXML
-    private void handleCreateAuction() {
-        Stage stage = (Stage) auctionTable.getScene().getWindow();
-        CreateAuctionView createView = new CreateAuctionView(stage, username);
-        createView.show();
-    }
-    @FXML
-    private void handleAdminDashboard() {
-        Stage stage = (Stage) auctionTable.getScene().getWindow();
-        AdminDashboardView adminView = new AdminDashboardView(stage, username);
-        adminView.show();
-    }
-    @FXML
-    public void handleRefresh() {
-        loadFromServer();
-    }
-
-    public void refreshList() {
-        loadFromServer();
     }
 }

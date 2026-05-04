@@ -11,6 +11,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import com.auction.util.ServerConnection;
+import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
 import com.auction.views.CreateAuctionView;
 
@@ -42,43 +43,51 @@ public class AdminDashboardController implements Initializable {
     }
 
     public void loadFromServer() {
-        try {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive("LIST_AUCTIONS");
+        new Thread(() -> {
+            try {
+                ServerConnection conn = new ServerConnection("localhost", 9999);
+                if (!conn.connectDirect()) return;
+                String user = SessionManager.getInstance().getUsername();
+                String pwd  = SessionManager.getInstance().getPassword();
+                conn.sendAndReceive("LOGIN|" + user + "|" + pwd);
+                String response = conn.sendAndReceive("LIST_AUCTIONS");
+                conn.disconnect();
 
-            ObservableList<AuctionRow> data = FXCollections.observableArrayList();
+                ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
-            if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                int start = response.indexOf("[");
-                if (start != -1) {
-                    String content = response.substring(start)
-                            .replace("[", "").replace("]", "").trim();
+                if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
+                    int start = response.indexOf("[");
+                    if (start != -1) {
+                        String content = response.substring(start)
+                                .replace("[", "").replace("]", "").trim();
 
-                    String[] auctions = content.split(",\\s*(?=id=)");
-                    for (String a : auctions) {
-                        a = a.trim();
-                        if (a.isEmpty() || !a.contains("id=")) continue;
-                        String id       = extractField(a, "id=");
-                        String itemName = extractField(a, "itemName=");
-                        String price    = extractField(a, "currentPrice=");
-                        String status   = extractField(a, "status=");
-                        try {
-                            double p = Double.parseDouble(price);
-                            price = String.format("%,.0f VND", p);
-                        } catch (NumberFormatException ignored) {}
-                        data.add(new AuctionRow(id, itemName, price, status));
+                        String[] auctions = content.split(",\\s*(?=id=)");
+                        for (String a : auctions) {
+                            a = a.trim();
+                            if (a.isEmpty() || !a.contains("id=")) continue;
+                            String id       = extractField(a, "id=");
+                            String itemName = extractField(a, "itemName=");
+                            String price    = extractField(a, "currentPrice=");
+                            String status   = extractField(a, "status=");
+                            try {
+                                double p = Double.parseDouble(price);
+                                price = String.format("%,.0f VND", p);
+                            } catch (NumberFormatException ignored) {}
+                            data.add(new AuctionRow(id, itemName, price, status));
+                        }
                     }
                 }
-            }
 
-            if (data.isEmpty()) {
-                data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
-            }
-            auctionTable.setItems(data);
+                if (data.isEmpty()) {
+                    data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
+                }
 
-        } catch (Exception e) {
-            System.err.println("Lỗi load danh sách: " + e.getMessage());
-        }
+                Platform.runLater(() -> auctionTable.setItems(data));
+
+            } catch (Exception e) {
+                System.err.println("Lỗi load danh sách: " + e.getMessage());
+            }
+        }).start();
     }
 
     private String extractField(String text, String key) {
@@ -113,20 +122,28 @@ public class AdminDashboardController implements Initializable {
         showMessage("Đang kết thúc phiên...", "orange");
 
         new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
+            ServerConnection conn = new ServerConnection("localhost", 9999);
+            if (!conn.connectDirect()) {
+                Platform.runLater(() -> showMessage("Không thể kết nối server!", "red"));
+                return;
+            }
+            String user = SessionManager.getInstance().getUsername();
+            String pwd  = SessionManager.getInstance().getPassword();
+            conn.sendAndReceive("LOGIN|" + user + "|" + pwd);
             String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
             System.out.println("End auction: " + response);
-            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            conn.disconnect();
+
+            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+
             Platform.runLater(() -> {
                 if (response != null && response.contains("SUCCESS")) {
                     showMessage("✅ Kết thúc phiên thành công!", "green");
                 } else {
                     showMessage("❌ Lỗi: " + response, "red");
                 }
+                loadFromServer();
             });
-// Load sau thêm 500ms nữa
-            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
-            Platform.runLater(() -> loadFromServer());
         }).start();
     }
 

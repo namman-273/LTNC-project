@@ -4,7 +4,7 @@ public class SessionManager {
 
     private static SessionManager instance;
     private String username;
-    private String password;
+    private String password; // Chỉ dùng nội bộ, không expose ra ngoài
     private String role;
 
     private SessionManager() {}
@@ -23,8 +23,11 @@ public class SessionManager {
     }
 
     public String getUsername() { return username; }
-    public String getPassword() { return password; }
     public String getRole() { return role; }
+
+    // Package-private - chỉ dùng nội bộ trong package util
+    public String getPasswordInternal() { return password; }
+    public String getPassword() { return password; }
 
     public void clear() {
         username = null;
