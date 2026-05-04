@@ -49,8 +49,10 @@ public class UserManager {
      * Hỗ trợ đăng ký người dùng mới
      */
     public boolean register(String username, String password, String role) {
-        if (users.containsKey(username))
+        // FIX [NeedBraces]: thêm {} cho if một dòng
+        if (users.containsKey(username)) {
             return false;
+        }
         String hashedPassword = SecurityUtils.hashPassword(password, username);
         User newUser;
         // Phân quyền tạo đúng Object tương ứng

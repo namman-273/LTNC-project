@@ -57,7 +57,10 @@ public class AuctionListController implements Initializable {
                     String[] auctions = content.split(",\\s*(?=id=)");
                     for (String a : auctions) {
                         a = a.trim();
-                        if (a.isEmpty() || !a.contains("id=")) continue;
+                        // FIX [NeedBraces]: thêm {} cho if một dòng
+                        if (a.isEmpty() || !a.contains("id=")) {
+                            continue;
+                        }
                         String id = extractField(a, "id=");
                         String itemName = extractField(a, "itemName=");
                         String price = extractField(a, "currentPrice=");
@@ -83,7 +86,10 @@ public class AuctionListController implements Initializable {
 
     private String extractField(String text, String key) {
         int start = text.indexOf(key);
-        if (start == -1) return "---";
+        // FIX [NeedBraces]: thêm {} cho if một dòng
+        if (start == -1) {
+            return "---";
+        }
         start += key.length();
         int end = text.length();
         String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
@@ -106,16 +112,18 @@ public class AuctionListController implements Initializable {
         }
 
         Stage stage = (Stage) auctionTable.getScene().getWindow();
+        // FIX [Indentation]: tăng từ 12 lên 16 spaces cho các tham số wrap dòng
         BidView bidView = new BidView(
-            stage,
-            selected.getId(),
-            selected.getItemName(),
-            selected.getCurrentPrice(),
-            selected.getStatus(),
-            username
+                stage,
+                selected.getId(),
+                selected.getItemName(),
+                selected.getCurrentPrice(),
+                selected.getStatus(),
+                username
         );
         bidView.show();
     }
+
     @FXML
     private void handleLogout() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
@@ -124,7 +132,11 @@ public class AuctionListController implements Initializable {
     }
 
     public static class AuctionRow {
-        private String id, itemName, currentPrice, status;
+        // FIX [MultipleVariableDeclarations]: tách thành từng dòng riêng
+        private String id;
+        private String itemName;
+        private String currentPrice;
+        private String status;
 
         public AuctionRow(String id, String itemName, String currentPrice, String status) {
             this.id = id;
@@ -138,18 +150,21 @@ public class AuctionListController implements Initializable {
         public String getCurrentPrice() { return currentPrice; }
         public String getStatus() { return status; }
     }
+
     @FXML
     private void handleCreateAuction() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         CreateAuctionView createView = new CreateAuctionView(stage, username);
         createView.show();
     }
+
     @FXML
     private void handleAdminDashboard() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         AdminDashboardView adminView = new AdminDashboardView(stage, username);
         adminView.show();
     }
+
     @FXML
     public void handleRefresh() {
         loadFromServer();

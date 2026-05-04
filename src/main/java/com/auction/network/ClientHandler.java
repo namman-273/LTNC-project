@@ -48,7 +48,7 @@ public class ClientHandler implements Runnable, Observer {
 
     /**
      * Hàm Helper kiểm tra độ dài Payload để chống ArrayIndexOutOfBoundsException.
-     * 
+     *
      */
     private boolean validatePayload(String[] parts, int expectedLength) {
         if (parts == null || parts.length < expectedLength) {
@@ -68,64 +68,79 @@ public class ClientHandler implements Runnable, Observer {
             String request;
             while ((request = in.readLine()) != null) {
                 String[] parts = request.trim().split("\\|");
-                if (parts.length == 0)
+                // FIX [NeedBraces]: thêm {} cho if một dòng
+                if (parts.length == 0) {
                     continue;
+                }
                 String cmd = parts[0];
 
                 switch (cmd) {
                     case Protocol.CMD_REGISTER:
-                        if (validatePayload(parts, REQ_REGISTER))
+                        // FIX [NeedBraces]: thêm {} cho if (validatePayload(...))
+                        if (validatePayload(parts, REQ_REGISTER)) {
                             handleRegister(parts);
+                        }
                         break;
                     case Protocol.CMD_LOGIN:
-                        if (validatePayload(parts, REQ_LOGIN))
+                        if (validatePayload(parts, REQ_LOGIN)) {
                             handleLogin(parts, auctionService);
+                        }
                         break;
                     case Protocol.CMD_LIST_AUCTIONS:
                         handleListAuctions(auctionService);
                         break;
                     case Protocol.CMD_BID:
-                        if (validatePayload(parts, REQ_BID))
+                        if (validatePayload(parts, REQ_BID)) {
                             handleBid(parts, auctionService);
+                        }
                         break;
                     case Protocol.CMD_CREATE_AUCTION:
-                        if (validatePayload(parts, REQ_CREATE))
+                        if (validatePayload(parts, REQ_CREATE)) {
                             handleCreateAuction(parts, auctionService);
+                        }
                         break;
                     case Protocol.CMD_END_AUCTION:
-                        if (validatePayload(parts, REQ_END))
+                        if (validatePayload(parts, REQ_END)) {
                             handleEndAuction(parts, auctionService);
+                        }
                         break;
                     case Protocol.CMD_GET_HISTORY:
-                        if (validatePayload(parts, REQ_HISTORY))
+                        if (validatePayload(parts, REQ_HISTORY)) {
                             handleGetHistory(parts, auctionService);
+                        }
                         break;
                     case Protocol.CMD_DEPOSIT:
-                        if (validatePayload(parts, REQ_DEPOSIT))
+                        if (validatePayload(parts, REQ_DEPOSIT)) {
                             handleDeposit(parts);
+                        }
                         break;
                     case Protocol.CMD_GET_BALANCE:
-                        if (validatePayload(parts, REQ_GET_BALANCE))
+                        if (validatePayload(parts, REQ_GET_BALANCE)) {
                             handleGetBalance();
+                        }
                         break;
                     case Protocol.CMD_WATCH:
-                        if (validatePayload(parts, REQ_WATCH))
+                        if (validatePayload(parts, REQ_WATCH)) {
                             handleWatch(parts, auctionService);
+                        }
                         break;
 
                     case Protocol.CMD_UNWATCH:
-                        if (validatePayload(parts, REQ_UNWATCH))
+                        if (validatePayload(parts, REQ_UNWATCH)) {
                             handleUnwatch(parts);
+                        }
                         break;
 
                     case Protocol.CMD_GET_WATCHLIST:
-                        if (validatePayload(parts, REQ_GET_WATCHLIST))
+                        if (validatePayload(parts, REQ_GET_WATCHLIST)) {
                             handleGetWatchlist(auctionService);
+                        }
                         break;
 
                     case Protocol.CMD_ADD_AUTO_BID:
-                        if (validatePayload(parts, REQ_AUTO_BID))
+                        if (validatePayload(parts, REQ_AUTO_BID)) {
                             handleAddAutoBid(parts, auctionService);
+                        }
                         break;
                     default:
                         sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lệnh không hợp lệ");
@@ -234,9 +249,7 @@ public class ClientHandler implements Runnable, Observer {
             auction.processNewBid(currentUser, amount);
             sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amount);
             DataManager.getInstance().saveData();
-        } catch (
-
-        NumberFormatException e) {
+        } catch (NumberFormatException e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền phải là con số hợp lệ");
         } catch (Exception e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + e.getMessage());
@@ -399,10 +412,13 @@ public class ClientHandler implements Runnable, Observer {
         try {
             AuctionService.getInstance().removeObserverFromAll(this);
 
-            if (in != null)
+            // FIX [NeedBraces]: thêm {} cho if (in != null) và if (out != null)
+            if (in != null) {
                 in.close();
-            if (out != null)
+            }
+            if (out != null) {
                 out.close();
+            }
             if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
