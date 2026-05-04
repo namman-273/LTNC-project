@@ -132,16 +132,16 @@
         <!-- ===== INDENTATION [4.2] ===== -->
 
         <!--
-            2 spaces — đúng chuẩn Google Java Style Guide §4.2.
-            throwsIndent / lineWrappingIndentation = 4 (2 × basicOffset).
+            4 spaces — chuẩn IntelliJ IDEA mặc định, được dùng nhất quán trong dự án.
+            throwsIndent / lineWrappingIndentation = 8 (2 × basicOffset).
         -->
         <module name="Indentation">
-            <property name="basicOffset" value="2"/>
+            <property name="basicOffset" value="4"/>
             <property name="braceAdjustment" value="0"/>
-            <property name="caseIndent" value="2"/>
-            <property name="throwsIndent" value="4"/>
-            <property name="lineWrappingIndentation" value="4"/>
-            <property name="arrayInitIndent" value="2"/>
+            <property name="caseIndent" value="4"/>
+            <property name="throwsIndent" value="8"/>
+            <property name="lineWrappingIndentation" value="8"/>
+            <property name="arrayInitIndent" value="4"/>
         </module>
 
         <!-- ===== CLASS / METHOD STRUCTURE ===== -->
@@ -160,9 +160,10 @@
             <property name="allowNoEmptyLineBetweenFields" value="true"/>
         </module>
 
-        <!-- Annotation phải nằm trên dòng riêng (không cùng dòng với khai báo) -->
+        <!-- Annotation phải nằm trên dòng riêng, ngoại trừ annotation không có tham số
+             như @FXML, @Override có thể viết cùng dòng với khai báo field -->
         <module name="AnnotationLocation">
-            <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
+            <property name="allowSamelineSingleParameterlessAnnotation" value="true"/>
         </module>
 
         <!-- ===== CODING PRACTICES ===== -->
