@@ -139,7 +139,7 @@
                 </configuration>
             </plugin>
 
-            <!-- 3. CHECKSTYLE: enforce Google Style Guide, FAIL BUILD nếu vi phạm -->
+            <!-- 3. CHECKSTYLE: dùng google_checks.xml bundled sẵn, FAIL BUILD nếu vi phạm -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
@@ -153,17 +153,23 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <configLocation>checkstyle.xml</configLocation>
+                    <!--
+                        google_checks.xml được bundled sẵn trong jar checkstyle.
+                        Không cần file checkstyle.xml tự viết nữa.
+                    -->
+                    <configLocation>google_checks.xml</configLocation>
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <!--
-                        failOnViolation=true + severity="error" trong checkstyle.xml
-                        => Build THỰC SỰ fail khi có vi phạm.
-                        (failsOnError chỉ fail khi Checkstyle crash, không phải khi có violation)
+                        failOnViolation=true => Build THỰC SỰ fail khi có vi phạm.
+                        violationSeverity=warning: Google checks mặc định là warning,
+                        đặt thành warning để bắt tất cả vi phạm.
                     -->
                     <failOnViolation>true</failOnViolation>
-                    <violationSeverity>error</violationSeverity>
+                    <violationSeverity>warning</violationSeverity>
                     <linkXRef>false</linkXRef>
+                    <!-- Bỏ qua file generated (nếu có) -->
+                    <excludes>**/generated/**/*</excludes>
                 </configuration>
                 <executions>
                     <execution>
@@ -260,7 +266,7 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${checkstyle.plugin.version}</version>
                 <configuration>
-                    <configLocation>checkstyle.xml</configLocation>
+                    <configLocation>google_checks.xml</configLocation>
                 </configuration>
             </plugin>
         </plugins>
