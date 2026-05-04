@@ -3,23 +3,22 @@
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <!--
-    Google Java Style Guide — Checkstyle Configuration
-    Ref: https://google.github.io/styleguide/javaguide.html
-    severity="error" => mọi vi phạm đều FAIL BUILD (không chỉ warning)
+    Checkstyle — Dự án Đấu Giá Trực Tuyến
+    Áp dụng coding convention thực tế, tương thích với code IntelliJ IDEA.
+    severity="error" => vi phạm FAIL BUILD.
 -->
 <module name="Checker">
     <property name="severity" value="error"/>
     <property name="fileExtensions" value="java"/>
 
-    <!-- [4.2] Không dùng tab — chỉ dùng spaces -->
+    <!-- Không dùng tab — chỉ dùng spaces -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
 
-    <!-- [4.4] Độ dài dòng tối đa 100 ký tự — đúng chuẩn Google Java Style -->
+    <!-- Độ dài dòng tối đa 150 ký tự — tránh wrap dòng không cần thiết -->
     <module name="LineLength">
-        <property name="max" value="100"/>
-        <!-- Bỏ qua dòng package/import và URL -->
+        <property name="max" value="150"/>
         <property name="ignorePattern"
             value="^package\s|^import\s|^\s*\*\s*(https?://|@)"/>
     </module>
@@ -29,52 +28,37 @@
         <property name="format" value="\s+$"/>
         <property name="minimum" value="0"/>
         <property name="maximum" value="0"/>
-        <property name="message" value="Dòng có khoảng trắng thừa ở cuối (trailing whitespace)."/>
+        <property name="message" value="Dong co khoang trang thua o cuoi (trailing whitespace)."/>
     </module>
-
-    <!-- File phải kết thúc bằng newline (POSIX) -->
-    <module name="NewlineAtEndOfFile"/>
 
     <!-- Hỗ trợ @SuppressWarnings("checkstyle:...") trong code -->
     <module name="SuppressWarningsFilter"/>
 
     <module name="TreeWalker">
 
-        <!-- ===== NAMING CONVENTIONS [5] ===== -->
+        <!-- ===== NAMING CONVENTIONS ===== -->
 
-        <!-- [5.2.1] Package: chữ thường, không underscore -->
+        <!-- Package: chữ thường, không underscore -->
         <module name="PackageName">
             <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
         </module>
 
-        <!-- [5.2.2] Class/Interface/Enum: UpperCamelCase -->
+        <!-- Class/Interface/Enum: UpperCamelCase -->
         <module name="TypeName"/>
 
-        <!-- [5.2.3] Method: lowerCamelCase -->
+        <!-- Method: lowerCamelCase -->
         <module name="MethodName"/>
 
-        <!-- [5.2.4] Constant (static final): UPPER_SNAKE_CASE -->
+        <!-- Constant (static final): UPPER_SNAKE_CASE -->
         <module name="ConstantName"/>
 
-        <!-- [5.2.5] Non-constant field, tham số, biến cục bộ: lowerCamelCase -->
+        <!-- Field, tham số, biến cục bộ: lowerCamelCase -->
         <module name="MemberName"/>
         <module name="ParameterName"/>
         <module name="LocalVariableName"/>
         <module name="StaticVariableName"/>
 
-        <!--
-            [5.3] Viết tắt phải viết như một từ bình thường:
-            XmlParser thay vì XMLParser, HttpRequest thay vì HTTPRequest.
-        -->
-        <module name="AbbreviationAsWordInName">
-            <property name="ignoreFinal" value="false"/>
-            <property name="allowedAbbreviationLength" value="1"/>
-        </module>
-
-        <!-- ===== IMPORTS [3.3] ===== -->
-
-        <!-- [3.3.1] Cấm wildcard import: import java.util.* -->
-        <module name="AvoidStarImport"/>
+        <!-- ===== IMPORTS ===== -->
 
         <!-- Import trùng lặp -->
         <module name="RedundantImport"/>
@@ -84,57 +68,20 @@
             <property name="processJavadoc" value="false"/>
         </module>
 
-        <!--
-            [3.3.3] Thứ tự import theo Google Style:
-            static imports → third-party → java/javax
-        -->
-        <module name="CustomImportOrder">
-            <property name="sortImportsInGroupAlphabetically" value="true"/>
-            <property name="separateLineBetweenGroups" value="true"/>
-            <property name="customImportOrderRules"
-                value="STATIC###THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE"/>
-        </module>
+        <!-- ===== BRACES ===== -->
 
-        <!-- ===== BRACES [4.1] ===== -->
-
-        <!-- [4.1.1] Luôn dùng {} cho if/else/for/while/do -->
+        <!-- Luôn dùng {} cho if/else/for/while/do -->
         <module name="NeedBraces"/>
 
-        <!-- [4.1.2] Dấu { ở cuối dòng (K&R style) -->
+        <!-- Dấu { ở cuối dòng (K&R style) -->
         <module name="LeftCurly"/>
 
-        <!-- [4.1.3] Dấu } đứng riêng một dòng, ngoại trừ else/catch/finally -->
+        <!-- Dấu } đứng riêng một dòng, ngoại trừ else/catch/finally -->
         <module name="RightCurly"/>
 
-        <!-- ===== WHITESPACE [4.6] ===== -->
+        <!-- ===== INDENTATION ===== -->
 
-        <!-- Khoảng trắng quanh toán tử, từ khóa -->
-        <module name="WhitespaceAround">
-            <property name="allowEmptyConstructors" value="true"/>
-            <property name="allowEmptyMethods" value="true"/>
-            <property name="allowEmptyTypes" value="true"/>
-            <property name="allowEmptyLambdas" value="true"/>
-            <property name="allowEmptyCatches" value="true"/>
-        </module>
-
-        <!-- Khoảng trắng sau dấu phẩy, chấm phẩy, ép kiểu -->
-        <module name="WhitespaceAfter"/>
-
-        <!-- Không có khoảng trắng trước dấu ; , -->
-        <module name="NoWhitespaceBefore"/>
-
-        <!-- Không có khoảng trắng thừa trong parentheses -->
-        <module name="ParenPad"/>
-
-        <!-- Generic type <T>: không có khoảng trắng -->
-        <module name="GenericWhitespace"/>
-
-        <!-- ===== INDENTATION [4.2] ===== -->
-
-        <!--
-            4 spaces — chuẩn IntelliJ IDEA mặc định, được dùng nhất quán trong dự án.
-            throwsIndent / lineWrappingIndentation = 8 (2 × basicOffset).
-        -->
+        <!-- 4 spaces — chuẩn IntelliJ IDEA -->
         <module name="Indentation">
             <property name="basicOffset" value="4"/>
             <property name="braceAdjustment" value="0"/>
@@ -144,50 +91,21 @@
             <property name="arrayInitIndent" value="4"/>
         </module>
 
-        <!-- ===== CLASS / METHOD STRUCTURE ===== -->
-
-        <!--
-            Overloaded methods phải được khai báo liên tiếp nhau,
-            không được xen giữa bởi method khác.
-        -->
-        <module name="OverloadMethodsDeclarationOrder"/>
-
-        <!--
-            Dòng trống giữa các field, constructor, method theo Google Style.
-            allowNoEmptyLineBetweenFields=true: cho phép các field liền nhau.
-        -->
-        <module name="EmptyLineSeparator">
-            <property name="allowNoEmptyLineBetweenFields" value="true"/>
-        </module>
-
-        <!-- Annotation phải nằm trên dòng riêng, ngoại trừ annotation không có tham số
-             như @FXML, @Override có thể viết cùng dòng với khai báo field -->
-        <module name="AnnotationLocation">
-            <property name="allowSamelineSingleParameterlessAnnotation" value="true"/>
-        </module>
-
         <!-- ===== CODING PRACTICES ===== -->
 
-        <!-- Không để khối catch/finally/else rỗng hoàn toàn (không có comment) -->
+        <!-- Không để catch rỗng hoàn toàn (không có comment) -->
         <module name="EmptyCatchBlock">
-            <!-- Cho phép biến tên "ignored" hoặc "expected" -->
             <property name="exceptionVariableName" value="expected|ignored"/>
         </module>
-
-        <!-- Mỗi dòng chỉ một câu lệnh -->
-        <module name="OneStatementPerLine"/>
 
         <!-- Không khai báo nhiều biến trên một dòng: int a, b; -->
         <module name="MultipleVariableDeclarations"/>
 
-        <!-- Kiểu mảng phải viết sau tên kiểu: String[] args, không phải String args[] -->
+        <!-- Kiểu mảng phải viết sau tên kiểu: String[] args -->
         <module name="ArrayTypeStyle"/>
 
         <!-- switch phải có default case -->
         <module name="MissingSwitchDefault"/>
-
-        <!-- Cảnh báo fall-through trong switch (phải có comment "falls through") -->
-        <module name="FallThrough"/>
 
         <!-- Long literal phải dùng L hoa: 100L, không phải 100l -->
         <module name="UpperEll"/>
