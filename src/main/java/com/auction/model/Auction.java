@@ -26,13 +26,13 @@ public class Auction extends Entity {
     private double currentPrice;
     private long endTime; // Thời điểm kết thúc (ms)
     private PriorityQueue<AutoBid> autoBidQueue; // Hàng đợi ưu tiên
-    private int extensionCount = 0;
     private String sellerId; // ID người tạo phiên đấu giá
 
     // transient: Những trường này sẽ không được lưu xuống file .dat
     private transient ReentrantLock lock;
     private transient List<Observer> observers;
     private transient ExecutorService notifyExecutor;
+    private transient int extensionCount = 0;
 
     public Auction(String id, Item item, long durationMinutes, String sellerId) {
         super(id);
@@ -55,6 +55,7 @@ public class Auction extends Entity {
      * Cần gọi hàm này trong DataManager hoặc readObject.
      */
     public void restoreTransients() {
+        this.extensionCount=0;
         // BẮT BUỘC: Vì ReentrantLock không thể lưu xuống file
         if (this.lock == null)
             this.lock = new ReentrantLock();
@@ -69,6 +70,7 @@ public class Auction extends Entity {
             this.autoBidQueue = new PriorityQueue<>();
         if (this.notifyExecutor == null || this.notifyExecutor.isShutdown())
             this.notifyExecutor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+
     }
 
     // --- CÁC GETTER/SETTER QUAN TRỌNG ---
@@ -198,22 +200,22 @@ public class Auction extends Entity {
         if (Double.isNaN(amount) || Double.isInfinite(amount)) {
             throw new InvalidBidException("Giá đặt không hợp lệ (NaN/Infinite)");
         }
+        // TRỪ TIỀN TẠM GIỮ CỦA NGƯỜI MỚI
+        if (!bidder.deductBalance(amount)) {
+            throw new InvalidBidException("Số dư tài khoản không đủ để đặt mức giá này!");
+        }
 
-        // HOÀN TIỀN CHO NGƯỜI CŨ (Nếu có người đang giữ giá trước đó)
+        // HOÀN TIỀN CHO NGƯỜI CŨ (Chỉ khi đã cầm được tiền của người mới)
         if (!history.isEmpty()) {
             BidTransaction lastTransaction = history.get(history.size() - 1);
             User oldBidder = lastTransaction.getBidder();
-            if (oldBidder != null) {
+            if (oldBidder != null && !oldBidder.equals(bidder)) {
                 oldBidder.addBalance(lastTransaction.getAmount());
                 // Thông báo tiền về ví cho người cũ
                 oldBidder.update("REFUND|Phiên " + getId() + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount());
             }
         }
 
-        // TRỪ TIỀN TẠM GIỮ CỦA NGƯỜI MỚI
-        if (!bidder.deductBalance(amount)) {
-            throw new InvalidBidException("Số dư tài khoản không đủ để đặt mức giá này!");
-        }
         this.currentPrice = amount;
         if (this.item != null) {
             this.item.setCurrentPrice(amount);
@@ -248,54 +250,54 @@ public class Auction extends Entity {
         if (autoBidQueue == null || autoBidQueue.isEmpty())
             return;
 
-        // 1. Lấy người có quyền ưu tiên cao nhất ra
-        AutoBid top = autoBidQueue.poll();
+        int maxIterations = 100; // Chống treo Server và đệ quy vô hạn
+        int count = 0;
 
-        String lastBidderId = history.isEmpty() ? "" : history.get(history.size() - 1).getBidder().getUsername();
+        while (!autoBidQueue.isEmpty() && count < maxIterations) {
+            count++;
 
-        // 2. Nếu người đứng đầu hàng đợi chính là người đang giữ giá cao nhất
-        if (top.getBidderId().equals(lastBidderId)) {
-            // Kiểm tra xem có người thứ 2 trong hàng đợi để cạnh tranh không
-            AutoBid nextCompetitor = autoBidQueue.peek();
+            // 1. Lấy bot tiếp theo ra khỏi hàng đợi
+            AutoBid top = autoBidQueue.poll();
 
-            if (nextCompetitor != null) {
-                // Nếu có đối thủ, ta tạm cất 'top' đi để xử lý đối thủ trước
-                // giúp đẩy giá lên, rồi sau đó mới trả 'top' lại
-                autoBidQueue.add(top);
-                executeAutoBids(); // Đệ quy để xét đối thủ
-                return;
-            } else {
-                // Nếu chỉ có một mình mình trong Queue thì dừng, đợi người khác bid tay
-                autoBidQueue.add(top);
-                return;
+            String lastBidderId = history.isEmpty() ? "" : history.get(history.size() - 1).getBidder().getUsername();
+
+            // 2. Nếu người này đang giữ giá cao nhất -> Tạm dừng lượt của họ
+            if (top.getBidderId().equals(lastBidderId)) {
+                autoBidQueue.add(top); // Trả lại vào Queue để chờ đối thủ
+                break; // DỪNG VÒNG LẶP: Không tự đấu giá với chính mình
             }
-        }
 
-        // 3. Logic đặt giá cho người đang đuổi theo (giữ nguyên)
-        double systemMinIncrement = getMinimumIncrement(currentPrice);
-        double nextPrice = currentPrice + systemMinIncrement;
-        if (nextPrice <= top.getMaxBid()) {
-            User user = UserManager.getInstance().findUserByUsername(top.getBidderId());
-            if (user != null) {
-                try {
-                    updateAuctionState(user, nextPrice);
-                    autoBidQueue.add(top); // Trả lại để chờ đối thủ vượt mặt
-                    executeAutoBids(); // Tiếp tục vòng đấu cho đến khi có người chạm giới hạn
-                } catch (InvalidBidException e) {
-                    System.out.println("AutoBid failed for " + user.getUsername() + ": " + e.getMessage());
+            // 3. Tính toán mức giá mới dựa trên bước giá mặc định
+            double systemMinIncrement = getMinimumIncrement(currentPrice);
+            double nextPrice = currentPrice + systemMinIncrement;
+
+            // 4. Kiểm tra ngân sách tối đa của bot (Max Bid)
+            if (nextPrice <= top.getMaxBid()) {
+                User user = UserManager.getInstance().findUserByUsername(top.getBidderId());
+                if (user != null) {
+                    try {
+                        // Gọi hàm Atomic Swap (Trừ trước - Hoàn sau) để an toàn ví tiền
+                        updateAuctionState(user, nextPrice);
+
+                        // Đấu giá thành công, đưa bot trở lại hàng đợi cho lượt sau
+                        autoBidQueue.add(top);
+                    } catch (InvalidBidException e) {
+                        System.out.println("bot dừng do lỗi: " + e.getMessage());
+                        // Nếu lỗi do hết số dư ví (Sổ dư), không add lại vào Queue để tránh loop lỗi
+                        if (!e.getMessage().contains("Số dư")) {
+                            autoBidQueue.add(top);
+                        }
+                    }
                 }
+            } else {
+                // TRƯỜNG HỢP DỪNG: Ngân sách MaxBid đã chạm giới hạn
+                // bot sẽ bị loại khỏi Queue (không được add lại)
+                System.out.println("Robot của " + top.getBidderId() + " đã chạm giới hạn ngân sách.");
             }
-        }
-
-        else {
-            // TRƯỜNG HỢP DỪNG:
-            // Nếu ngân sách không đủ (nextAutoPrice > maxBid), cấu hình sẽ KHÔNG được
-            // add lại vào queue -> Tự động remove AutoBid
-            System.out.println("AutoBid stop for: " + top.getBidderId());
         }
     }
 
-    private void handleAntiSniping() {
+    private synchronized void handleAntiSniping() {
         long timeLeft = this.endTime - System.currentTimeMillis();
         if (timeLeft > 0 && timeLeft < ONE_MINUTE_MS && extensionCount < MAX_EXTENSIONS) { // < 1 phút
             this.endTime += TWO_MINUTES_MS; // Cộng thêm 2 phút
