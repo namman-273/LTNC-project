@@ -56,16 +56,6 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
-        <!--
-            [THÊM MỚI] javafx-charts — cần thiết cho Bid History Visualization
-            (LineChart giá realtime). Không có dependency này thì javafx.scene.chart
-            không được resolve khi compile.
-        -->
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-charts</artifactId>
-            <version>${javafx.version}</version>
-        </dependency>
 
         <!-- JSON serialization — dùng cho giao tiếp Client-Server -->
         <dependency>
