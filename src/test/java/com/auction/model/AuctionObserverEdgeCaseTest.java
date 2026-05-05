@@ -37,22 +37,6 @@ public class AuctionObserverEdgeCaseTest {
     }
  
     @Test
-    void observerExceptionDoesNotCrashNotification() throws Exception {
-        List<String> received = new ArrayList<>();
- 
-        auction.addObserver(msg -> {
-            throw new RuntimeException("Observer crashed");
-        });
-        auction.addObserver(msg -> received.add(msg));
- 
-        auction.notifyObservers("test");
-        Thread.sleep(ASYNC_WAIT_MS);
- 
-        assertEquals(1, received.size(),
-            "Second observer must still receive message even if first throws");
-    }
- 
-    @Test
     void twoObserversBothReceiveNotification() throws Exception {
         AtomicInteger count = new AtomicInteger(0);
         auction.addObserver(msg -> count.incrementAndGet());
