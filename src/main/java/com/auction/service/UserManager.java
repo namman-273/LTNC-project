@@ -10,6 +10,9 @@ import com.auction.util.SecurityUtils;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+   * .
+   */
 public class UserManager {
 
   // Singleton instance
@@ -25,6 +28,9 @@ public class UserManager {
   private UserManager() {
   }
 
+  /**
+   * get instance.
+   */
   public static UserManager getInstance() {
     if (instance == null) {
       instance = new UserManager();
@@ -77,7 +83,7 @@ public class UserManager {
   }
 
   /**
-   * Kiểm tra đăng nhập thực sựs
+   * Kiểm tra đăng nhập thực sựs.
    */
   public User login(String username, String password) throws AuthenticationException {
     User user = users.get(username);

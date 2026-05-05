@@ -5,6 +5,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+/**
+   * .
+   */
 public class ServerConnection {
 
   private static final String HOST = "localhost";
@@ -21,6 +24,9 @@ public class ServerConnection {
   private ServerConnection() {
   }
 
+  /**
+   * get instance.
+   */
   public static ServerConnection getInstance() {
     if (instance == null) {
       instance = new ServerConnection();
@@ -28,6 +34,9 @@ public class ServerConnection {
     return instance;
   }
 
+  /**
+   * connect.
+   */
   public boolean connect() {
     try {
       // Nếu đã kết nối rồi thì không kết nối lại
@@ -46,6 +55,9 @@ public class ServerConnection {
     }
   }
 
+  /**
+   *.
+   */
   public String sendAndReceive(String message) {
     try {
       if (!isConnected()) {
@@ -60,6 +72,9 @@ public class ServerConnection {
     }
   }
 
+  /**
+   * .
+   */
   public String receive() {
     try {
       if (!isConnected()) {
@@ -77,6 +92,9 @@ public class ServerConnection {
     return socket != null && !socket.isClosed() && socket.isConnected();
   }
 
+  /**
+   * .
+   */
   public void disconnect() {
     try {
       if (socket != null) {
@@ -94,6 +112,9 @@ public class ServerConnection {
     this.port = port;
   }
 
+  /**
+   * .
+   */
   public boolean connectDirect() {
     try {
       socket = new Socket(this.host, this.port);
