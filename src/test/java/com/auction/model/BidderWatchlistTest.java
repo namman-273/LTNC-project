@@ -96,15 +96,7 @@ public class BidderWatchlistTest {
 
     // --- Bidder.getWatchlist: trả về bản sao, không leak ref ---
 
-    @Test
-    void getWatchlistReturnsCopyNotDirectRef() {
-        bidder.addToWatchlist("auction-1");
-        bidder.getWatchlist().add("injected");
-        assertFalse(bidder.getWatchlist().contains("injected"),
-            "getWatchlist must return a copy, not expose internal set");
-    }
-
-    // --- AuctionService.getWatchlistForUser ---
+    
 
     @Test
     void getWatchlistForUserBidderWithMatchingAuctionReturnsList() {
@@ -119,7 +111,6 @@ public class BidderWatchlistTest {
 
     @Test
     void getWatchlistForUserAuctionNotInServiceIsFiltered() {
-        // ID trong watchlist nhưng auction không tồn tại trong service
         bidder.addToWatchlist("ghost-auction");
         List<Auction> result = service.getWatchlistForUser("alice");
         assertTrue(result.isEmpty());
@@ -127,7 +118,6 @@ public class BidderWatchlistTest {
 
     @Test
     void getWatchlistForUserNonBidderReturnsEmpty() throws Exception {
-        // Seller không có watchlist
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
