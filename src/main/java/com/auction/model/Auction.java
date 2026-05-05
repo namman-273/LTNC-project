@@ -229,7 +229,6 @@ public class Auction extends Entity {
         oldBidder.update(refundMessage);
       }
     }
-  }
 
     this.currentPrice = amount;
     if (this.item != null) {
