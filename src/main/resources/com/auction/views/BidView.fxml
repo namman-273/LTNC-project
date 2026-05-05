@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
@@ -10,60 +11,106 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.BidController"
-      prefWidth="700" prefHeight="550" spacing="15"
+      prefWidth="780" prefHeight="580" spacing="0"
       stylesheets="@style.css"
-      style="-fx-background-color: #f0f2f5;">
-    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+      style="-fx-background-color: #F8F9FA;">
 
     <!-- HEADER -->
-    <HBox alignment="CENTER_LEFT" spacing="10"
+    <HBox alignment="CENTER_LEFT" spacing="14"
           styleClass="header-box" prefHeight="60">
-        <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
+        <padding><Insets top="0" right="24" bottom="0" left="24"/></padding>
         <Button text="← Quay lại" onAction="#handleBack"
-                style="-fx-background-color: white; -fx-text-fill: #2196F3; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                style="-fx-background-color: rgba(255,255,255,0.15);
+                       -fx-text-fill: white; -fx-font-size: 12px;
+                       -fx-background-radius: 8; -fx-cursor: hand;
+                       -fx-border-color: rgba(255,255,255,0.4);
+                       -fx-border-radius: 8; -fx-border-width: 1;"/>
         <Label fx:id="auctionTitleLabel" text="Phiên đấu giá"
-               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
     </HBox>
 
-    <!-- THÔNG TIN + ĐẶT GIÁ -->
-    <HBox spacing="15">
+    <!-- CONTENT -->
+    <HBox spacing="16" VBox.vgrow="ALWAYS">
+        <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
 
-        <!-- TRÁI: thông tin sản phẩm -->
-        <VBox spacing="10" prefWidth="320" styleClass="card">
-            <Label text="Thông tin sản phẩm"
-                   style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-            <Label fx:id="itemNameLabel" text="Tên: ---"
-                   style="-fx-font-size: 13px;"/>
-            <Label fx:id="currentPriceLabel" text="Giá hiện tại: ---"
-                   styleClass="price-label"/>
-            <Label fx:id="statusLabel" text="Trạng thái: ---"
-                   style="-fx-font-size: 13px;"/>
-            <Label fx:id="messageLabel" text=""
-                   style="-fx-font-size: 12px;" wrapText="true"/>
+        <!-- TRÁI: thông tin sản phẩm + lịch sử -->
+        <VBox spacing="14" prefWidth="350" VBox.vgrow="ALWAYS">
+
+            <!-- Thông tin sản phẩm -->
+            <VBox spacing="10" styleClass="card">
+                <Label text="Thông tin sản phẩm"
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+
+                <Label fx:id="itemNameLabel" text="Tên: ---"
+                       style="-fx-font-size: 13px; -fx-text-fill: #333;"/>
+
+                <HBox spacing="6" alignment="CENTER_LEFT">
+                    <Label text="Giá hiện tại:"
+                           style="-fx-font-size: 12px; -fx-text-fill: #888;"/>
+                    <Label fx:id="currentPriceLabel" text="---"
+                           styleClass="price-label"/>
+                </HBox>
+
+                <HBox spacing="6" alignment="CENTER_LEFT">
+                    <Label text="Trạng thái:"
+                           style="-fx-font-size: 12px; -fx-text-fill: #888;"/>
+                    <Label fx:id="statusLabel" text="---"
+                           style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #43A047;"/>
+                </HBox>
+
+                <Label fx:id="messageLabel" text=""
+                       style="-fx-font-size: 12px;" wrapText="true"/>
+            </VBox>
+
+            <!-- Lịch sử đặt giá -->
+            <VBox spacing="8" VBox.vgrow="ALWAYS" styleClass="card">
+                <Label text="📋 Lịch sử đặt giá"
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+                <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS"
+                          styleClass="list-view"/>
+            </VBox>
         </VBox>
 
-        <!-- PHẢI: đặt giá -->
-        <VBox spacing="10" prefWidth="320" styleClass="card">
-            <Label text="Đặt giá"
-                   style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-            <TextField fx:id="bidAmountField" promptText="Nhập giá của bạn..."
-                       prefHeight="40" styleClass="text-field-modern"/>
-            <Button text="🔨 ĐẶT GIÁ" onAction="#handleBid"
-                    prefWidth="280" prefHeight="43"
-                    styleClass="btn-danger"/>
-            <Button text="📊 Xem biểu đồ" onAction="#handleViewChart"
-                    prefWidth="280" prefHeight="38"
-                    styleClass="btn-primary"/>
-        </VBox>
+        <!-- PHẢI: đặt giá + biểu đồ -->
+        <VBox spacing="14" prefWidth="370" VBox.vgrow="ALWAYS">
 
+            <!-- Đặt giá -->
+            <VBox spacing="12" styleClass="card">
+                <Label text="🔨 Đặt giá đấu"
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+
+                <TextField fx:id="bidAmountField" promptText="Nhập số tiền..."
+                           prefHeight="42" styleClass="text-field-modern"/>
+
+                <Label text="Giá đặt phải cao hơn giá hiện tại"
+                       style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
+
+                <Button text="🔨 ĐẶT GIÁ NGAY" onAction="#handleBid"
+                        prefWidth="338" prefHeight="44"
+                        styleClass="btn-danger"
+                        style="-fx-font-size: 14px;"/>
+
+                <Button text="📊 Xem biểu đồ giá" onAction="#handleViewChart"
+                        prefWidth="338" prefHeight="38"
+                        styleClass="btn-outline"/>
+            </VBox>
+
+            <!-- Hướng dẫn -->
+            <VBox spacing="8" styleClass="card"
+                  style="-fx-background-color: #E3F2FD;
+                         -fx-border-color: #90CAF9;
+                         -fx-border-radius: 12; -fx-border-width: 1;">
+                <Label text="💡 Hướng dẫn đấu giá"
+                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+                <Label text="• Giá đặt phải cao hơn giá hiện tại"
+                       style="-fx-font-size: 11px; -fx-text-fill: #1565C0;" wrapText="true"/>
+                <Label text="• Kết quả cập nhật realtime"
+                       style="-fx-font-size: 11px; -fx-text-fill: #1565C0;" wrapText="true"/>
+                <Label text="• Người đặt giá cao nhất khi kết thúc sẽ thắng"
+                       style="-fx-font-size: 11px; -fx-text-fill: #1565C0;" wrapText="true"/>
+            </VBox>
+
+        </VBox>
     </HBox>
-
-    <!-- LỊCH SỬ ĐẶT GIÁ -->
-    <VBox spacing="5" VBox.vgrow="ALWAYS" styleClass="card">
-        <Label text="📋 Lịch sử đặt giá"
-               style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-        <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS"
-                  styleClass="list-view"/>
-    </VBox>
 
 </VBox>
