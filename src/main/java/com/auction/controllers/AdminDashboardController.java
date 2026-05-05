@@ -57,15 +57,19 @@ public class AdminDashboardController implements Initializable {
                     String[] auctions = content.split(",\\s*(?=id=)");
                     for (String a : auctions) {
                         a = a.trim();
-                        if (a.isEmpty() || !a.contains("id=")) continue;
-                        String id       = extractField(a, "id=");
+                        if (a.isEmpty() || !a.contains("id=")) {
+                            continue;
+                        }
+                        String id = extractField(a, "id=");
                         String itemName = extractField(a, "itemName=");
-                        String price    = extractField(a, "currentPrice=");
-                        String status   = extractField(a, "status=");
+                        String price = extractField(a, "currentPrice=");
+                        String status = extractField(a, "status=");
                         try {
                             double p = Double.parseDouble(price);
                             price = String.format("%,.0f VND", p);
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException ignored) {
+                            // ignored
+                        }
                         data.add(new AuctionRow(id, itemName, price, status));
                     }
                 }
@@ -83,13 +87,17 @@ public class AdminDashboardController implements Initializable {
 
     private String extractField(String text, String key) {
         int start = text.indexOf(key);
-        if (start == -1) return "---";
+        if (start == -1) {
+            return "---";
+        }
         start += key.length();
         int end = text.length();
         String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
         for (String nextKey : nextKeys) {
             int pos = text.indexOf("," + nextKey, start);
-            if (pos != -1 && pos < end) end = pos;
+            if (pos != -1 && pos < end) {
+                end = pos;
+            }
         }
         return text.substring(start, end).trim();
     }
@@ -116,7 +124,11 @@ public class AdminDashboardController implements Initializable {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
             System.out.println("End auction: " + response);
-            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+                // ignored
+            }
             Platform.runLater(() -> {
                 if (response != null && response.contains("SUCCESS")) {
                     showMessage("✅ Kết thúc phiên thành công!", "green");
@@ -124,8 +136,11 @@ public class AdminDashboardController implements Initializable {
                     showMessage("❌ Lỗi: " + response, "red");
                 }
             });
-// Load sau thêm 500ms nữa
-            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+                // ignored
+            }
             Platform.runLater(() -> loadFromServer());
         }).start();
     }
@@ -152,7 +167,10 @@ public class AdminDashboardController implements Initializable {
     }
 
     public static class AuctionRow {
-        private String id, itemName, currentPrice, status;
+        private String id;
+        private String itemName;
+        private String currentPrice;
+        private String status;
 
         public AuctionRow(String id, String itemName, String currentPrice, String status) {
             this.id = id;
@@ -161,9 +179,20 @@ public class AdminDashboardController implements Initializable {
             this.status = status;
         }
 
-        public String getId() { return id; }
-        public String getItemName() { return itemName; }
-        public String getCurrentPrice() { return currentPrice; }
-        public String getStatus() { return status; }
+        public String getId() {
+            return id;
+        }
+
+        public String getItemName() {
+            return itemName;
+        }
+
+        public String getCurrentPrice() {
+            return currentPrice;
+        }
+
+        public String getStatus() {
+            return status;
+        }
     }
 }

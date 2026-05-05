@@ -1,6 +1,5 @@
 package com.auction.controllers;
 
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
