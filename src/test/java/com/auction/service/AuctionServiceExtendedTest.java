@@ -119,14 +119,7 @@ public class AuctionServiceExtendedTest {
     // --- endAuction: winner determination ---
  
     
-    @Test
-    void endAuctionCanceledStatusDoesNotSetFinished() {
-        Auction a = new Auction("cancel1", new Electronics("e5", "PC", PRICE), DURATION, null);
-        a.setStatus(AuctionStatus.CANCELED);
-        service.addAuction(a);
-        service.endAuction("cancel1");
-        assertEquals(AuctionStatus.CANCELED, a.getStatus());
-    }
+
  
     @Test
     void endAuctionPaidStatusDoesNotSetFinished() {

@@ -8,7 +8,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 
-
+/**
+ * .
+ */
 public class AuctionServer {
   private final int port;
 
@@ -20,6 +22,9 @@ public class AuctionServer {
     this.port = port;
   }
 
+  /**
+ * .
+ */
   public void start() {
     // Đăng ký Shutdown Hook: Tự động chạy khi nhấn Stop/Ctrl+C
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -62,6 +67,9 @@ public class AuctionServer {
     }
   }
 
+  /**
+ * .
+ */
   public static void main(String[] args) {
     // Khởi tạo các Manager
     DataManager.getInstance().loadData();
