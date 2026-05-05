@@ -9,6 +9,10 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <!-- ===== PROJECT INFO ===== -->
+    <name>Online Auction System</name>
+    <description>Hệ thống đấu giá trực tuyến – Bài tập lớn Lập trình nâng cao 2026</description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -20,9 +24,12 @@
         <javafx.version>17.0.8</javafx.version>
         <junit.version>5.10.2</junit.version>
         <mockito.version>5.11.0</mockito.version>
-        <surefire.version>3.1.2</surefire.version>
+        <!-- [FIX] Nâng lên 3.2.5 — phiên bản mới nhất, hỗ trợ JUnit 5 tốt hơn -->
+        <surefire.version>3.2.5</surefire.version>
         <!-- Ngưỡng coverage tối thiểu: 60% instruction coverage -->
         <jacoco.minimum.coverage>0.60</jacoco.minimum.coverage>
+        <slf4j.version>2.0.12</slf4j.version>
+        <shade.plugin.version>3.5.2</shade.plugin.version>
     </properties>
 
     <!-- ===== DEPENDENCIES ===== -->
@@ -49,12 +56,38 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <!--
+            [THÊM MỚI] javafx-charts — cần thiết cho Bid History Visualization
+            (LineChart giá realtime). Không có dependency này thì javafx.scene.chart
+            không được resolve khi compile.
+        -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-charts</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
 
-        <!-- JSON serialization -->
+        <!-- JSON serialization — dùng cho giao tiếp Client-Server -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
+        </dependency>
+
+        <!--
+            [THÊM MỚI] Logging — SLF4J + Logback.
+            Dùng Logger thay vì System.out.println giúp tắt log dễ dàng,
+            có level (DEBUG/INFO/WARN/ERROR) và không bị Checkstyle cảnh báo.
+        -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.6</version>
         </dependency>
 
         <!-- JUnit 5 — chỉ dùng trong phạm vi test -->
@@ -134,6 +167,8 @@
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.util=ALL-UNNAMED
                     </argLine>
+                    <!-- [THÊM MỚI] Xuất XML report để dorny/test-reporter đọc trên CI -->
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                     <!-- Hiện log test trên console CI -->
                     <useFile>false</useFile>
                 </configuration>
@@ -162,13 +197,20 @@
                     <consoleOutput>true</consoleOutput>
                     <!--
                         failOnViolation=true => Build THỰC SỰ fail khi có vi phạm.
-                    
                     -->
                     <failOnViolation>true</failOnViolation>
                     <violationSeverity>error</violationSeverity>
                     <linkXRef>false</linkXRef>
-                    <!-- Bỏ qua file generated (nếu có) -->
-                    <excludes>**/generated/**/*</excludes>
+                    <!-- Bỏ qua file generated, test và JavaFX controller/view -->
+                    <excludes>
+                        **/generated/**/*,
+                        **/*Test.java,
+                        **/*Tests.java,
+                        **/views/**/*,
+                        **/controllers/**/*,
+                        **/MainApp.java,
+                        **/Main.java
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>
@@ -252,6 +294,46 @@
                         <option>javafx.graphics/com.sun.javafx.application=ALL-UNNAMED</option>
                     </options>
                 </configuration>
+            </plugin>
+
+            <!--
+                [THÊM MỚI] 6. MAVEN SHADE PLUGIN: đóng gói fat JAR có thể chạy bằng
+                "java -jar AuctionSystem-server.jar" — không cần cài Maven trên máy khác.
+                Thực tế dự án cần build 2 JAR (server + client), cấu hình ở đây
+                là cho Server; Client sẽ chạy qua mvn javafx:run.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${shade.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>shade-server</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>AuctionSystem-server</finalName>
+                            <transformers>
+                                <transformer implementation=
+                                    "org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.auction.server.ServerMain</mainClass>
+                                </transformer>
+                                <!-- Gộp META-INF/services từ nhiều jar (cần cho SLF4J) -->
+                                <transformer implementation=
+                                    "org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <!-- Loại bỏ JavaFX khỏi server JAR để giảm kích thước -->
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.openjfx:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>
