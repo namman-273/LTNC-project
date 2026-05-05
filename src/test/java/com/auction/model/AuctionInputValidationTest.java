@@ -58,8 +58,6 @@ public class AuctionInputValidationTest {
             () -> auction.processNewBid(bidder1, 0.0));
     }
  
-   
- 
     @Test
     void nullItemInConstructorThrowsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class,
@@ -70,7 +68,7 @@ public class AuctionInputValidationTest {
  
     @Test
     void bidJustAboveCurrentPriceSucceeds() throws Exception {
-        double justAbove = STARTING_PRICE + 50000.0; // minimum increment for price < 1,000,000
+        double justAbove = STARTING_PRICE + 50000.0;
         auction.processNewBid(bidder1, justAbove);
         assertEquals(justAbove, auction.getCurrentPrice(), 0.001,
             "Bid of minimum increment above current price must succeed");
@@ -89,9 +87,13 @@ public class AuctionInputValidationTest {
     }
  
     @Test
-    void zeroDurationAuctionIsExpiredImmediately() {
-        Auction expired = new Auction("zero-dur", new Electronics("ez", "Item", STARTING_PRICE), 0L, null);
+    void zeroDurationAuctionIsExpiredImmediately() throws Exception {
+        Auction expired = new Auction("zero-dur", new Electronics("ez", "Item", STARTING_PRICE), 1L, null);
         expired.setStatus(AuctionStatus.RUNNING);
+        // Dùng reflection set endTime về quá khứ — tránh phụ thuộc timing của CI
+        Field endTimeField = Auction.class.getDeclaredField("endTime");
+        endTimeField.setAccessible(true);
+        endTimeField.set(expired, System.currentTimeMillis() - 1);
         assertThrows(AuctionClosedException.class,
             () -> expired.processNewBid(bidder1, STARTING_PRICE + 100.0));
     }
