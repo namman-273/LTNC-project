@@ -57,14 +57,13 @@ public class AdminDashboardController implements Initializable {
                     String[] auctions = content.split(",\\s*(?=id=)");
                     for (String a : auctions) {
                         a = a.trim();
-                        // FIX [NeedBraces]: thêm {} cho if một dòng
                         if (a.isEmpty() || !a.contains("id=")) {
                             continue;
                         }
-                        String id       = extractField(a, "id=");
+                        String id = extractField(a, "id=");
                         String itemName = extractField(a, "itemName=");
-                        String price    = extractField(a, "currentPrice=");
-                        String status   = extractField(a, "status=");
+                        String price = extractField(a, "currentPrice=");
+                        String status = extractField(a, "status=");
                         try {
                             double p = Double.parseDouble(price);
                             price = String.format("%,.0f VND", p);
@@ -88,7 +87,6 @@ public class AdminDashboardController implements Initializable {
 
     private String extractField(String text, String key) {
         int start = text.indexOf(key);
-        // FIX [NeedBraces]: thêm {} cho if một dòng
         if (start == -1) {
             return "---";
         }
@@ -97,7 +95,6 @@ public class AdminDashboardController implements Initializable {
         String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
         for (String nextKey : nextKeys) {
             int pos = text.indexOf("," + nextKey, start);
-            // FIX [NeedBraces]: thêm {} cho if một dòng
             if (pos != -1 && pos < end) {
                 end = pos;
             }
@@ -127,7 +124,6 @@ public class AdminDashboardController implements Initializable {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
             System.out.println("End auction: " + response);
-            // FIX [LeftCurly]: mở rộng try-catch thành nhiều dòng
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException ignored) {
@@ -140,8 +136,6 @@ public class AdminDashboardController implements Initializable {
                     showMessage("❌ Lỗi: " + response, "red");
                 }
             });
-            // Load sau thêm 500ms nữa
-            // FIX [LeftCurly]: mở rộng try-catch thành nhiều dòng
             try {
                 Thread.sleep(500);
             } catch (InterruptedException ignored) {
@@ -173,7 +167,6 @@ public class AdminDashboardController implements Initializable {
     }
 
     public static class AuctionRow {
-        // FIX [MultipleVariableDeclarations]: tách thành từng dòng riêng
         private String id;
         private String itemName;
         private String currentPrice;
@@ -186,7 +179,6 @@ public class AdminDashboardController implements Initializable {
             this.status = status;
         }
 
-        // FIX [LeftCurly]: mở rộng getter thành nhiều dòng
         public String getId() {
             return id;
         }

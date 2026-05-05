@@ -5,28 +5,37 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+/**
+ * View class responsible for loading and displaying the login screen.
+ */
 public class LoginView {
 
-    private Stage stage;
+  private Stage stage;
 
-    public LoginView(Stage stage) {
-        this.stage = stage;
-    }
+  /**
+   * Constructs a LoginView for the given stage.
+   *
+   * @param stage the JavaFX stage to render into
+   */
+  public LoginView(Stage stage) {
+    this.stage = stage;
+  }
 
-    public void show() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    // FIX [Indentation]: tăng indent từ 16 lên 20 spaces
-                    getClass().getResource("/com/auction/views/LoginView.fxml")
-            );
-            Parent root = loader.load();
-            Scene scene = new Scene(root);
-            stage.setTitle("Đăng nhập - Auction System");
-            stage.setScene(scene);
-            stage.show();
-        } catch (Exception e) {
-            System.err.println("Lỗi load FXML: " + e.getMessage());
-            e.printStackTrace();
-        }
+  /**
+   * Loads the LoginView FXML and displays it on the stage.
+   */
+  public void show() {
+    try {
+      FXMLLoader loader = new FXMLLoader(
+          getClass().getResource("/com/auction/views/LoginView.fxml"));
+      Parent root = loader.load();
+      Scene scene = new Scene(root);
+      stage.setTitle("Đăng nhập - Auction System");
+      stage.setScene(scene);
+      stage.show();
+    } catch (Exception e) {
+      System.err.println("Lỗi load FXML: " + e.getMessage());
+      e.printStackTrace();
     }
+  }
 }

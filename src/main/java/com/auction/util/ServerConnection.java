@@ -20,6 +20,11 @@ public class ServerConnection {
 
     private ServerConnection() {}
 
+    public ServerConnection(String host, int port) {
+        this.host = host;
+        this.port = port;
+    }
+
     public static ServerConnection getInstance() {
         if (instance == null) {
             instance = new ServerConnection();
@@ -61,7 +66,6 @@ public class ServerConnection {
 
     public String receive() {
         try {
-            // FIX [NeedBraces]: thêm {} cho if một dòng
             if (!isConnected()) {
                 return null;
             }
@@ -87,11 +91,6 @@ public class ServerConnection {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public ServerConnection(String host, int port) {
-        this.host = host;
-        this.port = port;
     }
 
     public boolean connectDirect() {

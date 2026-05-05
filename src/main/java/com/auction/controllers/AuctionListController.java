@@ -51,13 +51,13 @@ public class AuctionListController implements Initializable {
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
             if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                String content = response.substring(response.indexOf("[") + 1, response.lastIndexOf("]"));
+                String content = response.substring(
+                        response.indexOf("[") + 1, response.lastIndexOf("]"));
 
                 if (!content.isEmpty()) {
                     String[] auctions = content.split(",\\s*(?=id=)");
                     for (String a : auctions) {
                         a = a.trim();
-                        // FIX [NeedBraces]: thêm {} cho if một dòng
                         if (a.isEmpty() || !a.contains("id=")) {
                             continue;
                         }
@@ -88,7 +88,6 @@ public class AuctionListController implements Initializable {
 
     private String extractField(String text, String key) {
         int start = text.indexOf(key);
-        // FIX [NeedBraces]: thêm {} cho if một dòng
         if (start == -1) {
             return "---";
         }
@@ -113,7 +112,6 @@ public class AuctionListController implements Initializable {
         }
 
         Stage stage = (Stage) auctionTable.getScene().getWindow();
-        // FIX [Indentation]: tăng từ 12 lên 16 spaces cho các tham số wrap dòng
         BidView bidView = new BidView(
                 stage,
                 selected.getId(),
@@ -130,38 +128,6 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         LoginView loginView = new LoginView(stage);
         loginView.show();
-    }
-
-    public static class AuctionRow {
-        // FIX [MultipleVariableDeclarations]: tách thành từng dòng riêng
-        private String id;
-        private String itemName;
-        private String currentPrice;
-        private String status;
-
-        public AuctionRow(String id, String itemName, String currentPrice, String status) {
-            this.id = id;
-            this.itemName = itemName;
-            this.currentPrice = currentPrice;
-            this.status = status;
-        }
-
-        // FIX [LeftCurly]: mở rộng getter thành nhiều dòng
-        public String getId() {
-            return id;
-        }
-
-        public String getItemName() {
-            return itemName;
-        }
-
-        public String getCurrentPrice() {
-            return currentPrice;
-        }
-
-        public String getStatus() {
-            return status;
-        }
     }
 
     @FXML
@@ -185,5 +151,35 @@ public class AuctionListController implements Initializable {
 
     public void refreshList() {
         loadFromServer();
+    }
+
+    public static class AuctionRow {
+        private String id;
+        private String itemName;
+        private String currentPrice;
+        private String status;
+
+        public AuctionRow(String id, String itemName, String currentPrice, String status) {
+            this.id = id;
+            this.itemName = itemName;
+            this.currentPrice = currentPrice;
+            this.status = status;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getItemName() {
+            return itemName;
+        }
+
+        public String getCurrentPrice() {
+            return currentPrice;
+        }
+
+        public String getStatus() {
+            return status;
+        }
     }
 }
