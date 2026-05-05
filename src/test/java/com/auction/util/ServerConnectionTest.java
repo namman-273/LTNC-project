@@ -29,8 +29,9 @@ import org.junit.jupiter.api.Test;
  */
 public class ServerConnectionTest {
 
-    private static final int TEST_PORT = 19876;
+    
     private ServerSocket testServer;
+    private int testPort;
     private ServerConnection conn;
 
     @BeforeEach
@@ -40,7 +41,9 @@ public class ServerConnectionTest {
         f.setAccessible(true);
         f.set(null, null);
 
-        testServer = new ServerSocket(TEST_PORT);
+        testServer = new ServerSocket(0);
+        testServer.setReuseAddress(true);
+        testPort = testServer.getLocalPort();
         conn = null;
     }
 
@@ -120,7 +123,7 @@ public class ServerConnectionTest {
         serverThread.start();
         ready.await(2, TimeUnit.SECONDS);
 
-        conn = new ServerConnection("localhost", TEST_PORT);
+        conn = new ServerConnection("localhost", testPort);
         boolean result = conn.connectDirect();
         assertTrue(result, "connectDirect must return true with running server");
         assertTrue(conn.isConnected());
@@ -131,7 +134,7 @@ public class ServerConnectionTest {
     @Test
     void connectDirectReturnsFalseWhenNoServer() throws Exception {
         testServer.close();
-        conn = new ServerConnection("localhost", TEST_PORT);
+        conn = new ServerConnection("localhost", testPort);
         boolean result = conn.connectDirect();
         assertFalse(result);
         assertFalse(conn.isConnected());
@@ -162,7 +165,7 @@ public class ServerConnectionTest {
         acceptOneClient(ready);
         ready.await(2, TimeUnit.SECONDS);
 
-        conn = new ServerConnection("localhost", TEST_PORT);
+        conn = new ServerConnection("localhost", testPort);
         assertTrue(conn.connectDirect());
 
         String response = conn.sendAndReceive("PING");
@@ -180,7 +183,7 @@ public class ServerConnectionTest {
         st.setDaemon(true); st.start();
         ready.await(2, TimeUnit.SECONDS);
 
-        conn = new ServerConnection("localhost", TEST_PORT);
+        conn = new ServerConnection("localhost", testPort);
         conn.connectDirect();
         assertTrue(conn.isConnected());
 
@@ -206,7 +209,7 @@ public class ServerConnectionTest {
         st.setDaemon(true); st.start();
         ready.await(2, TimeUnit.SECONDS);
 
-        conn = new ServerConnection("localhost", TEST_PORT);
+        conn = new ServerConnection("localhost", testPort);
         conn.connectDirect();
         assertTrue(conn.isConnected());
 
