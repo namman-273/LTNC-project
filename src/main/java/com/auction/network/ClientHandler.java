@@ -16,6 +16,9 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
 
+/**
+ * .
+ */
 public class ClientHandler implements Runnable, Observer {
 
   private static final int REQ_REGISTER = 4; // REGISTER|user|pass|role
@@ -169,8 +172,8 @@ public class ClientHandler implements Runnable, Observer {
         for (Auction auction : auctionService.getAllAuctions()) {
           auction.addObserver(this);
         }
-        sendMessage(Protocol.RES_LOGIN_SUCCESS + Protocol.SEPARATOR + user.getRole() + Protocol.SEPARATOR
-            + "Chào " + user.getUsername());
+        sendMessage(Protocol.RES_LOGIN_SUCCESS + Protocol.SEPARATOR + user.getRole()
+            + Protocol.SEPARATOR + "Chào " + user.getUsername());
       }
     } catch (AuthenticationException e) {
       sendMessage(Protocol.RES_LOGIN_FAILED + Protocol.SEPARATOR + e.getMessage());
@@ -179,7 +182,8 @@ public class ClientHandler implements Runnable, Observer {
 
   private void handleListAuctions(AuctionService auctionService) {
     // Trả về danh sách thô (Trong thực tế nên dùng JSON hoặc toString chuẩn)
-    sendMessage(Protocol.RES_LIST_SUCCESS + Protocol.SEPARATOR + auctionService.getAllAuctions().toString());
+    sendMessage(Protocol.RES_LIST_SUCCESS + Protocol.SEPARATOR
+        + auctionService.getAllAuctions().toString());
 
   }
 
@@ -203,7 +207,8 @@ public class ClientHandler implements Runnable, Observer {
       String sellerId = currentUser.getUsername();
 
       auctionService.createNewAuction(type, name, price, duration, sellerId);
-      sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Sản phẩm " + name + " đã được đăng sàn.");
+      sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Sản phẩm "
+          + name + " đã được đăng sàn.");
     } catch (Exception e) {
       sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Dữ liệu tạo sản phẩm không hợp lệ.");
     }
@@ -244,7 +249,8 @@ public class ClientHandler implements Runnable, Observer {
       }
 
       auction.processNewBid(currentUser, amount);
-      sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amount);
+      sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId
+          + Protocol.SEPARATOR + amount);
       DataManager.getInstance().saveData();
     } catch (
 
@@ -269,9 +275,9 @@ public class ClientHandler implements Runnable, Observer {
         // Lưu dữ liệu ngay lập tức để tránh mất tiền của khách
         DataManager.getInstance().saveData();
 
-        sendMessage(Protocol.RES_DEPOSIT_SUCCESS + Protocol.SEPARATOR +
-            currentUser.getBalance() + Protocol.SEPARATOR +
-            "Đã nạp thành công: " + amount + "$");
+        sendMessage(Protocol.RES_DEPOSIT_SUCCESS + Protocol.SEPARATOR
+            + currentUser.getBalance() + Protocol.SEPARATOR
+            + "Đã nạp thành công: " + amount + "$");
       } else {
         sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Số tiền nạp không hợp lệ.");
       }
@@ -303,12 +309,15 @@ public class ClientHandler implements Runnable, Observer {
     if (auction != null) {
       try {
         String jsonHistory = gson.toJson(auction.getBidHistory());
-        sendMessage(Protocol.RES_HISTORY + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + jsonHistory);
+        sendMessage(Protocol.RES_HISTORY + Protocol.SEPARATOR
+            + auctionId + Protocol.SEPARATOR + jsonHistory);
       } catch (Exception e) {
-        sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lỗi xử lý dữ liệu lịch sử: " + e.getMessage());
+        sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+            + "Lỗi xử lý dữ liệu lịch sử: " + e.getMessage());
       }
     } else {
-      sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá với ID: " + auctionId);
+      sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Không tìm thấy phiên đấu giá với ID: " + auctionId);
     }
 
   }
@@ -316,7 +325,8 @@ public class ClientHandler implements Runnable, Observer {
   // --- LOGIC XỬ LÝ WATCHLIST ---
   private void handleWatch(String[] parts, AuctionService auctionService) {
     if (!(currentUser instanceof Bidder)) {
-      sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ người mua mới có thể theo dõi sản phẩm.");
+      sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Chỉ người mua mới có thể theo dõi sản phẩm.");
       return;
     }
 
@@ -352,7 +362,8 @@ public class ClientHandler implements Runnable, Observer {
 
   private void handleGetWatchlist(AuctionService auctionService) {
     if (!(currentUser instanceof Bidder)) {
-      sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn chưa đăng nhập hoặc không phải bidder.");
+      sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Bạn chưa đăng nhập hoặc không phải bidder.");
       return;
     }
 
@@ -364,7 +375,8 @@ public class ClientHandler implements Runnable, Observer {
 
   private void handleAddAutoBid(final String[] parts, AuctionService auctionService) {
     if (!(currentUser instanceof Bidder)) {
-      sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ người mua mới có quyền cài đặt Robot.");
+      sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Chỉ người mua mới có quyền cài đặt Robot.");
       return;
     }
 
@@ -383,8 +395,9 @@ public class ClientHandler implements Runnable, Observer {
       DataManager.getInstance().saveData();
 
       // Phản hồi cho FE để hiển thị thông báo
-      sendMessage(Protocol.RES_AUTO_BID_SUCCESS + Protocol.SEPARATOR +
-          auctionId + Protocol.SEPARATOR + "Autobid bot đã sẵn sàng với hạn mức: " + (long) maxBid + " VNĐ");
+      sendMessage(Protocol.RES_AUTO_BID_SUCCESS + Protocol.SEPARATOR
+          + auctionId + Protocol.SEPARATOR + "Autobid bot đã sẵn sàng với hạn mức: "
+          + (long) maxBid + " VNĐ");
 
       System.out.println(
           "[AUTOBID] Người dùng " + currentUser.getUsername() + " đã kích hoạt Autobid cho phiên "
@@ -396,7 +409,10 @@ public class ClientHandler implements Runnable, Observer {
       sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lỗi hệ thống: " + e.getMessage());
     }
   }
-
+  
+  /**
+ * send msg.
+ */
   public final void sendMessage(final String msg) {
     if (out != null) {
       out.println(msg);

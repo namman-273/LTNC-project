@@ -5,7 +5,14 @@ import java.security.MessageDigest;
 import java.util.Base64;
 
 // Hàm hỗ trợ băm mật khẩu chuẩn SHA-256
+
+/**
+ * Tính năng mk nâng cao.
+ */
 public class SecurityUtils {
+  /**
+ * Nhận pass+name làm mk.
+ */
   public static String hashPassword(String password, String salt) {
     if (password == null || salt == null) {
       return null;

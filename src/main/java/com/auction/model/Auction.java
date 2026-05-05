@@ -38,10 +38,14 @@ public class Auction extends Entity {
   private transient ExecutorService notifyExecutor;
   private transient int extensionCount = 0;
 
+  /**
+ * .
+ */
   public Auction(String id, Item item, long durationMinutes, String sellerId) {
     super(id);
     if (item == null) {
-      throw new IllegalArgumentException("Item cannot be null. Mỗi phiên đấu giá phải có một món hàng!");
+      throw new
+       IllegalArgumentException("Item cannot be null.Mỗi phiên đấu giá phải có một món hàng!");
     } else {
       this.item = item;
     }
@@ -87,6 +91,9 @@ public class Auction extends Entity {
     return status;
   }
 
+  /**
+ * .
+ */
   public void setStatus(AuctionStatus status) {
     this.lock.lock();
     try {
@@ -114,6 +121,9 @@ public class Auction extends Entity {
 
   // --- LOGIC QUẢN LÝ OBSERVER (Public để Service gọi được) ---
 
+  /**
+ * Thêm vào cho observer theo dõi.
+ */
   public void addObserver(Observer obs) {
     if (observers == null) {
       restoreTransients();
@@ -121,12 +131,18 @@ public class Auction extends Entity {
     observers.add(obs);
   }
 
+  /**
+ * xóa khỏi theo dõi.
+ */
   public void removeObserver(Observer obs) {
     if (observers != null) {
       observers.remove(obs);
     }
   }
 
+  /**
+ * Cài đạt thông báo.
+ */
   public void notifyObservers(String message) {
     for (Observer observer : observers) {
       notifyExecutor.submit(() -> {
@@ -158,6 +174,9 @@ public class Auction extends Entity {
     return 500000; // >= 10 triệu: bước 500k
   }
 
+  /**
+ * Đấu giá.
+ */
   public void processNewBid(User bidder, double bidAmount)
       throws InvalidBidException, AuctionClosedException, AuthenticationException {
     lock.lock();
@@ -225,7 +244,8 @@ public class Auction extends Entity {
       if (oldBidder != null && !oldBidder.equals(bidder)) {
         oldBidder.addBalance(lastTransaction.getAmount());
         // Thông báo tiền về ví cho người cũ
-        String refundMessage = "REFUND|Phiên " + getId() + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount();
+        String refundMessage = "REFUND|Phiên " + getId()
+            + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount();
         oldBidder.update(refundMessage);
       }
     }
@@ -240,7 +260,10 @@ public class Auction extends Entity {
     notifyObservers("UPDATE|" + getId() + "|" + amount + "|" + bidder.getUsername());
   }
 
-  // Hàm để người dùng đăng ký Auto-bid từ giao diện
+  
+  /**
+ * // Hàm để người dùng đăng ký Auto-bid từ giao diện.
+ */
   public void addAutoBidConfig(String bidderId, double maxBid) {
     lock.lock();
     try {
@@ -275,7 +298,8 @@ public class Auction extends Entity {
       // 1. Lấy bot tiếp theo ra khỏi hàng đợi
       AutoBid top = autoBidQueue.poll();
 
-      String lastBidderId = history.isEmpty() ? "" : history.get(history.size() - 1).getBidder().getUsername();
+      String lastBidderId = history.isEmpty() ? ""
+          : history.get(history.size() - 1).getBidder().getUsername();
 
       // 2. Nếu người này đang giữ giá cao nhất -> Tạm dừng lượt của họ
       if (top.getBidderId().equals(lastBidderId)) {
@@ -322,7 +346,8 @@ public class Auction extends Entity {
     }
   }
 
-  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+  private void readObject(java.io.ObjectInputStream in)
+      throws java.io.IOException, ClassNotFoundException {
     in.defaultReadObject(); // Load các trường không phải transient
     restoreTransients(); // Tự động hồi sinh các trường bị null
   }
@@ -339,7 +364,11 @@ public class Auction extends Entity {
         + ",status=" + status;
   }
 
-  // giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng
+  
+  /**
+
+ * giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng .
+ */
   public void closeAuction() {
     this.status = AuctionStatus.FINISHED;
 

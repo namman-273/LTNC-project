@@ -1,5 +1,8 @@
 package com.auction.model;
 
+/**
+ * .
+ */
 public class Vehicle extends Item {
   private static final long serialVersionUID = 1L;
 

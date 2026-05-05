@@ -1,5 +1,11 @@
 package com.auction.util;
 
+/**
+ * Manages the current user's login session (username, password, role).
+ *
+ * <p>Implemented as a lazy-initialized singleton. Calling {@link #clear()}
+ * destroys the instance so a fresh session can be created on next login.
+ */
 public class SessionManager {
 
   private static SessionManager instance;

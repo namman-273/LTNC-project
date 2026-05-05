@@ -1,5 +1,8 @@
 package com.auction.model;
 
+/**
+ * .
+ */
 public abstract class Item extends Entity {
   protected String itemName;
   private double startingPrice;
@@ -7,6 +10,9 @@ public abstract class Item extends Entity {
   public String highestBidder;
   private static final long serialVersionUID = 1L;
 
+  /**
+ * constructor.
+ */
   public Item(String id, String itemName, double startingPrice) {
     super(id);
     this.itemName = itemName;
