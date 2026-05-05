@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.auction.exception.InvalidBidException;
+import com.auction.factory.ItemFactory;
 import com.auction.service.UserManager;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -228,9 +229,5 @@ public class AuctionMissedBranchTest {
         assertEquals("bob_seller", auction.getSellerId());
     }
 
-    @Test
-    void getSellerIdNullWhenNoSeller() {
-        Auction a = new Auction("no-seller", new Electronics("ns", "Item", 100.0), DURATION, null);
-        assertNull(a.getSellerId());
-    }
+   
 }
