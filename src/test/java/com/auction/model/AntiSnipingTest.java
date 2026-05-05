@@ -12,7 +12,7 @@ import com.auction.service.UserManager;
 public class AntiSnipingTest {
  
     private static final double STARTING_PRICE = 1000.0;
-    private static final long SAFE_DURATION_MINUTES = 10L;
+    private static final long SAFE_DURATION_MINUTES = 20L;
     private static final long SHORT_DURATION_MINUTES = 5L;
     private static final long NEAR_END_MILLIS = 30_000L;
     private static final long EXTENSION_MILLIS = 120_000L;
