@@ -1,90 +1,133 @@
 package com.auction.exception;
- 
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
- 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.auction.model.AuctionStatus;
+import com.auction.model.Auction;
+import com.auction.model.Bidder;
+import com.auction.model.Electronics;
+import com.auction.service.UserManager;
+import java.lang.reflect.Field;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
- 
+
+/**
+ * Test exception được ném đúng context trong business logic,
+ * không chỉ test constructor tồn tại.
+ */
 public class ExceptionTest {
- 
-  // --- InvalidBidException ---
- 
-  @Test
-  void invalidBidExceptionGetMessageReturnsCorrectMessage() {
-    assertEquals("Giá quá thấp", new InvalidBidException("Giá quá thấp").getMessage());
-  }
- 
-  @Test
-  void invalidBidExceptionIsInstanceOfException() {
-    assertInstanceOf(Exception.class, new InvalidBidException("msg"));
-  }
- 
-  @Test
-  void invalidBidExceptionIsNotNull() {
-    assertNotNull(new InvalidBidException("msg"));
-  }
- 
-  // --- AuctionClosedException ---
- 
-  @Test
-  void auctionClosedExceptionGetMessageReturnsCorrectMessage() {
-    assertEquals("Phiên đã đóng", new AuctionClosedException("Phiên đã đóng").getMessage());
-  }
- 
-  @Test
-  void auctionClosedExceptionIsInstanceOfException() {
-    assertInstanceOf(Exception.class, new AuctionClosedException("msg"));
-  }
- 
-  @Test
-  void auctionClosedExceptionIsNotNull() {
-    assertNotNull(new AuctionClosedException("msg"));
-  }
- 
-  // --- AuthenticationException ---
- 
-  @Test
-  void authenticationExceptionGetMessageReturnsCorrectMessage() {
-    assertEquals("Chưa đăng nhập", new AuthenticationException("Chưa đăng nhập").getMessage());
-  }
- 
-  @Test
-  void authenticationExceptionIsInstanceOfException() {
-    assertInstanceOf(Exception.class, new AuthenticationException("msg"));
-  }
- 
-  @Test
-  void authenticationExceptionIsNotNull() {
-    assertNotNull(new AuthenticationException("msg"));
-  }
- 
-  // --- Có thể catch được ---
- 
-  @Test
-  void invalidBidExceptionCanBeCaught() {
-    try {
-      throw new InvalidBidException("test");
-    } catch (InvalidBidException e) {
-      assertEquals("test", e.getMessage());
+
+    private static final double STARTING_PRICE = 1000.0;
+    private static final long DURATION = 9999L;
+
+    private Auction auction;
+    private Bidder bidder;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        Field umField = UserManager.class.getDeclaredField("instance");
+        umField.setAccessible(true);
+        umField.set(null, null);
+        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
+        bidder.addBalance(10_000_000.0);
+
+        auction = new Auction("exc-1", new Electronics("e-exc", "TV", STARTING_PRICE), DURATION, null);
+        auction.setStatus(AuctionStatus.RUNNING);
     }
-  }
- 
-  @Test
-  void auctionClosedExceptionCanBeCaught() {
-    try {
-      throw new AuctionClosedException("test");
-    } catch (AuctionClosedException e) {
-      assertEquals("test", e.getMessage());
+
+    // --- InvalidBidException: thrown khi giá quá thấp ---
+
+    @Test
+    void processNewBidBelowMinimumIncrementThrowsInvalidBidException() {
+        InvalidBidException ex = assertThrows(InvalidBidException.class,
+            () -> auction.processNewBid(bidder, STARTING_PRICE + 1.0));
+        assertEquals(InvalidBidException.class, ex.getClass());
     }
-  }
- 
-  @Test
-  void authenticationExceptionCanBeCaught() {
-    try {
-      throw new AuthenticationException("test");
-    } catch (AuthenticationException e) {
-      assertEquals("test", e.getMessage());
+
+    @Test
+    void processNewBidEqualToCurrentPriceThrowsInvalidBidException() {
+        assertThrows(InvalidBidException.class,
+            () -> auction.processNewBid(bidder, STARTING_PRICE));
     }
-  }
+
+    @Test
+    void processNewBidNegativeAmountThrowsInvalidBidException() {
+        assertThrows(InvalidBidException.class,
+            () -> auction.processNewBid(bidder, -500.0));
+    }
+
+    @Test
+    void processNewBidInsufficientBalanceThrowsInvalidBidException() throws Exception {
+        // Bidder mới không có balance
+        Field umField = UserManager.class.getDeclaredField("instance");
+        umField.setAccessible(true);
+        umField.set(null, null);
+        UserManager.getInstance().register("broke", "pw", "BIDDER");
+        Bidder brokeBidder = (Bidder) UserManager.getInstance().findUserByUsername("broke");
+        // balance = 0, không thể bid 51000
+        assertThrows(InvalidBidException.class,
+            () -> auction.processNewBid(brokeBidder, STARTING_PRICE + 50000.0));
+    }
+
+    // --- AuctionClosedException: thrown khi phiên đã đóng ---
+
+    @Test
+    void processNewBidOnFinishedAuctionThrowsAuctionClosedException() {
+        auction.setStatus(AuctionStatus.FINISHED);
+        assertThrows(AuctionClosedException.class,
+            () -> auction.processNewBid(bidder, STARTING_PRICE + 50000.0));
+    }
+
+    @Test
+    void processNewBidOnCanceledAuctionThrowsAuctionClosedException() {
+        auction.setStatus(AuctionStatus.CANCELED);
+        assertThrows(AuctionClosedException.class,
+            () -> auction.processNewBid(bidder, STARTING_PRICE + 50000.0));
+    }
+
+    @Test
+    void processNewBidOnPaidAuctionThrowsAuctionClosedException() {
+        auction.setStatus(AuctionStatus.PAID);
+        assertThrows(AuctionClosedException.class,
+            () -> auction.processNewBid(bidder, STARTING_PRICE + 50000.0));
+    }
+
+    @Test
+    void processNewBidOnExpiredAuctionThrowsAuctionClosedException() throws Exception {
+        Field endTimeField = Auction.class.getDeclaredField("endTime");
+        endTimeField.setAccessible(true);
+        endTimeField.set(auction, System.currentTimeMillis() - 1000L);
+        assertThrows(AuctionClosedException.class,
+            () -> auction.processNewBid(bidder, STARTING_PRICE + 50000.0));
+    }
+
+    // --- AuthenticationException: thrown khi bidder null ---
+
+    @Test
+    void processNewBidNullBidderThrowsAuthenticationException() {
+        assertThrows(AuthenticationException.class,
+            () -> auction.processNewBid(null, STARTING_PRICE + 50000.0));
+    }
+
+    // --- InvalidBidException: seller tự bid ---
+
+    @Test
+    void sellerBiddingOwnAuctionThrowsInvalidBidException() throws Exception {
+        Field umField = UserManager.class.getDeclaredField("instance");
+        umField.setAccessible(true);
+        umField.set(null, null);
+        UserManager.getInstance().register("seller1", "pw", "BIDDER");
+        Bidder seller = (Bidder) UserManager.getInstance().findUserByUsername("seller1");
+        seller.addBalance(10_000_000.0);
+
+        // Tạo auction có sellerId = "seller1"
+        Auction ownAuction = new Auction("own-1",
+            new Electronics("e-own", "Laptop", STARTING_PRICE), DURATION, "seller1");
+        ownAuction.setStatus(AuctionStatus.RUNNING);
+
+        assertThrows(InvalidBidException.class,
+            () -> ownAuction.processNewBid(seller, STARTING_PRICE + 50000.0));
+    }
 }
