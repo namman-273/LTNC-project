@@ -2,6 +2,9 @@ package com.auction.model;
 
 import com.auction.util.SecurityUtils;
 
+/**
+ * .
+ */
 public abstract class User extends Entity implements Observer {
   protected String username;
   private String password; // Lưu trữ dưới dạng hash đơn giản
@@ -12,6 +15,9 @@ public abstract class User extends Entity implements Observer {
   // LOCK RIÊNG: Đảm bảo mọi giao dịch nạp/rút không bị xen kẽ (Atomic Swap)
   private transient Object balanceLock = new Object();
 
+  /**
+ * .
+ */
   public User(String username, String password, String role) {
     super(username);
     this.username = username;
@@ -55,14 +61,14 @@ public abstract class User extends Entity implements Observer {
   // --- CÁC PHƯƠNG THỨC GIAO DỊCH (THREAD-SAFE) ---
 
   /**
-   * Lấy số dư hiện tại
+   * Lấy số dư hiện tại.
    */
   public double getBalance() {
     return balance;
   }
 
   /**
-   * Nạp tiền, nhận hoàn tiền (Refund) hoặc nhận tiền bán hàng
+   * Nạp tiền, nhận hoàn tiền (Refund) hoặc nhận tiền bán hàng.
    */
   public void addBalance(double amount) {
     synchronized (getLock()) {
@@ -86,9 +92,9 @@ public abstract class User extends Entity implements Observer {
   }
 
   /**
-   * Trừ tiền khi đặt Bid thành công
+   * Trừ tiền khi đặt Bid thành công.
    * 
-   * @return true nếu trừ tiền thành công, false nếu không đủ số dư
+   * <p>return true nếu trừ tiền thành công, nếu k đủ số dư
    */
   public boolean deductBalance(double amount) {
     synchronized (getLock()) {

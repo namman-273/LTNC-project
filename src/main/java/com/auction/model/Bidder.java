@@ -3,6 +3,9 @@ package com.auction.model;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Ng đấu giá.
+ */
 public class Bidder extends User {
   private static final long serialVersionUID = 1L;
 
@@ -22,7 +25,10 @@ public class Bidder extends User {
     return username;
   }
   // --- LOGIC WATCHLIST ---
-
+  
+  /**
+ * check xem có add thêm đc k.
+ */
   public boolean addToWatchlist(String auctionId) {
     if (auctionId == null || auctionId.isEmpty()) {
       return false;
@@ -41,7 +47,10 @@ public class Bidder extends User {
   public void removeFromWatchlist(String auctionId) {
     getWatchlist().remove(auctionId);
   }
-
+  
+  /**
+ * return watchlist.
+ */
   public Set<String> getWatchlist() {
     if (watchlist == null) {
       watchlist = new HashSet<>(); // Chỉ khởi tạo khi thực sự cần dùng

@@ -1,5 +1,8 @@
 package com.auction.network;
 
+/**
+ * .
+ */
 public class Protocol {
   // --- COMMANDS (Lệnh từ Client gửi lên) ---
   public static final String CMD_REGISTER = "REGISTER";

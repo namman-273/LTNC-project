@@ -22,6 +22,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * .
+ */
 public class AuctionService implements Serializable {
   private static final long serialVersionUID = 1L;
 
@@ -35,6 +38,9 @@ public class AuctionService implements Serializable {
   private AuctionService() {
   }
 
+  /**
+ * Áp dụng singleton.
+ */
   public static AuctionService getInstance() {
     if (instance == null) {
       synchronized (AuctionService.class) {
@@ -46,6 +52,9 @@ public class AuctionService implements Serializable {
     return instance;
   }
 
+  /**
+ * get watchlist.
+ */
   public List<Auction> getWatchlistForUser(String username) {
     User user = UserManager.getInstance().findUserByUsername(username);
 
@@ -61,6 +70,9 @@ public class AuctionService implements Serializable {
         .collect(Collectors.toList());
   }
 
+  /**
+ * Tạo phiên mới.
+ */
   public synchronized void createNewAuction(String itemType, String itemName, double startingPrice,
       long durationMinutes, String sellerId) {
     // 1. Tạo ID duy nhất cho phiên đấu giá (Ví dụ: AUC_171400...)
@@ -110,6 +122,9 @@ public class AuctionService implements Serializable {
     return instance;
   }
 
+  /**
+ * Thêm phiên.
+ */
   public void addAuction(Auction auction) {
     if (auction != null) {
       auctions.put(auction.getId(), auction);
@@ -122,11 +137,23 @@ public class AuctionService implements Serializable {
   }
 
   /**
-   * Logic kết thúc phiên và xác định Winner
+   * Logic kết thúc phiên và xác định Winner.
    */
   public void endAuction(String auctionId) {
     Auction a = auctions.get(auctionId);
-    if (a != null && (a.getStatus() == AuctionStatus.RUNNING || a.getStatus() == AuctionStatus.OPEN)) {
+    if (a == null) {
+      return;
+    }
+
+    // 1. Dùng synchronized để đảm bảo chỉ có 1 thread được xử lý thanh toán
+    synchronized (a) {
+      // Kiểm tra lại trạng thái để tránh xử lý 2 lần (Double Payment)
+      if (a.getStatus() == AuctionStatus.FINISHED || a.getStatus() == AuctionStatus.PAID) {
+        return;
+      }
+
+      // Tạm thời set FINISHED ngay để "khóa" các luồng khác chen vào
+      a.setStatus(AuctionStatus.FINISHED);
 
       // Xác định winner từ BidHistory
       List<BidTransaction> history = a.getBidHistory();
@@ -138,32 +165,38 @@ public class AuctionService implements Serializable {
         winner = lastBid.getBidder();
         maxPrice = lastBid.getAmount();
       }
-      // XỬ LÝ TÀI CHÍNH (FINALIZE)
+
+      // 2. XỬ LÝ TÀI CHÍNH
       if (winner != null) {
-        // Lấy người bán thông qua sellerId lưu trong Auction
         User seller = UserManager.getInstance().findUserByUsername(a.getSellerId());
-
         if (seller != null) {
-          // Cộng tiền cho người bán (Người thắng đã bị trừ tiền tạm giữ từ trước)
+          // Cộng tiền cho người bán (An toàn nhờ synchronized trong addBalance)
           seller.addBalance(maxPrice);
-
-          // Cập nhật trạng thái thành ĐÃ THANH TOÁN
+          // Nâng cấp trạng thái thành ĐÃ THANH TOÁN
           a.setStatus(AuctionStatus.PAID);
+        } else {
+          System.err.println("[ERROR] Không tìm thấy seller: " + a.getSellerId());
         }
-      } else {
-        // Trường hợp không có ai đặt giá
-        a.setStatus(AuctionStatus.FINISHED);
       }
 
-      // Gửi thông báo kết quả cho các Observers (FE nhận qua socket)
+      // 3. Gửi thông báo (FE nhận qua socket)
       String msg = (winner != null)
-          ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid: " + maxPrice + "$"
+          ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid:"
+              + maxPrice + "$"
           : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
 
+      // Đảm bảo notifyObservers đã dùng bản copy để tránh
+      // ConcurrentModificationException
       a.notifyObservers(msg);
+
+      // Giải phóng tài nguyên/dừng thread nếu cần
       a.closeAuction();
+
+      // 4. LƯU DỮ LIỆU NGAY LẬP TỨC
       DataManager.getInstance().saveData();
-      System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId + " hoàn tất. Tiền đã về ví người bán.");
+
+      System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId + " hoàn tất. Trạng thái cuối: "
+          + a.getStatus());
     }
   }
 
@@ -179,7 +212,10 @@ public class AuctionService implements Serializable {
     Auction a = auctions.get(auctionId);
     return (a != null) ? a.getItem() : null;
   }
-
+  
+  /**
+ * set instance.
+ */
   public static void setInstance(AuctionService loadedInstance) {
     synchronized (AuctionService.class) {
       instance = loadedInstance;
@@ -191,14 +227,20 @@ public class AuctionService implements Serializable {
     return this.auctions; // auctions là cái Map<String, Auction>
   }
 
-  // Dùng để khôi phục dữ liệu sau khi đọc từ file .dat lên
+  
+  /**
+ *  Dùng để khôi phục dữ liệu sau khi đọc từ file .dat lên.
+ */
   public void setAuctions(Map<String, Auction> loadedAuctions) {
     if (loadedAuctions != null) {
       this.auctions.clear(); // Xóa sạch dữ liệu trắng hiện tại
       this.auctions.putAll(loadedAuctions); // Đổ toàn bộ dữ liệu từ file vào
     }
   }
-
+  
+  /**
+ * shutdown.
+ */
   public void shutdown() {
     System.out.println("[SERVICE] Đang tiến hành dọn dẹp và lưu dữ liệu...");
 
@@ -230,6 +272,9 @@ public class AuctionService implements Serializable {
   }
 
   // Trong AuctionService.java
+  /**
+ * Ngắt bỏ mọi obersever.
+ */
   public void removeObserverFromAll(Observer obs) {
     for (Auction auction : auctions.values()) {
       auction.removeObserver(obs);
