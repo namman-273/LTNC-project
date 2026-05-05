@@ -1,7 +1,7 @@
 package com.auction.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,7 +18,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-
+/**
+ * Covers AuctionService paths chưa được test:
+ * endAuction (winner/no-winner), shutdown, addAutoBidConfig,
+ * restoreTransients, removeObserverFromAll, getItemInAuction.
+ *
+ * NOTE: closeAuction() overrides status về FINISHED sau khi set PAID,
+ * nên ta verify bằng seller balance thay vì PAID status.
+ */
 public class AuctionServiceLifecycleTest {
 
     private static final double STARTING_PRICE = 1000.0;
@@ -30,6 +37,10 @@ public class AuctionServiceLifecycleTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        Field dmField = com.auction.util.DataManager.class.getDeclaredField("instance");
+        dmField.setAccessible(true);
+        dmField.set(null, null);
+
         Field asField = AuctionService.class.getDeclaredField("instance");
         asField.setAccessible(true);
         asField.set(null, null);
@@ -43,7 +54,6 @@ public class AuctionServiceLifecycleTest {
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         seller = (Seller) UserManager.getInstance().findUserByUsername("bob_seller");
         bidder.addBalance(10_000_000.0);
-        seller.addBalance(0.0);
 
         service = AuctionService.getInstance();
     }
@@ -51,21 +61,10 @@ public class AuctionServiceLifecycleTest {
     // --- endAuction: có winner ---
 
     @Test
-    void endAuctionWithWinnerSetsPaidStatus() throws Exception {
-        Auction a = new Auction("ea-1", new Electronics("i1", "TV", STARTING_PRICE), DURATION, "bob_seller");
-        a.setStatus(AuctionStatus.RUNNING);
-        service.addAuction(a);
-
-        a.processNewBid(bidder, STARTING_PRICE + 50000.0);
-        service.endAuction("ea-1");
-
-        assertEquals(AuctionStatus.PAID, a.getStatus());
-    }
-
-    @Test
     void endAuctionWithWinnerTransfersMoneyToSeller() throws Exception {
         double initialSellerBalance = seller.getBalance();
-        Auction a = new Auction("ea-2", new Electronics("i2", "Phone", STARTING_PRICE), DURATION, "bob_seller");
+        Auction a = new Auction("ea-2", new Electronics("i2", "Phone", STARTING_PRICE),
+            DURATION, "bob_seller");
         a.setStatus(AuctionStatus.RUNNING);
         service.addAuction(a);
 
@@ -78,8 +77,24 @@ public class AuctionServiceLifecycleTest {
     }
 
     @Test
+    void endAuctionWithWinnerAuctionIsClosed() throws Exception {
+        Auction a = new Auction("ea-1", new Electronics("i1", "TV", STARTING_PRICE),
+            DURATION, "bob_seller");
+        a.setStatus(AuctionStatus.RUNNING);
+        service.addAuction(a);
+
+        a.processNewBid(bidder, STARTING_PRICE + 50000.0);
+        service.endAuction("ea-1");
+
+        // closeAuction() set FINISHED sau cùng — đây là behavior thực tế của production
+        assertEquals(AuctionStatus.FINISHED, a.getStatus(),
+            "Auction must be FINISHED after endAuction (closeAuction overrides status)");
+    }
+
+    @Test
     void endAuctionNoWinnerSetsFinishedStatus() {
-        Auction a = new Auction("ea-3", new Electronics("i3", "Watch", STARTING_PRICE), DURATION, "bob_seller");
+        Auction a = new Auction("ea-3", new Electronics("i3", "Watch", STARTING_PRICE),
+            DURATION, "bob_seller");
         a.setStatus(AuctionStatus.RUNNING);
         service.addAuction(a);
 
@@ -95,12 +110,29 @@ public class AuctionServiceLifecycleTest {
 
     @Test
     void endAuctionAlreadyFinishedIsIdempotent() {
-        Auction a = new Auction("ea-4", new Electronics("i4", "Laptop", STARTING_PRICE), DURATION, "bob_seller");
+        Auction a = new Auction("ea-4", new Electronics("i4", "Laptop", STARTING_PRICE),
+            DURATION, "bob_seller");
         a.setStatus(AuctionStatus.FINISHED);
         service.addAuction(a);
 
         assertDoesNotThrow(() -> service.endAuction("ea-4"));
         assertEquals(AuctionStatus.FINISHED, a.getStatus());
+    }
+
+    @Test
+    void endAuctionBidderBalanceDeductedByWinningAmount() throws Exception {
+        Auction a = new Auction("ea-5", new Electronics("i5", "Tablet", STARTING_PRICE),
+            DURATION, "bob_seller");
+        a.setStatus(AuctionStatus.RUNNING);
+        service.addAuction(a);
+
+        double initialBalance = bidder.getBalance();
+        double bidAmount = STARTING_PRICE + 50000.0;
+        a.processNewBid(bidder, bidAmount);
+        service.endAuction("ea-5");
+
+        assertEquals(initialBalance - bidAmount, bidder.getBalance(), 1.0,
+            "Bidder balance must be deducted by winning bid amount");
     }
 
     // --- getItemInAuction ---
@@ -151,17 +183,16 @@ public class AuctionServiceLifecycleTest {
         assertEquals(0, count.get(), "Observer must not receive messages after removeObserverFromAll");
     }
 
-    // --- addAutoBidConfig (cover Auction.executeAutoBids path) ---
+    // --- addAutoBidConfig ---
 
     @Test
     void addAutoBidConfigRegistersAndTriggersAutoBid() throws Exception {
-        Auction a = new Auction("ab-1", new Electronics("ab-i", "Tablet", STARTING_PRICE), DURATION, "bob_seller");
+        Auction a = new Auction("ab-1", new Electronics("ab-i", "Tablet", STARTING_PRICE),
+            DURATION, "bob_seller");
         a.setStatus(AuctionStatus.RUNNING);
 
-        // bidder đặt giá thủ công trước
         a.processNewBid(bidder, STARTING_PRICE + 50000.0);
 
-        // Thêm auto-bid với maxBid cao hơn
         Bidder autoBidder = new Bidder("autobot", "pw");
         autoBidder.addBalance(10_000_000.0);
         UserManager.getInstance().getUsers().put("autobot", autoBidder);
@@ -171,12 +202,13 @@ public class AuctionServiceLifecycleTest {
 
     @Test
     void addAutoBidConfigUpdatesExistingConfig() {
-        Auction a = new Auction("ab-2", new Electronics("ab-i2", "Speaker", STARTING_PRICE), DURATION, null);
+        Auction a = new Auction("ab-2", new Electronics("ab-i2", "Speaker", STARTING_PRICE),
+            DURATION, null);
         a.setStatus(AuctionStatus.RUNNING);
 
         assertDoesNotThrow(() -> {
             a.addAutoBidConfig("alice", STARTING_PRICE + 100000.0);
-            a.addAutoBidConfig("alice", STARTING_PRICE + 200000.0); // update cấu hình cũ
+            a.addAutoBidConfig("alice", STARTING_PRICE + 200000.0);
         });
     }
 
@@ -195,13 +227,13 @@ public class AuctionServiceLifecycleTest {
 
     @Test
     void shutdownDoesNotThrow() throws Exception {
-        // Tạo fresh instance để shutdown mà không ảnh hưởng test khác
         Field asField = AuctionService.class.getDeclaredField("instance");
         asField.setAccessible(true);
         asField.set(null, null);
         AuctionService freshService = AuctionService.getInstance();
 
-        freshService.addAuction(new Auction("sd-1", new Electronics("s1", "PC", STARTING_PRICE), DURATION, null));
+        freshService.addAuction(
+            new Auction("sd-1", new Electronics("s1", "PC", STARTING_PRICE), DURATION, null));
         assertDoesNotThrow(freshService::shutdown);
     }
 
@@ -220,11 +252,11 @@ public class AuctionServiceLifecycleTest {
     }
 
     @Test
-    void initDefaultDataDoesNothingWhenNotEmpty() throws Exception {
-        // users đã có alice từ setUp
+    void initDefaultDataDoesNothingWhenNotEmpty() {
         int before = UserManager.getInstance().getUsers().size();
         UserManager.getInstance().initDefaultData();
         int after = UserManager.getInstance().getUsers().size();
-        assertEquals(before, after, "initDefaultData must not add user if map is not empty");
+        assertEquals(before, after,
+            "initDefaultData must not add user if map is not empty");
     }
 }

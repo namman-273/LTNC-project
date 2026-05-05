@@ -15,9 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Stress test: nhiều thread đồng thời, kiểm tra tính nhất quán dữ liệu.
- */
+
 public class AuctionStressTest {
 
     private static final double STARTING_PRICE = 1000.0;
