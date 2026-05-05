@@ -2,52 +2,68 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.AdminDashboardController"
-      prefWidth="750" prefHeight="550" spacing="15"
+      fx:controller="com.auction.controllers.BidController"
+      prefWidth="700" prefHeight="550" spacing="15"
       stylesheets="@style.css"
       style="-fx-background-color: #f0f2f5;">
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
     <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="10"
-          style="-fx-background-color: linear-gradient(to right, #b71c1c, #e53935); -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);"
-          prefHeight="60">
+          styleClass="header-box" prefHeight="60">
         <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
         <Button text="← Quay lại" onAction="#handleBack"
-                style="-fx-background-color: white; -fx-text-fill: #e53935; -fx-font-weight: bold; -fx-background-radius: 5;"/>
-        <Label text="⚙️ ADMIN DASHBOARD"
+                style="-fx-background-color: white; -fx-text-fill: #2196F3; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+        <Label fx:id="auctionTitleLabel" text="Phiên đấu giá"
                style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-        <HBox HBox.hgrow="ALWAYS"/>
-        <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                style="-fx-background-color: white; -fx-text-fill: #e53935; -fx-font-weight: bold; -fx-background-radius: 5;"/>
     </HBox>
 
-    <!-- BẢNG DANH SÁCH -->
-    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
-               styleClass="table-view">
-        <columns>
-            <TableColumn fx:id="idCol" text="ID" prefWidth="200"/>
-            <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="180"/>
-            <TableColumn fx:id="priceCol" text="Giá hiện tại" prefWidth="150"/>
-            <TableColumn fx:id="statusCol" text="Trạng thái" prefWidth="100"/>
-        </columns>
-    </TableView>
+    <!-- THÔNG TIN + ĐẶT GIÁ -->
+    <HBox spacing="15">
 
-    <!-- NÚT BÊN DƯỚI -->
-    <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button text="🔴 Kết thúc phiên" onAction="#handleEndAuction"
-                prefHeight="38" prefWidth="160"
-                styleClass="btn-danger"/>
-        <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"
-                prefHeight="38" prefWidth="160"
-                styleClass="btn-primary"/>
+        <!-- TRÁI: thông tin sản phẩm -->
+        <VBox spacing="10" prefWidth="320" styleClass="card">
+            <Label text="Thông tin sản phẩm"
+                   style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <Label fx:id="itemNameLabel" text="Tên: ---"
+                   style="-fx-font-size: 13px;"/>
+            <Label fx:id="currentPriceLabel" text="Giá hiện tại: ---"
+                   styleClass="price-label"/>
+            <Label fx:id="statusLabel" text="Trạng thái: ---"
+                   style="-fx-font-size: 13px;"/>
+            <Label fx:id="messageLabel" text=""
+                   style="-fx-font-size: 12px;" wrapText="true"/>
+        </VBox>
+
+        <!-- PHẢI: đặt giá -->
+        <VBox spacing="10" prefWidth="320" styleClass="card">
+            <Label text="Đặt giá"
+                   style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <TextField fx:id="bidAmountField" promptText="Nhập giá của bạn..."
+                       prefHeight="40" styleClass="text-field-modern"/>
+            <Button text="🔨 ĐẶT GIÁ" onAction="#handleBid"
+                    prefWidth="280" prefHeight="43"
+                    styleClass="btn-danger"/>
+            <Button text="📊 Xem biểu đồ" onAction="#handleViewChart"
+                    prefWidth="280" prefHeight="38"
+                    styleClass="btn-primary"/>
+        </VBox>
+
     </HBox>
+
+    <!-- LỊCH SỬ ĐẶT GIÁ -->
+    <VBox spacing="5" VBox.vgrow="ALWAYS" styleClass="card">
+        <Label text="📋 Lịch sử đặt giá"
+               style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+        <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS"
+                  styleClass="list-view"/>
+    </VBox>
 
 </VBox>
