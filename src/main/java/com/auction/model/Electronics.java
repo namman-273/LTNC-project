@@ -1,5 +1,8 @@
 package com.auction.model;
 
+/**
+ * .
+ */
 public class Electronics extends Item {
 
   private static final long serialVersionUID = 1L;

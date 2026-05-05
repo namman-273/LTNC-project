@@ -16,6 +16,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 
+/**
+ * lưu thông tin xuống dạng file.
+ */
+
 public final class DataManager {
   private static final String AUCTION_DATA_FILE = "auctions.dat";
   private static final String USER_DATA_FILE = "users.dat";
@@ -26,6 +30,9 @@ public final class DataManager {
   private DataManager() {
   }
 
+  /**
+ * Áp dụng singleton.
+ */
   public static synchronized DataManager getInstance() {
     if (instance == null) {
       instance = new DataManager();
@@ -79,7 +86,8 @@ public final class DataManager {
 
       Path source = Paths.get(tempFileName);
       Path target = Paths.get(fileName);
-      Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+      Files.move(source, target, StandardCopyOption.REPLACE_EXISTING,
+          StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
       System.err.println(">>> [DataManager] Lỗi lưu " + fileName + ": " + e.getMessage());
       if (tempFile.exists()) {

@@ -15,6 +15,9 @@ public class BidTransaction implements Serializable {
   private double amount;
   private LocalDateTime timestamp;
 
+  /**
+ * constructor.
+ */
   public BidTransaction(User bidder, double amount) {
     this.bidder = bidder;
     this.amount = amount;
