@@ -74,7 +74,10 @@ public class BidController implements Initializable {
 
                 while (!Thread.currentThread().isInterrupted()) {
                     String message = listenerConn.receive();
-                    if (message == null) break;
+                    // FIX [NeedBraces]: thêm {} cho if (message == null)
+                    if (message == null) {
+                        break;
+                    }
                     System.out.println("Realtime: " + message);
 
                     if (message.startsWith("UPDATE|")) {
@@ -197,6 +200,7 @@ public class BidController implements Initializable {
             }
         }).start();
     }
+
     @FXML
     private void handleViewChart() {
         if (listenerThread != null) {
