@@ -168,7 +168,7 @@ public class ClientHandler implements Runnable, Observer {
     }
 
     private void handleCreateAuction(final String[] parts, AuctionService auctionService) {
-        if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
+        if (currentUser == null || (!"ADMIN".equals(currentUser.getRole()) && !"SELLER".equals(currentUser.getRole()))) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Quyền hạn không đủ.");
             return;
         }

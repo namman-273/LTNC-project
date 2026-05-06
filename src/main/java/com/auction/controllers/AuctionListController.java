@@ -58,6 +58,7 @@ public class AuctionListController implements Initializable {
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
 
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String status, boolean empty) {
