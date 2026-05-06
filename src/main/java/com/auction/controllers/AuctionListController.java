@@ -8,6 +8,7 @@ import com.auction.views.AdminDashboardView;
 import com.auction.views.BidView;
 import com.auction.views.CreateAuctionView;
 import com.auction.views.LoginView;
+import com.auction.views.SellerView;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -26,7 +27,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import com.auction.views.SellerView;
 
 public class AuctionListController implements Initializable {
 
@@ -37,6 +37,7 @@ public class AuctionListController implements Initializable {
     @FXML private TableColumn<AuctionRow, String> priceCol;
     @FXML private TableColumn<AuctionRow, String> statusCol;
     @FXML private Button adminButton;
+    @FXML private Button sellerButton;
     @FXML private Label statusBarLabel;
 
     private String username;
@@ -85,14 +86,30 @@ public class AuctionListController implements Initializable {
         new Thread(() -> {
             try {
                 ServerConnection conn = ServerConnection.getInstance();
-                if (!conn.isConnected()) conn.connect();
+
+                // Thử kết nối lại nếu mất kết nối
+                if (!conn.isConnected()) {
+                    boolean ok = conn.connect();
+                    if (!ok) {
+                        Platform.runLater(() ->
+                                setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
+                        return;
+                    }
+                }
 
                 String response = conn.sendAndReceive("LIST_AUCTIONS");
                 System.out.println("RAW: " + response);
 
+                // Mất kết nối giữa chừng
+                if (response == null) {
+                    Platform.runLater(() ->
+                            setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
+                    return;
+                }
+
                 ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
-                if (response != null && response.contains(Protocol.RES_LIST_SUCCESS)) {
+                if (response.contains(Protocol.RES_LIST_SUCCESS)) {
                     int jsonStart = response.indexOf("[");
                     if (jsonStart != -1) {
                         data = parseAuctionJson(response.substring(jsonStart));
@@ -106,12 +123,13 @@ public class AuctionListController implements Initializable {
                 final ObservableList<AuctionRow> finalData = data;
                 Platform.runLater(() -> {
                     auctionTable.setItems(finalData);
-                    setStatusBar("Tải xong " + finalData.size() + " phiên.");
+                    setStatusBar("✅ Tải xong " + finalData.size() + " phiên.");
                 });
 
             } catch (Exception e) {
                 System.err.println("Lỗi load danh sách: " + e.getMessage());
-                Platform.runLater(() -> setStatusBar("Lỗi kết nối server!"));
+                Platform.runLater(() ->
+                        setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
             }
         }).start();
     }
@@ -153,7 +171,7 @@ public class AuctionListController implements Initializable {
     private void handleViewDetail() {
         AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            System.out.println("Chưa chọn phiên nào!");
+            setStatusBar("⚠️ Vui lòng chọn một phiên trước!");
             return;
         }
         Stage stage = (Stage) auctionTable.getScene().getWindow();
@@ -180,7 +198,6 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AdminDashboardView(stage, username).show();
     }
-    @FXML private Button sellerButton;
 
     @FXML
     private void handleSellerDashboard() {
