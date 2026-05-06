@@ -1,5 +1,8 @@
 package com.auction.model;
 
+import com.auction.audit.AuditEvent;
+import com.auction.audit.AuditEventType;
+import com.auction.audit.AuditLogger;
 import com.auction.util.SecurityUtils;
 
 /**
@@ -86,6 +89,18 @@ public abstract class User extends Entity implements Observer {
         this.balance += amount;
       }
 
+      // LOG BALANCE DEPOSIT
+      AuditLogger.getInstance().log(
+          new AuditEvent.Builder()
+              .eventType(AuditEventType.BALANCE_DEPOSIT)
+              .username(username)
+              .action("Nạp tiền vào tài khoản")
+              .result("SUCCESS")
+              .addMetadata("amount", String.valueOf((long)amount))
+              .addMetadata("newBalance", String.valueOf((long)this.balance))
+              .build()
+      );
+
       // Thông báo biến động số dư qua hàm update (để Client nhận được)
       this.update("BALANCE_CHANGED|+" + (long) amount + "|" + (long) this.balance);
     }
@@ -105,6 +120,19 @@ public abstract class User extends Entity implements Observer {
 
       if (this.balance >= amount) {
         this.balance -= amount;
+        
+        // LOG BALANCE DEDUCT
+        AuditLogger.getInstance().log(
+            new AuditEvent.Builder()
+                .eventType(AuditEventType.BALANCE_DEDUCT)
+                .username(username)
+                .action("Trừ tiền từ tài khoản")
+                .result("SUCCESS")
+                .addMetadata("amount", String.valueOf((long)amount))
+                .addMetadata("newBalance", String.valueOf((long)this.balance))
+                .build()
+        );
+        
         this.update("BALANCE_CHANGED|-" + (long) amount + "|" + (long) this.balance);
         return true;
       }
