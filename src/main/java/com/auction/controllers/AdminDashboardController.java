@@ -1,11 +1,17 @@
 package com.auction.controllers;
 
+import com.auction.dto.AuctionRow;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -38,111 +44,117 @@ public class AdminDashboardController implements Initializable {
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        // FIX: Thêm màu status giống AuctionListController cho nhất quán
+        statusCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty || status == null) { setText(null); setStyle(""); return; }
+                setText(status);
+                switch (status) {
+                    case "OPEN":     setStyle("-fx-text-fill: #2E7D32; -fx-font-weight: bold;"); break;
+                    case "RUNNING":  setStyle("-fx-text-fill: #E65100; -fx-font-weight: bold;"); break;
+                    case "FINISHED": setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;"); break;
+                    default:         setStyle("-fx-text-fill: #888888;");
+                }
+            }
+        });
+
         loadFromServer();
     }
 
+    /**
+     * FIX: Dùng ServerConnection.getInstance() thay vì tạo connection mới + login lại.
+     * Admin đã login sẵn từ màn hình Login — connection chính vẫn còn hiệu lực.
+     */
     public void loadFromServer() {
+        showMessage("Đang tải danh sách...", "gray");
+
         new Thread(() -> {
-            ServerConnection conn = new ServerConnection("localhost", 9999);
-            try {
-                if (!conn.connectDirect()) return;
-                String user = SessionManager.getInstance().getUsername();
-                String pwd  = SessionManager.getInstance().getPassword();
-                conn.sendAndReceive("LOGIN|" + user + "|" + pwd);
-                String response = conn.sendAndReceive("LIST_AUCTIONS");
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive("LIST_AUCTIONS");
 
-                ObservableList<AuctionRow> data = FXCollections.observableArrayList();
+            ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
-                if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                    int start = response.indexOf("[");
-                    if (start != -1) {
-                        String content = response.substring(start)
-                                .replace("[", "").replace("]", "").trim();
-                        String[] auctions = content.split(",\\s*(?=id=)");
-                        for (String a : auctions) {
-                            a = a.trim();
-                            if (a.isEmpty() || !a.contains("id=")) continue;
-                            String id       = extractField(a, "id=");
-                            String itemName = extractField(a, "itemName=");
-                            String price    = extractField(a, "currentPrice=");
-                            String status   = extractField(a, "status=");
-                            try {
-                                double p = Double.parseDouble(price);
-                                price = String.format("%,.0f VND", p);
-                            } catch (NumberFormatException ignored) {}
-                            data.add(new AuctionRow(id, itemName, price, status));
-                        }
-                    }
+            if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
+                int jsonStart = response.indexOf("[");
+                if (jsonStart != -1) {
+                    data = parseAuctionJson(response.substring(jsonStart));
                 }
-
-                if (data.isEmpty()) {
-                    data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
-                }
-
-                Platform.runLater(() -> auctionTable.setItems(data));
-
-            } catch (Exception e) {
-                System.err.println("Lỗi load danh sách: " + e.getMessage());
-            } finally {
-                conn.disconnectDirect();
             }
+
+            if (data.isEmpty()) {
+                data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
+            }
+
+            final ObservableList<AuctionRow> finalData = data;
+            Platform.runLater(() -> {
+                auctionTable.setItems(finalData);
+                showMessage("Tải xong " + finalData.size() + " phiên.", "gray");
+            });
+
         }).start();
     }
 
-    private String extractField(String text, String key) {
-        int start = text.indexOf(key);
-        if (start == -1) {
-            return "---";
-        }
-        start += key.length();
-        int end = text.length();
-        String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
-        for (String nextKey : nextKeys) {
-            int pos = text.indexOf("," + nextKey, start);
-            if (pos != -1 && pos < end) {
-                end = pos;
+    /**
+     * FIX: Parse JSON thay vì cắt chuỗi toString() thủ công.
+     * Dùng chung logic với AuctionListController.
+     */
+    private ObservableList<AuctionRow> parseAuctionJson(String json) {
+        ObservableList<AuctionRow> result = FXCollections.observableArrayList();
+        try {
+            JsonArray array = JsonParser.parseString(json).getAsJsonArray();
+            for (JsonElement element : array) {
+                JsonObject obj  = element.getAsJsonObject();
+                String id       = obj.has("id")           ? obj.get("id").getAsString()           : "---";
+                String itemName = obj.has("itemName")     ? obj.get("itemName").getAsString()     : "---";
+                double priceRaw = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
+                String status   = obj.has("status")       ? obj.get("status").getAsString()       : "---";
+
+                result.add(new AuctionRow(id, itemName, String.format("%,.0f VND", priceRaw), status));
             }
+        } catch (Exception e) {
+            System.err.println("Lỗi parse JSON admin dashboard: " + e.getMessage());
         }
-        return text.substring(start, end).trim();
+        return result;
     }
 
     @FXML
-    private void handleRefresh() { loadFromServer(); }
+    private void handleRefresh() {
+        loadFromServer();
+    }
 
+    /**
+     * FIX: Dùng connection chính để END_AUCTION — không tạo connection mới.
+     */
     @FXML
     private void handleEndAuction() {
         AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
-        if (selected == null) { showMessage("Vui lòng chọn một phiên để kết thúc!", "red"); return; }
-        if ("FINISHED".equals(selected.getStatus())) { showMessage("Phiên này đã kết thúc rồi!", "red"); return; }
+        if (selected == null) {
+            showMessage("Vui lòng chọn một phiên để kết thúc!", "red");
+            return;
+        }
+        if ("FINISHED".equals(selected.getStatus())) {
+            showMessage("Phiên này đã kết thúc rồi!", "red");
+            return;
+        }
+
         showMessage("Đang kết thúc phiên...", "orange");
 
         new Thread(() -> {
-            ServerConnection conn = new ServerConnection("localhost", 9999);
-            try {
-                if (!conn.connectDirect()) {
-                    Platform.runLater(() -> showMessage("Không thể kết nối server!", "red"));
-                    return;
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
+            System.out.println("End auction: " + response);
+
+            Platform.runLater(() -> {
+                if (response != null && response.contains("SUCCESS")) {
+                    showMessage("✅ Kết thúc phiên thành công!", "green");
+                } else {
+                    showMessage("❌ Lỗi: " + response, "red");
                 }
-                String user = SessionManager.getInstance().getUsername();
-                String pwd  = SessionManager.getInstance().getPassword();
-                conn.sendAndReceive("LOGIN|" + user + "|" + pwd);
-                String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
-                System.out.println("End auction: " + response);
-
-                try { Thread.sleep(300); } catch (InterruptedException ignored) {}
-
-                Platform.runLater(() -> {
-                    if (response != null && response.contains("SUCCESS")) {
-                        showMessage("✅ Kết thúc phiên thành công!", "green");
-                    } else {
-                        showMessage("❌ Lỗi: " + response, "red");
-                    }
-                    loadFromServer();
-                });
-            } finally {
-                conn.disconnectDirect();
-            }
+                loadFromServer();
+            });
         }).start();
     }
 
@@ -162,34 +174,6 @@ public class AdminDashboardController implements Initializable {
         if (messageLabel != null) {
             messageLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 12px;");
             messageLabel.setText(msg);
-        }
-    }
-
-    public static class AuctionRow {
-        private String id;
-        private String itemName;
-        private String currentPrice;
-        private String status;
-
-        public AuctionRow(String id, String itemName, String currentPrice, String status) {
-            this.id = id; this.itemName = itemName;
-            this.currentPrice = currentPrice; this.status = status;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String getItemName() {
-            return itemName;
-        }
-
-        public String getCurrentPrice() {
-            return currentPrice;
-        }
-
-        public String getStatus() {
-            return status;
         }
     }
 }
