@@ -1,6 +1,5 @@
 package com.auction.network;
 
-import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.model.Auction;
 import com.auction.model.AuctionStatus;
@@ -112,17 +111,6 @@ public class ClientHandler implements Runnable, Observer {
                     case Protocol.CMD_GET_HISTORY:
                         if (validatePayload(parts, REQ_HISTORY))
                             handleGetHistory(parts, auctionService);
-                        break;
-                    case Protocol.CMD_WATCH:
-                        if (validatePayload(parts, 2))
-                            handleWatch(parts);
-                        break;
-                    case Protocol.CMD_UNWATCH:
-                        if (validatePayload(parts, 2))
-                            handleUnwatch(parts);
-                        break;
-                    case Protocol.CMD_GET_WATCHLIST:
-                        handleGetWatchlist(auctionService);
                         break;
                     default:
                         sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lệnh không hợp lệ");
@@ -253,57 +241,6 @@ public class ClientHandler implements Runnable, Observer {
         } else {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá với ID: " + auctionId);
         }
-    }
-
-    private void handleWatch(String[] parts) {
-        if (currentUser == null) {
-            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn phải đăng nhập trước!");
-            return;
-        }
-        if (!(currentUser instanceof Bidder)) {
-            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ Bidder mới có thể theo dõi phiên.");
-            return;
-        }
-        String auctionId = parts[1];
-        boolean added = ((Bidder) currentUser).addToWatchlist(auctionId);
-        if (added) {
-            UserManager.getInstance().getUsers().put(currentUser.getUsername(), currentUser);
-            sendMessage(Protocol.RES_WATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
-        } else {
-            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Phiên đã có trong watchlist.");
-        }
-    }
-
-    private void handleUnwatch(String[] parts) {
-        if (currentUser == null) {
-            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn phải đăng nhập trước!");
-            return;
-        }
-        if (!(currentUser instanceof Bidder)) {
-            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ Bidder mới có thể bỏ theo dõi.");
-            return;
-        }
-        String auctionId = parts[1];
-        ((Bidder) currentUser).removeFromWatchlist(auctionId);
-        UserManager.getInstance().getUsers().put(currentUser.getUsername(), currentUser);
-        sendMessage(Protocol.RES_UNWATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
-    }
-
-    private void handleGetWatchlist(AuctionService auctionService) {
-        if (currentUser == null) {
-            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn phải đăng nhập trước!");
-            return;
-        }
-        if (!(currentUser instanceof Bidder)) {
-            sendMessage(Protocol.RES_WATCHLIST + Protocol.SEPARATOR + "[]");
-            return;
-        }
-        List<Auction> watchlist = auctionService.getWatchlistForUser(currentUser.getUsername());
-        List<AuctionDTO> dtoList = new ArrayList<>();
-        for (Auction a : watchlist) {
-            dtoList.add(new AuctionDTO(a));
-        }
-        sendMessage(Protocol.RES_WATCHLIST + Protocol.SEPARATOR + gson.toJson(dtoList));
     }
 
     public final void sendMessage(final String msg) {
