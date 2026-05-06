@@ -1,5 +1,8 @@
 package com.auction.model;
 
+import com.auction.audit.AuditEvent;
+import com.auction.audit.AuditEventType;
+import com.auction.audit.AuditLogger;
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
@@ -39,13 +42,12 @@ public class Auction extends Entity {
   private transient int extensionCount = 0;
 
   /**
- * .
- */
+   * .
+   */
   public Auction(String id, Item item, long durationMinutes, String sellerId) {
     super(id);
     if (item == null) {
-      throw new
-       IllegalArgumentException("Item cannot be null.Mỗi phiên đấu giá phải có một món hàng!");
+      throw new IllegalArgumentException("Item cannot be null.Mỗi phiên đấu giá phải có một món hàng!");
     } else {
       this.item = item;
     }
@@ -92,8 +94,8 @@ public class Auction extends Entity {
   }
 
   /**
- * .
- */
+   * .
+   */
   public void setStatus(AuctionStatus status) {
     this.lock.lock();
     try {
@@ -122,8 +124,8 @@ public class Auction extends Entity {
   // --- LOGIC QUẢN LÝ OBSERVER (Public để Service gọi được) ---
 
   /**
- * Thêm vào cho observer theo dõi.
- */
+   * Thêm vào cho observer theo dõi.
+   */
   public void addObserver(Observer obs) {
     if (observers == null) {
       restoreTransients();
@@ -132,8 +134,8 @@ public class Auction extends Entity {
   }
 
   /**
- * xóa khỏi theo dõi.
- */
+   * xóa khỏi theo dõi.
+   */
   public void removeObserver(Observer obs) {
     if (observers != null) {
       observers.remove(obs);
@@ -141,8 +143,8 @@ public class Auction extends Entity {
   }
 
   /**
- * Cài đạt thông báo.
- */
+   * Cài đạt thông báo.
+   */
   public void notifyObservers(String message) {
     for (Observer observer : observers) {
       notifyExecutor.submit(() -> {
@@ -175,8 +177,8 @@ public class Auction extends Entity {
   }
 
   /**
- * Đấu giá.
- */
+   * Đấu giá.
+   */
   public void processNewBid(User bidder, double bidAmount)
       throws InvalidBidException, AuctionClosedException, AuthenticationException {
     lock.lock();
@@ -227,6 +229,17 @@ public class Auction extends Entity {
   private void updateAuctionState(User bidder, double amount) throws InvalidBidException {
     // 1. CHỐT CHẶN BẢO MẬT: Người bán không được tự đấu giá
     if (bidder.getUsername().equals(this.sellerId)) {
+      // LOG BID FAILED - Seller bidding
+      AuditLogger.getInstance().log(
+          new AuditEvent.Builder()
+              .eventType(AuditEventType.BID_FAILED)
+              .username(bidder.getUsername())
+              .action("Đấu giá thất bại - người bán tự bid")
+              .resourceId(getId())
+              .result("FAILURE")
+              .addMetadata("reason", "Seller cannot bid on own item")
+              .addMetadata("itemName", item.getItemName())
+              .build());
       throw new InvalidBidException("Bạn không thể đấu giá sản phẩm của chính mình!");
     }
     if (Double.isNaN(amount) || Double.isInfinite(amount)) {
@@ -234,6 +247,18 @@ public class Auction extends Entity {
     }
     // TRỪ TIỀN TẠM GIỮ CỦA NGƯỜI MỚI
     if (!bidder.deductBalance(amount)) {
+      // LOG BID FAILED - Insufficient balance
+      AuditLogger.getInstance().log(
+          new AuditEvent.Builder()
+              .eventType(AuditEventType.BID_FAILED)
+              .username(bidder.getUsername())
+              .action("Đấu giá thất bại - không đủ tiền")
+              .resourceId(getId())
+              .result("FAILURE")
+              .addMetadata("reason", "Insufficient balance")
+              .addMetadata("requiredAmount", String.valueOf((long) amount))
+              .addMetadata("itemName", item.getHighestBidder())
+              .build());
       throw new InvalidBidException("Số dư tài khoản không đủ để đặt mức giá này!");
     }
 
@@ -247,6 +272,19 @@ public class Auction extends Entity {
         String refundMessage = "REFUND|Phiên " + getId()
             + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount();
         oldBidder.update(refundMessage);
+
+        // LOG BID OUTBID - Old bidder was outbid
+        AuditLogger.getInstance().log(
+            new AuditEvent.Builder()
+                .eventType(AuditEventType.BID_OUTBID)
+                .username(oldBidder.getUsername())
+                .action("Bị vượt giá bởi " + bidder.getUsername())
+                .resourceId(getId())
+                .result("SUCCESS")
+                .addMetadata("oldBid", String.valueOf((long) lastTransaction.getAmount()))
+                .addMetadata("newBid", String.valueOf((long) amount))
+                .addMetadata("itemName", item.getItemName())
+                .build());
       }
     }
 
@@ -257,13 +295,25 @@ public class Auction extends Entity {
     // Lưu lịch sử giao dịch
     this.history.add(new BidTransaction(bidder, amount));
 
+    // LOG BID PLACED SUCCESS
+    AuditLogger.getInstance().log(
+        new AuditEvent.Builder()
+            .eventType(AuditEventType.BID_PLACED)
+            .username(bidder.getUsername())
+            .action("Đặt giá thành công")
+            .resourceId(getId())
+            .result("SUCCESS")
+            .addMetadata("amount", String.valueOf((long) amount))
+            .addMetadata("itemName", item.getItemName())
+            .addMetadata("previousPrice", String.valueOf((long) (amount - getMinimumIncrement(currentPrice))))
+            .build());
+
     notifyObservers("UPDATE|" + getId() + "|" + amount + "|" + bidder.getUsername());
   }
 
-  
   /**
- * // Hàm để người dùng đăng ký Auto-bid từ giao diện.
- */
+   * // Hàm để người dùng đăng ký Auto-bid từ giao diện.
+   */
   public void addAutoBidConfig(String bidderId, double maxBid) {
     lock.lock();
     try {
@@ -276,6 +326,18 @@ public class Auction extends Entity {
 
       this.autoBidQueue.add(new AutoBid(bidderId, maxBid));
       System.out.println("SERVER: Đã nhận cấu hình Auto-bid cho " + bidderId);
+
+      // LOG AUTOBID CONFIGURED
+      AuditLogger.getInstance().log(
+          new AuditEvent.Builder()
+              .eventType(AuditEventType.AUTOBID_CONFIGURED)
+              .username(bidderId)
+              .action("Cấu hình auto-bid")
+              .resourceId(getId())
+              .result("SUCCESS")
+              .addMetadata("maxBid", String.valueOf((long) maxBid))
+              .addMetadata("itemName", item.getItemName())
+              .build());
 
       executeAutoBids();
     } finally {
@@ -342,6 +404,20 @@ public class Auction extends Entity {
     if (timeLeft > 0 && timeLeft < ONE_MINUTE_MS && extensionCount < MAX_EXTENSIONS) { // < 1 phút
       this.endTime += TWO_MINUTES_MS; // Cộng thêm 2 phút
       this.extensionCount++;
+
+      // LOG ANTI-SNIPING
+      AuditLogger.getInstance().log(
+          new AuditEvent.Builder()
+              .eventType(AuditEventType.ANTI_SNIPING_TRIGGERED)
+              .username("SYSTEM")
+              .action("Gia hạn phiên đấu giá do anti-sniping")
+              .resourceId(getId())
+              .result("SUCCESS")
+              .addMetadata("extensionCount", String.valueOf(extensionCount))
+              .addMetadata("newEndTime", String.valueOf(this.endTime))
+              .addMetadata("itemName", item.getItemName())
+              .build());
+
       notifyObservers("SNIPING|" + getId() + "|" + this.endTime + "|" + extensionCount);
     }
   }
@@ -364,11 +440,9 @@ public class Auction extends Entity {
         + ",status=" + status;
   }
 
-  
   /**
-
- * giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng .
- */
+   * giải phóng tài nguyên khi phiên đấu giá kết thúc hoặc Server dừng .
+   */
   public void closeAuction() {
     this.status = AuctionStatus.FINISHED;
 
