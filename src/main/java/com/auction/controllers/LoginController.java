@@ -26,18 +26,19 @@ public class LoginController {
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
 
-        // Validate input — dùng AuthenticationException của BE
-        try {
-            validateInput(username, password);
-        } catch (AuthenticationException e) {
-            showError(e.getMessage());
-            return;
+        // Validate payload đúng như BE: LOGIN cần đủ 3 parts (CMD|user|pass)
+        // Nếu thiếu username/password thì không đủ payload → báo lỗi ngay
+        String[] payload = {Protocol.CMD_LOGIN, username, password};
+        for (String part : payload) {
+            if (part == null || part.isEmpty()) {
+                showError("Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
         }
 
         setLoading(true);
 
         new Thread(() -> {
-            // Reset connection cũ nếu còn sót lại
             ServerConnection conn = ServerConnection.getInstance();
             if (conn.isConnected()) {
                 conn.disconnect();
@@ -52,13 +53,13 @@ public class LoginController {
                 return;
             }
 
-            // Dùng Protocol constants thay vì hardcode string
-            String response = conn.sendAndReceive(
-                    Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + password
-            );
+            // Dùng Protocol.CMD_LOGIN + SEPARATOR — đúng format BE expect
+            String request = Protocol.CMD_LOGIN
+                    + Protocol.SEPARATOR + username
+                    + Protocol.SEPARATOR + password;
+            String response = conn.sendAndReceive(request);
             System.out.println("Server trả về: " + response);
 
-            final ServerConnection finalConn = conn;
             Platform.runLater(() -> {
                 setLoading(false);
 
@@ -67,34 +68,40 @@ public class LoginController {
                     return;
                 }
 
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+
                 if (response.startsWith(Protocol.RES_LOGIN_SUCCESS)) {
-                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
-                    String role = parts.length > 1 ? parts[1].trim() : "BIDDER";
+                    // BE trả: LOGIN_SUCCESS|ROLE|Chào username
+                    // parts[1] = role, parts[2] = lời chào từ BE
+                    String role     = parts.length > 1 ? parts[1].trim() : "BIDDER";
+                    String greeting = parts.length > 2 ? parts[2].trim() : "";
 
                     // Lưu session qua SessionManager của BE
                     SessionManager.getInstance().setSession(username, password, role);
+
+                    // Hiển thị lời chào từ BE trước khi chuyển màn
+                    showSuccess(greeting);
 
                     Stage stage = (Stage) usernameField.getScene().getWindow();
                     new AuctionListView(stage, username).show();
 
                 } else if (response.startsWith(Protocol.RES_LOGIN_FAILED)) {
-                    showError("Sai tên đăng nhập hoặc mật khẩu!");
-                } else {
-                    showError("Lỗi không xác định: " + response);
+                    // BE trả: LOGIN_FAILED|message từ AuthenticationException
+                    // Lấy đúng message BE throw ra, không tự viết lại
+                    String errorMsg = parts.length > 1
+                            ? parts[1]
+                            : "Đăng nhập thất bại!";
+                    showError(errorMsg);
+
+                } else if (response.startsWith(Protocol.ERROR)) {
+                    // BE trả: ERROR|Lệnh không hợp lệ hoặc thiếu tham số
+                    String errorMsg = parts.length > 1
+                            ? parts[1]
+                            : "Lỗi không xác định!";
+                    showError(errorMsg);
                 }
             });
         }).start();
-    }
-
-    /**
-     * Validate input — ném AuthenticationException như BE để thống nhất
-     * xử lý lỗi trong toàn hệ thống.
-     */
-    private void validateInput(String username, String password)
-            throws AuthenticationException {
-        if (username.isEmpty() || password.isEmpty()) {
-            throw new AuthenticationException("Vui lòng nhập đầy đủ thông tin!");
-        }
     }
 
     @FXML
@@ -122,6 +129,11 @@ public class LoginController {
 
     private void showError(String msg) {
         errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        errorLabel.setText(msg);
+    }
+
+    private void showSuccess(String msg) {
+        errorLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
         errorLabel.setText(msg);
     }
 }
