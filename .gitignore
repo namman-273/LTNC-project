@@ -15,3 +15,7 @@ bin/
 # Loại bỏ các file tạm của hệ điều hành
 .DS_Store
 Thumbs.db
+# Loại bỏ file dữ liệu để không bị ghi đè dữ liệu của nhau khi pull code
+*.dat
+*.bin
+database/
