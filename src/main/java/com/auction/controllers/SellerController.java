@@ -1,5 +1,6 @@
 package com.auction.controllers;
 
+import com.auction.dto.AuctionRow;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,18 +13,10 @@ import com.auction.util.ServerConnection;
 import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
 import com.auction.views.CreateAuctionView;
-import com.auction.dto.AuctionRow;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
-/**
- * SellerController - Màn hình quản lý phiên đấu giá của Seller.
- * Chức năng:
- * - Xem danh sách phiên của mình
- * - Tạo phiên mới
- * - Xem lịch sử đặt giá của từng phiên
- */
 public class SellerController implements Initializable {
 
     @FXML private Label welcomeLabel;
@@ -46,13 +39,11 @@ public class SellerController implements Initializable {
         username = SessionManager.getInstance().getUsername();
         welcomeLabel.setText("Xin chào, " + username + "!");
 
-        // Setup bảng
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // Màu trạng thái
         statusCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String status, boolean empty) {
@@ -71,7 +62,6 @@ public class SellerController implements Initializable {
         auctionTable.setItems(auctionData);
         historyList.setItems(historyData);
 
-        // Khi chọn phiên → load lịch sử
         auctionTable.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
                     if (newVal != null) loadHistory(newVal.getId(), newVal.getItemName());
@@ -94,20 +84,10 @@ public class SellerController implements Initializable {
                 if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
                     int start = response.indexOf("[");
                     if (start == -1) return;
-                    ObservableList<AuctionRow> data = FXCollections.observableArrayList();
-                    com.google.gson.JsonArray array = com.google.gson.JsonParser
-                            .parseString(response.substring(start)).getAsJsonArray();
 
-                    for (com.google.gson.JsonElement el : array) {
-                        com.google.gson.JsonObject obj = el.getAsJsonObject();
-                        String id       = obj.has("id")           ? obj.get("id").getAsString()           : "---";
-                        String itemName = obj.has("itemName")     ? obj.get("itemName").getAsString()     : "---";
-                        double priceRaw = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
-                        String status   = obj.has("status")       ? obj.get("status").getAsString()       : "---";
-                        data.add(new AuctionRow(id, itemName, String.format("%,.0f VND", priceRaw), status));
-                    }
+                    ObservableList<AuctionRow> data = parseResponse(response.substring(start));
 
-                    long open = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
+                    long open     = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
                     long finished = data.stream().filter(r -> "FINISHED".equals(r.getStatus())).count();
 
                     Platform.runLater(() -> {
@@ -155,13 +135,11 @@ public class SellerController implements Initializable {
                         try {
                             String numStr = tokens[i].split("[,}]")[0].trim();
                             double price = Double.parseDouble(numStr);
-
-                            // Lấy username người đặt
                             String bidder = "---";
                             if (tokens[i].contains("\"username\":")) {
                                 bidder = tokens[i].replaceAll(".*\"username\":\"([^\"]+)\".*", "$1");
                             }
-                            historyData.add((i) + ". " + bidder + " đặt: " + String.format("%,.0f VND", price));
+                            historyData.add(i + ". " + bidder + " đặt: " + String.format("%,.0f VND", price));
                         } catch (Exception e) {
                             System.err.println("Parse error: " + e.getMessage());
                         }
@@ -176,6 +154,42 @@ public class SellerController implements Initializable {
         }).start();
     }
 
+    private ObservableList<AuctionRow> parseResponse(String raw) {
+        ObservableList<AuctionRow> result = FXCollections.observableArrayList();
+        try {
+            String content = raw.trim();
+            if (content.startsWith("[")) content = content.substring(1);
+            if (content.endsWith("]")) content = content.substring(0, content.length() - 1);
+
+            String[] entries = content.split(",\\s*(?=id=)");
+            for (String entry : entries) {
+                entry = entry.trim();
+                if (entry.isEmpty()) continue;
+                String id       = extractField(entry, "id");
+                String itemName = extractField(entry, "itemName");
+                String status   = extractField(entry, "status");
+                String priceStr = extractField(entry, "currentPrice");
+                String price    = "---";
+                try {
+                    price = String.format("%,.0f VND", Double.parseDouble(priceStr));
+                } catch (NumberFormatException ignored) {}
+                result.add(new AuctionRow(id, itemName, price, status));
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi parse seller auctions: " + e.getMessage());
+        }
+        return result;
+    }
+
+    private String extractField(String entry, String key) {
+        String search = key + "=";
+        int start = entry.indexOf(search);
+        if (start == -1) return "---";
+        start += search.length();
+        int end = entry.indexOf(",", start);
+        if (end == -1) end = entry.length();
+        return entry.substring(start, end).trim();
+    }
 
     @FXML
     private void handleRefresh() {
@@ -195,12 +209,4 @@ public class SellerController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
-
-    private void showMessage(String msg, String color) {
-        if (messageLabel != null) {
-            messageLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 12px;");
-            messageLabel.setText(msg);
-        }
-    }
-
 }

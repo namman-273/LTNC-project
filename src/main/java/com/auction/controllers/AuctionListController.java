@@ -9,10 +9,6 @@ import com.auction.views.BidView;
 import com.auction.views.CreateAuctionView;
 import com.auction.views.LoginView;
 import com.auction.views.SellerView;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.application.Platform;
@@ -86,8 +82,6 @@ public class AuctionListController implements Initializable {
         new Thread(() -> {
             try {
                 ServerConnection conn = ServerConnection.getInstance();
-
-                // Thử kết nối lại nếu mất kết nối
                 if (!conn.isConnected()) {
                     boolean ok = conn.connect();
                     if (!ok) {
@@ -100,7 +94,6 @@ public class AuctionListController implements Initializable {
                 String response = conn.sendAndReceive("LIST_AUCTIONS");
                 System.out.println("RAW: " + response);
 
-                // Mất kết nối giữa chừng
                 if (response == null) {
                     Platform.runLater(() ->
                             setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
@@ -110,9 +103,9 @@ public class AuctionListController implements Initializable {
                 ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
                 if (response.contains(Protocol.RES_LIST_SUCCESS)) {
-                    int jsonStart = response.indexOf("[");
-                    if (jsonStart != -1) {
-                        data = parseAuctionJson(response.substring(jsonStart));
+                    int start = response.indexOf("[");
+                    if (start != -1) {
+                        data = parseResponse(response.substring(start));
                     }
                 }
 
@@ -134,38 +127,51 @@ public class AuctionListController implements Initializable {
         }).start();
     }
 
-    private ObservableList<AuctionRow> parseAuctionJson(String json) {
+    private ObservableList<AuctionRow> parseResponse(String raw) {
         ObservableList<AuctionRow> result = FXCollections.observableArrayList();
         try {
-            JsonArray array = JsonParser.parseString(json).getAsJsonArray();
-            for (JsonElement element : array) {
-                JsonObject obj  = element.getAsJsonObject();
-                String id       = obj.has("id")           ? obj.get("id").getAsString()           : "---";
-                String itemName = obj.has("itemName")     ? obj.get("itemName").getAsString()     : "---";
-                double priceRaw = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
-                String status   = obj.has("status")       ? obj.get("status").getAsString()       : "---";
-                result.add(new AuctionRow(id, itemName, String.format("%,.0f VND", priceRaw), status));
+            String content = raw.trim();
+            if (content.startsWith("[")) content = content.substring(1);
+            if (content.endsWith("]")) content = content.substring(0, content.length() - 1);
+
+            String[] entries = content.split(",\\s*(?=id=)");
+            for (String entry : entries) {
+                entry = entry.trim();
+                if (entry.isEmpty()) continue;
+                String id       = extractField(entry, "id");
+                String itemName = extractField(entry, "itemName");
+                String status   = extractField(entry, "status");
+                String priceStr = extractField(entry, "currentPrice");
+                String price    = "---";
+                try {
+                    price = String.format("%,.0f VND", Double.parseDouble(priceStr));
+                } catch (NumberFormatException ignored) {}
+                result.add(new AuctionRow(id, itemName, price, status));
             }
         } catch (Exception e) {
-            System.err.println("Lỗi parse JSON danh sách phiên: " + e.getMessage());
+            System.err.println("Lỗi parse danh sách phiên: " + e.getMessage());
         }
         return result;
     }
 
+    private String extractField(String entry, String key) {
+        String search = key + "=";
+        int start = entry.indexOf(search);
+        if (start == -1) return "---";
+        start += search.length();
+        int end = entry.indexOf(",", start);
+        if (end == -1) end = entry.length();
+        return entry.substring(start, end).trim();
+    }
+
     private void setStatusBar(String msg) {
-        if (statusBarLabel != null) {
-            statusBarLabel.setText(msg);
-        }
+        if (statusBarLabel != null) statusBarLabel.setText(msg);
     }
 
     @FXML
-    public void handleRefresh() {
-        loadFromServer();
-    }
+    public void handleRefresh() { loadFromServer(); }
 
-    public void refreshList() {
-        loadFromServer();
-    }
+    public void refreshList() { loadFromServer(); }
 
     @FXML
     private void handleViewDetail() {

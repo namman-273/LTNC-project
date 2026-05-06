@@ -78,7 +78,18 @@ public class ServerConnection {
                 return "ERROR|Mất kết nối server!";
             }
             out.println(message);
-            return in.readLine();
+
+            // Đọc nhiều dòng cho đến khi nhận được response đầy đủ
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = in.readLine()) != null) {
+                sb.append(line);
+                // Server kết thúc response khi dòng cuối là JSON hoàn chỉnh
+                // hoặc không còn dữ liệu trong buffer
+                if (!in.ready()) break;
+            }
+            return sb.toString();
+
         } catch (Exception e) {
             System.err.println("Lỗi gửi/nhận: " + e.getMessage());
             socket = null;

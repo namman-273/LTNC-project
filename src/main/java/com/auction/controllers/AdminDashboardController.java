@@ -1,10 +1,6 @@
 package com.auction.controllers;
 
 import com.auction.dto.AuctionRow;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -35,9 +31,7 @@ public class AdminDashboardController implements Initializable {
 
     private String username;
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    public void setUsername(String username) { this.username = username; }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -45,7 +39,6 @@ public class AdminDashboardController implements Initializable {
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
 
-        // FIX: Thêm màu status giống AuctionListController cho nhất quán
         statusCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String status, boolean empty) {
@@ -64,10 +57,6 @@ public class AdminDashboardController implements Initializable {
         loadFromServer();
     }
 
-    /**
-     * FIX: Dùng ServerConnection.getInstance() thay vì tạo connection mới + login lại.
-     * Admin đã login sẵn từ màn hình Login — connection chính vẫn còn hiệu lực.
-     */
     public void loadFromServer() {
         showMessage("Đang tải danh sách...", "gray");
 
@@ -78,9 +67,9 @@ public class AdminDashboardController implements Initializable {
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
             if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                int jsonStart = response.indexOf("[");
-                if (jsonStart != -1) {
-                    data = parseAuctionJson(response.substring(jsonStart));
+                int start = response.indexOf("[");
+                if (start != -1) {
+                    data = parseResponse(response.substring(start));
                 }
             }
 
@@ -93,41 +82,49 @@ public class AdminDashboardController implements Initializable {
                 auctionTable.setItems(finalData);
                 showMessage("Tải xong " + finalData.size() + " phiên.", "gray");
             });
-
         }).start();
     }
 
-    /**
-     * FIX: Parse JSON thay vì cắt chuỗi toString() thủ công.
-     * Dùng chung logic với AuctionListController.
-     */
-    private ObservableList<AuctionRow> parseAuctionJson(String json) {
+    private ObservableList<AuctionRow> parseResponse(String raw) {
         ObservableList<AuctionRow> result = FXCollections.observableArrayList();
         try {
-            JsonArray array = JsonParser.parseString(json).getAsJsonArray();
-            for (JsonElement element : array) {
-                JsonObject obj  = element.getAsJsonObject();
-                String id       = obj.has("id")           ? obj.get("id").getAsString()           : "---";
-                String itemName = obj.has("itemName")     ? obj.get("itemName").getAsString()     : "---";
-                double priceRaw = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
-                String status   = obj.has("status")       ? obj.get("status").getAsString()       : "---";
+            String content = raw.trim();
+            if (content.startsWith("[")) content = content.substring(1);
+            if (content.endsWith("]")) content = content.substring(0, content.length() - 1);
 
-                result.add(new AuctionRow(id, itemName, String.format("%,.0f VND", priceRaw), status));
+            String[] entries = content.split(",\\s*(?=id=)");
+            for (String entry : entries) {
+                entry = entry.trim();
+                if (entry.isEmpty()) continue;
+                String id       = extractField(entry, "id");
+                String itemName = extractField(entry, "itemName");
+                String status   = extractField(entry, "status");
+                String priceStr = extractField(entry, "currentPrice");
+                String price    = "---";
+                try {
+                    price = String.format("%,.0f VND", Double.parseDouble(priceStr));
+                } catch (NumberFormatException ignored) {}
+                result.add(new AuctionRow(id, itemName, price, status));
             }
         } catch (Exception e) {
-            System.err.println("Lỗi parse JSON admin dashboard: " + e.getMessage());
+            System.err.println("Lỗi parse admin dashboard: " + e.getMessage());
         }
         return result;
     }
 
-    @FXML
-    private void handleRefresh() {
-        loadFromServer();
+    private String extractField(String entry, String key) {
+        String search = key + "=";
+        int start = entry.indexOf(search);
+        if (start == -1) return "---";
+        start += search.length();
+        int end = entry.indexOf(",", start);
+        if (end == -1) end = entry.length();
+        return entry.substring(start, end).trim();
     }
 
-    /**
-     * FIX: Dùng connection chính để END_AUCTION — không tạo connection mới.
-     */
+    @FXML
+    private void handleRefresh() { loadFromServer(); }
+
     @FXML
     private void handleEndAuction() {
         AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
@@ -146,7 +143,6 @@ public class AdminDashboardController implements Initializable {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
             System.out.println("End auction: " + response);
-
             Platform.runLater(() -> {
                 if (response != null && response.contains("SUCCESS")) {
                     showMessage("✅ Kết thúc phiên thành công!", "green");
