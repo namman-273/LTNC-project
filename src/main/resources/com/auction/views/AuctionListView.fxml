@@ -76,6 +76,10 @@
         <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
                 prefHeight="36" prefWidth="115"
                 styleClass="btn-success"/>
+        <Button fx:id="sellerButton" text="🛒 Seller"
+                onAction="#handleSellerDashboard"
+                prefHeight="36" prefWidth="90"
+                styleClass="btn-success"/>
     </HBox>
 
     <!-- TABLE -->

@@ -1,5 +1,6 @@
 package com.auction.controllers;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -35,6 +36,7 @@ public class RegisterController implements Initializable {
         String confirmPassword = confirmPasswordField.getText().trim();
         String role = roleComboBox.getValue();
 
+        // Validate trên UI thread - OK
         if (username.isEmpty() || password.isEmpty()) {
             showError("Vui lòng nhập đầy đủ thông tin!");
             return;
@@ -48,40 +50,46 @@ public class RegisterController implements Initializable {
             return;
         }
 
-        ServerConnection conn = ServerConnection.getInstance();
-        if (!conn.connect()) {
-            showError("Không thể kết nối server!");
-            return;
-        }
+        showSuccess("Đang kết nối server...");
 
-        String response = conn.sendAndReceive(
-                "REGISTER|" + username + "|" + password + "|" + role);
-        System.out.println("Server trả về: " + response);
+        // Network call chạy trên background thread - tránh block UI
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            if (!conn.connect()) {
+                Platform.runLater(() -> showError("Không thể kết nối server!"));
+                return;
+            }
 
-        if (response != null && response.startsWith("REGISTER_SUCCESS")) {
-            showSuccess("Đăng ký thành công! Đang chuyển về đăng nhập...");
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000);
-                    javafx.application.Platform.runLater(() -> {
-                        Stage stage = (Stage) usernameField.getScene().getWindow();
-                        LoginView loginView = new LoginView(stage);
-                        loginView.show();
-                    });
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            String response = conn.sendAndReceive(
+                    "REGISTER|" + username + "|" + password + "|" + role
+            );
+            System.out.println("Server trả về: " + response);
+
+            Platform.runLater(() -> {
+                if (response != null && response.startsWith("REGISTER_SUCCESS")) {
+                    showSuccess("Đăng ký thành công! Đang chuyển về đăng nhập...");
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1000);
+                            Platform.runLater(() -> {
+                                Stage stage = (Stage) usernameField.getScene().getWindow();
+                                new LoginView(stage).show();
+                            });
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
+                } else {
+                    showError("Đăng ký thất bại! Tên đăng nhập đã tồn tại.");
                 }
-            }).start();
-        } else {
-            showError("Đăng ký thất bại! Tên đăng nhập đã tồn tại.");
-        }
+            });
+        }).start();
     }
 
     @FXML
     private void handleBackToLogin() {
         Stage stage = (Stage) usernameField.getScene().getWindow();
-        LoginView loginView = new LoginView(stage);
-        loginView.show();
+        new LoginView(stage).show();
     }
 
     private void showError(String msg) {

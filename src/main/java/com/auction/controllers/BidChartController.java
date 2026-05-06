@@ -1,5 +1,6 @@
 package com.auction.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
@@ -25,15 +26,20 @@ public class BidChartController implements Initializable {
 
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username) {
-        this.auctionId = auctionId; this.itemName = itemName;
-        this.currentPrice = currentPrice; this.status = status;
+        this.auctionId = auctionId;
+        this.itemName = itemName;
+        this.currentPrice = currentPrice;
+        this.status = status;
         this.username = username;
         titleLabel.setText("Biểu đồ giá - " + itemName);
         loadChartData();
     }
 
     @Override
-    public void initialize(URL url, ResourceBundle rb) {}
+    public void initialize(URL url, ResourceBundle rb) {
+        xAxis.setLabel("Lần đặt giá");
+        yAxis.setLabel("Giá (VND)");
+    }
 
     private void loadChartData() {
         new Thread(() -> {
@@ -45,34 +51,41 @@ public class BidChartController implements Initializable {
                 String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
                 System.out.println("Chart history: " + response);
 
-                if (response != null && response.contains("HISTORY_RES")) {
-                    String[] parts = response.split("\\|", 3);
-                    if (parts.length >= 3) {
-                        String json = parts[2].trim();
-                        if (!json.equals("[]") && !json.isEmpty()) {
-                            String[] entries = json.substring(1, json.length() - 1).split("\\},\\{");
-                            XYChart.Series<Number, Number> series = new XYChart.Series<>();
-                            series.setName("Giá đặt");
+                if (response == null || !response.contains("HISTORY_RES")) return;
 
-                            for (int i = 0; i < entries.length; i++) {
-                                try {
-                                    String amount = entries[i].replaceAll(
-                                            ".*\"amount\":(\\S+?)[,}].*", "$1");
-                                    double price = Double.parseDouble(amount);
-                                    final int index = i + 1;
-                                    series.getData().add(new XYChart.Data<>(index, price));
-                                } catch (Exception e) {
-                                    System.err.println("Chart parse error: " + e.getMessage());
-                                }
-                            }
+                String[] parts = response.split("\\|", 3);
+                if (parts.length < 3) return;
 
-                            javafx.application.Platform.runLater(() -> {
-                                bidChart.getData().clear();
-                                bidChart.getData().add(series);
-                            });
-                        }
+                String json = parts[2].trim();
+                if (json.equals("[]") || json.isEmpty()) return;
+
+                // Parse an toàn hơn regex — tìm "amount": trực tiếp
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                series.setName("Giá đặt");
+
+                // Tách từng object JSON bằng "amount":
+                String[] tokens = json.split("\"amount\":");
+                int index = 1;
+                for (int i = 1; i < tokens.length; i++) {
+                    try {
+                        // Lấy số ngay sau "amount":
+                        String numStr = tokens[i].split("[,}]")[0].trim();
+                        double price = Double.parseDouble(numStr);
+                        final int idx = index++;
+                        series.getData().add(new XYChart.Data<>(idx, price));
+                    } catch (Exception e) {
+                        System.err.println("Chart parse error at entry " + i + ": " + e.getMessage());
                     }
                 }
+
+                final XYChart.Series<Number, Number> finalSeries = series;
+                Platform.runLater(() -> {
+                    bidChart.getData().clear();
+                    if (!finalSeries.getData().isEmpty()) {
+                        bidChart.getData().add(finalSeries);
+                    }
+                });
+
             } catch (Exception e) {
                 System.err.println("Lỗi load chart: " + e.getMessage());
             } finally {

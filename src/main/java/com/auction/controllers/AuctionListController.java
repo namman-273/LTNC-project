@@ -26,6 +26,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import com.auction.views.SellerView;
 
 public class AuctionListController implements Initializable {
 
@@ -47,6 +48,10 @@ public class AuctionListController implements Initializable {
         if (adminButton != null) {
             adminButton.setVisible("ADMIN".equalsIgnoreCase(role));
             adminButton.setManaged("ADMIN".equalsIgnoreCase(role));
+        }
+        if (sellerButton != null) {
+            sellerButton.setVisible("SELLER".equalsIgnoreCase(role));
+            sellerButton.setManaged("SELLER".equalsIgnoreCase(role));
         }
     }
 
@@ -174,5 +179,12 @@ public class AuctionListController implements Initializable {
     private void handleAdminDashboard() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AdminDashboardView(stage, username).show();
+    }
+    @FXML private Button sellerButton;
+
+    @FXML
+    private void handleSellerDashboard() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new SellerView(stage, username).show();
     }
 }
