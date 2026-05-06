@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Test;
 public class AuctionTest {
  
   private static final double STARTING_PRICE = 1000.0;
-  private static final double VALID_BID_1 = 1200.0;
-  private static final double VALID_BID_2 = 1500.0;
-  private static final double VALID_BID_3 = 1800.0;
+  private static final double VALID_BID_1 = 51000.0;
+  private static final double VALID_BID_2 = 102000.0;
+  private static final double VALID_BID_3 = 153000.0;
   private static final double LOW_BID = 500.0;
   private static final long DURATION = 9999L;
  
@@ -42,11 +42,13 @@ public class AuctionTest {
     UserManager.getInstance().register("bob", "pass456", "BIDDER");
  
     item = new Electronics("item-01", "Laptop", STARTING_PRICE);
-    auction = new Auction("auction-01", item, DURATION);
+    auction = new Auction("auction-01", item, DURATION, null);
  
     // Lấy lại đúng object Bidder từ UserManager để AutoBid hoạt động đúng
     bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
     bidder2 = (Bidder) UserManager.getInstance().findUserByUsername("bob");
+    bidder1.addBalance(10_000_000.0);
+    bidder2.addBalance(10_000_000.0);
  
     auction.setStatus(AuctionStatus.RUNNING);
   }
@@ -57,12 +59,12 @@ public class AuctionTest {
   void constructorNullItemThrowsIllegalArgumentException() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> new Auction("x", null, DURATION));
+        () -> new Auction("x", null, DURATION, null));
   }
  
   @Test
   void constructorSetsStatusToOpen() {
-    Auction fresh = new Auction("a2", item, DURATION);
+    Auction fresh = new Auction("a2", item, DURATION, null);
     assertEquals(AuctionStatus.OPEN, fresh.getStatus());
   }
  
@@ -255,7 +257,7 @@ public class AuctionTest {
   @Test
   void getBidHistoryInitiallyEmpty() {
     // Tạo auction MỚI hoàn toàn, không qua setUp đã bid sẵn
-    Auction freshAuction = new Auction("fresh-01", new Electronics("e-fresh", "TV", 500.0), DURATION);
+    Auction freshAuction = new Auction("fresh-01", new Electronics("e-fresh", "TV", 500.0), DURATION, null);
     assertTrue(freshAuction.getBidHistory().isEmpty());
   }
  
@@ -309,21 +311,21 @@ public class AuctionTest {
   @Test
   void addAutoBidConfigDoesNotThrow() {
     assertDoesNotThrow(() ->
-        auction.addAutoBidConfig("alice", VALID_BID_3, 100.0));
+        auction.addAutoBidConfig("alice", VALID_BID_3));
   }
  
   @Test
   void addAutoBidConfigTriggersAutoBidRaisesPrice() throws Exception {
     auction.processNewBid(bidder2, VALID_BID_1);
-    auction.addAutoBidConfig("alice", VALID_BID_3, 100.0);
+    auction.addAutoBidConfig("alice", VALID_BID_3);
     assertTrue(auction.getCurrentPrice() > VALID_BID_1);
   }
  
   @Test
   void addAutoBidConfigUpdatesExistingConfig() {
     assertDoesNotThrow(() -> {
-      auction.addAutoBidConfig("alice", VALID_BID_2, 50.0);
-      auction.addAutoBidConfig("alice", VALID_BID_3, 100.0);
+      auction.addAutoBidConfig("alice", VALID_BID_2);
+      auction.addAutoBidConfig("alice", VALID_BID_3);
     });
   }
  
@@ -351,4 +353,5 @@ public class AuctionTest {
     t2.join();
     assertTrue(auction.getBidHistory().size() >= 1);
   }
+  
 }

@@ -178,7 +178,7 @@ public class ClientHandler implements Runnable, Observer {
             double price    = Double.parseDouble(parts[3]);
             long duration   = Long.parseLong(parts[4]);
 
-            auctionService.createNewAuction(type, name, price, duration);
+            auctionService.createNewAuction(type, name, price, duration, currentUser.getUsername());
             sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Sản phẩm " + name + " đã được đăng sàn.");
         } catch (Exception e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Dữ liệu tạo sản phẩm không hợp lệ.");

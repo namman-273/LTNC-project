@@ -12,6 +12,7 @@ import com.auction.util.ServerConnection;
 import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
 import com.auction.views.CreateAuctionView;
+import com.auction.dto.AuctionRow;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -93,23 +94,17 @@ public class SellerController implements Initializable {
                 if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
                     int start = response.indexOf("[");
                     if (start == -1) return;
-                    String content = response.substring(start)
-                            .replace("[", "").replace("]", "").trim();
-
                     ObservableList<AuctionRow> data = FXCollections.observableArrayList();
-                    String[] auctions = content.split(",\\s*(?=id=)");
-                    for (String a : auctions) {
-                        a = a.trim();
-                        if (a.isEmpty() || !a.contains("id=")) continue;
-                        String id       = extractField(a, "id=");
-                        String itemName = extractField(a, "itemName=");
-                        String price    = extractField(a, "currentPrice=");
-                        String status   = extractField(a, "status=");
-                        try {
-                            double p = Double.parseDouble(price);
-                            price = String.format("%,.0f VND", p);
-                        } catch (NumberFormatException ignored) {}
-                        data.add(new AuctionRow(id, itemName, price, status));
+                    com.google.gson.JsonArray array = com.google.gson.JsonParser
+                            .parseString(response.substring(start)).getAsJsonArray();
+
+                    for (com.google.gson.JsonElement el : array) {
+                        com.google.gson.JsonObject obj = el.getAsJsonObject();
+                        String id       = obj.has("id")           ? obj.get("id").getAsString()           : "---";
+                        String itemName = obj.has("itemName")     ? obj.get("itemName").getAsString()     : "---";
+                        double priceRaw = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
+                        String status   = obj.has("status")       ? obj.get("status").getAsString()       : "---";
+                        data.add(new AuctionRow(id, itemName, String.format("%,.0f VND", priceRaw), status));
                     }
 
                     long open = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
@@ -181,18 +176,6 @@ public class SellerController implements Initializable {
         }).start();
     }
 
-    private String extractField(String text, String key) {
-        int start = text.indexOf(key);
-        if (start == -1) return "---";
-        start += key.length();
-        int end = text.length();
-        String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
-        for (String nextKey : nextKeys) {
-            int pos = text.indexOf("," + nextKey, start);
-            if (pos != -1 && pos < end) end = pos;
-        }
-        return text.substring(start, end).trim();
-    }
 
     @FXML
     private void handleRefresh() {
@@ -220,18 +203,4 @@ public class SellerController implements Initializable {
         }
     }
 
-    // Inner class AuctionRow
-    public static class AuctionRow {
-        private String id, itemName, currentPrice, status;
-
-        public AuctionRow(String id, String itemName, String currentPrice, String status) {
-            this.id = id; this.itemName = itemName;
-            this.currentPrice = currentPrice; this.status = status;
-        }
-
-        public String getId() { return id; }
-        public String getItemName() { return itemName; }
-        public String getCurrentPrice() { return currentPrice; }
-        public String getStatus() { return status; }
-    }
 }

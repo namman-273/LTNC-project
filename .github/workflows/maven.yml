@@ -1,44 +1,77 @@
-name: Java CI with Maven (Final Optimization)
+name: Java CI — Build, Checkstyle, Test & Coverage
 
+# Trigger trên tất cả các nhánh quan trọng của nhóm
 on:
   push:
     branches: [ "master"]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master"]
 
 jobs:
-  pipeline:
-    name: Build, Checkstyle and Test
+  build-and-verify:
+    name: Build, Checkstyle, Test & Coverage Check
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4 
-    
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-        
-    # Chạy verify để quét tất cả cùng lúc (Compile + Checkstyle + Test)
-    # Điều này đảm bảo toàn bộ quy trình được thực hiện đúng chuẩn Maven Lifecycle
-    - name: Build and Verify Project
-      run: mvn clean verify
+      # ── 1. Lấy code ──────────────────────────────────────────────────
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-    # Vẫn giữ Upload Report để lấy điểm Visualization (Artifact)
-    - name: Upload JaCoCo Coverage Report
-      if: always() 
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report-${{ github.run_id }}
-        path: target/site/jacoco/
-        retention-days: 3
+      # ── 2. Cài JDK 17 ────────────────────────────────────────────────
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
-    # Tóm tắt kết quả chuyên nghiệp
-    - name: Workflow Summary
-      if: always()
-      run: |
-        echo "### Dự án: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-        echo "📊 Báo cáo Checkstyle và JaCoCo đã sẵn sàng trong phần Artifacts!" >> $GITHUB_STEP_SUMMARY
+      # ── 3. Build + Checkstyle + Test + Coverage (toàn bộ lifecycle) ──
+      #
+      #  mvn clean verify chạy theo thứ tự Maven lifecycle:
+      #    compile → test-compile → test (JUnit + JaCoCo agent)
+      #    → report (JaCoCo HTML) → verify (Checkstyle check + JaCoCo threshold)
+      #
+      #  -B     : batch mode (không màu, không tương tác — phù hợp CI)
+      #  -e     : in stack trace khi lỗi (dễ debug trên CI log)
+      #  -Djava.awt.headless=true : chạy không cần màn hình (bắt buộc cho CI)
+      #
+      - name: Run full verification (compile → test → checkstyle → coverage)
+        run: mvn clean verify -B -e -Djava.awt.headless=true
+
+      # ── 4. Upload JaCoCo HTML report làm Artifact ────────────────────
+      #
+      #  Luôn upload kể cả khi build fail (if: always()) để đọc báo cáo
+      #  và biết test nào chưa đủ coverage.
+      #  retention-days: 30 — đủ để giảng viên xem khi chấm điểm tuần 15.
+      #
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report-${{ github.run_id }}
+          path: target/site/jacoco/
+          retention-days: 30
+
+      # ── 5. Upload Checkstyle XML report ──────────────────────────────
+      - name: Upload Checkstyle report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkstyle-report-${{ github.run_id }}
+          path: target/checkstyle-result.xml
+          retention-days: 30
+
+      # ── 6. Tóm tắt kết quả trên GitHub UI ───────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## Ket qua CI — ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Buoc | Trang thai |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Compile | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Checkstyle (Google Style) | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JUnit Tests | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JaCoCo Coverage (>= 60%) | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Xem bao cao chi tiet trong tab **Artifacts** phia tren." >> $GITHUB_STEP_SUMMARY
