@@ -11,29 +11,28 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.AuctionListController"
-      prefWidth="800" prefHeight="560" spacing="0"
+      prefWidth="820" prefHeight="580" spacing="0"
       stylesheets="@style.css"
       style="-fx-background-color: #F8F9FA;">
 
     <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="14"
-          styleClass="header-box" prefHeight="64">
-        <padding><Insets top="0" right="24" bottom="0" left="24"/></padding>
+          style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
+                 -fx-padding: 0 24; -fx-pref-height: 64;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
 
-        <!-- Logo -->
-        <HBox spacing="8" alignment="CENTER_LEFT">
+        <HBox spacing="10" alignment="CENTER_LEFT">
             <Label text="🏛️" style="-fx-font-size: 22px;"/>
             <VBox spacing="1">
-                <Label text="AUCTIVA"
-                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                <Label text="LIVE ONLINE AUCTIONS"
-                       style="-fx-font-size: 8px; -fx-text-fill: #90CAF9;"/>
+                <Label text="HỆ THỐNG ĐẤU GIÁ"
+                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                <Label text="1388AUCTION System"
+                       style="-fx-font-size: 9px; -fx-text-fill: #90CAF9;"/>
             </VBox>
         </HBox>
 
         <Region HBox.hgrow="ALWAYS"/>
 
-        <!-- Chào và đăng xuất -->
         <Label fx:id="welcomeLabel" text="Xin chào!"
                style="-fx-font-size: 13px; -fx-text-fill: #E3F2FD;"/>
 
@@ -42,60 +41,67 @@
                        -fx-text-fill: white; -fx-font-size: 12px;
                        -fx-background-radius: 8; -fx-cursor: hand;
                        -fx-border-color: rgba(255,255,255,0.4);
-                       -fx-border-radius: 8; -fx-border-width: 1;"/>
+                       -fx-border-radius: 8; -fx-border-width: 1;
+                       -fx-padding: 6 14;"/>
     </HBox>
 
-    <!-- THANH CÔNG CỤ -->
+    <!-- TOOLBAR -->
     <HBox alignment="CENTER_LEFT" spacing="10"
           style="-fx-background-color: white; -fx-padding: 12 24;
-                 -fx-border-color: transparent transparent #F0F0F0 transparent;
-                 -fx-border-width: 1;">
+                 -fx-border-color: transparent transparent #EEEEEE transparent;
+                 -fx-border-width: 1;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 4, 0, 0, 2);">
 
-        <Label text="Danh sách phiên đấu giá"
-               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+        <VBox spacing="2">
+            <Label text="Danh sách phiên đấu giá"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+            <Label text="Chọn phiên và bấm Xem chi tiết để đặt giá"
+                   style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
+        </VBox>
 
         <Region HBox.hgrow="ALWAYS"/>
 
         <Button text="⚙️ Admin" onAction="#handleAdminDashboard"
-                prefHeight="34" prefWidth="100"
+                prefHeight="36" prefWidth="90"
                 styleClass="btn-danger"/>
 
         <Button text="➕ Tạo phiên" onAction="#handleCreateAuction"
-                prefHeight="34" prefWidth="110"
+                prefHeight="36" prefWidth="105"
                 styleClass="btn-primary"/>
 
         <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                prefHeight="34" prefWidth="100"
+                prefHeight="36" prefWidth="95"
                 styleClass="btn-outline"/>
 
         <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
-                prefHeight="34" prefWidth="120"
+                prefHeight="36" prefWidth="115"
                 styleClass="btn-success"/>
     </HBox>
 
-    <!-- BẢNG -->
-    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
-               styleClass="table-view"
-               style="-fx-background-color: transparent; -fx-padding: 16 24 0 24;">
-        <columns>
-            <TableColumn fx:id="idCol" text="ID Phiên" prefWidth="185"/>
-            <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="220"/>
-            <TableColumn fx:id="priceCol" text="Giá hiện tại" prefWidth="150"/>
-            <TableColumn fx:id="statusCol" text="Trạng thái" prefWidth="110"/>
-        </columns>
-        <placeholder>
-            <Label text="Chưa có phiên đấu giá nào. Nhấn Làm mới để tải."
-                   style="-fx-text-fill: #AAAAAA; -fx-font-size: 13px;"/>
-        </placeholder>
-    </TableView>
+    <!-- TABLE -->
+    <VBox VBox.vgrow="ALWAYS" style="-fx-padding: 16 24 0 24;">
+        <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
+                   styleClass="table-view">
+            <columns>
+                <TableColumn fx:id="idCol" text="ID Phiên" prefWidth="200"/>
+                <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="230"/>
+                <TableColumn fx:id="priceCol" text="Giá hiện tại" prefWidth="160"/>
+                <TableColumn fx:id="statusCol" text="Trạng thái" prefWidth="120"/>
+            </columns>
+            <placeholder>
+                <Label text="Chưa có phiên nào. Nhấn 🔄 Làm mới để tải."
+                       style="-fx-text-fill: #AAAAAA; -fx-font-size: 13px;"/>
+            </placeholder>
+        </TableView>
+    </VBox>
 
     <!-- FOOTER -->
-    <HBox alignment="CENTER_RIGHT" spacing="8"
-          style="-fx-background-color: white; -fx-padding: 12 24;
-                 -fx-border-color: #F0F0F0 transparent transparent transparent;
+    <HBox alignment="CENTER_RIGHT"
+          style="-fx-background-color: white; -fx-padding: 10 24;
+                 -fx-border-color: #EEEEEE transparent transparent transparent;
                  -fx-border-width: 1;">
-        <Label text="© 2026 AUCTIVA - Live Online Auctions"
-               style="-fx-font-size: 11px; -fx-text-fill: #BBBBBB;"/>
+        <Label text="© 2026 Hệ Thống Đấu Giá 1388AUCTION"
+               style="-fx-font-size: 11px; -fx-text-fill: #CCCCCC;"/>
     </HBox>
 
 </VBox>

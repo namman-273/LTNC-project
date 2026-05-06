@@ -11,103 +11,114 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.BidController"
-      prefWidth="780" prefHeight="580" spacing="0"
+      prefWidth="800" prefHeight="600" spacing="0"
       stylesheets="@style.css"
       style="-fx-background-color: #F8F9FA;">
 
     <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="14"
-          styleClass="header-box" prefHeight="60">
-        <padding><Insets top="0" right="24" bottom="0" left="24"/></padding>
+          style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
+                 -fx-padding: 0 24; -fx-pref-height: 60;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
+
         <Button text="← Quay lại" onAction="#handleBack"
                 style="-fx-background-color: rgba(255,255,255,0.15);
                        -fx-text-fill: white; -fx-font-size: 12px;
                        -fx-background-radius: 8; -fx-cursor: hand;
                        -fx-border-color: rgba(255,255,255,0.4);
-                       -fx-border-radius: 8; -fx-border-width: 1;"/>
+                       -fx-border-radius: 8; -fx-border-width: 1;
+                       -fx-padding: 6 14;"/>
+
         <Label fx:id="auctionTitleLabel" text="Phiên đấu giá"
-               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+               style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"
+               maxWidth="500"/>
     </HBox>
 
     <!-- CONTENT -->
     <HBox spacing="16" VBox.vgrow="ALWAYS">
         <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
 
-        <!-- TRÁI: thông tin sản phẩm + lịch sử -->
-        <VBox spacing="14" prefWidth="350" VBox.vgrow="ALWAYS">
+        <!-- TRÁI -->
+        <VBox spacing="14" prefWidth="360" VBox.vgrow="ALWAYS">
 
             <!-- Thông tin sản phẩm -->
             <VBox spacing="10" styleClass="card">
-                <Label text="Thông tin sản phẩm"
-                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+                <Label text="📦 Thông tin sản phẩm"
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
 
-                <Label fx:id="itemNameLabel" text="Tên: ---"
-                       style="-fx-font-size: 13px; -fx-text-fill: #333;"/>
-
-                <HBox spacing="6" alignment="CENTER_LEFT">
-                    <Label text="Giá hiện tại:"
-                           style="-fx-font-size: 12px; -fx-text-fill: #888;"/>
-                    <Label fx:id="currentPriceLabel" text="---"
-                           styleClass="price-label"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Tên:" style="-fx-font-size: 12px; -fx-text-fill: #888; -fx-min-width: 80;"/>
+                    <Label fx:id="itemNameLabel" text="---"
+                           style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #333;"
+                           wrapText="true"/>
                 </HBox>
 
-                <HBox spacing="6" alignment="CENTER_LEFT">
-                    <Label text="Trạng thái:"
-                           style="-fx-font-size: 12px; -fx-text-fill: #888;"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Giá hiện tại:" style="-fx-font-size: 12px; -fx-text-fill: #888; -fx-min-width: 80;"/>
+                    <Label fx:id="currentPriceLabel" text="---"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"
+                           wrapText="true" maxWidth="240"/>
+                </HBox>
+
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Trạng thái:" style="-fx-font-size: 12px; -fx-text-fill: #888; -fx-min-width: 80;"/>
                     <Label fx:id="statusLabel" text="---"
                            style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #43A047;"/>
                 </HBox>
 
                 <Label fx:id="messageLabel" text=""
-                       style="-fx-font-size: 12px;" wrapText="true"/>
+                       style="-fx-font-size: 12px;" wrapText="true" maxWidth="320"/>
             </VBox>
 
-            <!-- Lịch sử đặt giá -->
+            <!-- Lịch sử -->
             <VBox spacing="8" VBox.vgrow="ALWAYS" styleClass="card">
                 <Label text="📋 Lịch sử đặt giá"
-                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
                 <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS"
                           styleClass="list-view"/>
             </VBox>
         </VBox>
 
-        <!-- PHẢI: đặt giá + biểu đồ -->
-        <VBox spacing="14" prefWidth="370" VBox.vgrow="ALWAYS">
+        <!-- PHẢI -->
+        <VBox spacing="14" prefWidth="380" VBox.vgrow="ALWAYS">
 
             <!-- Đặt giá -->
             <VBox spacing="12" styleClass="card">
-                <Label text="🔨 Đặt giá đấu"
-                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+                <Label text="🔨 Đặt giá"
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
 
-                <TextField fx:id="bidAmountField" promptText="Nhập số tiền..."
-                           prefHeight="42" styleClass="text-field-modern"/>
-
-                <Label text="Giá đặt phải cao hơn giá hiện tại"
-                       style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
+                <VBox spacing="5">
+                    <Label text="Nhập giá của bạn (VND):"
+                           style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                    <TextField fx:id="bidAmountField" promptText="Nhập số tiền..."
+                               prefHeight="42" styleClass="text-field-modern"/>
+                    <Label text="Giá đặt phải cao hơn giá hiện tại"
+                           style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
+                </VBox>
 
                 <Button text="🔨 ĐẶT GIÁ NGAY" onAction="#handleBid"
-                        prefWidth="338" prefHeight="44"
+                        prefWidth="348" prefHeight="44"
                         styleClass="btn-danger"
-                        style="-fx-font-size: 14px;"/>
+                        style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
 
                 <Button text="📊 Xem biểu đồ giá" onAction="#handleViewChart"
-                        prefWidth="338" prefHeight="38"
+                        prefWidth="348" prefHeight="38"
                         styleClass="btn-outline"/>
             </VBox>
 
             <!-- Hướng dẫn -->
-            <VBox spacing="8" styleClass="card"
-                  style="-fx-background-color: #E3F2FD;
-                         -fx-border-color: #90CAF9;
+            <VBox spacing="10" styleClass="card"
+                  style="-fx-background-color: #E8F5E9;
+                         -fx-border-color: #A5D6A7;
                          -fx-border-radius: 12; -fx-border-width: 1;">
-                <Label text="💡 Hướng dẫn đấu giá"
-                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
-                <Label text="• Giá đặt phải cao hơn giá hiện tại"
-                       style="-fx-font-size: 11px; -fx-text-fill: #1565C0;" wrapText="true"/>
-                <Label text="• Kết quả cập nhật realtime"
-                       style="-fx-font-size: 11px; -fx-text-fill: #1565C0;" wrapText="true"/>
-                <Label text="• Người đặt giá cao nhất khi kết thúc sẽ thắng"
-                       style="-fx-font-size: 11px; -fx-text-fill: #1565C0;" wrapText="true"/>
+                <Label text="💡 Hướng dẫn"
+                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #2E7D32;"/>
+                <Label text="• Nhập giá cao hơn giá hiện tại"
+                       style="-fx-font-size: 12px; -fx-text-fill: #388E3C;" wrapText="true"/>
+                <Label text="• Giá cập nhật tự động realtime"
+                       style="-fx-font-size: 12px; -fx-text-fill: #388E3C;" wrapText="true"/>
+                <Label text="• Người đặt cao nhất khi hết thời gian thắng"
+                       style="-fx-font-size: 12px; -fx-text-fill: #388E3C;" wrapText="true"/>
             </VBox>
 
         </VBox>

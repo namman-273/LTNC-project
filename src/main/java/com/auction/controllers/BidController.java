@@ -18,45 +18,40 @@ import java.util.ResourceBundle;
 
 public class BidController implements Initializable {
 
-    @FXML
-    private Label auctionTitleLabel;
-    @FXML
-    private Label itemNameLabel;
-    @FXML
-    private Label currentPriceLabel;
-    @FXML
-    private Label statusLabel;
-    @FXML
-    private Label messageLabel;
-    @FXML
-    private TextField bidAmountField;
-    @FXML
-    private ListView<String> bidHistoryList;
+    @FXML private Label auctionTitleLabel;
+    @FXML private Label itemNameLabel;
+    @FXML private Label currentPriceLabel;
+    @FXML private Label statusLabel;
+    @FXML private Label messageLabel;
+    @FXML private TextField bidAmountField;
+    @FXML private ListView<String> bidHistoryList;
 
     private String auctionId;
     private String username;
+    private String password;
     private ObservableList<String> historyItems = FXCollections.observableArrayList();
     private Thread listenerThread;
-    private String password;
 
-    public void setData(String auctionId, String itemName, String currentPrice, String status, String username, String password) {
+    public void setData(String auctionId, String itemName, String currentPrice,
+                        String status, String username, String password) {
         this.password = password;
         this.auctionId = auctionId;
         this.username = username;
+
         auctionTitleLabel.setText("Phiên: " + auctionId);
-        itemNameLabel.setText("Tên: " + itemName);
+        itemNameLabel.setText(itemName);
         try {
-            double price = Double.parseDouble(currentPrice.replace(",", "").replace(" VND", ""));
-            currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", price));
+            double price = Double.parseDouble(
+                    currentPrice.replace(",", "").replace(" VND", "")
+            );
+            currentPriceLabel.setText(String.format("%,.0f VND", price));
         } catch (NumberFormatException e) {
-            currentPriceLabel.setText("Giá hiện tại: " + currentPrice);
+            currentPriceLabel.setText(currentPrice);
         }
-        statusLabel.setText("Trạng thái: " + status);
+        statusLabel.setText(status);
         bidHistoryList.setItems(historyItems);
 
-        // Load lịch sử đặt giá
         loadHistory();
-        // Bắt đầu lắng nghe update từ server
         startListening();
     }
 
@@ -83,13 +78,16 @@ public class BidController implements Initializable {
                             String newPrice = parts[2];
                             String bidder = parts[3];
                             Platform.runLater(() -> {
-                                currentPriceLabel.setText("Giá hiện tại: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
-                                historyItems.add(0, bidder + " đặt: " + String.format("%,.0f VND", Double.parseDouble(newPrice)));
+                                try {
+                                    double price = Double.parseDouble(newPrice);
+                                    currentPriceLabel.setText(String.format("%,.0f VND", price));
+                                    historyItems.add(0, bidder + " đặt: " + String.format("%,.0f VND", price));
+                                } catch (NumberFormatException ignored) {}
                             });
                         }
                     } else if (message.startsWith("END_AUCTION_SUCCESS|")) {
                         Platform.runLater(() -> {
-                            statusLabel.setText("Trạng thái: FINISHED");
+                            statusLabel.setText("FINISHED");
                             messageLabel.setStyle("-fx-text-fill: green;");
                             messageLabel.setText("Phiên đấu giá đã kết thúc!");
                         });
@@ -111,7 +109,6 @@ public class BidController implements Initializable {
             showError("Vui lòng nhập giá!");
             return;
         }
-
         try {
             Double.parseDouble(amount);
         } catch (NumberFormatException e) {
@@ -119,12 +116,10 @@ public class BidController implements Initializable {
             return;
         }
 
-        // Chạy trên thread riêng để không block UI
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("BID|" + auctionId + "|" + amount);
             System.out.println("BID response: " + response);
-
             Platform.runLater(() -> {
                 if (response != null && (response.startsWith("BID_SUCCESS") || response.startsWith("UPDATE"))) {
                     showSuccess("Đặt giá thành công!");
@@ -142,23 +137,28 @@ public class BidController implements Initializable {
             listenerThread.interrupt();
             listenerThread = null;
         }
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             Stage stage = (Stage) bidAmountField.getScene().getWindow();
-            AuctionListView listView = new AuctionListView(stage, username);
-            listView.show();
+            new AuctionListView(stage, username).show();
         });
     }
 
-    private void showError(String msg) {
-        messageLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
-        messageLabel.setText(msg);
+    @FXML
+    private void handleViewChart() {
+        if (listenerThread != null) {
+            listenerThread.interrupt();
+            listenerThread = null;
+        }
+        Stage stage = (Stage) bidAmountField.getScene().getWindow();
+        new BidChartView(
+                stage,
+                auctionId,
+                itemNameLabel.getText(),
+                currentPriceLabel.getText(),
+                statusLabel.getText(),
+                username
+        ).show();
     }
-
-    private void showSuccess(String msg) {
-        messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
-        messageLabel.setText(msg);
-    }
-
 
     private void loadHistory() {
         new Thread(() -> {
@@ -176,7 +176,7 @@ public class BidController implements Initializable {
                         String json = parts[2].trim();
                         if (!json.equals("[]") && !json.isEmpty()) {
                             String[] entries = json.substring(1, json.length() - 1).split("\\},\\{");
-                            javafx.application.Platform.runLater(() -> {
+                            Platform.runLater(() -> {
                                 historyItems.clear();
                                 for (String entry : entries) {
                                     try {
@@ -197,21 +197,14 @@ public class BidController implements Initializable {
             }
         }).start();
     }
-    @FXML
-    private void handleViewChart() {
-        if (listenerThread != null) {
-            listenerThread.interrupt();
-            listenerThread = null;
-        }
-        Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        BidChartView chartView = new BidChartView(
-                stage,
-                auctionId,
-                itemNameLabel.getText().replace("Tên: ", ""),
-                currentPriceLabel.getText().replace("Giá hiện tại: ", ""),
-                statusLabel.getText().replace("Trạng thái: ", ""),
-                username
-        );
-        chartView.show();
+
+    private void showError(String msg) {
+        messageLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        messageLabel.setText(msg);
+    }
+
+    private void showSuccess(String msg) {
+        messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
+        messageLabel.setText(msg);
     }
 }
