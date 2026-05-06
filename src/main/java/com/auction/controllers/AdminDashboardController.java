@@ -92,13 +92,17 @@ public class AdminDashboardController implements Initializable {
 
     private String extractField(String text, String key) {
         int start = text.indexOf(key);
-        if (start == -1) return "---";
+        if (start == -1) {
+            return "---";
+        }
         start += key.length();
         int end = text.length();
         String[] nextKeys = {"id=", "itemName=", "currentPrice=", "status="};
         for (String nextKey : nextKeys) {
             int pos = text.indexOf("," + nextKey, start);
-            if (pos != -1 && pos < end) end = pos;
+            if (pos != -1 && pos < end) {
+                end = pos;
+            }
         }
         return text.substring(start, end).trim();
     }
@@ -162,16 +166,30 @@ public class AdminDashboardController implements Initializable {
     }
 
     public static class AuctionRow {
-        private String id, itemName, currentPrice, status;
+        private String id;
+        private String itemName;
+        private String currentPrice;
+        private String status;
 
         public AuctionRow(String id, String itemName, String currentPrice, String status) {
             this.id = id; this.itemName = itemName;
             this.currentPrice = currentPrice; this.status = status;
         }
 
-        public String getId() { return id; }
-        public String getItemName() { return itemName; }
-        public String getCurrentPrice() { return currentPrice; }
-        public String getStatus() { return status; }
+        public String getId() {
+            return id;
+        }
+
+        public String getItemName() {
+            return itemName;
+        }
+
+        public String getCurrentPrice() {
+            return currentPrice;
+        }
+
+        public String getStatus() {
+            return status;
+        }
     }
 }
