@@ -106,6 +106,21 @@
                         styleClass="btn-outline"/>
             </VBox>
 
+            <!-- SNIPING — đồng hồ gia hạn -->
+            <VBox fx:id="snipingBox" spacing="6" styleClass="card"
+                  style="-fx-background-color: #FFF3E0;
+                         -fx-border-color: #FFB74D;
+                         -fx-border-radius: 12; -fx-border-width: 1;
+                         -fx-padding: 12;"
+                  visible="false" managed="false">
+                <Label text="⏱ Phiên vừa được gia hạn!"
+                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #E65100;"/>
+                <Label fx:id="snipingCountdownLabel" text="Còn: 02:00"
+                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #BF360C;"/>
+                <Label fx:id="snipingCountLabel" text=""
+                       style="-fx-font-size: 11px; -fx-text-fill: #E65100;"/>
+            </VBox>
+
             <!-- Hướng dẫn -->
             <VBox spacing="10" styleClass="card"
                   style="-fx-background-color: #E8F5E9;

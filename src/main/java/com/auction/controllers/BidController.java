@@ -1,5 +1,7 @@
 package com.auction.controllers;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -8,7 +10,9 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import com.auction.util.ServerConnection;
 import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
@@ -30,16 +34,17 @@ public class BidController implements Initializable {
     @FXML private Label messageLabel;
     @FXML private TextField bidAmountField;
     @FXML private ListView<String> bidHistoryList;
+    @FXML private VBox snipingBox;
+    @FXML private Label snipingCountdownLabel;
+    @FXML private Label snipingCountLabel;
 
     private String auctionId;
     private String username;
     private final ObservableList<String> historyItems = FXCollections.observableArrayList();
 
-    // FIX: Listener dùng connection riêng (cần nhận push từ server liên tục).
-    // Nhưng KHÔNG login lại — chỉ cần subscribe vào auction sau khi connect.
-    // Connection chính (getInstance) dùng để gửi BID, GET_HISTORY như bình thường.
     private ServerConnection listenerConn;
     private Thread listenerThread;
+    private Timeline snipingTimeline;
 
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username) {
@@ -52,10 +57,7 @@ public class BidController implements Initializable {
         statusLabel.setText(status);
         bidHistoryList.setItems(historyItems);
 
-        // Dùng connection chính (đã login sẵn) để load history
         loadHistory();
-
-        // Listener dùng connection riêng để nhận UPDATE realtime
         startListening();
     }
 
@@ -64,17 +66,6 @@ public class BidController implements Initializable {
         bidHistoryList.setItems(historyItems);
     }
 
-    /**
-     * FIX: Listener connect riêng nhưng KHÔNG login lại.
-     * Server nhận kết nối mới → ClientHandler mới → ta chỉ cần gửi LOGIN
-     * một lần duy nhất để server biết đây là ai và add observer.
-     *
-     * Lý do vẫn cần login trên listener connection:
-     * Mỗi socket = một ClientHandler riêng trên server. ClientHandler mới
-     * không có currentUser → phải login để server add observer cho đúng socket này.
-     * Đây là login kỹ thuật (subscribe), không phải login lại từ đầu.
-     * Password lấy từ SessionManager — không hardcode, không truyền qua tham số.
-     */
     private void startListening() {
         String pwd = SessionManager.getInstance().getPassword();
         if (pwd == null) {
@@ -90,7 +81,6 @@ public class BidController implements Initializable {
                     return;
                 }
 
-                // Subscribe: login để server add observer cho socket này
                 listenerConn.sendAndReceive("LOGIN|" + username + "|" + pwd);
 
                 while (!Thread.currentThread().isInterrupted()) {
@@ -111,10 +101,6 @@ public class BidController implements Initializable {
         listenerThread.start();
     }
 
-    /**
-     * Xử lý tất cả các loại push từ server trong một chỗ.
-     * Thêm case mới (SNIPING, NEW_AUCTION...) chỉ cần thêm vào đây.
-     */
     private void handleServerPush(String message) {
         String[] parts = message.split("\\|");
         if (parts.length == 0) return;
@@ -133,13 +119,11 @@ public class BidController implements Initializable {
                 break;
 
             case "SNIPING":
-                // FIX: Xử lý anti-sniping — server gia hạn phiên, thông báo cho user
                 // SNIPING|auctionId|newEndTime|extensionCount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
-                    Platform.runLater(() -> showInfo(
-                            "⏱ Phiên được gia hạn thêm 2 phút! (lần " + count + ")"
-                    ));
+                    // Gia hạn 2 phút = 120 giây
+                    Platform.runLater(() -> startSnipingCountdown(120, count));
                 }
                 break;
 
@@ -149,20 +133,56 @@ public class BidController implements Initializable {
                     statusLabel.setText("FINISHED");
                     showSuccess("Phiên đấu giá đã kết thúc! " +
                             (parts.length >= 3 ? parts[2] : ""));
+                    stopSnipingCountdown();
                 });
                 stopListener();
                 break;
 
             default:
-                // Bỏ qua các message không liên quan (LOGIN_SUCCESS, LIST... từ server)
                 break;
         }
     }
 
     /**
-     * FIX: Dùng ServerConnection.getInstance() (đã login sẵn từ đầu).
-     * Không tạo connection mới, không login lại.
+     * Bắt đầu đồng hồ đếm ngược khi server gia hạn phiên (anti-sniping).
+     * Hiện card cam, đếm ngược từ totalSeconds về 0, rồi ẩn đi.
      */
+    private void startSnipingCountdown(int totalSeconds, String extensionCount) {
+        // Dừng timer cũ nếu đang chạy (gia hạn nhiều lần liên tiếp)
+        stopSnipingCountdown();
+
+        // Hiện card đồng hồ
+        snipingBox.setVisible(true);
+        snipingBox.setManaged(true);
+        snipingCountLabel.setText("Lần gia hạn thứ: " + extensionCount);
+
+        final int[] secondsLeft = {totalSeconds};
+
+        snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            secondsLeft[0]--;
+            int min = secondsLeft[0] / 60;
+            int sec = secondsLeft[0] % 60;
+            snipingCountdownLabel.setText(String.format("Còn: %02d:%02d", min, sec));
+
+            if (secondsLeft[0] <= 0) {
+                stopSnipingCountdown();
+            }
+        }));
+        snipingTimeline.setCycleCount(totalSeconds);
+        snipingTimeline.play();
+    }
+
+    private void stopSnipingCountdown() {
+        if (snipingTimeline != null) {
+            snipingTimeline.stop();
+            snipingTimeline = null;
+        }
+        if (snipingBox != null) {
+            snipingBox.setVisible(false);
+            snipingBox.setManaged(false);
+        }
+    }
+
     private void loadHistory() {
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
@@ -185,9 +205,9 @@ public class BidController implements Initializable {
             Platform.runLater(() -> {
                 historyItems.clear();
                 for (JsonElement el : array) {
-                    JsonObject obj  = el.getAsJsonObject();
-                    double amount   = obj.has("amount")   ? obj.get("amount").getAsDouble()          : 0;
-                    String bidder   = obj.has("bidder") && obj.get("bidder").isJsonObject()
+                    JsonObject obj = el.getAsJsonObject();
+                    double amount  = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
+                    String bidder  = obj.has("bidder") && obj.get("bidder").isJsonObject()
                             ? obj.get("bidder").getAsJsonObject().get("username").getAsString()
                             : "---";
                     historyItems.add(bidder + " đặt: " + formatPrice(String.valueOf(amount)));
@@ -211,7 +231,6 @@ public class BidController implements Initializable {
             return;
         }
 
-        // FIX: Dùng connection chính — không tạo thêm connection
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive("BID|" + auctionId + "|" + amount);
@@ -230,6 +249,7 @@ public class BidController implements Initializable {
     @FXML
     private void handleBack() {
         stopListener();
+        stopSnipingCountdown();
         Platform.runLater(() -> {
             Stage stage = (Stage) bidAmountField.getScene().getWindow();
             new AuctionListView(stage, username).show();
@@ -239,6 +259,7 @@ public class BidController implements Initializable {
     @FXML
     private void handleViewChart() {
         stopListener();
+        stopSnipingCountdown();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
         new BidChartView(stage, auctionId, itemNameLabel.getText(),
                 currentPriceLabel.getText(), statusLabel.getText(), username).show();
@@ -249,7 +270,6 @@ public class BidController implements Initializable {
             listenerThread.interrupt();
             listenerThread = null;
         }
-        // listenerConn.disconnectDirect() xử lý trong finally của listenerThread
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
