@@ -131,26 +131,18 @@ public class AuctionListController implements Initializable {
     private ObservableList<AuctionRow> parseResponse(String raw) {
         ObservableList<AuctionRow> result = FXCollections.observableArrayList();
         try {
-            String content = raw.trim();
-            if (content.startsWith("[")) content = content.substring(1);
-            if (content.endsWith("]")) content = content.substring(0, content.length() - 1);
-
-            String[] entries = content.split(",\\s*(?=id=)");
-            for (String entry : entries) {
-                entry = entry.trim();
-                if (entry.isEmpty()) continue;
-                String id       = extractField(entry, "id");
-                String itemName = extractField(entry, "itemName");
-                String status   = extractField(entry, "status");
-                String priceStr = extractField(entry, "currentPrice");
-                String price    = "---";
-                try {
-                    price = String.format("%,.0f VND", Double.parseDouble(priceStr));
-                } catch (NumberFormatException ignored) {}
-                result.add(new AuctionRow(id, itemName, price, status));
+            com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(raw).getAsJsonArray();
+            for (com.google.gson.JsonElement el : arr) {
+                com.google.gson.JsonObject obj = el.getAsJsonObject();
+                String id       = obj.get("id").getAsString();
+                String itemName = obj.get("itemName").getAsString();
+                String status   = obj.get("status").getAsString();
+                double price    = obj.get("currentPrice").getAsDouble();
+                String priceStr = String.format("%,.0f VND", price);
+                result.add(new AuctionRow(id, itemName, priceStr, status));
             }
         } catch (Exception e) {
-            System.err.println("Lỗi parse danh sách phiên: " + e.getMessage());
+            System.err.println("Lỗi parse JSON: " + e.getMessage());
         }
         return result;
     }
