@@ -270,7 +270,18 @@ public class AuctionService implements Serializable {
       System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: " + e.getMessage());
     }
   }
-
+  /**
+   * Xóa phiên đấu giá — chỉ Admin mới được gọi.
+   */
+  public boolean deleteAuction(String auctionId) {
+    Auction a = auctions.get(auctionId);
+    if (a == null) return false;
+    a.closeAuction();
+    auctions.remove(auctionId);
+    DataManager.getInstance().saveData();
+    System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
+    return true;
+  }
   // Trong AuctionService.java
   /**
  * Ngắt bỏ mọi obersever.
@@ -279,17 +290,5 @@ public class AuctionService implements Serializable {
     for (Auction auction : auctions.values()) {
       auction.removeObserver(obs);
     }
-  }
-  /**
-   * Xóa phiên đấu giá — chỉ Admin mới được gọi.
-   */
-  public boolean deleteAuction(String auctionId) {
-    Auction a = auctions.get(auctionId);
-    if (a == null) return false;
-    a.removeAllObservers();
-    auctions.remove(auctionId);
-    DataManager.getInstance().saveData();
-    System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
-    return true;
   }
 }

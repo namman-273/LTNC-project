@@ -14,15 +14,17 @@ public class AutoBidView {
     private final String currentPrice;
     private final String status;
     private final String username;
+    private final long endTime;
 
     public AutoBidView(Stage stage, String auctionId, String itemName,
-                       String currentPrice, String status, String username) {
+                       String currentPrice, String status, String username, long endTime) {
         this.stage        = stage;
         this.auctionId    = auctionId;
         this.itemName     = itemName;
         this.currentPrice = currentPrice;
         this.status       = status;
         this.username     = username;
+        this.endTime      = endTime;
     }
 
     public void show() {
@@ -33,7 +35,7 @@ public class AutoBidView {
             Parent root = loader.load();
 
             AutoBidController controller = loader.getController();
-            controller.setData(auctionId, itemName, currentPrice, status, username);
+            controller.setData(auctionId, itemName, currentPrice, status, username, endTime);
 
             stage.setTitle("Auto-Bid - " + itemName);
             stage.setScene(new Scene(root));
