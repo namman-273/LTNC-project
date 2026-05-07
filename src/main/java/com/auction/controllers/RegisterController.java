@@ -9,6 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
 import com.auction.views.LoginView;
 
@@ -31,28 +32,19 @@ public class RegisterController implements Initializable {
 
     @FXML
     private void handleRegister() {
-        String username = usernameField.getText().trim();
-        String password = passwordField.getText().trim();
+        String username        = usernameField.getText().trim();
+        String password        = passwordField.getText().trim();
         String confirmPassword = confirmPasswordField.getText().trim();
-        String role = roleComboBox.getValue();
+        String role            = roleComboBox.getValue();
 
-        // Validate trên UI thread - OK
-        if (username.isEmpty() || password.isEmpty()) {
-            showError("Vui lòng nhập đầy đủ thông tin!");
-            return;
-        }
+        // Check confirm password ở FE — BE không có field này
         if (!password.equals(confirmPassword)) {
             showError("Mật khẩu xác nhận không khớp!");
-            return;
-        }
-        if (role == null) {
-            showError("Vui lòng chọn vai trò!");
             return;
         }
 
         showSuccess("Đang kết nối server...");
 
-        // Network call chạy trên background thread - tránh block UI
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             if (!conn.connect()) {
@@ -60,14 +52,27 @@ public class RegisterController implements Initializable {
                 return;
             }
 
+            // Dùng Protocol constants — đúng format BE expect: REGISTER|user|pass|role
             String response = conn.sendAndReceive(
-                    "REGISTER|" + username + "|" + password + "|" + role
+                    Protocol.CMD_REGISTER + Protocol.SEPARATOR
+                            + username + Protocol.SEPARATOR
+                            + password + Protocol.SEPARATOR
+                            + role
             );
             System.out.println("Server trả về: " + response);
 
             Platform.runLater(() -> {
-                if (response != null && response.startsWith("REGISTER_SUCCESS")) {
-                    showSuccess("Đăng ký thành công! Đang chuyển về đăng nhập...");
+                if (response == null) {
+                    showError("Mất kết nối server!");
+                    return;
+                }
+
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+
+                if (response.startsWith(Protocol.RES_REGISTER_SUCCESS)) {
+                    // Lấy message từ BE: REGISTER_SUCCESS|Đăng ký thành công.
+                    String msg = parts.length > 1 ? parts[1] : "Đăng ký thành công!";
+                    showSuccess(msg + " Đang chuyển về đăng nhập...");
                     new Thread(() -> {
                         try {
                             Thread.sleep(1000);
@@ -76,11 +81,13 @@ public class RegisterController implements Initializable {
                                 new LoginView(stage).show();
                             });
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Thread.currentThread().interrupt();
                         }
                     }).start();
                 } else {
-                    showError("Đăng ký thất bại! Tên đăng nhập đã tồn tại.");
+                    // Lấy message lỗi từ BE: REGISTER_FAILED|message hoặc ERROR|message
+                    String errorMsg = parts.length > 1 ? parts[1] : "Đăng ký thất bại!";
+                    showError(errorMsg);
                 }
             });
         }).start();
