@@ -1,5 +1,11 @@
 package com.auction.controllers;
 
+import com.auction.network.Protocol;
+import com.auction.util.AlertUtil;
+import com.auction.util.ServerConnection;
+import com.auction.util.SessionManager;
+import com.auction.views.AuctionListView;
+import com.auction.views.RegisterView;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -7,11 +13,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import com.auction.network.Protocol;
-import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
-import com.auction.views.AuctionListView;
-import com.auction.views.RegisterView;
 
 public class LoginController {
 
@@ -28,14 +29,16 @@ public class LoginController {
         setLoading(true);
 
         new Thread(() -> {
+            ServerConnection.getInstance().disconnect();
             ServerConnection conn = ServerConnection.getInstance();
-            if (conn.isConnected()) conn.disconnect();
-            conn = ServerConnection.getInstance();
 
-            if (!conn.connect()) {
+            // Dùng connectWithRetry — thử 3 lần tự động
+            if (!conn.connectWithRetry()) {
                 Platform.runLater(() -> {
                     setLoading(false);
-                    showError("Không thể kết nối server!");
+                    showError("Không thể kết nối server sau nhiều lần thử!");
+                    AlertUtil.showError("Mất kết nối",
+                            "Không thể kết nối đến server!\nVui lòng kiểm tra server đang chạy chưa.");
                 });
                 return;
             }
@@ -47,15 +50,14 @@ public class LoginController {
             Platform.runLater(() -> {
                 setLoading(false);
 
-                if (response == null) {
+                if (response == null || response.startsWith("ERROR|Mất kết nối")) {
                     showError("Mất kết nối server!");
+                    AlertUtil.showError("Mất kết nối", "Mất kết nối khi đăng nhập. Vui lòng thử lại.");
                     return;
                 }
 
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
-
                 if (response.startsWith(Protocol.RES_LOGIN_SUCCESS)) {
-                    // BE trả: LOGIN_SUCCESS|ROLE|Chào username
                     String role     = parts.length > 1 ? parts[1].trim() : "BIDDER";
                     String greeting = parts.length > 2 ? parts[2].trim() : "";
                     SessionManager.getInstance().setSession(username, password, role);
@@ -63,7 +65,6 @@ public class LoginController {
                     Stage stage = (Stage) usernameField.getScene().getWindow();
                     new AuctionListView(stage, username).show();
                 } else {
-                    // BE trả: LOGIN_FAILED|message hoặc ERROR|message
                     String errorMsg = parts.length > 1 ? parts[1] : "Đăng nhập thất bại!";
                     showError(errorMsg);
                 }

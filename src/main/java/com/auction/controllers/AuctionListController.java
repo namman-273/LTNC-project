@@ -2,13 +2,16 @@ package com.auction.controllers;
 
 import com.auction.dto.AuctionRow;
 import com.auction.network.Protocol;
+import com.auction.util.AlertUtil;
 import com.auction.util.ServerConnection;
 import com.auction.util.SessionManager;
 import com.auction.views.AdminDashboardView;
+import com.auction.views.BalanceView;
 import com.auction.views.BidView;
 import com.auction.views.CreateAuctionView;
 import com.auction.views.LoginView;
 import com.auction.views.SellerView;
+import com.auction.views.WatchlistView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.net.URL;
@@ -25,8 +28,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import com.auction.views.WatchlistView;
-import com.auction.views.BalanceView;
 
 public class AuctionListController implements Initializable {
 
@@ -94,9 +95,12 @@ public class AuctionListController implements Initializable {
             try {
                 ServerConnection conn = ServerConnection.getInstance();
                 if (!conn.isConnected()) {
-                    if (!conn.connect()) {
-                        Platform.runLater(() ->
-                                setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
+                    if (!conn.connectWithRetry()) {
+                        Platform.runLater(() -> {
+                            setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại.");
+                            AlertUtil.showError("Mất kết nối",
+                                    "Không thể kết nối server!\nVui lòng kiểm tra server đang chạy rồi nhấn 🔄 Làm mới.");
+                        });
                         return;
                     }
                 }
@@ -104,9 +108,12 @@ public class AuctionListController implements Initializable {
                 String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
                 System.out.println("RAW: " + response);
 
-                if (response == null) {
-                    Platform.runLater(() ->
-                            setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
+                if (response == null || response.startsWith("ERROR|Mất kết nối")) {
+                    Platform.runLater(() -> {
+                        setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại.");
+                        AlertUtil.showError("Mất kết nối",
+                                "Mất kết nối khi tải danh sách phiên!\nNhấn 🔄 Làm mới để thử lại.");
+                    });
                     return;
                 }
 
@@ -131,8 +138,11 @@ public class AuctionListController implements Initializable {
 
             } catch (Exception e) {
                 System.err.println("Lỗi load danh sách: " + e.getMessage());
-                Platform.runLater(() ->
-                        setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
+                Platform.runLater(() -> {
+                    setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại.");
+                    AlertUtil.showError("Lỗi tải danh sách",
+                            "Đã xảy ra lỗi khi tải danh sách phiên!\nNhấn 🔄 Làm mới để thử lại.");
+                });
             }
         }).start();
     }
@@ -150,7 +160,11 @@ public class AuctionListController implements Initializable {
                     Protocol.CMD_WATCH + Protocol.SEPARATOR + selected.getId()
             );
             Platform.runLater(() -> {
-                if (response == null) { setStatusBar("❌ Mất kết nối!"); return; }
+                if (response == null) {
+                    setStatusBar("❌ Mất kết nối!");
+                    AlertUtil.showError("Mất kết nối", "Mất kết nối khi theo dõi phiên!");
+                    return;
+                }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
                     String msg = parts.length > 1 ? parts[1] : "Đã theo dõi phiên!";
@@ -174,7 +188,11 @@ public class AuctionListController implements Initializable {
                     Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selected.getId()
             );
             Platform.runLater(() -> {
-                if (response == null) { setStatusBar("❌ Mất kết nối!"); return; }
+                if (response == null) {
+                    setStatusBar("❌ Mất kết nối!");
+                    AlertUtil.showError("Mất kết nối", "Mất kết nối khi bỏ theo dõi phiên!");
+                    return;
+                }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
                     String msg = parts.length > 1 ? parts[1] : "Đã bỏ theo dõi!";
@@ -192,6 +210,7 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new WatchlistView(stage, username).show();
     }
+
     // ─── Navigation ──────────────────────────────────────────────────────────
 
     private void setStatusBar(String msg) {
@@ -240,6 +259,7 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new SellerView(stage, username).show();
     }
+
     @FXML
     private void handleBalance() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();

@@ -2,9 +2,11 @@ package com.auction.controllers;
 
 import com.auction.model.BidTransaction;
 import com.auction.network.Protocol;
+import com.auction.util.AlertUtil;
 import com.auction.util.ServerConnection;
 import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
+import com.auction.views.AutoBidView;
 import com.auction.views.BidChartView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -21,7 +23,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import com.auction.views.AutoBidView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -87,10 +88,12 @@ public class BidController implements Initializable {
             try {
                 if (!listenerConn.connectDirect()) {
                     System.err.println("Listener: không thể kết nối.");
+                    Platform.runLater(() ->
+                            AlertUtil.showError("Mất kết nối",
+                                    "Không thể kết nối listener realtime!\nGiá sẽ không cập nhật tự động."));
                     return;
                 }
 
-                // Dùng Protocol constants
                 listenerConn.sendAndReceive(
                         Protocol.CMD_LOGIN + Protocol.SEPARATOR + username
                                 + Protocol.SEPARATOR + pwd
@@ -120,7 +123,6 @@ public class BidController implements Initializable {
 
         switch (parts[0]) {
             case Protocol.UPDATE:
-                // UPDATE|auctionId|newPrice|bidderUsername
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
                     String bidder   = parts[3];
@@ -132,7 +134,6 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.SNIPING:
-                // SNIPING|auctionId|newEndTime|extensionCount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
                     Platform.runLater(() -> startSnipingCountdown(120, count));
@@ -187,16 +188,21 @@ public class BidController implements Initializable {
     private void loadHistory() {
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_GET_HISTORY
             String response = conn.sendAndReceive(
                     Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
             );
             System.out.println("History: " + response);
 
-            if (response != null && response.startsWith(Protocol.RES_HISTORY)) {
+            if (response == null || response.startsWith("ERROR|Mất kết nối")) {
+                Platform.runLater(() ->
+                        AlertUtil.showError("Mất kết nối",
+                                "Không thể tải lịch sử đặt giá!"));
+                return;
+            }
+
+            if (response.startsWith(Protocol.RES_HISTORY)) {
                 String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
                 if (parts.length >= 3) {
-                    // Dùng Gson + BidTransaction model của BE
                     BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
                     if (history != null) {
                         Platform.runLater(() -> {
@@ -216,7 +222,6 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleBid() {
-        // Không tự validate — gửi thẳng lên BE
         String amountStr = bidAmountField.getText().trim();
 
         new Thread(() -> {
@@ -227,7 +232,12 @@ public class BidController implements Initializable {
             System.out.println("BID response: " + response);
 
             Platform.runLater(() -> {
-                if (response == null) { showError("Mất kết nối server!"); return; }
+                if (response == null || response.startsWith("ERROR|Mất kết nối")) {
+                    showError("Mất kết nối server!");
+                    AlertUtil.showError("Mất kết nối",
+                            "Mất kết nối khi đặt giá!\nVui lòng thử lại.");
+                    return;
+                }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("Đặt giá thành công!");
@@ -240,8 +250,6 @@ public class BidController implements Initializable {
         }).start();
     }
 
-    // ─── Auto-bid ────────────────────────────────────────────────────────────
-
     @FXML
     private void handleAutoBid() {
         stopListener();
@@ -250,8 +258,6 @@ public class BidController implements Initializable {
         new AutoBidView(stage, auctionId, itemNameLabel.getText(),
                 currentPriceLabel.getText(), statusLabel.getText(), username).show();
     }
-
-    // ─── Navigation ──────────────────────────────────────────────────────────
 
     @FXML
     private void handleBack() {
@@ -278,8 +284,6 @@ public class BidController implements Initializable {
             listenerThread = null;
         }
     }
-
-    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private String formatPrice(String raw) {
         try {
