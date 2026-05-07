@@ -1,5 +1,8 @@
 package com.auction.network;
 
+import com.auction.audit.AuditEvent;
+import com.auction.audit.AuditEventType;
+import com.auction.audit.AuditLogger;
 import com.auction.service.AuctionService;
 import com.auction.service.UserManager;
 import com.auction.util.DataManager;
@@ -29,6 +32,18 @@ public class AuctionServer {
     // Đăng ký Shutdown Hook: Tự động chạy khi nhấn Stop/Ctrl+C
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("\n[SYSTEM] Đang tiến hành đóng Server...");
+      
+      // LOG SYSTEM SHUTDOWN
+      AuditLogger.getInstance().log(
+          new AuditEvent.Builder()
+              .eventType(AuditEventType.SYSTEM_SHUTDOWN)
+              .username("SYSTEM")
+              .action("Auction server đang shutdown")
+              .result("SUCCESS")
+              .addMetadata("port", String.valueOf(port))
+              .build()
+      );
+      
       running = false;
       try {
         if (serverSocket != null && !serverSocket.isClosed()) {
@@ -36,6 +51,10 @@ public class AuctionServer {
         }
         // Gọi shutdown của Service để lưu file .dat
         AuctionService.getInstance().shutdown();
+        
+        // CRITICAL: Đợi audit logs được flush ra file
+        AuditLogger.getInstance().shutdown();
+        
       } catch (IOException e) {
         System.err.println("Lỗi khi đóng socket: " + e.getMessage());
       }
@@ -76,8 +95,21 @@ public class AuctionServer {
 
     // Kiểm tra nếu chưa có admin thì mới tạo
     UserManager.getInstance().initDefaultData();
+    
     AuctionServer server = new AuctionServer(9999);
     System.out.println("Khởi động server tại port 9999...");
+    
+    // LOG SYSTEM STARTUP
+    AuditLogger.getInstance().log(
+        new AuditEvent.Builder()
+            .eventType(AuditEventType.SYSTEM_STARTUP)
+            .username("SYSTEM")
+            .action("Auction server khởi động")
+            .result("SUCCESS")
+            .addMetadata("port", "9999")
+            .build()
+    );
+    
     server.start();
   }
 }
