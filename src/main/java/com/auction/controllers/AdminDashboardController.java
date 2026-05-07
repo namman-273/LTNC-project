@@ -195,11 +195,16 @@ public class AdminDashboardController implements Initializable {
             return;
         }
 
-        // Xác nhận trước khi xóa
-        boolean confirmed = AlertUtil.showConfirm("Xác nhận xóa",
-                "Bạn có chắc muốn xóa phiên:\n" + selected.getItemName()
-                        + "?\nHành động này không thể hoàn tác!");
-        if (!confirmed) return;
+        // Dùng Alert trực tiếp thay vì AlertUtil.showConfirm
+        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Xác nhận xóa");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Bạn có chắc muốn xóa phiên:\n"
+                + selected.getItemName() + "?\nHành động này không thể hoàn tác!");
+
+        java.util.Optional<javafx.scene.control.ButtonType> result = confirm.showAndWait();
+        if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK) return;
 
         showMessage("Đang xóa phiên...", "orange");
 
@@ -208,6 +213,7 @@ public class AdminDashboardController implements Initializable {
             String response = conn.sendAndReceive(
                     Protocol.CMD_DELETE_AUCTION + Protocol.SEPARATOR + selected.getId()
             );
+            System.out.println("Delete response: " + response);
 
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
@@ -215,7 +221,6 @@ public class AdminDashboardController implements Initializable {
                 if (response.startsWith(Protocol.RES_DELETE_SUCCESS)) {
                     String msg = parts.length > 1 ? parts[1] : "Xóa phiên thành công!";
                     showMessage("✅ " + msg, "green");
-                    AlertUtil.showSuccess("Xóa thành công", msg);
                 } else {
                     String msg = parts.length > 1 ? parts[1] : "Xóa phiên thất bại!";
                     showMessage("❌ " + msg, "red");
