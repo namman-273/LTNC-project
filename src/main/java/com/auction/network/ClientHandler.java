@@ -23,17 +23,18 @@ import java.util.List;
  */
 public class ClientHandler implements Runnable, Observer {
 
-    private static final int REQ_REGISTER = 4;
-    private static final int REQ_LOGIN = 3;
-    private static final int REQ_BID = 3;
-    private static final int REQ_CREATE = 5;
-    private static final int REQ_END = 2;
-    private static final int REQ_HISTORY = 2;
-    private static final int REQ_DEPOSIT = 2;
-    private static final int REQ_GET_BALANCE = 1;
-    private static final int REQ_WATCH = 2;
-    private static final int REQ_AUTO_BID = 3;
-    private static final int REQ_UNWATCH = 2;
+    private static final int REQ_REGISTER     = 4;
+    private static final int REQ_LOGIN        = 3;
+    private static final int REQ_BID          = 3;
+    private static final int REQ_CREATE       = 5;
+    private static final int REQ_END          = 2;
+    private static final int REQ_DELETE       = 2;
+    private static final int REQ_HISTORY      = 2;
+    private static final int REQ_DEPOSIT      = 2;
+    private static final int REQ_GET_BALANCE  = 1;
+    private static final int REQ_WATCH        = 2;
+    private static final int REQ_AUTO_BID     = 3;
+    private static final int REQ_UNWATCH      = 2;
     private static final int REQ_GET_WATCHLIST = 1;
 
     private Socket socket;
@@ -68,80 +69,57 @@ public class ClientHandler implements Runnable, Observer {
     public final void run() {
         AuctionService auctionService = AuctionService.getInstance();
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            in  = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
 
             String request;
             while ((request = in.readLine()) != null) {
                 String[] parts = request.trim().split("\\|");
-                if (parts.length == 0) {
-                    continue;
-                }
+                if (parts.length == 0) continue;
                 String cmd = parts[0];
 
                 switch (cmd) {
                     case Protocol.CMD_REGISTER:
-                        if (validatePayload(parts, REQ_REGISTER)) {
-                            handleRegister(parts);
-                        }
+                        if (validatePayload(parts, REQ_REGISTER)) handleRegister(parts);
                         break;
                     case Protocol.CMD_LOGIN:
-                        if (validatePayload(parts, REQ_LOGIN)) {
-                            handleLogin(parts, auctionService);
-                        }
+                        if (validatePayload(parts, REQ_LOGIN)) handleLogin(parts, auctionService);
                         break;
                     case Protocol.CMD_LIST_AUCTIONS:
                         handleListAuctions(auctionService);
                         break;
                     case Protocol.CMD_BID:
-                        if (validatePayload(parts, REQ_BID)) {
-                            handleBid(parts, auctionService);
-                        }
+                        if (validatePayload(parts, REQ_BID)) handleBid(parts, auctionService);
                         break;
                     case Protocol.CMD_CREATE_AUCTION:
-                        if (validatePayload(parts, REQ_CREATE)) {
-                            handleCreateAuction(parts, auctionService);
-                        }
+                        if (validatePayload(parts, REQ_CREATE)) handleCreateAuction(parts, auctionService);
                         break;
                     case Protocol.CMD_END_AUCTION:
-                        if (validatePayload(parts, REQ_END)) {
-                            handleEndAuction(parts, auctionService);
-                        }
+                        if (validatePayload(parts, REQ_END)) handleEndAuction(parts, auctionService);
+                        break;
+                    case Protocol.CMD_DELETE_AUCTION:
+                        if (validatePayload(parts, REQ_DELETE)) handleDeleteAuction(parts, auctionService);
                         break;
                     case Protocol.CMD_GET_HISTORY:
-                        if (validatePayload(parts, REQ_HISTORY)) {
-                            handleGetHistory(parts, auctionService);
-                        }
+                        if (validatePayload(parts, REQ_HISTORY)) handleGetHistory(parts, auctionService);
                         break;
                     case Protocol.CMD_DEPOSIT:
-                        if (validatePayload(parts, REQ_DEPOSIT)) {
-                            handleDeposit(parts);
-                        }
+                        if (validatePayload(parts, REQ_DEPOSIT)) handleDeposit(parts);
                         break;
                     case Protocol.CMD_GET_BALANCE:
-                        if (validatePayload(parts, REQ_GET_BALANCE)) {
-                            handleGetBalance();
-                        }
+                        if (validatePayload(parts, REQ_GET_BALANCE)) handleGetBalance();
                         break;
                     case Protocol.CMD_WATCH:
-                        if (validatePayload(parts, REQ_WATCH)) {
-                            handleWatch(parts, auctionService);
-                        }
+                        if (validatePayload(parts, REQ_WATCH)) handleWatch(parts, auctionService);
                         break;
                     case Protocol.CMD_UNWATCH:
-                        if (validatePayload(parts, REQ_UNWATCH)) {
-                            handleUnwatch(parts);
-                        }
+                        if (validatePayload(parts, REQ_UNWATCH)) handleUnwatch(parts);
                         break;
                     case Protocol.CMD_GET_WATCHLIST:
-                        if (validatePayload(parts, REQ_GET_WATCHLIST)) {
-                            handleGetWatchlist(auctionService);
-                        }
+                        if (validatePayload(parts, REQ_GET_WATCHLIST)) handleGetWatchlist(auctionService);
                         break;
                     case Protocol.CMD_ADD_AUTO_BID:
-                        if (validatePayload(parts, REQ_AUTO_BID)) {
-                            handleAddAutoBid(parts, auctionService);
-                        }
+                        if (validatePayload(parts, REQ_AUTO_BID)) handleAddAutoBid(parts, auctionService);
                         break;
                     default:
                         sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lệnh không hợp lệ");
@@ -206,18 +184,12 @@ public class ClientHandler implements Runnable, Observer {
             return;
         }
         try {
-            String type        = parts[1];
-            String name        = parts[2];
-            double price       = Double.parseDouble(parts[3]);
-            long duration      = Long.parseLong(parts[4]);
-            // imageUrl và description là optional
-            String imageUrl    = parts.length > 5 ? parts[5] : "";
-            String description = parts.length > 6 ? parts[6] : "";
-
-            auctionService.createNewAuction(type, name, price, duration,
-                    currentUser.getUsername());
-            sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR
-                    + "Sản phẩm " + name + " đã được đăng sàn.");
+            String type     = parts[1];
+            String name     = parts[2];
+            double price    = Double.parseDouble(parts[3]);
+            long duration   = Long.parseLong(parts[4]);
+            auctionService.createNewAuction(type, name, price, duration, currentUser.getUsername());
+            sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Sản phẩm " + name + " đã được đăng sàn.");
         } catch (Exception e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Dữ liệu tạo sản phẩm không hợp lệ.");
         }
@@ -232,6 +204,24 @@ public class ClientHandler implements Runnable, Observer {
         sendMessage(Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + "Đã đóng phiên " + parts[1]);
     }
 
+    /**
+     * Xóa phiên — chỉ Admin.
+     */
+    private void handleDeleteAuction(final String[] parts, AuctionService auctionService) {
+        if (currentUser == null || !"ADMIN".equals(currentUser.getRole())) {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ Admin mới có quyền xóa phiên.");
+            return;
+        }
+        boolean deleted = auctionService.deleteAuction(parts[1]);
+        if (deleted) {
+            sendMessage(Protocol.RES_DELETE_SUCCESS + Protocol.SEPARATOR
+                    + "Đã xóa phiên " + parts[1]);
+        } else {
+            sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+                    + "Không tìm thấy phiên hoặc xóa thất bại!");
+        }
+    }
+
     private void handleBid(final String[] parts, AuctionService auctionService) {
         if (this.currentUser == null) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn phải đăng nhập trước khi đấu giá!");
@@ -239,7 +229,7 @@ public class ClientHandler implements Runnable, Observer {
         }
         try {
             String auctionId = parts[1];
-            double amount = Double.parseDouble(parts[2]);
+            double amount    = Double.parseDouble(parts[2]);
             if (amount <= 0) {
                 sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá bid phải lớn hơn 0");
                 return;
@@ -298,7 +288,7 @@ public class ClientHandler implements Runnable, Observer {
      */
     private void handleGetHistory(String[] parts, AuctionService auctionService) {
         String auctionId = parts[1];
-        Auction auction = auctionService.getAuctionById(auctionId);
+        Auction auction  = auctionService.getAuctionById(auctionId);
         if (auction != null) {
             try {
                 String jsonHistory = gson.toJson(auction.getBidHistory());
@@ -377,8 +367,8 @@ public class ClientHandler implements Runnable, Observer {
         }
         try {
             String auctionId = parts[1];
-            double maxBid = Double.parseDouble(parts[2]);
-            Auction auction = auctionService.getAuctionById(auctionId);
+            double maxBid    = Double.parseDouble(parts[2]);
+            Auction auction  = auctionService.getAuctionById(auctionId);
             if (auction == null) {
                 sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá.");
                 return;
@@ -416,15 +406,9 @@ public class ClientHandler implements Runnable, Observer {
     private void cleanUp() {
         try {
             AuctionService.getInstance().removeObserverFromAll(this);
-            if (in != null) {
-                in.close();
-            }
-            if (out != null) {
-                out.close();
-            }
-            if (socket != null && !socket.isClosed()) {
-                socket.close();
-            }
+            if (in != null) in.close();
+            if (out != null) out.close();
+            if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException e) {
             System.err.println("Lỗi khi đóng tài nguyên Client: " + e.getMessage());
         }

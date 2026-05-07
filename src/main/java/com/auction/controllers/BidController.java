@@ -3,6 +3,7 @@ package com.auction.controllers;
 import com.auction.model.BidTransaction;
 import com.auction.network.Protocol;
 import com.auction.util.AlertUtil;
+import com.auction.util.NotificationManager;
 import com.auction.util.ServerConnection;
 import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
@@ -17,16 +18,17 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import com.auction.util.NotificationManager;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BidController implements Initializable {
 
@@ -45,8 +47,12 @@ public class BidController implements Initializable {
     private String auctionId;
     private String username;
     private long endTime;
-    private final ObservableList<String> historyItems = FXCollections.observableArrayList();
 
+    // Static cache giữ lịch sử khi quay lại
+    private static final ConcurrentHashMap<String, ObservableList<String>> historyCache
+            = new ConcurrentHashMap<>();
+
+    private ObservableList<String> historyItems;
     private ServerConnection listenerConn;
     private Thread listenerThread;
     private Timeline snipingTimeline;
@@ -68,9 +74,13 @@ public class BidController implements Initializable {
         itemNameLabel.setText(itemName);
         currentPriceLabel.setText(formatPrice(currentPrice));
         statusLabel.setText(status);
+
+        // Lấy lịch sử từ cache hoặc tạo mới
+        historyItems = historyCache.computeIfAbsent(
+                auctionId, k -> FXCollections.observableArrayList());
         bidHistoryList.setItems(historyItems);
 
-        // Gợi ý giá ban đầu = currentPrice + 1,000,000
+        // Gợi ý giá ban đầu
         try {
             double price = Double.parseDouble(
                     currentPrice.replace(",", "").replace(" VND", "").trim());
@@ -84,9 +94,7 @@ public class BidController implements Initializable {
     }
 
     @Override
-    public void initialize(URL url, ResourceBundle rb) {
-        bidHistoryList.setItems(historyItems);
-    }
+    public void initialize(URL url, ResourceBundle rb) {}
 
     // ─── Countdown ───────────────────────────────────────────────────────────
 
@@ -110,7 +118,6 @@ public class BidController implements Initializable {
             countdownLabel.setText(
                     String.format("⏱ Còn: %02d:%02d:%02d", hours, minutes, seconds));
 
-            // Đổi màu khi còn < 5 phút
             if (remaining < 300_000) {
                 countdownLabel.setStyle(
                         "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 14px;");
@@ -172,7 +179,6 @@ public class BidController implements Initializable {
 
         switch (parts[0]) {
             case Protocol.UPDATE:
-                // UPDATE|auctionId|newPrice|bidderUsername
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
                     String bidder   = parts[3];
@@ -191,11 +197,9 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.SNIPING:
-                // SNIPING|auctionId|newEndTime|extensionCount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
                     try {
-                        // Cập nhật endTime mới từ server
                         this.endTime = Long.parseLong(parts[2]);
                     } catch (NumberFormatException ignored) {}
                     Platform.runLater(() -> startSnipingCountdown(120, count));
@@ -304,20 +308,20 @@ public class BidController implements Initializable {
             Platform.runLater(() -> {
                 if (response == null || response.startsWith("ERROR|Mất kết nối")) {
                     showError("Mất kết nối server!");
-                    AlertUtil.showError("Mất kết nối", "Mất kết nối khi đặt giá!\nVui lòng thử lại.");
+                    AlertUtil.showError("Mất kết nối",
+                            "Mất kết nối khi đặt giá!\nVui lòng thử lại.");
                     return;
                 }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("Đặt giá thành công!");
                     // Popup thông báo trừ tiền
-                    String amount = parts.length > 2 ? parts[2] : amountStr;
                     try {
-                        double price = Double.parseDouble(amount);
+                        double price = Double.parseDouble(
+                                parts.length > 2 ? parts[2] : amountStr);
                         showNotification("💰 Đặt giá thành công!",
                                 "Đã đặt giá: " + String.format("%,.0f VNĐ", price)
-                                        + "\nSố tiền đã bị trừ khỏi tài khoản của bạn."
-                                        + "\nNếu không thắng, tiền sẽ được hoàn lại.");
+                                        + "\nSố tiền đã bị trừ khỏi tài khoản.");
                     } catch (NumberFormatException ignored) {}
                     bidAmountField.clear();
                 } else {
@@ -334,7 +338,7 @@ public class BidController implements Initializable {
         stopSnipingCountdown();
         if (countdownTimeline != null) countdownTimeline.stop();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        new BidChartView(stage, auctionId, itemNameLabel.getText(),
+        new AutoBidView(stage, auctionId, itemNameLabel.getText(),
                 currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
     }
 
@@ -387,11 +391,10 @@ public class BidController implements Initializable {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
+
     private void showNotification(String title, String message) {
         NotificationManager.getInstance().add(title + ": " + message);
-
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.INFORMATION);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

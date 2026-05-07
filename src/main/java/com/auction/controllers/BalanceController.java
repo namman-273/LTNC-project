@@ -27,7 +27,7 @@ public class BalanceController implements Initializable {
     @FXML private ListView<String> transactionList;
 
     private String username;
-    private final ObservableList<String> transactions = FXCollections.observableArrayList();
+    private static final ObservableList<String> transactions = FXCollections.observableArrayList();
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
