@@ -134,18 +134,15 @@ public class SellerController implements Initializable {
                     String auctionId = parts[1];
                     String newPrice  = parts[2];
                     String bidder    = parts[3];
-
                     boolean isMine = auctionData.stream()
                             .anyMatch(a -> a.getId().equals(auctionId));
-
                     if (isMine) {
                         Platform.runLater(() -> {
                             loadMyAuctions();
-                            String msg = bidder + " vừa đặt giá "
-                                    + String.format("%,.0f VNĐ",
-                                    Double.parseDouble(newPrice))
-                                    + " tại phiên: " + auctionId;
-                            showNotification("🔔 Có bid mới!", msg);
+                            showNotification("🔔 Có bid mới!",
+                                    bidder + " vừa đặt giá "
+                                            + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
+                                            + " tại phiên: " + auctionId);
                         });
                     }
                 }
@@ -156,7 +153,6 @@ public class SellerController implements Initializable {
                     String auctionId = parts[1];
                     boolean isMine = auctionData.stream()
                             .anyMatch(a -> a.getId().equals(auctionId));
-
                     if (isMine) {
                         String detail = parts.length > 2 ? parts[2] : "";
                         Platform.runLater(() -> {
@@ -175,9 +171,7 @@ public class SellerController implements Initializable {
     }
 
     private void showNotification(String title, String message) {
-        // Lưu vào NotificationManager để hiện ở màn hình thông báo
         NotificationManager.getInstance().add(title + ": " + message);
-
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
@@ -206,9 +200,16 @@ public class SellerController implements Initializable {
                     AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
 
                     if (rows != null) {
-                        ObservableList<AuctionRow> data = FXCollections.observableArrayList(rows);
+                        // Filter chỉ lấy phiên của seller này
+                        ObservableList<AuctionRow> data = FXCollections.observableArrayList();
+                        for (AuctionRow row : rows) {
+                            if (username.equals(row.getSellerId())) {
+                                data.add(row);
+                            }
+                        }
                         long open     = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
-                        long finished = data.stream().filter(r -> "FINISHED".equals(r.getStatus())).count();
+                        long finished = data.stream().filter(r -> "FINISHED".equals(r.getStatus())
+                                || "PAID".equals(r.getStatus())).count();
 
                         Platform.runLater(() -> {
                             auctionData.setAll(data);

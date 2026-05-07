@@ -168,11 +168,13 @@ public class ClientHandler implements Runnable, Observer {
                     a.getItem() != null ? a.getItem().getItemName() : "---",
                     a.getCurrentPrice(),
                     a.getStatus().name(),
-                    a.getEndTime()
+                    a.getEndTime(),
+                    a.getSellerId()
             ));
         }
         sendMessage(Protocol.RES_LIST_SUCCESS + Protocol.SEPARATOR + gson.toJson(dtoList));
     }
+
 
     private void handleCreateAuction(final String[] parts, AuctionService auctionService) {
         if (currentUser == null) {
@@ -353,7 +355,8 @@ public class ClientHandler implements Runnable, Observer {
                     a.getItem() != null ? a.getItem().getItemName() : "---",
                     a.getCurrentPrice(),
                     a.getStatus().name(),
-                    a.getEndTime()
+                    a.getEndTime(),
+                    a.getSellerId()
             ));
         }
         sendMessage(Protocol.RES_WATCHLIST + Protocol.SEPARATOR + gson.toJson(dtoList));

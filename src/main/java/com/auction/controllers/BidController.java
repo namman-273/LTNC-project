@@ -313,7 +313,8 @@ public class BidController implements Initializable {
                     return;
                 }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
-                if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
+                if (response.startsWith(Protocol.RES_BID_SUCCESS)
+                        || response.startsWith(Protocol.UPDATE)) {
                     showSuccess("Đặt giá thành công!");
                     // Popup thông báo trừ tiền
                     try {
@@ -328,6 +329,7 @@ public class BidController implements Initializable {
                     String errorMsg = parts.length > 1 ? parts[1] : "Đặt giá thất bại!";
                     showError(errorMsg);
                 }
+
             });
         }).start();
     }
