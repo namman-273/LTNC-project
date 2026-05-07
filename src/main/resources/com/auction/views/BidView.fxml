@@ -92,8 +92,6 @@
                            style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
                     <TextField fx:id="bidAmountField" promptText="Nhập số tiền..."
                                prefHeight="42" styleClass="text-field-modern"/>
-                    <Label text="Giá đặt phải cao hơn giá hiện tại"
-                           style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
                 </VBox>
 
                 <Button text="🔨 ĐẶT GIÁ NGAY" onAction="#handleBid"
@@ -106,7 +104,31 @@
                         styleClass="btn-outline"/>
             </VBox>
 
-            <!-- SNIPING — đồng hồ gia hạn -->
+            <!-- AUTO-BID -->
+            <VBox spacing="12" styleClass="card"
+                  style="-fx-background-color: #E3F2FD;
+                         -fx-border-color: #90CAF9;
+                         -fx-border-radius: 12; -fx-border-width: 1;">
+                <Label text="🤖 Auto-Bid"
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+                <VBox spacing="5">
+                    <Label text="Giá tối đa (VND):"
+                           style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                    <TextField fx:id="autoBidMaxField" promptText="Giá tối đa..."
+                               prefHeight="36" styleClass="text-field-modern"/>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="Bước tăng (VND):"
+                           style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                    <TextField fx:id="autoBidIncrementField" promptText="Bước tăng mỗi lần..."
+                               prefHeight="36" styleClass="text-field-modern"/>
+                </VBox>
+                <Button text="🤖 Bật Auto-Bid" onAction="#handleAutoBid"
+                        prefWidth="348" prefHeight="38"
+                        styleClass="btn-primary"/>
+            </VBox>
+
+            <!-- SNIPING -->
             <VBox fx:id="snipingBox" spacing="6" styleClass="card"
                   style="-fx-background-color: #FFF3E0;
                          -fx-border-color: #FFB74D;

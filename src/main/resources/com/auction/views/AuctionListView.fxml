@@ -61,7 +61,7 @@
 
         <Region HBox.hgrow="ALWAYS"/>
 
-        <Button text="⚙️ Admin" onAction="#handleAdminDashboard"
+        <Button fx:id="adminButton" text="⚙️ Admin" onAction="#handleAdminDashboard"
                 prefHeight="36" prefWidth="90"
                 styleClass="btn-danger"/>
 
@@ -76,14 +76,31 @@
         <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
                 prefHeight="36" prefWidth="115"
                 styleClass="btn-success"/>
+
         <Button fx:id="sellerButton" text="🛒 Seller"
                 onAction="#handleSellerDashboard"
                 prefHeight="36" prefWidth="90"
                 styleClass="btn-success"/>
+
+        <Button text="⭐ Theo dõi" onAction="#handleWatch"
+                prefHeight="36" prefWidth="100"
+                styleClass="btn-outline"/>
+
+        <Button text="❌ Bỏ theo dõi" onAction="#handleUnwatch"
+                prefHeight="36" prefWidth="110"
+                styleClass="btn-outline"/>
+
+        <Button text="📋 Watchlist" onAction="#handleGetWatchlist"
+                prefHeight="36" prefWidth="100"
+                styleClass="btn-outline"/>
     </HBox>
 
+    <!-- STATUS BAR -->
+    <Label fx:id="statusBarLabel" text=""
+           style="-fx-font-size: 12px; -fx-padding: 4 24; -fx-text-fill: #666;"/>
+
     <!-- TABLE -->
-    <VBox VBox.vgrow="ALWAYS" style="-fx-padding: 16 24 0 24;">
+    <VBox VBox.vgrow="ALWAYS" style="-fx-padding: 0 24 0 24;">
         <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
                    styleClass="table-view">
             <columns>
