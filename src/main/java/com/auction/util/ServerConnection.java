@@ -9,6 +9,8 @@ public class ServerConnection {
 
     private static final String HOST = "localhost";
     private static final int PORT = 9999;
+    private static final int MAX_RETRY = 3;
+    private static final int RETRY_DELAY_MS = 1000;
 
     private String host;
     private int port;
@@ -59,6 +61,28 @@ public class ServerConnection {
         }
     }
 
+    /**
+     * Kết nối với retry tự động — thử lại MAX_RETRY lần nếu thất bại.
+     */
+    public boolean connectWithRetry() {
+        for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
+            System.out.println("Đang kết nối server... (lần " + attempt + "/" + MAX_RETRY + ")");
+            if (connect()) {
+                return true;
+            }
+            if (attempt < MAX_RETRY) {
+                try {
+                    Thread.sleep(RETRY_DELAY_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return false;
+                }
+            }
+        }
+        System.err.println("Không thể kết nối sau " + MAX_RETRY + " lần thử!");
+        return false;
+    }
+
     public boolean connectDirect() {
         try {
             socket = new Socket(this.host, this.port);
@@ -73,19 +97,20 @@ public class ServerConnection {
     }
 
     public synchronized String sendAndReceive(String message) {
+        // Thử gửi, nếu mất kết nối thì retry 1 lần
         try {
             if (!isConnected()) {
-                return "ERROR|Mất kết nối server!";
+                System.out.println("Mất kết nối, đang thử kết nối lại...");
+                if (!connectWithRetry()) {
+                    return "ERROR|Không thể kết nối server sau nhiều lần thử!";
+                }
             }
             out.println(message);
 
-            // Đọc nhiều dòng cho đến khi nhận được response đầy đủ
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = in.readLine()) != null) {
                 sb.append(line);
-                // Server kết thúc response khi dòng cuối là JSON hoàn chỉnh
-                // hoặc không còn dữ liệu trong buffer
                 if (!in.ready()) break;
             }
             return sb.toString();
@@ -93,6 +118,23 @@ public class ServerConnection {
         } catch (Exception e) {
             System.err.println("Lỗi gửi/nhận: " + e.getMessage());
             socket = null;
+
+            // Retry 1 lần sau khi mất kết nối
+            System.out.println("Đang thử kết nối lại...");
+            try {
+                if (connectWithRetry()) {
+                    out.println(message);
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        sb.append(line);
+                        if (!in.ready()) break;
+                    }
+                    return sb.toString();
+                }
+            } catch (Exception retryEx) {
+                System.err.println("Retry thất bại: " + retryEx.getMessage());
+            }
             return "ERROR|Mất kết nối server!";
         }
     }
@@ -112,7 +154,6 @@ public class ServerConnection {
         return socket != null && !socket.isClosed() && socket.isConnected();
     }
 
-    // Dùng cho singleton (reset instance)
     public void disconnect() {
         synchronized (ServerConnection.class) {
             try {
@@ -125,7 +166,6 @@ public class ServerConnection {
         }
     }
 
-    // Dùng cho connection phụ (listener, chart, bid riêng) — KHÔNG reset singleton
     public void disconnectDirect() {
         try {
             if (socket != null) socket.close();
