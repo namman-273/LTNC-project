@@ -1,10 +1,13 @@
 package com.auction.controllers;
 
 import com.auction.dto.AuctionRow;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.auction.network.Protocol;
+import com.auction.util.ServerConnection;
+import com.auction.util.SessionManager;
+import com.auction.views.AuctionListView;
+import com.auction.views.CreateAuctionView;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,10 +19,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
-import com.auction.views.AuctionListView;
-import com.auction.views.CreateAuctionView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -35,14 +34,22 @@ public class AdminDashboardController implements Initializable {
 
     private String username;
 
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(java.time.LocalDateTime.class,
+                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
+                            java.time.LocalDateTime.parse(json.getAsString()))
+            .create();
+
     public void setUsername(String username) { this.username = username; }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-        priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
+        priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPriceFormatted"));
 
+        // Fix: thêm setCellValueFactory cho statusCol
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String status, boolean empty) {
@@ -66,19 +73,21 @@ public class AdminDashboardController implements Initializable {
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive("LIST_AUCTIONS");
+            // Dùng Protocol.CMD_LIST_AUCTIONS thay vì hardcode
+            String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
 
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
-            if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                int start = response.indexOf("[");
-                if (start != -1) {
-                    data = parseResponse(response.substring(start));
-                }
+            if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
+                // Dùng Gson deserialize thẳng vào AuctionRow[] — không tự parse
+                String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
+                        + Protocol.SEPARATOR.length());
+                AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
+                if (rows != null) data.addAll(rows);
             }
 
             if (data.isEmpty()) {
-                data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
+                data.add(new AuctionRow("---", "Chưa có phiên nào", 0, "---", 0));
             }
 
             final ObservableList<AuctionRow> finalData = data;
@@ -87,43 +96,6 @@ public class AdminDashboardController implements Initializable {
                 showMessage("Tải xong " + finalData.size() + " phiên.", "gray");
             });
         }).start();
-    }
-
-    private ObservableList<AuctionRow> parseResponse(String raw) {
-        ObservableList<AuctionRow> result = FXCollections.observableArrayList();
-        try {
-            String content = raw.trim();
-            if (content.startsWith("[")) content = content.substring(1);
-            if (content.endsWith("]")) content = content.substring(0, content.length() - 1);
-
-            String[] entries = content.split(",\\s*(?=id=)");
-            for (String entry : entries) {
-                entry = entry.trim();
-                if (entry.isEmpty()) continue;
-                String id       = extractField(entry, "id");
-                String itemName = extractField(entry, "itemName");
-                String status   = extractField(entry, "status");
-                String priceStr = extractField(entry, "currentPrice");
-                String price    = "---";
-                try {
-                    price = String.format("%,.0f VND", Double.parseDouble(priceStr));
-                } catch (NumberFormatException ignored) {}
-                result.add(new AuctionRow(id, itemName, price, status));
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi parse admin dashboard: " + e.getMessage());
-        }
-        return result;
-    }
-
-    private String extractField(String entry, String key) {
-        String search = key + "=";
-        int start = entry.indexOf(search);
-        if (start == -1) return "---";
-        start += search.length();
-        int end = entry.indexOf(",", start);
-        if (end == -1) end = entry.length();
-        return entry.substring(start, end).trim();
     }
 
     @FXML
@@ -136,22 +108,28 @@ public class AdminDashboardController implements Initializable {
             showMessage("Vui lòng chọn một phiên để kết thúc!", "red");
             return;
         }
-        if ("FINISHED".equals(selected.getStatus())) {
-            showMessage("Phiên này đã kết thúc rồi!", "red");
-            return;
-        }
 
         showMessage("Đang kết thúc phiên...", "orange");
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive("END_AUCTION|" + selected.getId());
+            // Dùng Protocol.CMD_END_AUCTION thay vì hardcode
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + selected.getId()
+            );
             System.out.println("End auction: " + response);
+
             Platform.runLater(() -> {
-                if (response != null && response.contains("SUCCESS")) {
-                    showMessage("✅ Kết thúc phiên thành công!", "green");
+                if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
+
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                if (response.startsWith(Protocol.RES_END_SUCCESS)) {
+                    // Lấy message từ BE
+                    String msg = parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!";
+                    showMessage("✅ " + msg, "green");
                 } else {
-                    showMessage("❌ Lỗi: " + response, "red");
+                    String errorMsg = parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!";
+                    showMessage("❌ " + errorMsg, "red");
                 }
                 loadFromServer();
             });
