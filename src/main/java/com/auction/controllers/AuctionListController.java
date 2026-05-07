@@ -167,8 +167,11 @@ public class AuctionListController implements Initializable {
                 }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
-                    String msg = parts.length > 1 ? parts[1] : "Đã theo dõi phiên!";
-                    setStatusBar("✅ " + msg);
+                    String msg = parts.length > 1 ? parts[1] : selected.getItemName();
+                    setStatusBar("✅ Đã theo dõi phiên!");
+                    AlertUtil.showSuccess("Theo dõi thành công",
+                            "✅ Bạn đã theo dõi phiên:\n" + selected.getItemName()
+                                    + "\nBạn sẽ nhận được thông báo realtime khi có bid mới!");
                 } else {
                     String msg = parts.length > 1 ? parts[1] : "Theo dõi thất bại!";
                     setStatusBar("❌ " + msg);
@@ -197,6 +200,8 @@ public class AuctionListController implements Initializable {
                 if (response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
                     String msg = parts.length > 1 ? parts[1] : "Đã bỏ theo dõi!";
                     setStatusBar("✅ " + msg);
+                    AlertUtil.showSuccess("Bỏ theo dõi",
+                            "❌ Đã bỏ theo dõi phiên:\n" + selected.getItemName());
                 } else {
                     String msg = parts.length > 1 ? parts[1] : "Bỏ theo dõi thất bại!";
                     setStatusBar("❌ " + msg);
