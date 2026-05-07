@@ -309,6 +309,15 @@ public class BidController implements Initializable {
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("Đặt giá thành công!");
+                    // Popup thông báo trừ tiền
+                    String amount = parts.length > 2 ? parts[2] : amountStr;
+                    try {
+                        double price = Double.parseDouble(amount);
+                        showNotification("💰 Đặt giá thành công!",
+                                "Đã đặt giá: " + String.format("%,.0f VNĐ", price)
+                                        + "\nSố tiền đã bị trừ khỏi tài khoản của bạn."
+                                        + "\nNếu không thắng, tiền sẽ được hoàn lại.");
+                    } catch (NumberFormatException ignored) {}
                     bidAmountField.clear();
                 } else {
                     String errorMsg = parts.length > 1 ? parts[1] : "Đặt giá thất bại!";
@@ -376,5 +385,13 @@ public class BidController implements Initializable {
     private void showSuccess(String msg) {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
         messageLabel.setText(msg);
+    }
+    private void showNotification(String title, String message) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.show();
     }
 }
