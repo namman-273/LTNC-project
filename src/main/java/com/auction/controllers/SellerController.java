@@ -3,6 +3,7 @@ package com.auction.controllers;
 import com.auction.dto.AuctionRow;
 import com.auction.model.BidTransaction;
 import com.auction.network.Protocol;
+import com.auction.util.NotificationManager;
 import com.auction.util.ServerConnection;
 import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
@@ -14,7 +15,12 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
@@ -85,7 +91,7 @@ public class SellerController implements Initializable {
         startListening();
     }
 
-    // ─── Listener nhận push từ server ────────────────────────────────────────
+    // ─── Listener ────────────────────────────────────────────────────────────
 
     private void startListening() {
         String pwd = SessionManager.getInstance().getPassword();
@@ -124,32 +130,28 @@ public class SellerController implements Initializable {
 
         switch (parts[0]) {
             case Protocol.UPDATE:
-                // UPDATE|auctionId|newPrice|bidder
                 if (parts.length >= 4) {
                     String auctionId = parts[1];
                     String newPrice  = parts[2];
                     String bidder    = parts[3];
 
-                    // Chỉ hiện thông báo nếu phiên đó là của seller này
                     boolean isMine = auctionData.stream()
                             .anyMatch(a -> a.getId().equals(auctionId));
 
                     if (isMine) {
                         Platform.runLater(() -> {
-                            // Cập nhật giá trong bảng
                             loadMyAuctions();
-                            // Popup thông báo cho seller
-                            showNotification("🔔 Có bid mới!",
-                                    bidder + " vừa đặt giá "
-                                            + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
-                                            + "\nTại phiên: " + auctionId);
+                            String msg = bidder + " vừa đặt giá "
+                                    + String.format("%,.0f VNĐ",
+                                    Double.parseDouble(newPrice))
+                                    + " tại phiên: " + auctionId;
+                            showNotification("🔔 Có bid mới!", msg);
                         });
                     }
                 }
                 break;
 
             case Protocol.RES_END_SUCCESS:
-                // END_AUCTION_SUCCESS|auctionId|Winner:...|Bid:...
                 if (parts.length >= 3) {
                     String auctionId = parts[1];
                     boolean isMine = auctionData.stream()
@@ -160,8 +162,8 @@ public class SellerController implements Initializable {
                         Platform.runLater(() -> {
                             loadMyAuctions();
                             showNotification("🎉 Phiên đấu giá kết thúc!",
-                                    "Phiên " + auctionId + " đã kết thúc!\n" + detail
-                                            + "\nTiền đã được chuyển vào tài khoản của bạn.");
+                                    "Phiên " + auctionId + " đã kết thúc!\n"
+                                            + detail + "\nTiền đã được chuyển vào tài khoản.");
                         });
                     }
                 }
@@ -173,12 +175,14 @@ public class SellerController implements Initializable {
     }
 
     private void showNotification(String title, String message) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.INFORMATION);
+        // Lưu vào NotificationManager để hiện ở màn hình thông báo
+        NotificationManager.getInstance().add(title + ": " + message);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        alert.show(); // dùng show() thay vì showAndWait() để không block UI
+        alert.show();
     }
 
     // ─── Load data ────────────────────────────────────────────────────────────

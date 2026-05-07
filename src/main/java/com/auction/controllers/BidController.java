@@ -23,6 +23,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import com.auction.util.NotificationManager;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -387,6 +388,8 @@ public class BidController implements Initializable {
         messageLabel.setText(msg);
     }
     private void showNotification(String title, String message) {
+        NotificationManager.getInstance().add(title + ": " + message);
+
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
                 javafx.scene.control.Alert.AlertType.INFORMATION);
         alert.setTitle(title);

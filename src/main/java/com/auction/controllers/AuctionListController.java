@@ -28,6 +28,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import com.auction.util.NotificationManager;
+import com.auction.views.NotificationView;
 
 public class AuctionListController implements Initializable {
 
