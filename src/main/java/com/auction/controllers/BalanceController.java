@@ -2,7 +2,6 @@ package com.auction.controllers;
 
 import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -35,7 +34,7 @@ public class BalanceController implements Initializable {
     private void loadBalance() {
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_GET_BALANCE
+            // Dùng Protocol.CMD_GET_BALANCE — BE chỉ cần 1 part
             String response = conn.sendAndReceive(Protocol.CMD_GET_BALANCE);
             System.out.println("Balance response: " + response);
 
@@ -46,11 +45,12 @@ public class BalanceController implements Initializable {
                 }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BALANCE_INFO) && parts.length > 1) {
-                    // Lấy balance từ BE trả về
                     try {
                         double balance = Double.parseDouble(parts[1]);
                         balanceLabel.setText(String.format("%,.0f VNĐ", balance));
-                        balanceLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #1565C0;");
+                        balanceLabel.setStyle(
+                                "-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"
+                        );
                     } catch (NumberFormatException e) {
                         balanceLabel.setText(parts[1]);
                     }
@@ -65,15 +65,13 @@ public class BalanceController implements Initializable {
     @FXML
     private void handleDeposit() {
         // Không tự validate — gửi thẳng lên BE
+        // BE expect: DEPOSIT|amount (không cần username, BE tự lấy từ currentUser)
         String amount = depositAmountField.getText().trim();
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_DEPOSIT
             String response = conn.sendAndReceive(
-                    Protocol.CMD_DEPOSIT + Protocol.SEPARATOR
-                            + username + Protocol.SEPARATOR
-                            + amount
+                    Protocol.CMD_DEPOSIT + Protocol.SEPARATOR + amount
             );
             System.out.println("Deposit response: " + response);
 
@@ -81,7 +79,8 @@ public class BalanceController implements Initializable {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_DEPOSIT_SUCCESS)) {
-                    String msg = parts.length > 1 ? parts[1] : "Nạp tiền thành công!";
+                    // BE trả: DEPOSIT_SUCCESS|balance|message
+                    String msg = parts.length > 2 ? parts[2] : "Nạp tiền thành công!";
                     showMessage("✅ " + msg, "green");
                     depositAmountField.clear();
                     loadBalance();

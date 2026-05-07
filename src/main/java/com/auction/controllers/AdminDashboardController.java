@@ -54,7 +54,6 @@ public class AdminDashboardController implements Initializable {
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPriceFormatted"));
 
-        // Fix: thêm setCellValueFactory cho statusCol
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -79,13 +78,11 @@ public class AdminDashboardController implements Initializable {
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_LIST_AUCTIONS
             String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
 
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
             if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
-                // Dùng Gson deserialize thẳng vào AuctionRow[]
                 String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
                         + Protocol.SEPARATOR.length());
                 AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
@@ -108,19 +105,14 @@ public class AdminDashboardController implements Initializable {
 
     @FXML
     private void handleDeposit() {
-        // Không tự validate — gửi thẳng lên BE
-        // BE expect: DEPOSIT|targetUsername|amount
-        String targetUser = depositUsernameField != null
-                ? depositUsernameField.getText().trim() : username;
+        // BE expect: DEPOSIT|amount (không cần username, BE tự lấy từ currentUser)
         String amount = depositAmountField != null
                 ? depositAmountField.getText().trim() : "";
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive(
-                    Protocol.CMD_DEPOSIT + Protocol.SEPARATOR
-                            + targetUser + Protocol.SEPARATOR
-                            + amount
+                    Protocol.CMD_DEPOSIT + Protocol.SEPARATOR + amount
             );
             System.out.println("Deposit response: " + response);
 
@@ -128,13 +120,14 @@ public class AdminDashboardController implements Initializable {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_DEPOSIT_SUCCESS)) {
-                    String msg = parts.length > 1 ? parts[1] : "Nạp tiền thành công!";
+                    // BE trả: DEPOSIT_SUCCESS|balance|message
+                    String msg = parts.length > 2 ? parts[2] : "Nạp tiền thành công!";
                     showMessage("✅ " + msg, "green");
                     if (depositAmountField != null) depositAmountField.clear();
                     loadBalance();
                 } else {
-                    String errorMsg = parts.length > 1 ? parts[1] : "Nạp tiền thất bại!";
-                    showMessage("❌ " + errorMsg, "red");
+                    String msg = parts.length > 1 ? parts[1] : "Nạp tiền thất bại!";
+                    showMessage("❌ " + msg, "red");
                 }
             });
         }).start();
@@ -150,11 +143,12 @@ public class AdminDashboardController implements Initializable {
                 if (response == null) return;
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BALANCE_INFO) && parts.length > 1) {
-                    // Lấy balance từ BE trả về
-                    if (balanceLabel != null) {
-                        balanceLabel.setText("Số dư: " + String.format("%,.0f VND",
-                                Double.parseDouble(parts[1])));
-                    }
+                    try {
+                        if (balanceLabel != null) {
+                            balanceLabel.setText("Số dư: " + String.format("%,.0f VNĐ",
+                                    Double.parseDouble(parts[1])));
+                        }
+                    } catch (NumberFormatException ignored) {}
                 }
             });
         }).start();
@@ -177,7 +171,6 @@ public class AdminDashboardController implements Initializable {
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_END_AUCTION
             String response = conn.sendAndReceive(
                     Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + selected.getId()
             );
@@ -190,8 +183,8 @@ public class AdminDashboardController implements Initializable {
                     String msg = parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!";
                     showMessage("✅ " + msg, "green");
                 } else {
-                    String errorMsg = parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!";
-                    showMessage("❌ " + errorMsg, "red");
+                    String msg = parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!";
+                    showMessage("❌ " + msg, "red");
                 }
                 loadFromServer();
             });
