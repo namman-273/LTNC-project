@@ -8,6 +8,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
 
@@ -34,34 +35,38 @@ public class CreateAuctionController implements Initializable {
 
     @FXML
     private void handleCreate() {
-        String type = typeComboBox.getValue();
-        String name = nameField.getText().trim();
-        String price = priceField.getText().trim();
+        String type     = typeComboBox.getValue();
+        String name     = nameField.getText().trim();
+        String price    = priceField.getText().trim();
         String duration = durationField.getText().trim();
 
-        if (name.isEmpty() || price.isEmpty() || duration.isEmpty()) {
-            showError("Vui lòng nhập đầy đủ thông tin!"); return;
-        }
-        try {
-            Double.parseDouble(price);
-            Long.parseLong(duration);
-        } catch (NumberFormatException e) {
-            showError("Giá và thời gian phải là số!"); return;
-        }
-
+        // Không tự validate — gửi thẳng lên BE, BE xử lý và trả ERROR|message nếu sai
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             if (!conn.isConnected()) {
                 Platform.runLater(() -> showError("Mất kết nối server!"));
                 return;
             }
+
+            // Dùng Protocol.CMD_CREATE_AUCTION thay vì hardcode
             String response = conn.sendAndReceive(
-                    "CREATE_AUCTION|" + type + "|" + name + "|" + price + "|" + duration);
+                    Protocol.CMD_CREATE_AUCTION + Protocol.SEPARATOR
+                            + type     + Protocol.SEPARATOR
+                            + name     + Protocol.SEPARATOR
+                            + price    + Protocol.SEPARATOR
+                            + duration
+            );
             System.out.println("Create auction response: " + response);
 
             Platform.runLater(() -> {
-                if (response != null && response.startsWith("SUCCESS")) {
-                    showSuccess("Tạo phiên thành công! Đang chuyển về danh sách...");
+                if (response == null) { showError("Mất kết nối server!"); return; }
+
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+
+                if (response.startsWith(Protocol.RES_SUCCESS)) {
+                    // Lấy message từ BE: SUCCESS|Sản phẩm X đã được đăng sàn.
+                    String msg = parts.length > 1 ? parts[1] : "Tạo phiên thành công!";
+                    showSuccess(msg + " Đang chuyển về danh sách...");
                     new Thread(() -> {
                         try {
                             Thread.sleep(1500);
@@ -69,10 +74,14 @@ public class CreateAuctionController implements Initializable {
                                 Stage stage = (Stage) nameField.getScene().getWindow();
                                 new AuctionListView(stage, username).show();
                             });
-                        } catch (InterruptedException e) { e.printStackTrace(); }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
                     }).start();
                 } else {
-                    showError("Tạo phiên thất bại! " + (response != null ? response : ""));
+                    // Lấy message lỗi từ BE
+                    String errorMsg = parts.length > 1 ? parts[1] : "Tạo phiên thất bại!";
+                    showError(errorMsg);
                 }
             });
         }).start();
