@@ -25,6 +25,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import com.auction.views.WatchlistView;
 
 public class AuctionListController implements Initializable {
 
@@ -187,24 +188,9 @@ public class AuctionListController implements Initializable {
 
     @FXML
     private void handleGetWatchlist() {
-        new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive(Protocol.CMD_GET_WATCHLIST);
-            Platform.runLater(() -> {
-                if (response == null) { setStatusBar("❌ Mất kết nối!"); return; }
-                String[] parts = response.split("\\" + Protocol.SEPARATOR, 2);
-                if (response.startsWith(Protocol.RES_WATCHLIST)) {
-                    // Parse watchlist và hiển thị — BE trả JSON list auction id
-                    String msg = parts.length > 1 ? parts[1] : "[]";
-                    setStatusBar("📋 Watchlist: " + msg);
-                } else {
-                    String msg = parts.length > 1 ? parts[1] : "Lỗi lấy watchlist!";
-                    setStatusBar("❌ " + msg);
-                }
-            });
-        }).start();
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new WatchlistView(stage, username).show();
     }
-
     // ─── Navigation ──────────────────────────────────────────────────────────
 
     private void setStatusBar(String msg) {
