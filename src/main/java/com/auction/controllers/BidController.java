@@ -1,5 +1,13 @@
 package com.auction.controllers;
 
+import com.auction.model.BidTransaction;
+import com.auction.network.Protocol;
+import com.auction.util.ServerConnection;
+import com.auction.util.SessionManager;
+import com.auction.views.AuctionListView;
+import com.auction.views.BidChartView;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -13,14 +21,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import com.auction.model.BidTransaction;
-import com.auction.network.Protocol;
-import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
-import com.auction.views.AuctionListView;
-import com.auction.views.BidChartView;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -33,6 +33,8 @@ public class BidController implements Initializable {
     @FXML private Label statusLabel;
     @FXML private Label messageLabel;
     @FXML private TextField bidAmountField;
+    @FXML private TextField autoBidMaxField;
+    @FXML private TextField autoBidIncrementField;
     @FXML private ListView<String> bidHistoryList;
     @FXML private VBox snipingBox;
     @FXML private Label snipingCountdownLabel;
@@ -87,9 +89,10 @@ public class BidController implements Initializable {
                     return;
                 }
 
-                // Dùng Protocol constants build request login cho listener
+                // Dùng Protocol constants
                 listenerConn.sendAndReceive(
-                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
+                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username
+                                + Protocol.SEPARATOR + pwd
                 );
 
                 while (!Thread.currentThread().isInterrupted()) {
@@ -136,7 +139,6 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.RES_END_SUCCESS:
-                // END_AUCTION_SUCCESS|auctionId|Winner:...|Bid: ...
                 Platform.runLater(() -> {
                     statusLabel.setText("FINISHED");
                     showSuccess("Phiên đấu giá đã kết thúc! " +
@@ -184,7 +186,7 @@ public class BidController implements Initializable {
     private void loadHistory() {
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_GET_HISTORY thay vì hardcode
+            // Dùng Protocol.CMD_GET_HISTORY
             String response = conn.sendAndReceive(
                     Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
             );
@@ -193,7 +195,7 @@ public class BidController implements Initializable {
             if (response != null && response.startsWith(Protocol.RES_HISTORY)) {
                 String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
                 if (parts.length >= 3) {
-                    // Dùng Gson + BidTransaction model của BE thay vì tự parse
+                    // Dùng Gson + BidTransaction model của BE
                     BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
                     if (history != null) {
                         Platform.runLater(() -> {
@@ -201,8 +203,8 @@ public class BidController implements Initializable {
                             for (BidTransaction bt : history) {
                                 String bidder = bt.getBidder() != null
                                         ? bt.getBidder().getUsername() : "---";
-                                historyItems.add(bidder + " đặt: " +
-                                        String.format("%,.0f VND", bt.getAmount()));
+                                historyItems.add(bidder + " đặt: "
+                                        + String.format("%,.0f VND", bt.getAmount()));
                             }
                         });
                     }
@@ -213,12 +215,11 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleBid() {
-        // Không tự validate — gửi thẳng lên BE, BE xử lý và trả ERROR|message nếu sai
+        // Không tự validate — gửi thẳng lên BE
         String amountStr = bidAmountField.getText().trim();
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_BID thay vì hardcode
             String response = conn.sendAndReceive(
                     Protocol.CMD_BID + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amountStr
             );
@@ -226,19 +227,54 @@ public class BidController implements Initializable {
 
             Platform.runLater(() -> {
                 if (response == null) { showError("Mất kết nối server!"); return; }
-
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("Đặt giá thành công!");
                     bidAmountField.clear();
                 } else {
-                    // Lấy message lỗi từ BE trả về — không tự viết lại
                     String errorMsg = parts.length > 1 ? parts[1] : "Đặt giá thất bại!";
                     showError(errorMsg);
                 }
             });
         }).start();
     }
+
+    // ─── Auto-bid ────────────────────────────────────────────────────────────
+
+    @FXML
+    private void handleAutoBid() {
+        // Không tự validate — gửi thẳng lên BE
+        // BE expect: ADD_AUTO_BID|auctionId|maxBid|increment
+        String maxBid     = autoBidMaxField != null ? autoBidMaxField.getText().trim() : "";
+        String increment  = autoBidIncrementField != null ? autoBidIncrementField.getText().trim() : "";
+
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_ADD_AUTO_BID + Protocol.SEPARATOR
+                            + auctionId + Protocol.SEPARATOR
+                            + maxBid    + Protocol.SEPARATOR
+                            + increment
+            );
+            System.out.println("AUTO_BID response: " + response);
+
+            Platform.runLater(() -> {
+                if (response == null) { showError("Mất kết nối server!"); return; }
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                if (response.startsWith(Protocol.RES_AUTO_BID_SUCCESS)) {
+                    String msg = parts.length > 1 ? parts[1] : "Đặt auto-bid thành công!";
+                    showSuccess(msg);
+                    if (autoBidMaxField != null) autoBidMaxField.clear();
+                    if (autoBidIncrementField != null) autoBidIncrementField.clear();
+                } else {
+                    String errorMsg = parts.length > 1 ? parts[1] : "Đặt auto-bid thất bại!";
+                    showError(errorMsg);
+                }
+            });
+        }).start();
+    }
+
+    // ─── Navigation ──────────────────────────────────────────────────────────
 
     @FXML
     private void handleBack() {
@@ -266,6 +302,8 @@ public class BidController implements Initializable {
         }
     }
 
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
     private String formatPrice(String raw) {
         try {
             double price = Double.parseDouble(
@@ -283,6 +321,11 @@ public class BidController implements Initializable {
 
     private void showSuccess(String msg) {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
+        messageLabel.setText(msg);
+    }
+
+    private void showInfo(String msg) {
+        messageLabel.setStyle("-fx-text-fill: #E65100; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
 }
