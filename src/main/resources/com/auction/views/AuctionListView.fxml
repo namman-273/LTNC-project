@@ -6,6 +6,8 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Label?>
 <?import javafx.geometry.Insets?>
 
@@ -82,17 +84,21 @@
                 prefHeight="36" prefWidth="90"
                 styleClass="btn-success"/>
 
-        <Button text="⭐ Theo dõi" onAction="#handleWatch"
-                prefHeight="36" prefWidth="100"
-                styleClass="btn-outline"/>
-
-        <Button text="❌ Bỏ theo dõi" onAction="#handleUnwatch"
-                prefHeight="36" prefWidth="110"
-                styleClass="btn-outline"/>
-
-        <Button text="📋 Watchlist" onAction="#handleGetWatchlist"
-                prefHeight="36" prefWidth="100"
-                styleClass="btn-outline"/>
+        <!-- Watchlist dropdown -->
+        <MenuButton text="⭐ Watchlist ▼"
+                    prefHeight="36" prefWidth="130"
+                    style="-fx-background-color: #FFA726;
+                           -fx-text-fill: white;
+                           -fx-font-size: 12px;
+                           -fx-font-weight: bold;
+                           -fx-background-radius: 8;
+                           -fx-cursor: hand;">
+            <items>
+                <MenuItem text="⭐ Theo dõi phiên này" onAction="#handleWatch"/>
+                <MenuItem text="❌ Bỏ theo dõi phiên này" onAction="#handleUnwatch"/>
+                <MenuItem text="📋 Xem danh sách theo dõi" onAction="#handleGetWatchlist"/>
+            </items>
+        </MenuButton>
     </HBox>
 
     <!-- STATUS BAR -->
