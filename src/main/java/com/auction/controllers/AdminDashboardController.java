@@ -3,7 +3,6 @@ package com.auction.controllers;
 import com.auction.dto.AuctionRow;
 import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
 import com.auction.views.CreateAuctionView;
 import com.google.gson.Gson;
@@ -17,6 +16,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
@@ -31,6 +31,9 @@ public class AdminDashboardController implements Initializable {
     @FXML private TableColumn<AuctionRow, String> priceCol;
     @FXML private TableColumn<AuctionRow, String> statusCol;
     @FXML private Label messageLabel;
+    @FXML private Label balanceLabel;
+    @FXML private TextField depositAmountField;
+    @FXML private TextField depositUsernameField;
 
     private String username;
 
@@ -40,7 +43,10 @@ public class AdminDashboardController implements Initializable {
                             java.time.LocalDateTime.parse(json.getAsString()))
             .create();
 
-    public void setUsername(String username) { this.username = username; }
+    public void setUsername(String username) {
+        this.username = username;
+        loadBalance();
+    }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -73,13 +79,13 @@ public class AdminDashboardController implements Initializable {
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_LIST_AUCTIONS thay vì hardcode
+            // Dùng Protocol.CMD_LIST_AUCTIONS
             String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
 
             ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
             if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
-                // Dùng Gson deserialize thẳng vào AuctionRow[] — không tự parse
+                // Dùng Gson deserialize thẳng vào AuctionRow[]
                 String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
                         + Protocol.SEPARATOR.length());
                 AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
@@ -98,6 +104,64 @@ public class AdminDashboardController implements Initializable {
         }).start();
     }
 
+    // ─── Deposit / Balance ───────────────────────────────────────────────────
+
+    @FXML
+    private void handleDeposit() {
+        // Không tự validate — gửi thẳng lên BE
+        // BE expect: DEPOSIT|targetUsername|amount
+        String targetUser = depositUsernameField != null
+                ? depositUsernameField.getText().trim() : username;
+        String amount = depositAmountField != null
+                ? depositAmountField.getText().trim() : "";
+
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_DEPOSIT + Protocol.SEPARATOR
+                            + targetUser + Protocol.SEPARATOR
+                            + amount
+            );
+            System.out.println("Deposit response: " + response);
+
+            Platform.runLater(() -> {
+                if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                if (response.startsWith(Protocol.RES_DEPOSIT_SUCCESS)) {
+                    String msg = parts.length > 1 ? parts[1] : "Nạp tiền thành công!";
+                    showMessage("✅ " + msg, "green");
+                    if (depositAmountField != null) depositAmountField.clear();
+                    loadBalance();
+                } else {
+                    String errorMsg = parts.length > 1 ? parts[1] : "Nạp tiền thất bại!";
+                    showMessage("❌ " + errorMsg, "red");
+                }
+            });
+        }).start();
+    }
+
+    private void loadBalance() {
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(Protocol.CMD_GET_BALANCE);
+            System.out.println("Balance response: " + response);
+
+            Platform.runLater(() -> {
+                if (response == null) return;
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                if (response.startsWith(Protocol.RES_BALANCE_INFO) && parts.length > 1) {
+                    // Lấy balance từ BE trả về
+                    if (balanceLabel != null) {
+                        balanceLabel.setText("Số dư: " + String.format("%,.0f VND",
+                                Double.parseDouble(parts[1])));
+                    }
+                }
+            });
+        }).start();
+    }
+
+    // ─── Auction Management ──────────────────────────────────────────────────
+
     @FXML
     private void handleRefresh() { loadFromServer(); }
 
@@ -113,7 +177,7 @@ public class AdminDashboardController implements Initializable {
 
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
-            // Dùng Protocol.CMD_END_AUCTION thay vì hardcode
+            // Dùng Protocol.CMD_END_AUCTION
             String response = conn.sendAndReceive(
                     Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + selected.getId()
             );
@@ -121,10 +185,8 @@ public class AdminDashboardController implements Initializable {
 
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
-
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_END_SUCCESS)) {
-                    // Lấy message từ BE
                     String msg = parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!";
                     showMessage("✅ " + msg, "green");
                 } else {
