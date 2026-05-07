@@ -273,4 +273,9 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new BalanceView(stage, username).show();
     }
+    @FXML
+    private void handleNotification() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
 }
