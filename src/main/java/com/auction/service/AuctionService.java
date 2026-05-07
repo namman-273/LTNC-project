@@ -280,4 +280,16 @@ public class AuctionService implements Serializable {
       auction.removeObserver(obs);
     }
   }
+  /**
+   * Xóa phiên đấu giá — chỉ Admin mới được gọi.
+   */
+  public boolean deleteAuction(String auctionId) {
+    Auction a = auctions.get(auctionId);
+    if (a == null) return false;
+    a.removeAllObservers();
+    auctions.remove(auctionId);
+    DataManager.getInstance().saveData();
+    System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
+    return true;
+  }
 }

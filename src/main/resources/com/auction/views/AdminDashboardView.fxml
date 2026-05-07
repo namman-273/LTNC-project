@@ -62,6 +62,8 @@
     </HBox>
 
     <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="🗑 Xóa phiên" onAction="#handleDeleteAuction"
+                prefHeight="38" prefWidth="160" styleClass="btn-danger"/>
         <Button text="🔴 Kết thúc phiên" onAction="#handleEndAuction"
                 prefHeight="38" prefWidth="160" styleClass="btn-danger"/>
         <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"

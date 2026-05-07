@@ -2,6 +2,7 @@ package com.auction.controllers;
 
 import com.auction.dto.AuctionRow;
 import com.auction.network.Protocol;
+import com.auction.util.AlertUtil;
 import com.auction.util.ServerConnection;
 import com.auction.views.AuctionListView;
 import com.auction.views.CreateAuctionView;
@@ -105,7 +106,6 @@ public class AdminDashboardController implements Initializable {
 
     @FXML
     private void handleDeposit() {
-        // BE expect: DEPOSIT|amount (không cần username, BE tự lấy từ currentUser)
         String amount = depositAmountField != null
                 ? depositAmountField.getText().trim() : "";
 
@@ -114,13 +114,11 @@ public class AdminDashboardController implements Initializable {
             String response = conn.sendAndReceive(
                     Protocol.CMD_DEPOSIT + Protocol.SEPARATOR + amount
             );
-            System.out.println("Deposit response: " + response);
 
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_DEPOSIT_SUCCESS)) {
-                    // BE trả: DEPOSIT_SUCCESS|balance|message
                     String msg = parts.length > 2 ? parts[2] : "Nạp tiền thành công!";
                     showMessage("✅ " + msg, "green");
                     if (depositAmountField != null) depositAmountField.clear();
@@ -137,7 +135,6 @@ public class AdminDashboardController implements Initializable {
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive(Protocol.CMD_GET_BALANCE);
-            System.out.println("Balance response: " + response);
 
             Platform.runLater(() -> {
                 if (response == null) return;
@@ -174,7 +171,6 @@ public class AdminDashboardController implements Initializable {
             String response = conn.sendAndReceive(
                     Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + selected.getId()
             );
-            System.out.println("End auction: " + response);
 
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
@@ -184,6 +180,44 @@ public class AdminDashboardController implements Initializable {
                     showMessage("✅ " + msg, "green");
                 } else {
                     String msg = parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!";
+                    showMessage("❌ " + msg, "red");
+                }
+                loadFromServer();
+            });
+        }).start();
+    }
+
+    @FXML
+    private void handleDeleteAuction() {
+        AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showMessage("Vui lòng chọn một phiên để xóa!", "red");
+            return;
+        }
+
+        // Xác nhận trước khi xóa
+        boolean confirmed = AlertUtil.showConfirm("Xác nhận xóa",
+                "Bạn có chắc muốn xóa phiên:\n" + selected.getItemName()
+                        + "?\nHành động này không thể hoàn tác!");
+        if (!confirmed) return;
+
+        showMessage("Đang xóa phiên...", "orange");
+
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_DELETE_AUCTION + Protocol.SEPARATOR + selected.getId()
+            );
+
+            Platform.runLater(() -> {
+                if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                if (response.startsWith(Protocol.RES_DELETE_SUCCESS)) {
+                    String msg = parts.length > 1 ? parts[1] : "Xóa phiên thành công!";
+                    showMessage("✅ " + msg, "green");
+                    AlertUtil.showSuccess("Xóa thành công", msg);
+                } else {
+                    String msg = parts.length > 1 ? parts[1] : "Xóa phiên thất bại!";
                     showMessage("❌ " + msg, "red");
                 }
                 loadFromServer();

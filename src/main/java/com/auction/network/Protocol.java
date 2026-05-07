@@ -1,8 +1,8 @@
 package com.auction.network;
 
 /**
- * .
- */
+ * .
+ */
 public class Protocol {
   // --- COMMANDS (Lệnh từ Client gửi lên) ---
   public static final String CMD_REGISTER = "REGISTER";
@@ -18,6 +18,7 @@ public class Protocol {
   public static final String CMD_UNWATCH = "UNWATCH";
   public static final String CMD_GET_WATCHLIST = "GET_WATCHLIST";
   public static final String CMD_ADD_AUTO_BID = "ADD_AUTO_BID";
+  public static final String CMD_DELETE_AUCTION = "DELETE_AUCTION";
 
   // --- RESPONSES (Phản hồi từ Server về Client) ---
   public static final String RES_REGISTER_SUCCESS = "REGISTER_SUCCESS";
@@ -35,15 +36,14 @@ public class Protocol {
   public static final String RES_WATCH_SUCCESS = "WATCH_SUCCESS";
   public static final String RES_UNWATCH_SUCCESS = "UNWATCH_SUCCESS";
   public static final String RES_AUTO_BID_SUCCESS = "AUTO_BID_SUCCESS";
+  public static final String RES_DELETE_SUCCESS = "DELETE_SUCCESS";
   public static final String ERROR = "ERROR";
 
   // --- THÔNG BÁO BIẾN ĐỘNG (PUSH NOTIFICATIONS) ---
-  // Dùng để báo cho Client biết tiền vừa bị trừ hoặc vừa được hoàn
   public static final String NOTI_BALANCE_CHANGED = "BALANCE_CHANGED";
 
-  // Delimiter (Ký tự phân tách)
+  // Delimiter
   public static final String SEPARATOR = "|";
-  // Thêm vào phần PUSH NOTIFICATIONS trong Protocol.java
   public static final String UPDATE  = "UPDATE";
   public static final String SNIPING = "SNIPING";
 }
