@@ -21,6 +21,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import com.auction.views.AutoBidView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -243,35 +244,11 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleAutoBid() {
-        // Không tự validate — gửi thẳng lên BE
-        // BE expect: ADD_AUTO_BID|auctionId|maxBid|increment
-        String maxBid     = autoBidMaxField != null ? autoBidMaxField.getText().trim() : "";
-        String increment  = autoBidIncrementField != null ? autoBidIncrementField.getText().trim() : "";
-
-        new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive(
-                    Protocol.CMD_ADD_AUTO_BID + Protocol.SEPARATOR
-                            + auctionId + Protocol.SEPARATOR
-                            + maxBid    + Protocol.SEPARATOR
-                            + increment
-            );
-            System.out.println("AUTO_BID response: " + response);
-
-            Platform.runLater(() -> {
-                if (response == null) { showError("Mất kết nối server!"); return; }
-                String[] parts = response.split("\\" + Protocol.SEPARATOR);
-                if (response.startsWith(Protocol.RES_AUTO_BID_SUCCESS)) {
-                    String msg = parts.length > 1 ? parts[1] : "Đặt auto-bid thành công!";
-                    showSuccess(msg);
-                    if (autoBidMaxField != null) autoBidMaxField.clear();
-                    if (autoBidIncrementField != null) autoBidIncrementField.clear();
-                } else {
-                    String errorMsg = parts.length > 1 ? parts[1] : "Đặt auto-bid thất bại!";
-                    showError(errorMsg);
-                }
-            });
-        }).start();
+        stopListener();
+        stopSnipingCountdown();
+        Stage stage = (Stage) bidAmountField.getScene().getWindow();
+        new AutoBidView(stage, auctionId, itemNameLabel.getText(),
+                currentPriceLabel.getText(), statusLabel.getText(), username).show();
     }
 
     // ─── Navigation ──────────────────────────────────────────────────────────
