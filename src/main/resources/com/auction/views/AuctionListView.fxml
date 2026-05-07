@@ -38,6 +38,15 @@
         <Label fx:id="welcomeLabel" text="Xin chào!"
                style="-fx-font-size: 13px; -fx-text-fill: #E3F2FD;"/>
 
+
+        <Button text="💰 Số dư" onAction="#handleBalance"
+                style="-fx-background-color: rgba(255,255,255,0.15);
+               -fx-text-fill: white; -fx-font-size: 12px;
+               -fx-background-radius: 8; -fx-cursor: hand;
+               -fx-border-color: rgba(255,255,255,0.4);
+               -fx-border-radius: 8; -fx-border-width: 1;
+               -fx-padding: 6 14;"/>
+
         <Button text="Đăng xuất" onAction="#handleLogout"
                 style="-fx-background-color: rgba(255,255,255,0.15);
                        -fx-text-fill: white; -fx-font-size: 12px;

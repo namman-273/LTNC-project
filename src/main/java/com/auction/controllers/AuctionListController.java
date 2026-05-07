@@ -26,6 +26,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import com.auction.views.WatchlistView;
+import com.auction.views.BalanceView;
 
 public class AuctionListController implements Initializable {
 
@@ -238,5 +239,10 @@ public class AuctionListController implements Initializable {
     private void handleSellerDashboard() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new SellerView(stage, username).show();
+    }
+    @FXML
+    private void handleBalance() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new BalanceView(stage, username).show();
     }
 }
