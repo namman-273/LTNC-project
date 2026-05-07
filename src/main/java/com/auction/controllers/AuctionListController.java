@@ -9,6 +9,8 @@ import com.auction.views.BidView;
 import com.auction.views.CreateAuctionView;
 import com.auction.views.LoginView;
 import com.auction.views.SellerView;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.application.Platform;
@@ -38,6 +40,12 @@ public class AuctionListController implements Initializable {
 
     private String username;
 
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(java.time.LocalDateTime.class,
+                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
+                            java.time.LocalDateTime.parse(json.getAsString()))
+            .create();
+
     public void setUsername(String username) {
         this.username = username;
         welcomeLabel.setText("Xin chào, " + username + "!");
@@ -56,7 +64,7 @@ public class AuctionListController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-        priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
+        priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPriceFormatted"));
 
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setCellFactory(col -> new TableCell<>() {
@@ -84,15 +92,15 @@ public class AuctionListController implements Initializable {
             try {
                 ServerConnection conn = ServerConnection.getInstance();
                 if (!conn.isConnected()) {
-                    boolean ok = conn.connect();
-                    if (!ok) {
+                    if (!conn.connect()) {
                         Platform.runLater(() ->
                                 setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
                         return;
                     }
                 }
 
-                String response = conn.sendAndReceive("LIST_AUCTIONS");
+                // Dùng Protocol.CMD_LIST_AUCTIONS thay vì hardcode string
+                String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
                 System.out.println("RAW: " + response);
 
                 if (response == null) {
@@ -103,15 +111,24 @@ public class AuctionListController implements Initializable {
 
                 ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
-                if (response.contains(Protocol.RES_LIST_SUCCESS)) {
-                    int start = response.indexOf("[");
-                    if (start != -1) {
-                        data = parseResponse(response.substring(start));
+                if (response.startsWith(Protocol.RES_LIST_SUCCESS)) {
+                    // Dùng Gson deserialize thẳng vào AuctionRow[] — không tự parse
+                    String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
+                            + Protocol.SEPARATOR.length());
+                    AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
+                    if (rows != null) {
+                        data.addAll(rows);
                     }
+                } else {
+                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                    String errorMsg = parts.length > 1 ? parts[1] : "Lỗi tải danh sách!";
+                    final String msg = errorMsg;
+                    Platform.runLater(() -> setStatusBar("❌ " + msg));
+                    return;
                 }
 
                 if (data.isEmpty()) {
-                    data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
+                    data.add(new AuctionRow("---", "Chưa có phiên nào", 0, "---", 0));
                 }
 
                 final ObservableList<AuctionRow> finalData = data;
@@ -126,35 +143,6 @@ public class AuctionListController implements Initializable {
                         setStatusBar("❌ Mất kết nối server! Nhấn 🔄 Làm mới để thử lại."));
             }
         }).start();
-    }
-
-    private ObservableList<AuctionRow> parseResponse(String raw) {
-        ObservableList<AuctionRow> result = FXCollections.observableArrayList();
-        try {
-            com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(raw).getAsJsonArray();
-            for (com.google.gson.JsonElement el : arr) {
-                com.google.gson.JsonObject obj = el.getAsJsonObject();
-                String id       = obj.get("id").getAsString();
-                String itemName = obj.get("itemName").getAsString();
-                String status   = obj.get("status").getAsString();
-                double price    = obj.get("currentPrice").getAsDouble();
-                String priceStr = String.format("%,.0f VND", price);
-                result.add(new AuctionRow(id, itemName, priceStr, status));
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi parse JSON: " + e.getMessage());
-        }
-        return result;
-    }
-
-    private String extractField(String entry, String key) {
-        String search = key + "=";
-        int start = entry.indexOf(search);
-        if (start == -1) return "---";
-        start += search.length();
-        int end = entry.indexOf(",", start);
-        if (end == -1) end = entry.length();
-        return entry.substring(start, end).trim();
     }
 
     private void setStatusBar(String msg) {
@@ -175,7 +163,7 @@ public class AuctionListController implements Initializable {
         }
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new BidView(stage, selected.getId(), selected.getItemName(),
-                selected.getCurrentPrice(), selected.getStatus(), username).show();
+                String.valueOf(selected.getCurrentPrice()), selected.getStatus(), username).show();
     }
 
     @FXML
