@@ -99,7 +99,6 @@ public class AuctionListController implements Initializable {
                     }
                 }
 
-                // Dùng Protocol.CMD_LIST_AUCTIONS thay vì hardcode string
                 String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
                 System.out.println("RAW: " + response);
 
@@ -112,19 +111,10 @@ public class AuctionListController implements Initializable {
                 ObservableList<AuctionRow> data = FXCollections.observableArrayList();
 
                 if (response.startsWith(Protocol.RES_LIST_SUCCESS)) {
-                    // Dùng Gson deserialize thẳng vào AuctionRow[] — không tự parse
                     String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
                             + Protocol.SEPARATOR.length());
                     AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-                    if (rows != null) {
-                        data.addAll(rows);
-                    }
-                } else {
-                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
-                    String errorMsg = parts.length > 1 ? parts[1] : "Lỗi tải danh sách!";
-                    final String msg = errorMsg;
-                    Platform.runLater(() -> setStatusBar("❌ " + msg));
-                    return;
+                    if (rows != null) data.addAll(rows);
                 }
 
                 if (data.isEmpty()) {
@@ -144,6 +134,78 @@ public class AuctionListController implements Initializable {
             }
         }).start();
     }
+
+    // ─── Watchlist ───────────────────────────────────────────────────────────
+
+    @FXML
+    private void handleWatch() {
+        AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
+        if (selected == null) { setStatusBar("⚠️ Vui lòng chọn một phiên!"); return; }
+
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_WATCH + Protocol.SEPARATOR + selected.getId()
+            );
+            Platform.runLater(() -> {
+                if (response == null) { setStatusBar("❌ Mất kết nối!"); return; }
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                if (response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
+                    String msg = parts.length > 1 ? parts[1] : "Đã theo dõi phiên!";
+                    setStatusBar("✅ " + msg);
+                } else {
+                    String msg = parts.length > 1 ? parts[1] : "Theo dõi thất bại!";
+                    setStatusBar("❌ " + msg);
+                }
+            });
+        }).start();
+    }
+
+    @FXML
+    private void handleUnwatch() {
+        AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
+        if (selected == null) { setStatusBar("⚠️ Vui lòng chọn một phiên!"); return; }
+
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selected.getId()
+            );
+            Platform.runLater(() -> {
+                if (response == null) { setStatusBar("❌ Mất kết nối!"); return; }
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                if (response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
+                    String msg = parts.length > 1 ? parts[1] : "Đã bỏ theo dõi!";
+                    setStatusBar("✅ " + msg);
+                } else {
+                    String msg = parts.length > 1 ? parts[1] : "Bỏ theo dõi thất bại!";
+                    setStatusBar("❌ " + msg);
+                }
+            });
+        }).start();
+    }
+
+    @FXML
+    private void handleGetWatchlist() {
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(Protocol.CMD_GET_WATCHLIST);
+            Platform.runLater(() -> {
+                if (response == null) { setStatusBar("❌ Mất kết nối!"); return; }
+                String[] parts = response.split("\\" + Protocol.SEPARATOR, 2);
+                if (response.startsWith(Protocol.RES_WATCHLIST)) {
+                    // Parse watchlist và hiển thị — BE trả JSON list auction id
+                    String msg = parts.length > 1 ? parts[1] : "[]";
+                    setStatusBar("📋 Watchlist: " + msg);
+                } else {
+                    String msg = parts.length > 1 ? parts[1] : "Lỗi lấy watchlist!";
+                    setStatusBar("❌ " + msg);
+                }
+            });
+        }).start();
+    }
+
+    // ─── Navigation ──────────────────────────────────────────────────────────
 
     private void setStatusBar(String msg) {
         if (statusBarLabel != null) statusBarLabel.setText(msg);
