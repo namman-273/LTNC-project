@@ -1,8 +1,5 @@
 package com.auction.service;
 
-import com.auction.audit.AuditEvent;
-import com.auction.audit.AuditEventType;
-import com.auction.audit.AuditLogger;
 import com.auction.exception.AuthenticationException;
 import com.auction.model.Admin;
 import com.auction.model.Bidder;
@@ -14,8 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
-   * .
-   */
+ * .
+ */
 public class UserManager {
 
   // Singleton instance
@@ -62,17 +59,6 @@ public class UserManager {
    */
   public boolean register(String username, String password, String role) {
     if (users.containsKey(username)) {
-      // LOG FAILED REGISTRATION
-      AuditLogger.getInstance().log(
-          new AuditEvent.Builder()
-              .eventType(AuditEventType.REGISTER_FAILURE)
-              .username(username)
-              .action("Đăng ký thất bại - username đã tồn tại")
-              .result("FAILURE")
-              .addMetadata("reason", "Username already exists")
-              .addMetadata("attemptedRole", role)
-              .build()
-      );
       return false;
     }
     String hashedPassword = SecurityUtils.hashPassword(password, username);
@@ -91,18 +77,7 @@ public class UserManager {
     }
 
     users.put(username, newUser);
-    
-    // LOG SUCCESS REGISTRATION
-    AuditLogger.getInstance().log(
-        new AuditEvent.Builder()
-            .eventType(AuditEventType.REGISTER_SUCCESS)
-            .username(username)
-            .action("Đăng ký tài khoản thành công")
-            .result("SUCCESS")
-            .addMetadata("role", role.toUpperCase())
-            .build()
-    );
-    
+
     // lưu file sau khi register thành công
     DataManager.getInstance().saveData();
     return true;
@@ -114,16 +89,6 @@ public class UserManager {
   public User login(String username, String password) throws AuthenticationException {
     User user = users.get(username);
     if (user == null) {
-      // LOG FAILED LOGIN - User not found
-      AuditLogger.getInstance().log(
-          new AuditEvent.Builder()
-              .eventType(AuditEventType.LOGIN_FAILURE)
-              .username(username)
-              .action("Đăng nhập thất bại - tài khoản không tồn tại")
-              .result("FAILURE")
-              .addMetadata("reason", "User not found")
-              .build()
-      );
       throw new AuthenticationException("Người dùng không tồn tại");
     }
 
@@ -131,29 +96,8 @@ public class UserManager {
     String hashedInput = SecurityUtils.hashPassword(password, username);
 
     if (!user.getPassword().equals(hashedInput)) {
-      // LOG FAILED LOGIN - Wrong password
-      AuditLogger.getInstance().log(
-          new AuditEvent.Builder()
-              .eventType(AuditEventType.LOGIN_FAILURE)
-              .username(username)
-              .action("Đăng nhập thất bại - sai mật khẩu")
-              .result("FAILURE")
-              .addMetadata("reason", "Invalid password")
-              .build()
-      );
       throw new AuthenticationException("Sai mật khẩu");
     }
-
-    // LOG SUCCESS LOGIN
-    AuditLogger.getInstance().log(
-        new AuditEvent.Builder()
-            .eventType(AuditEventType.LOGIN_SUCCESS)
-            .username(username)
-            .action("Đăng nhập thành công")
-            .result("SUCCESS")
-            .addMetadata("role", user.getRole())
-            .build()
-    );
 
     return user;
   }
