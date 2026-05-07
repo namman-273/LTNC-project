@@ -38,6 +38,9 @@ public class SellerController implements Initializable {
     private final ObservableList<String> historyData = FXCollections.observableArrayList();
     private String username;
 
+    private ServerConnection listenerConn;
+    private Thread listenerThread;
+
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
                     (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
@@ -46,7 +49,6 @@ public class SellerController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        // Lấy username từ SessionManager của BE
         username = SessionManager.getInstance().getUsername();
         welcomeLabel.setText("Xin chào, " + username + "!");
 
@@ -80,7 +82,106 @@ public class SellerController implements Initializable {
         );
 
         loadMyAuctions();
+        startListening();
     }
+
+    // ─── Listener nhận push từ server ────────────────────────────────────────
+
+    private void startListening() {
+        String pwd = SessionManager.getInstance().getPassword();
+        if (pwd == null) return;
+
+        listenerThread = new Thread(() -> {
+            listenerConn = new ServerConnection("localhost", 9999);
+            try {
+                if (!listenerConn.connectDirect()) return;
+
+                listenerConn.sendAndReceive(
+                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username
+                                + Protocol.SEPARATOR + pwd
+                );
+
+                while (!Thread.currentThread().isInterrupted()) {
+                    String message = listenerConn.receive();
+                    if (message == null) break;
+                    System.out.println("[Seller Listener]: " + message);
+                    handleServerPush(message);
+                }
+            } catch (Exception e) {
+                if (!Thread.currentThread().isInterrupted())
+                    System.err.println("Seller listener error: " + e.getMessage());
+            } finally {
+                if (listenerConn != null) listenerConn.disconnectDirect();
+            }
+        });
+        listenerThread.setDaemon(true);
+        listenerThread.start();
+    }
+
+    private void handleServerPush(String message) {
+        String[] parts = message.split("\\" + Protocol.SEPARATOR);
+        if (parts.length == 0) return;
+
+        switch (parts[0]) {
+            case Protocol.UPDATE:
+                // UPDATE|auctionId|newPrice|bidder
+                if (parts.length >= 4) {
+                    String auctionId = parts[1];
+                    String newPrice  = parts[2];
+                    String bidder    = parts[3];
+
+                    // Chỉ hiện thông báo nếu phiên đó là của seller này
+                    boolean isMine = auctionData.stream()
+                            .anyMatch(a -> a.getId().equals(auctionId));
+
+                    if (isMine) {
+                        Platform.runLater(() -> {
+                            // Cập nhật giá trong bảng
+                            loadMyAuctions();
+                            // Popup thông báo cho seller
+                            showNotification("🔔 Có bid mới!",
+                                    bidder + " vừa đặt giá "
+                                            + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
+                                            + "\nTại phiên: " + auctionId);
+                        });
+                    }
+                }
+                break;
+
+            case Protocol.RES_END_SUCCESS:
+                // END_AUCTION_SUCCESS|auctionId|Winner:...|Bid:...
+                if (parts.length >= 3) {
+                    String auctionId = parts[1];
+                    boolean isMine = auctionData.stream()
+                            .anyMatch(a -> a.getId().equals(auctionId));
+
+                    if (isMine) {
+                        String detail = parts.length > 2 ? parts[2] : "";
+                        Platform.runLater(() -> {
+                            loadMyAuctions();
+                            showNotification("🎉 Phiên đấu giá kết thúc!",
+                                    "Phiên " + auctionId + " đã kết thúc!\n" + detail
+                                            + "\nTiền đã được chuyển vào tài khoản của bạn.");
+                        });
+                    }
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    private void showNotification(String title, String message) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.show(); // dùng show() thay vì showAndWait() để không block UI
+    }
+
+    // ─── Load data ────────────────────────────────────────────────────────────
 
     private void loadMyAuctions() {
         statsLabel.setText("Đang tải...");
@@ -90,14 +191,12 @@ public class SellerController implements Initializable {
                 String pwd = SessionManager.getInstance().getPassword();
                 if (!conn.connectDirect()) return;
 
-                // Dùng Protocol constants build request
                 conn.sendAndReceive(
                         Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
                 );
                 String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
 
                 if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
-                    // Dùng Gson deserialize thẳng vào AuctionRow[]
                     String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
                             + Protocol.SEPARATOR.length());
                     AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
@@ -133,7 +232,6 @@ public class SellerController implements Initializable {
                 String pwd = SessionManager.getInstance().getPassword();
                 if (!conn.connectDirect()) return;
 
-                // Dùng Protocol constants
                 conn.sendAndReceive(
                         Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
                 );
@@ -154,7 +252,6 @@ public class SellerController implements Initializable {
                         return;
                     }
 
-                    // Dùng Gson + BidTransaction model của BE thay vì tự parse
                     BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
                     if (history != null) {
                         for (int i = 0; i < history.length; i++) {
@@ -175,6 +272,8 @@ public class SellerController implements Initializable {
         }).start();
     }
 
+    // ─── Actions ─────────────────────────────────────────────────────────────
+
     @FXML
     private void handleRefresh() {
         historyData.clear();
@@ -190,11 +289,14 @@ public class SellerController implements Initializable {
 
     @FXML
     private void handleBack() {
+        if (listenerThread != null) listenerThread.interrupt();
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
+
     public void setUsername(String username) {
         this.username = username;
-        welcomeLabel.setText("Xin chào, " + username + "!");
+        if (welcomeLabel != null)
+            welcomeLabel.setText("Xin chào, " + username + "!");
     }
 }
