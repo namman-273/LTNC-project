@@ -1,6 +1,14 @@
 package com.auction.controllers;
 
 import com.auction.dto.AuctionRow;
+import com.auction.model.BidTransaction;
+import com.auction.network.Protocol;
+import com.auction.util.ServerConnection;
+import com.auction.util.SessionManager;
+import com.auction.views.AuctionListView;
+import com.auction.views.CreateAuctionView;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -9,10 +17,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
-import com.auction.views.AuctionListView;
-import com.auction.views.CreateAuctionView;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -30,18 +34,25 @@ public class SellerController implements Initializable {
     @FXML private Label historyTitleLabel;
     @FXML private Label messageLabel;
 
-    private ObservableList<AuctionRow> auctionData = FXCollections.observableArrayList();
-    private ObservableList<String> historyData = FXCollections.observableArrayList();
+    private final ObservableList<AuctionRow> auctionData = FXCollections.observableArrayList();
+    private final ObservableList<String> historyData = FXCollections.observableArrayList();
     private String username;
+
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(java.time.LocalDateTime.class,
+                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
+                            java.time.LocalDateTime.parse(json.getAsString()))
+            .create();
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        // Lấy username từ SessionManager của BE
         username = SessionManager.getInstance().getUsername();
         welcomeLabel.setText("Xin chào, " + username + "!");
 
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-        priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
+        priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPriceFormatted"));
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
         statusCol.setCellFactory(col -> new TableCell<>() {
@@ -78,22 +89,30 @@ public class SellerController implements Initializable {
             try {
                 String pwd = SessionManager.getInstance().getPassword();
                 if (!conn.connectDirect()) return;
-                conn.sendAndReceive("LOGIN|" + username + "|" + pwd);
-                String response = conn.sendAndReceive("LIST_AUCTIONS");
 
-                if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-                    int start = response.indexOf("[");
-                    if (start == -1) return;
+                // Dùng Protocol constants build request
+                conn.sendAndReceive(
+                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
+                );
+                String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
 
-                    ObservableList<AuctionRow> data = parseResponse(response.substring(start));
+                if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
+                    // Dùng Gson deserialize thẳng vào AuctionRow[]
+                    String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
+                            + Protocol.SEPARATOR.length());
+                    AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
 
-                    long open     = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
-                    long finished = data.stream().filter(r -> "FINISHED".equals(r.getStatus())).count();
+                    if (rows != null) {
+                        ObservableList<AuctionRow> data = FXCollections.observableArrayList(rows);
+                        long open     = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
+                        long finished = data.stream().filter(r -> "FINISHED".equals(r.getStatus())).count();
 
-                    Platform.runLater(() -> {
-                        auctionData.setAll(data);
-                        statsLabel.setText("Tổng: " + data.size() + " phiên  |  Đang mở: " + open + "  |  Đã kết thúc: " + finished);
-                    });
+                        Platform.runLater(() -> {
+                            auctionData.setAll(data);
+                            statsLabel.setText("Tổng: " + data.size() + " phiên  |  Đang mở: "
+                                    + open + "  |  Đã kết thúc: " + finished);
+                        });
+                    }
                 }
             } catch (Exception e) {
                 Platform.runLater(() -> statsLabel.setText("Lỗi tải dữ liệu"));
@@ -113,35 +132,37 @@ public class SellerController implements Initializable {
             try {
                 String pwd = SessionManager.getInstance().getPassword();
                 if (!conn.connectDirect()) return;
-                conn.sendAndReceive("LOGIN|" + username + "|" + pwd);
-                String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
+
+                // Dùng Protocol constants
+                conn.sendAndReceive(
+                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
+                );
+                String response = conn.sendAndReceive(
+                        Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
+                );
 
                 Platform.runLater(() -> {
                     historyData.clear();
-                    if (response == null || !response.contains("HISTORY_RES")) {
+                    if (response == null || !response.startsWith(Protocol.RES_HISTORY)) {
                         historyData.add("Chưa có lịch sử đặt giá.");
                         return;
                     }
 
-                    String[] parts = response.split("\\|", 3);
+                    String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
                     if (parts.length < 3 || parts[2].trim().equals("[]")) {
                         historyData.add("Chưa có lịch sử đặt giá.");
                         return;
                     }
 
-                    String json = parts[2].trim();
-                    String[] tokens = json.split("\"amount\":");
-                    for (int i = 1; i < tokens.length; i++) {
-                        try {
-                            String numStr = tokens[i].split("[,}]")[0].trim();
-                            double price = Double.parseDouble(numStr);
-                            String bidder = "---";
-                            if (tokens[i].contains("\"username\":")) {
-                                bidder = tokens[i].replaceAll(".*\"username\":\"([^\"]+)\".*", "$1");
-                            }
-                            historyData.add(i + ". " + bidder + " đặt: " + String.format("%,.0f VND", price));
-                        } catch (Exception e) {
-                            System.err.println("Parse error: " + e.getMessage());
+                    // Dùng Gson + BidTransaction model của BE thay vì tự parse
+                    BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
+                    if (history != null) {
+                        for (int i = 0; i < history.length; i++) {
+                            BidTransaction bt = history[i];
+                            String bidder = bt.getBidder() != null
+                                    ? bt.getBidder().getUsername() : "---";
+                            historyData.add((i + 1) + ". " + bidder + " đặt: "
+                                    + String.format("%,.0f VND", bt.getAmount()));
                         }
                     }
                     if (historyData.isEmpty()) historyData.add("Chưa có lịch sử đặt giá.");
@@ -152,43 +173,6 @@ public class SellerController implements Initializable {
                 conn.disconnectDirect();
             }
         }).start();
-    }
-
-    private ObservableList<AuctionRow> parseResponse(String raw) {
-        ObservableList<AuctionRow> result = FXCollections.observableArrayList();
-        try {
-            String content = raw.trim();
-            if (content.startsWith("[")) content = content.substring(1);
-            if (content.endsWith("]")) content = content.substring(0, content.length() - 1);
-
-            String[] entries = content.split(",\\s*(?=id=)");
-            for (String entry : entries) {
-                entry = entry.trim();
-                if (entry.isEmpty()) continue;
-                String id       = extractField(entry, "id");
-                String itemName = extractField(entry, "itemName");
-                String status   = extractField(entry, "status");
-                String priceStr = extractField(entry, "currentPrice");
-                String price    = "---";
-                try {
-                    price = String.format("%,.0f VND", Double.parseDouble(priceStr));
-                } catch (NumberFormatException ignored) {}
-                result.add(new AuctionRow(id, itemName, price, status));
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi parse seller auctions: " + e.getMessage());
-        }
-        return result;
-    }
-
-    private String extractField(String entry, String key) {
-        String search = key + "=";
-        int start = entry.indexOf(search);
-        if (start == -1) return "---";
-        start += search.length();
-        int end = entry.indexOf(",", start);
-        if (end == -1) end = entry.length();
-        return entry.substring(start, end).trim();
     }
 
     @FXML
