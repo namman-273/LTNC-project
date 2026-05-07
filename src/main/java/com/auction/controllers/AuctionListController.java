@@ -125,7 +125,13 @@ public class AuctionListController implements Initializable {
                     String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
                             + Protocol.SEPARATOR.length());
                     AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-                    if (rows != null) data.addAll(rows);
+                    if (rows != null) {
+                        for (AuctionRow row : rows) {
+                            if (!"FINISHED".equals(row.getStatus()) && !"PAID".equals(row.getStatus())) {
+                                data.add(row);
+                            }
+                        }
+                    };
                 }
 
                 if (data.isEmpty()) {
