@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import com.auction.network.Protocol;
 
 /**
  * .
@@ -181,9 +182,11 @@ public class AuctionService implements Serializable {
 
       // 3. Gửi thông báo (FE nhận qua socket)
       String msg = (winner != null)
-          ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid:"
-              + maxPrice + "$"
-          : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
+              ? Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+              + Protocol.SEPARATOR + "Winner:" + winner.getUsername()
+              + Protocol.SEPARATOR + "Bid:" + maxPrice + "$"
+              : Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+              + Protocol.SEPARATOR + "No winner";
 
       // Đảm bảo notifyObservers đã dùng bản copy để tránh
       // ConcurrentModificationException
