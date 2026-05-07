@@ -147,7 +147,8 @@ public class WatchlistController implements Initializable {
         }
         Stage stage = (Stage) watchlistTable.getScene().getWindow();
         new BidView(stage, selected.getId(), selected.getItemName(),
-                String.valueOf(selected.getCurrentPrice()), selected.getStatus(), username).show();
+                String.valueOf(selected.getCurrentPrice()), selected.getStatus(),
+                username, selected.getEndTime()).show();
     }
 
     @FXML

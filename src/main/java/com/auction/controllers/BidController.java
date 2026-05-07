@@ -34,9 +34,8 @@ public class BidController implements Initializable {
     @FXML private Label currentPriceLabel;
     @FXML private Label statusLabel;
     @FXML private Label messageLabel;
+    @FXML private Label countdownLabel;
     @FXML private TextField bidAmountField;
-    @FXML private TextField autoBidMaxField;
-    @FXML private TextField autoBidIncrementField;
     @FXML private ListView<String> bidHistoryList;
     @FXML private VBox snipingBox;
     @FXML private Label snipingCountdownLabel;
@@ -44,11 +43,13 @@ public class BidController implements Initializable {
 
     private String auctionId;
     private String username;
+    private long endTime;
     private final ObservableList<String> historyItems = FXCollections.observableArrayList();
 
     private ServerConnection listenerConn;
     private Thread listenerThread;
     private Timeline snipingTimeline;
+    private Timeline countdownTimeline;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -57,9 +58,10 @@ public class BidController implements Initializable {
             .create();
 
     public void setData(String auctionId, String itemName, String currentPrice,
-                        String status, String username) {
+                        String status, String username, long endTime) {
         this.auctionId = auctionId;
         this.username  = username;
+        this.endTime   = endTime;
 
         auctionTitleLabel.setText("Phiên: " + auctionId);
         itemNameLabel.setText(itemName);
@@ -67,6 +69,15 @@ public class BidController implements Initializable {
         statusLabel.setText(status);
         bidHistoryList.setItems(historyItems);
 
+        // Gợi ý giá ban đầu = currentPrice + 1,000,000
+        try {
+            double price = Double.parseDouble(
+                    currentPrice.replace(",", "").replace(" VND", "").trim());
+            long suggested = (long)(price + 1_000_000);
+            bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
+        } catch (NumberFormatException ignored) {}
+
+        startCountdown();
         loadHistory();
         startListening();
     }
@@ -75,6 +86,43 @@ public class BidController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         bidHistoryList.setItems(historyItems);
     }
+
+    // ─── Countdown ───────────────────────────────────────────────────────────
+
+    private void startCountdown() {
+        if (countdownTimeline != null) countdownTimeline.stop();
+
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            long remaining = endTime - System.currentTimeMillis();
+            if (countdownLabel == null) return;
+
+            if (remaining <= 0) {
+                countdownLabel.setText("⏰ Phiên đã kết thúc!");
+                countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
+                countdownTimeline.stop();
+                return;
+            }
+
+            long hours   = remaining / 3_600_000;
+            long minutes = (remaining % 3_600_000) / 60_000;
+            long seconds = (remaining % 60_000) / 1_000;
+            countdownLabel.setText(
+                    String.format("⏱ Còn: %02d:%02d:%02d", hours, minutes, seconds));
+
+            // Đổi màu khi còn < 5 phút
+            if (remaining < 300_000) {
+                countdownLabel.setStyle(
+                        "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 14px;");
+            } else {
+                countdownLabel.setStyle(
+                        "-fx-text-fill: #1565C0; -fx-font-weight: bold; -fx-font-size: 14px;");
+            }
+        }));
+        countdownTimeline.setCycleCount(Timeline.INDEFINITE);
+        countdownTimeline.play();
+    }
+
+    // ─── Listener ────────────────────────────────────────────────────────────
 
     private void startListening() {
         String pwd = SessionManager.getInstance().getPassword();
@@ -123,19 +171,32 @@ public class BidController implements Initializable {
 
         switch (parts[0]) {
             case Protocol.UPDATE:
+                // UPDATE|auctionId|newPrice|bidderUsername
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
                     String bidder   = parts[3];
                     Platform.runLater(() -> {
                         currentPriceLabel.setText(formatPrice(newPrice));
                         historyItems.add(0, bidder + " đặt: " + formatPrice(newPrice));
+                        // Cập nhật gợi ý giá
+                        try {
+                            double price = Double.parseDouble(newPrice);
+                            long suggested = (long)(price + 1_000_000);
+                            bidAmountField.setPromptText(
+                                    "Gợi ý: " + String.format("%,d", suggested));
+                        } catch (NumberFormatException ignored) {}
                     });
                 }
                 break;
 
             case Protocol.SNIPING:
+                // SNIPING|auctionId|newEndTime|extensionCount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
+                    try {
+                        // Cập nhật endTime mới từ server
+                        this.endTime = Long.parseLong(parts[2]);
+                    } catch (NumberFormatException ignored) {}
                     Platform.runLater(() -> startSnipingCountdown(120, count));
                 }
                 break;
@@ -146,6 +207,11 @@ public class BidController implements Initializable {
                     showSuccess("Phiên đấu giá đã kết thúc! " +
                             (parts.length >= 3 ? parts[2] : ""));
                     stopSnipingCountdown();
+                    if (countdownTimeline != null) countdownTimeline.stop();
+                    if (countdownLabel != null) {
+                        countdownLabel.setText("⏰ Phiên đã kết thúc!");
+                        countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
+                    }
                 });
                 stopListener();
                 break;
@@ -185,6 +251,8 @@ public class BidController implements Initializable {
         }
     }
 
+    // ─── History ─────────────────────────────────────────────────────────────
+
     private void loadHistory() {
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
@@ -195,8 +263,7 @@ public class BidController implements Initializable {
 
             if (response == null || response.startsWith("ERROR|Mất kết nối")) {
                 Platform.runLater(() ->
-                        AlertUtil.showError("Mất kết nối",
-                                "Không thể tải lịch sử đặt giá!"));
+                        AlertUtil.showError("Mất kết nối", "Không thể tải lịch sử đặt giá!"));
                 return;
             }
 
@@ -220,6 +287,8 @@ public class BidController implements Initializable {
         }).start();
     }
 
+    // ─── Actions ─────────────────────────────────────────────────────────────
+
     @FXML
     private void handleBid() {
         String amountStr = bidAmountField.getText().trim();
@@ -234,8 +303,7 @@ public class BidController implements Initializable {
             Platform.runLater(() -> {
                 if (response == null || response.startsWith("ERROR|Mất kết nối")) {
                     showError("Mất kết nối server!");
-                    AlertUtil.showError("Mất kết nối",
-                            "Mất kết nối khi đặt giá!\nVui lòng thử lại.");
+                    AlertUtil.showError("Mất kết nối", "Mất kết nối khi đặt giá!\nVui lòng thử lại.");
                     return;
                 }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
@@ -254,15 +322,17 @@ public class BidController implements Initializable {
     private void handleAutoBid() {
         stopListener();
         stopSnipingCountdown();
+        if (countdownTimeline != null) countdownTimeline.stop();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        new AutoBidView(stage, auctionId, itemNameLabel.getText(),
-                currentPriceLabel.getText(), statusLabel.getText(), username).show();
+        new BidChartView(stage, auctionId, itemNameLabel.getText(),
+                currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
     }
 
     @FXML
     private void handleBack() {
         stopListener();
         stopSnipingCountdown();
+        if (countdownTimeline != null) countdownTimeline.stop();
         Platform.runLater(() -> {
             Stage stage = (Stage) bidAmountField.getScene().getWindow();
             new AuctionListView(stage, username).show();
@@ -273,9 +343,10 @@ public class BidController implements Initializable {
     private void handleViewChart() {
         stopListener();
         stopSnipingCountdown();
+        if (countdownTimeline != null) countdownTimeline.stop();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
         new BidChartView(stage, auctionId, itemNameLabel.getText(),
-                currentPriceLabel.getText(), statusLabel.getText(), username).show();
+                currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
     }
 
     private void stopListener() {
@@ -284,6 +355,8 @@ public class BidController implements Initializable {
             listenerThread = null;
         }
     }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private String formatPrice(String raw) {
         try {
@@ -302,11 +375,6 @@ public class BidController implements Initializable {
 
     private void showSuccess(String msg) {
         messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
-        messageLabel.setText(msg);
-    }
-
-    private void showInfo(String msg) {
-        messageLabel.setStyle("-fx-text-fill: #E65100; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
 }

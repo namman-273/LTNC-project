@@ -64,6 +64,10 @@
                     <Label text="Trạng thái:" style="-fx-font-size: 12px; -fx-text-fill: #888; -fx-min-width: 80;"/>
                     <Label fx:id="statusLabel" text="---"
                            style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #43A047;"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label fx:id="countdownLabel" text="⏱ Đang tải..."
+                               style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+                    </HBox>
                 </HBox>
 
                 <Label fx:id="messageLabel" text=""

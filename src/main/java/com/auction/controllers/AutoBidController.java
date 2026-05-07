@@ -17,6 +17,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -28,11 +29,13 @@ public class AutoBidController implements Initializable {
     @FXML private TextField incrementField;
     @FXML private Label messageLabel;
 
+
     private String auctionId;
     private String itemName;
     private String currentPrice;
     private String status;
     private String username;
+    private long endTime;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -40,8 +43,9 @@ public class AutoBidController implements Initializable {
                             java.time.LocalDateTime.parse(json.getAsString()))
             .create();
 
-    public void setData(String auctionId, String itemName,
-                        String currentPrice, String status, String username) {
+    public void setData(String auctionId, String itemName, String currentPrice,
+                        String status, String username, long endTime) {
+        this.endTime = endTime;
         this.auctionId    = auctionId;
         this.itemName     = itemName;
         this.currentPrice = currentPrice;
@@ -95,7 +99,7 @@ public class AutoBidController implements Initializable {
     @FXML
     private void handleBack() {
         Stage stage = (Stage) titleLabel.getScene().getWindow();
-        new BidView(stage, auctionId, itemName, currentPrice, status, username).show();
+        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
     }
 
     private void showMessage(String msg, String color) {

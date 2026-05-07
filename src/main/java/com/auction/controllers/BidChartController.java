@@ -27,6 +27,7 @@ public class BidChartController implements Initializable {
     @FXML private Label titleLabel;
 
     private String auctionId, itemName, currentPrice, status, username;
+    private long endTime;
     private ServerConnection listenerConn;
     private Thread listenerThread;
 
@@ -37,12 +38,13 @@ public class BidChartController implements Initializable {
             .create();
 
     public void setData(String auctionId, String itemName, String currentPrice,
-                        String status, String username) {
+                        String status, String username, long endTime) {
         this.auctionId    = auctionId;
         this.itemName     = itemName;
         this.currentPrice = currentPrice;
         this.status       = status;
         this.username     = username;
+        this.endTime      = endTime;
         titleLabel.setText("Biểu đồ giá - " + itemName);
         loadChartData();
         startListening();
@@ -61,7 +63,6 @@ public class BidChartController implements Initializable {
                 String pwd = SessionManager.getInstance().getPassword();
                 if (!conn.connectDirect()) return;
 
-                // Dùng Protocol constants
                 conn.sendAndReceive(
                         Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
                 );
@@ -75,7 +76,6 @@ public class BidChartController implements Initializable {
                 String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
                 if (parts.length < 3 || parts[2].trim().equals("[]")) return;
 
-                // Dùng Gson + BidTransaction model của BE thay vì tự parse string
                 BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
                 if (history == null || history.length == 0) return;
 
@@ -113,7 +113,6 @@ public class BidChartController implements Initializable {
             try {
                 if (!listenerConn.connectDirect()) return;
 
-                // Dùng Protocol constants
                 listenerConn.sendAndReceive(
                         Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
                 );
@@ -122,7 +121,6 @@ public class BidChartController implements Initializable {
                     String message = listenerConn.receive();
                     if (message == null) break;
 
-                    // Dùng Protocol.UPDATE thay vì hardcode
                     if (message.startsWith(Protocol.UPDATE)) {
                         String[] parts = message.split("\\" + Protocol.SEPARATOR);
                         if (parts.length >= 3 && parts[1].equals(auctionId)) {
@@ -153,6 +151,6 @@ public class BidChartController implements Initializable {
     private void handleBack() {
         if (listenerThread != null) listenerThread.interrupt();
         Stage stage = (Stage) bidChart.getScene().getWindow();
-        new BidView(stage, auctionId, itemName, currentPrice, status, username).show();
+        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
     }
 }
