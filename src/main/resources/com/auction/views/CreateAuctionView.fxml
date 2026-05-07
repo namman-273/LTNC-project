@@ -4,6 +4,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -11,9 +12,9 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controllers.CreateAuctionController"
-      prefWidth="520" prefHeight="480" spacing="0"
+      prefWidth="540" prefHeight="620" spacing="0"
       stylesheets="@style.css"
-      style="-fx-background-color: #F8F9FA;">
+      style="-fx-background-color: #F0F4FF;">
 
     <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="12"
@@ -30,60 +31,80 @@
     </HBox>
 
     <!-- FORM -->
-    <VBox spacing="16" VBox.vgrow="ALWAYS" styleClass="card"
-          style="-fx-background-radius: 0; -fx-effect: null;">
-        <padding><Insets top="28" right="40" bottom="28" left="40"/></padding>
-
-        <Label text="Điền thông tin phiên đấu giá"
-               style="-fx-font-size: 13px; -fx-text-fill: #888;"/>
+    <VBox spacing="14" VBox.vgrow="ALWAYS">
+        <padding><Insets top="20" right="30" bottom="20" left="30"/></padding>
 
         <!-- Loại sản phẩm -->
-        <VBox spacing="6">
+        <VBox spacing="5">
             <Label text="Loại sản phẩm:"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444;"/>
-            <ComboBox fx:id="typeComboBox" prefWidth="440" prefHeight="42"
+            <ComboBox fx:id="typeComboBox" prefWidth="480" prefHeight="40"
                       styleClass="combo-box"/>
         </VBox>
 
         <!-- Tên sản phẩm -->
-        <VBox spacing="6">
+        <VBox spacing="5">
             <Label text="Tên sản phẩm:"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444;"/>
             <TextField fx:id="nameField" promptText="Nhập tên sản phẩm..."
-                       prefHeight="42" prefWidth="440"
+                       prefHeight="40" prefWidth="480"
                        styleClass="text-field-modern"/>
         </VBox>
 
-        <!-- Giá khởi điểm -->
-        <VBox spacing="6">
-            <Label text="Giá khởi điểm (VND):"
+        <!-- Giá + Thời gian cùng hàng -->
+        <HBox spacing="12">
+            <VBox spacing="5" HBox.hgrow="ALWAYS">
+                <Label text="Giá khởi điểm (VND):"
+                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444;"/>
+                <TextField fx:id="priceField" promptText="Ví dụ: 5000000"
+                           prefHeight="40"
+                           styleClass="text-field-modern"/>
+            </VBox>
+            <VBox spacing="5" prefWidth="160">
+                <Label text="Thời gian (phút):"
+                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444;"/>
+                <TextField fx:id="durationField" promptText="Ví dụ: 60"
+                           prefHeight="40"
+                           styleClass="text-field-modern"/>
+            </VBox>
+        </HBox>
+
+        <!-- URL ảnh -->
+        <VBox spacing="5">
+            <Label text="URL ảnh sản phẩm (tuỳ chọn):"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444;"/>
-            <TextField fx:id="priceField" promptText="Ví dụ: 5000000"
-                       prefHeight="42" prefWidth="440"
+            <TextField fx:id="imageUrlField"
+                       promptText="https://example.com/image.jpg"
+                       prefHeight="40" prefWidth="480"
                        styleClass="text-field-modern"/>
+            <Label text="💡 Dán link ảnh từ internet để hiển thị ảnh sản phẩm"
+                   style="-fx-font-size: 11px; -fx-text-fill: #999;"/>
         </VBox>
 
-        <!-- Thời gian -->
-        <VBox spacing="6">
-            <Label text="Thời gian (phút):"
+        <!-- Mô tả -->
+        <VBox spacing="5" VBox.vgrow="ALWAYS">
+            <Label text="Mô tả sản phẩm (tuỳ chọn):"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444;"/>
-            <TextField fx:id="durationField" promptText="Ví dụ: 60"
-                       prefHeight="42" prefWidth="440"
-                       styleClass="text-field-modern"/>
+            <TextArea fx:id="descriptionArea"
+                      promptText="Mô tả chi tiết về sản phẩm, tình trạng, nguồn gốc..."
+                      prefHeight="90" prefWidth="480" wrapText="true"
+                      style="-fx-background-color: #F8FAFF;
+                             -fx-border-color: #C5D3F0;
+                             -fx-border-radius: 10;
+                             -fx-background-radius: 10;
+                             -fx-font-size: 13px;
+                             -fx-padding: 10 14;"/>
         </VBox>
 
-        <!-- Thông báo -->
         <Label fx:id="messageLabel" text=""
-               style="-fx-font-size: 12px;" wrapText="true" maxWidth="440"/>
+               style="-fx-font-size: 12px;" wrapText="true" maxWidth="480"/>
 
         <Region VBox.vgrow="ALWAYS"/>
 
-        <!-- Nút tạo -->
         <Button text="🚀 TẠO PHIÊN ĐẤU GIÁ" onAction="#handleCreate"
-                prefWidth="440" prefHeight="46"
+                prefWidth="480" prefHeight="46"
                 styleClass="btn-primary"
                 style="-fx-font-size: 14px;"/>
-
     </VBox>
 
 </VBox>

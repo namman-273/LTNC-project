@@ -206,15 +206,18 @@ public class ClientHandler implements Runnable, Observer {
             return;
         }
         try {
-            String type = parts[1];
-            String name = parts[2];
-            double price = Double.parseDouble(parts[3]);
-            long duration = Long.parseLong(parts[4]);
-            String sellerId = currentUser.getUsername();
+            String type        = parts[1];
+            String name        = parts[2];
+            double price       = Double.parseDouble(parts[3]);
+            long duration      = Long.parseLong(parts[4]);
+            // imageUrl và description là optional
+            String imageUrl    = parts.length > 5 ? parts[5] : "";
+            String description = parts.length > 6 ? parts[6] : "";
 
-            auctionService.createNewAuction(type, name, price, duration, sellerId);
-            sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Sản phẩm "
-                    + name + " đã được đăng sàn.");
+            auctionService.createNewAuction(type, name, price, duration,
+                    currentUser.getUsername());
+            sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR
+                    + "Sản phẩm " + name + " đã được đăng sàn.");
         } catch (Exception e) {
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Dữ liệu tạo sản phẩm không hợp lệ.");
         }
