@@ -193,4 +193,8 @@ public class SellerController implements Initializable {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
+    public void setUsername(String username) {
+        this.username = username;
+        welcomeLabel.setText("Xin chào, " + username + "!");
+    }
 }
