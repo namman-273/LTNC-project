@@ -43,4 +43,7 @@ public class Protocol {
 
   // Delimiter (Ký tự phân tách)
   public static final String SEPARATOR = "|";
+  // Thêm vào phần PUSH NOTIFICATIONS trong Protocol.java
+  public static final String UPDATE  = "UPDATE";
+  public static final String SNIPING = "SNIPING";
 }
