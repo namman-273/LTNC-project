@@ -3,8 +3,9 @@ package com.auction.model;
 import com.auction.util.SecurityUtils;
 
 /**
- * .
- */
+ *  * .
+ *  
+ */
 public abstract class User extends Entity implements Observer {
   protected String username;
   private String password; // Lưu trữ dưới dạng hash đơn giản
@@ -16,8 +17,9 @@ public abstract class User extends Entity implements Observer {
   private transient Object balanceLock = new Object();
 
   /**
- * .
- */
+   *  * .
+   *  
+   */
   public User(String username, String password, String role) {
     super(username);
     this.username = username;
@@ -105,6 +107,7 @@ public abstract class User extends Entity implements Observer {
 
       if (this.balance >= amount) {
         this.balance -= amount;
+
         this.update("BALANCE_CHANGED|-" + (long) amount + "|" + (long) this.balance);
         return true;
       }

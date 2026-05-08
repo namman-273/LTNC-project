@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
-   * .
-   */
+ * .
+ */
 public class UserManager {
 
   // Singleton instance
@@ -77,6 +77,7 @@ public class UserManager {
     }
 
     users.put(username, newUser);
+
     // lưu file sau khi register thành công
     DataManager.getInstance().saveData();
     return true;

@@ -17,8 +17,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 
 /**
- * lưu thông tin xuống dạng file.
- */
+ *  * lưu thông tin xuống dạng file.
+ *  
+ */
 
 public final class DataManager {
   private static final String AUCTION_DATA_FILE = "auctions.dat";
@@ -31,8 +32,9 @@ public final class DataManager {
   }
 
   /**
- * Áp dụng singleton.
- */
+   *  * Áp dụng singleton.
+   *  
+   */
   public static synchronized DataManager getInstance() {
     if (instance == null) {
       instance = new DataManager();
@@ -41,7 +43,7 @@ public final class DataManager {
   }
 
   /**
-   * Lưu toàn bộ dữ liệu hệ thống (Users và Auctions).
+   * Lưu toàn bộ dữ liệu hệ thống .
    */
   public synchronized void saveData() {
     saveMapToFile(UserManager.getInstance().getUsers(), USER_DATA_FILE);

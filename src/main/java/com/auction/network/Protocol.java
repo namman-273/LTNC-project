@@ -41,6 +41,8 @@ public class Protocol {
 
   // --- THÔNG BÁO BIẾN ĐỘNG (PUSH NOTIFICATIONS) ---
   public static final String NOTI_BALANCE_CHANGED = "BALANCE_CHANGED";
+  // Thông báo chung cho mọi người: Giá đã tăng
+  public static final String NOTI_BID_UPDATE = "BID_UPDATE";
 
   // Delimiter
   public static final String SEPARATOR = "|";

@@ -24,8 +24,9 @@ import java.util.stream.Collectors;
 import com.auction.network.Protocol;
 
 /**
- * .
- */
+ *  * .
+ *  
+ */
 public class AuctionService implements Serializable {
   private static final long serialVersionUID = 1L;
 
@@ -40,8 +41,9 @@ public class AuctionService implements Serializable {
   }
 
   /**
- * Áp dụng singleton.
- */
+   *  * Áp dụng singleton.
+   *  
+   */
   public static AuctionService getInstance() {
     if (instance == null) {
       synchronized (AuctionService.class) {
@@ -54,8 +56,9 @@ public class AuctionService implements Serializable {
   }
 
   /**
- * get watchlist.
- */
+   *  * get watchlist.
+   *  
+   */
   public List<Auction> getWatchlistForUser(String username) {
     User user = UserManager.getInstance().findUserByUsername(username);
 
@@ -72,8 +75,9 @@ public class AuctionService implements Serializable {
   }
 
   /**
- * Tạo phiên mới.
- */
+   *  * Tạo phiên mới.
+   *  
+   */
   public synchronized void createNewAuction(String itemType, String itemName, double startingPrice,
       long durationMinutes, String sellerId) {
     // 1. Tạo ID duy nhất cho phiên đấu giá (Ví dụ: AUC_171400...)
@@ -121,20 +125,6 @@ public class AuctionService implements Serializable {
     }
 
     return instance;
-  }
-
-  /**
- * Thêm phiên.
- */
-  public void addAuction(Auction auction) {
-    if (auction != null) {
-      auctions.put(auction.getId(), auction);
-
-      // TỰ ĐỘNG ĐÓNG PHIÊN SAU 5 PHÚT(tạm thời để 20s)
-      scheduler.schedule(() -> {
-        endAuction(auction.getId());
-      }, 20000, TimeUnit.MILLISECONDS);
-    }
   }
 
   /**
@@ -215,10 +205,11 @@ public class AuctionService implements Serializable {
     Auction a = auctions.get(auctionId);
     return (a != null) ? a.getItem() : null;
   }
-  
+
   /**
- * set instance.
- */
+   *  * set instance.
+   *  
+   */
   public static void setInstance(AuctionService loadedInstance) {
     synchronized (AuctionService.class) {
       instance = loadedInstance;
@@ -230,20 +221,21 @@ public class AuctionService implements Serializable {
     return this.auctions; // auctions là cái Map<String, Auction>
   }
 
-  
   /**
- *  Dùng để khôi phục dữ liệu sau khi đọc từ file .dat lên.
- */
+   *  * Dùng để khôi phục dữ liệu sau khi đọc từ file .dat lên.
+   *  
+   */
   public void setAuctions(Map<String, Auction> loadedAuctions) {
     if (loadedAuctions != null) {
       this.auctions.clear(); // Xóa sạch dữ liệu trắng hiện tại
       this.auctions.putAll(loadedAuctions); // Đổ toàn bộ dữ liệu từ file vào
     }
   }
-  
+
   /**
- * shutdown.
- */
+   *  * shutdown.
+   *  
+   */
   public void shutdown() {
     System.out.println("[SERVICE] Đang tiến hành dọn dẹp và lưu dữ liệu...");
 
@@ -287,8 +279,9 @@ public class AuctionService implements Serializable {
   }
   // Trong AuctionService.java
   /**
- * Ngắt bỏ mọi obersever.
- */
+   *  * Ngắt bỏ mọi obersever.
+   *  
+   */
   public void removeObserverFromAll(Observer obs) {
     for (Auction auction : auctions.values()) {
       auction.removeObserver(obs);

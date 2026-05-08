@@ -9,8 +9,9 @@ import java.net.Socket;
 import java.net.SocketException;
 
 /**
- * .
- */
+ *  * .
+ *  
+ */
 public class AuctionServer {
   private final int port;
 
@@ -23,8 +24,9 @@ public class AuctionServer {
   }
 
   /**
- * .
- */
+   *  * .
+   *  
+   */
   public void start() {
     // Đăng ký Shutdown Hook: Tự động chạy khi nhấn Stop/Ctrl+C
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -36,6 +38,7 @@ public class AuctionServer {
         }
         // Gọi shutdown của Service để lưu file .dat
         AuctionService.getInstance().shutdown();
+
       } catch (IOException e) {
         System.err.println("Lỗi khi đóng socket: " + e.getMessage());
       }
@@ -68,16 +71,19 @@ public class AuctionServer {
   }
 
   /**
- * .
- */
+   *  * .
+   *  
+   */
   public static void main(String[] args) {
     // Khởi tạo các Manager
     DataManager.getInstance().loadData();
 
     // Kiểm tra nếu chưa có admin thì mới tạo
     UserManager.getInstance().initDefaultData();
+
     AuctionServer server = new AuctionServer(9999);
     System.out.println("Khởi động server tại port 9999...");
+
     server.start();
   }
 }
