@@ -42,6 +42,11 @@ public class ServerConnection {
     this.port = PORT;
   }
 
+  public ServerConnection(String host, int port) {
+    this.host = host;
+    this.port = port;
+  }
+
   public static ServerConnection getInstance() {
     if (instance == null) {
       synchronized (ServerConnection.class) {
