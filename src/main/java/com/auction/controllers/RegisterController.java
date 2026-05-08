@@ -1,5 +1,6 @@
 package com.auction.controllers;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -8,6 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
 import com.auction.views.LoginView;
 
@@ -30,62 +32,71 @@ public class RegisterController implements Initializable {
 
     @FXML
     private void handleRegister() {
-        String username = usernameField.getText().trim();
-        String password = passwordField.getText().trim();
+        String username        = usernameField.getText().trim();
+        String password        = passwordField.getText().trim();
         String confirmPassword = confirmPasswordField.getText().trim();
-        String role = roleComboBox.getValue();
+        String role            = roleComboBox.getValue();
 
-        // Kiểm tra đầu vào
-        if (username.isEmpty() || password.isEmpty()) {
-            showError("Vui lòng nhập đầy đủ thông tin!");
-            return;
-        }
-
+        // Check confirm password ở FE — BE không có field này
         if (!password.equals(confirmPassword)) {
             showError("Mật khẩu xác nhận không khớp!");
             return;
         }
 
-        if (role == null) {
-            showError("Vui lòng chọn vai trò!");
-            return;
-        }
+        showSuccess("Đang kết nối server...");
 
-        // Gửi lệnh REGISTER lên server
-        ServerConnection conn = ServerConnection.getInstance();
-        if (!conn.connect()) {
-            showError("Không thể kết nối server!");
-            return;
-        }
+        new Thread(() -> {
+            ServerConnection conn = ServerConnection.getInstance();
+            if (!conn.connect()) {
+                Platform.runLater(() -> showError("Không thể kết nối server!"));
+                return;
+            }
 
-        String response = conn.sendAndReceive("REGISTER|" + username + "|" + password + "|" + role);
-        System.out.println("Server tra ve: " + response);
+            // Dùng Protocol constants — đúng format BE expect: REGISTER|user|pass|role
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_REGISTER + Protocol.SEPARATOR
+                            + username + Protocol.SEPARATOR
+                            + password + Protocol.SEPARATOR
+                            + role
+            );
+            System.out.println("Server trả về: " + response);
 
-        if (response != null && response.startsWith("REGISTER_SUCCESS")) {
-            showSuccess("Đăng ký thành công! Đang chuyển về đăng nhập...");
-            // Chờ 1 giây rồi chuyển về Login
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000);
-                    javafx.application.Platform.runLater(() -> {
-                        Stage stage = (Stage) usernameField.getScene().getWindow();
-                        LoginView loginView = new LoginView(stage);
-                        loginView.show();
-                    });
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            Platform.runLater(() -> {
+                if (response == null) {
+                    showError("Mất kết nối server!");
+                    return;
                 }
-            }).start();
-        } else {
-            showError("Đăng ký thất bại! Tên đăng nhập đã tồn tại.");
-        }
+
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
+
+                if (response.startsWith(Protocol.RES_REGISTER_SUCCESS)) {
+                    // Lấy message từ BE: REGISTER_SUCCESS|Đăng ký thành công.
+                    String msg = parts.length > 1 ? parts[1] : "Đăng ký thành công!";
+                    showSuccess(msg + " Đang chuyển về đăng nhập...");
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1000);
+                            Platform.runLater(() -> {
+                                Stage stage = (Stage) usernameField.getScene().getWindow();
+                                new LoginView(stage).show();
+                            });
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }).start();
+                } else {
+                    // Lấy message lỗi từ BE: REGISTER_FAILED|message hoặc ERROR|message
+                    String errorMsg = parts.length > 1 ? parts[1] : "Đăng ký thất bại!";
+                    showError(errorMsg);
+                }
+            });
+        }).start();
     }
 
     @FXML
     private void handleBackToLogin() {
         Stage stage = (Stage) usernameField.getScene().getWindow();
-        LoginView loginView = new LoginView(stage);
-        loginView.show();
+        new LoginView(stage).show();
     }
 
     private void showError(String msg) {

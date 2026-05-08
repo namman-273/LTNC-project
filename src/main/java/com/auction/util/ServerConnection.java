@@ -24,9 +24,8 @@ public class ServerConnection {
   private String host;
   private int port;
 
-  private Socket socket;
-  private PrintWriter out;
-  private BufferedReader in;
+    private String host;
+    private int port;
 
   // --- FIX 1 & 2: CƠ CHẾ TÁCH BIỆT TIN NHẮN ---
   // Queue này giữ các phản hồi (ví dụ: LOGIN_SUCCESS, BID_FAILED...)

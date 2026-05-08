@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import com.auction.network.Protocol;
 
 /**
  *  * .
@@ -171,9 +172,11 @@ public class AuctionService implements Serializable {
 
       // 3. Gửi thông báo (FE nhận qua socket)
       String msg = (winner != null)
-          ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid:"
-              + maxPrice + "$"
-          : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
+              ? Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+              + Protocol.SEPARATOR + "Winner:" + winner.getUsername()
+              + Protocol.SEPARATOR + "Bid:" + maxPrice + "$"
+              : Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+              + Protocol.SEPARATOR + "No winner";
 
       
       a.notifyObservers(msg);
@@ -261,7 +264,18 @@ public class AuctionService implements Serializable {
       System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: " + e.getMessage());
     }
   }
-
+  /**
+   * Xóa phiên đấu giá — chỉ Admin mới được gọi.
+   */
+  public boolean deleteAuction(String auctionId) {
+    Auction a = auctions.get(auctionId);
+    if (a == null) return false;
+    a.closeAuction();
+    auctions.remove(auctionId);
+    DataManager.getInstance().saveData();
+    System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
+    return true;
+  }
   // Trong AuctionService.java
   /**
    *  * Ngắt bỏ mọi obersever.
