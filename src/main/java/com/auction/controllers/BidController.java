@@ -207,6 +207,7 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.RES_END_SUCCESS:
+            case "END_AUCTION_SUCCESS":
                 // END_SUCCESS|auctionId|Winner:xxx|Bid:yyy$
                 Platform.runLater(() -> {
                     statusLabel.setText("FINISHED");
