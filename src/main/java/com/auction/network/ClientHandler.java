@@ -30,7 +30,7 @@ public class ClientHandler implements Runnable, Observer {
   private static final int REQ_DEPOSIT = 2; // DEPOSIT|amount
   private static final int REQ_GET_BALANCE = 1; // GET_BALANCE
   private static final int REQ_WATCH = 2; // WATCH|auctionId
-  private static final int REQ_AUTO_BID = 3; // ADD_AUTO_BID|auctionId|maxBid
+  private static final int REQ_AUTO_BID = 4; // ADD_AUTO_BID|auctionId|maxBid|bidIncrement
   private static final int REQ_UNWATCH = 2; // UNWATCH|auctionId
   private static final int REQ_GET_WATCHLIST = 1; // GET_WATCHLIST
 
@@ -383,6 +383,7 @@ public class ClientHandler implements Runnable, Observer {
     try {
       String auctionId = parts[1];
       double maxBid = Double.parseDouble(parts[2]); // Ngân sách tối đa của khách
+      double bidIncrement = Double.parseDouble(parts[3]);
 
       Auction auction = auctionService.getAuctionById(auctionId);
       if (auction == null) {
@@ -390,7 +391,7 @@ public class ClientHandler implements Runnable, Observer {
         return;
       }
 
-      auction.addAutoBidConfig(currentUser.getUsername(), maxBid);
+      auction.addAutoBidConfig(currentUser.getUsername(), maxBid, bidIncrement);
 
       DataManager.getInstance().saveData();
 

@@ -40,6 +40,8 @@ public class Protocol {
   // --- THÔNG BÁO BIẾN ĐỘNG (PUSH NOTIFICATIONS) ---
   // Dùng để báo cho Client biết tiền vừa bị trừ hoặc vừa được hoàn
   public static final String NOTI_BALANCE_CHANGED = "BALANCE_CHANGED";
+  // Thông báo chung cho mọi người: Giá đã tăng
+  public static final String NOTI_BID_UPDATE = "BID_UPDATE";
 
   // Delimiter (Ký tự phân tách)
   public static final String SEPARATOR = "|";

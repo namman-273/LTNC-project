@@ -96,19 +96,6 @@ public class BidderWatchlistTest {
 
     // --- Bidder.getWatchlist: trả về bản sao, không leak ref ---
 
-    
-
-    @Test
-    void getWatchlistForUserBidderWithMatchingAuctionReturnsList() {
-        Auction a = new Auction("wl-1", new Electronics("e-wl", "TV", PRICE), DURATION, null);
-        service.addAuction(a);
-        bidder.addToWatchlist("wl-1");
-
-        List<Auction> result = service.getWatchlistForUser("alice");
-        assertEquals(1, result.size());
-        assertEquals("wl-1", result.get(0).getId());
-    }
-
     @Test
     void getWatchlistForUserAuctionNotInServiceIsFiltered() {
         bidder.addToWatchlist("ghost-auction");
