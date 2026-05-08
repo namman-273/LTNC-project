@@ -1,8 +1,5 @@
 package com.auction.util;
 
-/**
-   * .
-   */
 public class SessionManager {
 
   private static volatile SessionManager instance;

@@ -1,183 +1,298 @@
 package com.auction.controllers;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Stage;
-import com.auction.views.LoginView;
+import com.auction.dto.AuctionRow;
+import com.auction.network.Protocol;
+import com.auction.util.AlertUtil;
 import com.auction.util.ServerConnection;
+import com.auction.util.SessionManager;
+import com.auction.views.AdminDashboardView;
+import com.auction.views.BalanceView;
 import com.auction.views.BidView;
 import com.auction.views.CreateAuctionView;
-import com.auction.views.AdminDashboardView;
+import com.auction.views.LoginView;
+import com.auction.views.NotificationView;
+import com.auction.views.SellerView;
+import com.auction.views.WatchlistView;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 public class AuctionListController implements Initializable {
 
-  @FXML
-  private Label welcomeLabel;
-  @FXML
-  private TableView<AuctionRow> auctionTable;
-  @FXML
-  private TableColumn<AuctionRow, String> idCol;
-  @FXML
-  private TableColumn<AuctionRow, String> nameCol;
-  @FXML
-  private TableColumn<AuctionRow, String> priceCol;
-  @FXML
-  private TableColumn<AuctionRow, String> statusCol;
+    @FXML private Label welcomeLabel;
+    @FXML private FlowPane auctionGrid;
+    @FXML private Button adminButton;
+    @FXML private Button sellerButton;
+    @FXML private Label statusBarLabel;
 
-  private String username;
+    private String username;
+    private AuctionRow selectedRow = null;
+    private final List<AuctionRow> currentRows = new ArrayList<>();
 
-  public void setUsername(String username) {
-    this.username = username;
-    welcomeLabel.setText("Xin chào, " + username + "!");
-  }
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(java.time.LocalDateTime.class,
+                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
+                            java.time.LocalDateTime.parse(json.getAsString()))
+            .create();
 
-  @Override
-  public void initialize(URL url, ResourceBundle rb) {
-    idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
-    nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-    priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
-    statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-    loadFromServer();
-  }
-
-  private void loadFromServer() {
-    try {
-      ServerConnection conn = ServerConnection.getInstance();
-      String response = conn.sendAndReceive("LIST_AUCTIONS");
-      System.out.println("RAW: [" + response + "]");
-      ObservableList<AuctionRow> data = FXCollections.observableArrayList();
-
-      if (response != null && response.contains("LIST_AUCTIONS_SUCCESS")) {
-        String content = response.substring(response.indexOf("[") + 1, response.lastIndexOf("]"));
-
-        if (!content.isEmpty()) {
-          String[] auctions = content.split(",\\s*(?=id=)");
-          for (String a : auctions) {
-            a = a.trim();
-            if (a.isEmpty() || !a.contains("id=")) {
-              continue;
-            }
-            String id = extractField(a, "id=");
-            String itemName = extractField(a, "itemName=");
-            String price = extractField(a, "currentPrice=");
-            String status = extractField(a, "status=");
-            try {
-              double p = Double.parseDouble(price);
-              price = String.format("%,.0f VND", p);
-            } catch (NumberFormatException ignored) {
-            }
-            data.add(new AuctionRow(id, itemName, price, status));
-          }
+    public void setUsername(String username) {
+        this.username = username;
+        welcomeLabel.setText("Xin chào, " + username + "!");
+        String role = SessionManager.getInstance().getRole();
+        if (adminButton != null) {
+            adminButton.setVisible("ADMIN".equalsIgnoreCase(role));
+            adminButton.setManaged("ADMIN".equalsIgnoreCase(role));
         }
-      }
-
-      if (data.isEmpty()) {
-        data.add(new AuctionRow("---", "Chưa có phiên nào", "---", "---"));
-      }
-      auctionTable.setItems(data);
-
-    } catch (Exception e) {
-      System.err.println("Lỗi load danh sách: " + e.getMessage());
-    }
-  }
-
-  private String extractField(String text, String key) {
-    int start = text.indexOf(key);
-    if (start == -1)
-      return "---";
-    start += key.length();
-    int end = text.length();
-    String[] nextKeys = { "id=", "itemName=", "currentPrice=", "status=" };
-    for (String nextKey : nextKeys) {
-      int pos = text.indexOf("," + nextKey, start);
-      if (pos != -1 && pos < end) {
-        end = pos;
-      }
-    }
-    return text.substring(start, end).trim();
-  }
-
-  @FXML
-  private void handleViewDetail() {
-    AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
-    if (selected == null) {
-      System.out.println("Chưa chọn phiên nào!");
-      return;
+        if (sellerButton != null) {
+            sellerButton.setVisible("SELLER".equalsIgnoreCase(role));
+            sellerButton.setManaged("SELLER".equalsIgnoreCase(role));
+        }
     }
 
-    Stage stage = (Stage) auctionTable.getScene().getWindow();
-    BidView bidView = new BidView(
-        stage,
-        selected.getId(),
-        selected.getItemName(),
-        selected.getCurrentPrice(),
-        selected.getStatus(),
-        username);
-    bidView.show();
-  }
-
-  @FXML
-  private void handleLogout() {
-    Stage stage = (Stage) auctionTable.getScene().getWindow();
-    LoginView loginView = new LoginView(stage);
-    loginView.show();
-  }
-
-  public static class AuctionRow {
-    private String id, itemName, currentPrice, status;
-
-    public AuctionRow(String id, String itemName, String currentPrice, String status) {
-      this.id = id;
-      this.itemName = itemName;
-      this.currentPrice = currentPrice;
-      this.status = status;
+    @Override
+    public void initialize(URL url, ResourceBundle rb) {
+        loadFromServer();
     }
 
-    public String getId() {
-      return id;
+    private void loadFromServer() {
+        setStatusBar("Đang tải danh sách phiên...");
+        new Thread(() -> {
+            try {
+                ServerConnection conn = ServerConnection.getInstance();
+                if (!conn.isConnected()) {
+                    if (!conn.connectWithRetry()) {
+                        Platform.runLater(() -> {
+                            setStatusBar("❌ Mất kết nối server!");
+                            AlertUtil.showError("Mất kết nối", "Không thể kết nối server!");
+                        });
+                        return;
+                    }
+                }
+                String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
+                if (response == null || response.startsWith("ERROR")) {
+                    Platform.runLater(() -> setStatusBar("❌ Mất kết nối server!"));
+                    return;
+                }
+                List<AuctionRow> data = new ArrayList<>();
+                if (response.startsWith(Protocol.RES_LIST_SUCCESS)) {
+                    String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
+                            + Protocol.SEPARATOR.length());
+                    AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
+                    if (rows != null) {
+                        for (AuctionRow row : rows) {
+                            if (!"FINISHED".equals(row.getStatus()) && !"PAID".equals(row.getStatus())) {
+                                data.add(row);
+                            }
+                        }
+                    }
+                }
+                final List<AuctionRow> finalData = data;
+                Platform.runLater(() -> {
+                    currentRows.clear();
+                    currentRows.addAll(finalData);
+                    renderCards(finalData);
+                    setStatusBar(finalData.isEmpty()
+                            ? "ℹ️ Chưa có phiên nào đang diễn ra."
+                            : "✅ Tải xong " + finalData.size() + " phiên.");
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> setStatusBar("❌ Lỗi tải danh sách!"));
+            }
+        }).start();
     }
 
-    public String getItemName() {
-      return itemName;
+    // ─── Card rendering ───────────────────────────────────────────────────────
+
+    private void renderCards(List<AuctionRow> rows) {
+        auctionGrid.getChildren().clear();
+        selectedRow = null;
+        if (rows.isEmpty()) {
+            Label empty = new Label("Chưa có phiên nào. Nhấn 🔄 Làm mới để tải.");
+            empty.setStyle("-fx-text-fill: #AAAAAA; -fx-font-size: 13px; -fx-padding: 40;");
+            auctionGrid.getChildren().add(empty);
+            return;
+        }
+        for (AuctionRow row : rows) {
+            auctionGrid.getChildren().add(buildCard(row));
+        }
     }
 
-    public String getCurrentPrice() {
-      return currentPrice;
+    private VBox buildCard(AuctionRow row) {
+        // Badge trạng thái
+        String statusColor = switch (row.getStatus()) {
+            case "RUNNING" -> "#E65100";
+            case "OPEN"    -> "#2E7D32";
+            default        -> "#888888";
+        };
+        Label badge = new Label("RUNNING".equals(row.getStatus()) ? "🔴 LIVE" : "⬤ " + row.getStatus());
+        badge.setStyle(
+                "-fx-background-color: " + statusColor + "22;" +
+                        "-fx-text-fill: " + statusColor + ";" +
+                        "-fx-font-size: 10px; -fx-font-weight: bold;" +
+                        "-fx-background-radius: 6; -fx-padding: 3 8;");
+
+        // Icon
+        Label icon = new Label("🏷");
+        icon.setStyle("-fx-font-size: 46px; -fx-padding: 8 0;");
+        icon.setMinWidth(200);
+        icon.setAlignment(Pos.CENTER);
+
+        // Tên sản phẩm
+        Label name = new Label(row.getItemName());
+        name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937; -fx-wrap-text: true;");
+        name.setMaxWidth(185);
+
+        // Giá
+        Label priceLabel = new Label("Giá hiện tại");
+        priceLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: #9CA3AF;");
+        Label price = new Label(row.getCurrentPriceFormatted());
+        price.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1565C0;");
+
+        // Nút xem chi tiết
+        Button btnDetail = new Button("👁 Xem chi tiết");
+        btnDetail.setPrefWidth(185);
+        btnDetail.setStyle(
+                "-fx-background-color: #1565C0; -fx-text-fill: white;" +
+                        "-fx-font-size: 11px; -fx-font-weight: bold;" +
+                        "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 0;");
+        btnDetail.setOnAction(e -> openBidView(row));
+        btnDetail.setOnMouseEntered(e -> btnDetail.setStyle(btnDetail.getStyle()
+                .replace("#1565C0; -fx-text-fill", "#0D47A1; -fx-text-fill")));
+        btnDetail.setOnMouseExited(e -> btnDetail.setStyle(btnDetail.getStyle()
+                .replace("#0D47A1; -fx-text-fill", "#1565C0; -fx-text-fill")));
+
+        // Card container
+        VBox card = new VBox(8, badge, icon, name, priceLabel, price, btnDetail);
+        card.setPrefWidth(215);
+        card.setMinHeight(265);
+        card.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-background-radius: 14;" +
+                        "-fx-border-color: #EEF2FF; -fx-border-radius: 14; -fx-border-width: 1;" +
+                        "-fx-padding: 14;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(21,101,192,0.08), 10, 0, 0, 3);" +
+                        "-fx-cursor: hand;");
+
+        // Click để select
+        card.setOnMouseClicked(e -> {
+            auctionGrid.getChildren().forEach(n -> {
+                if (n instanceof VBox v) {
+                    v.setStyle(v.getStyle()
+                            .replace("-fx-background-color: #EEF5FF;", "-fx-background-color: white;"));
+                }
+            });
+            card.setStyle(card.getStyle()
+                    .replace("-fx-background-color: white;", "-fx-background-color: #EEF5FF;"));
+            selectedRow = row;
+        });
+
+        return card;
     }
 
-    public String getStatus() {
-      return status;
+    private void openBidView(AuctionRow row) {
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new BidView(stage, row.getId(), row.getItemName(),
+                String.valueOf(row.getCurrentPrice()), row.getStatus(),
+                username, row.getEndTime()).show();
     }
-  }
 
-  @FXML
-  private void handleCreateAuction() {
-    Stage stage = (Stage) auctionTable.getScene().getWindow();
-    CreateAuctionView createView = new CreateAuctionView(stage, username);
-    createView.show();
-  }
+    // ─── Watchlist ────────────────────────────────────────────────────────────
 
-  @FXML
-  private void handleAdminDashboard() {
-    Stage stage = (Stage) auctionTable.getScene().getWindow();
-    AdminDashboardView adminView = new AdminDashboardView(stage, username);
-    adminView.show();
-  }
+    @FXML
+    private void handleWatch() {
+        if (selectedRow == null) { setStatusBar("⚠️ Vui lòng click vào một phiên trước!"); return; }
+        new Thread(() -> {
+            String response = ServerConnection.getInstance().sendAndReceive(
+                    Protocol.CMD_WATCH + Protocol.SEPARATOR + selectedRow.getId());
+            Platform.runLater(() -> {
+                if (response != null && response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
+                    setStatusBar("✅ Đã theo dõi phiên!");
+                    AlertUtil.showSuccess("Theo dõi thành công", "✅ Đang theo dõi: " + selectedRow.getItemName());
+                } else {
+                    setStatusBar("❌ Theo dõi thất bại!");
+                }
+            });
+        }).start();
+    }
 
-  @FXML
-  public void handleRefresh() {
-    loadFromServer();
-  }
+    @FXML
+    private void handleUnwatch() {
+        if (selectedRow == null) { setStatusBar("⚠️ Vui lòng click vào một phiên trước!"); return; }
+        new Thread(() -> {
+            String response = ServerConnection.getInstance().sendAndReceive(
+                    Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selectedRow.getId());
+            Platform.runLater(() -> {
+                if (response != null && response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
+                    setStatusBar("✅ Đã bỏ theo dõi!");
+                } else {
+                    setStatusBar("❌ Bỏ theo dõi thất bại!");
+                }
+            });
+        }).start();
+    }
 
-  public void refreshList() {
-    loadFromServer();
-  }
+    @FXML
+    private void handleGetWatchlist() {
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new WatchlistView(stage, username).show();
+    }
+
+    // ─── Navigation ──────────────────────────────────────────────────────────
+
+    private void setStatusBar(String msg) {
+        if (statusBarLabel != null) statusBarLabel.setText(msg);
+    }
+
+    @FXML public void handleRefresh() { loadFromServer(); }
+    public  void refreshList()        { loadFromServer(); }
+
+    @FXML
+    private void handleLogout() {
+        ServerConnection.getInstance().disconnect();
+        SessionManager.getInstance().clear();
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new LoginView(stage).show();
+    }
+
+    @FXML
+    private void handleCreateAuction() {
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new CreateAuctionView(stage, username).show();
+    }
+
+    @FXML
+    private void handleAdminDashboard() {
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new AdminDashboardView(stage, username).show();
+    }
+
+    @FXML
+    private void handleSellerDashboard() {
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new SellerView(stage, username).show();
+    }
+
+    @FXML
+    private void handleBalance() {
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new BalanceView(stage, username).show();
+    }
+
+    @FXML
+    private void handleNotification() {
+        Stage stage = (Stage) auctionGrid.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
 }
