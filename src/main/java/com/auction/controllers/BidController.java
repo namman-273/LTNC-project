@@ -207,21 +207,34 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.RES_END_SUCCESS:
+                // END_SUCCESS|auctionId|Winner:xxx|Bid:yyy$
                 Platform.runLater(() -> {
                     statusLabel.setText("FINISHED");
-                    showSuccess("Phiên đấu giá đã kết thúc! " +
-                            (parts.length >= 3 ? parts[2] : ""));
                     stopSnipingCountdown();
                     if (countdownTimeline != null) countdownTimeline.stop();
                     if (countdownLabel != null) {
                         countdownLabel.setText("⏰ Phiên đã kết thúc!");
                         countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
                     }
+
+                    // Parse winner
+                    String detail = parts.length >= 3 ? parts[2] : "";
+                    if (detail.contains("Winner:" + username)) {
+                        // Mày thắng
+                        String bid = detail.contains("Bid:")
+                                ? detail.substring(detail.indexOf("Bid:") + 4) : "";
+                        showSuccess("🎉 Bạn đã thắng phiên đấu giá!");
+                        showNotification("🎉 Chúc mừng bạn đã thắng!",
+                                "Bạn đã thắng phiên: " + auctionId
+                                        + "\nGiá thắng: " + bid
+                                        + "\nTiền đã bị trừ khỏi tài khoản.");
+                    } else if (detail.contains("No winner")) {
+                        showInfo("Phiên kết thúc — không có người thắng.");
+                    } else {
+                        showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
+                    }
                 });
                 stopListener();
-                break;
-
-            default:
                 break;
         }
     }
@@ -316,14 +329,8 @@ public class BidController implements Initializable {
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)
                         || response.startsWith(Protocol.UPDATE)) {
                     showSuccess("Đặt giá thành công!");
-                    // Popup thông báo trừ tiền
-                    try {
-                        double price = Double.parseDouble(
-                                parts.length > 2 ? parts[2] : amountStr);
-                        showNotification("💰 Đặt giá thành công!",
-                                "Đã đặt giá: " + String.format("%,.0f VNĐ", price)
-                                        + "\nSố tiền đã bị trừ khỏi tài khoản.");
-                    } catch (NumberFormatException ignored) {}
+
+
                     bidAmountField.clear();
                 } else {
                     String errorMsg = parts.length > 1 ? parts[1] : "Đặt giá thất bại!";
@@ -401,5 +408,9 @@ public class BidController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.show();
+    }
+    private void showInfo(String msg) {
+        messageLabel.setStyle("-fx-text-fill: #1565C0; -fx-font-size: 12px;");
+        messageLabel.setText(msg);
     }
 }
