@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.controllers.NotificationController"
+      prefWidth="520" prefHeight="560" spacing="0"
+      stylesheets="@style.css"
+      style="-fx-background-color: #F8F9FA;">
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="14"
+          style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
+                 -fx-padding: 0 24; -fx-pref-height: 60;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
+        <Button text="← Quay lại" onAction="#handleBack"
+                style="-fx-background-color: rgba(255,255,255,0.15);
+                       -fx-text-fill: white; -fx-font-size: 12px;
+                       -fx-background-radius: 8; -fx-cursor: hand;
+                       -fx-border-color: rgba(255,255,255,0.4);
+                       -fx-border-radius: 8; -fx-border-width: 1;
+                       -fx-padding: 6 14;"/>
+        <Label text="🔔 THÔNG BÁO"
+               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="🗑 Xóa tất cả" onAction="#handleClear"
+                style="-fx-background-color: rgba(255,255,255,0.15);
+                       -fx-text-fill: white; -fx-font-size: 12px;
+                       -fx-background-radius: 8; -fx-cursor: hand;
+                       -fx-border-color: rgba(255,255,255,0.4);
+                       -fx-border-radius: 8; -fx-border-width: 1;
+                       -fx-padding: 6 14;"/>
+    </HBox>
+
+    <VBox spacing="16" VBox.vgrow="ALWAYS">
+        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+        <!-- Count label -->
+        <Label fx:id="countLabel" text="Không có thông báo mới"
+               style="-fx-font-size: 13px; -fx-text-fill: #666;"/>
+
+        <!-- List -->
+        <ListView fx:id="notificationList" VBox.vgrow="ALWAYS"
+                  style="-fx-background-color: white;
+                         -fx-background-radius: 12;
+                         -fx-border-color: transparent;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 6, 0, 0, 2);">
+            <placeholder>
+                <VBox alignment="CENTER" spacing="10">
+                    <Label text="🔔"
+                           style="-fx-font-size: 40px;"/>
+                    <Label text="Chưa có thông báo nào"
+                           style="-fx-text-fill: #AAAAAA; -fx-font-size: 13px;"/>
+                </VBox>
+            </placeholder>
+        </ListView>
+    </VBox>
+</VBox>

@@ -14,9 +14,11 @@ public class BidChartView {
     private String currentPrice;
     private String status;
     private String username;
+    private long endTime;
 
     public BidChartView(Stage stage, String auctionId, String itemName,
-                        String currentPrice, String status, String username) {
+                        String currentPrice, String status, String username, long endTime) {
+        this.endTime = endTime;
         this.stage = stage;
         this.auctionId = auctionId;
         this.itemName = itemName;
@@ -33,7 +35,7 @@ public class BidChartView {
             Parent root = loader.load();
 
             BidChartController controller = loader.getController();
-            controller.setData(auctionId, itemName, currentPrice, status, username);
+            controller.setData(auctionId, itemName, currentPrice, status, username, endTime);
 
             Scene scene = new Scene(root);
             stage.setTitle("Biểu đồ giá - " + itemName);

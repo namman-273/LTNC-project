@@ -1,100 +1,156 @@
 package com.auction.controllers;
 
+import com.auction.model.BidTransaction;
+import com.auction.network.Protocol;
+import com.auction.util.ServerConnection;
+import com.auction.util.SessionManager;
+import com.auction.views.BidView;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
-import javafx.stage.Stage;
-import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
-import com.auction.views.BidView;
 import javafx.scene.control.Label;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class BidChartController implements Initializable {
 
-  @FXML
-  private LineChart<Number, Number> bidChart;
-  @FXML
-  private NumberAxis xAxis;
-  @FXML
-  private NumberAxis yAxis;
-  @FXML
-  private Label titleLabel;
+    @FXML private LineChart<Number, Number> bidChart;
+    @FXML private NumberAxis xAxis;
+    @FXML private NumberAxis yAxis;
+    @FXML private Label titleLabel;
 
-  private String auctionId;
-  private String itemName;
-  private String currentPrice;
-  private String status;
-  private String username;
+    private String auctionId, itemName, currentPrice, status, username;
+    private long endTime;
+    private ServerConnection listenerConn;
+    private Thread listenerThread;
 
-  public void setData(String auctionId, String itemName, String currentPrice, String status, String username) {
-    this.auctionId = auctionId;
-    this.itemName = itemName;
-    this.currentPrice = currentPrice;
-    this.status = status;
-    this.username = username;
-    titleLabel.setText("Biểu đồ giá - " + itemName);
-    loadChartData();
-  }
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(java.time.LocalDateTime.class,
+                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
+                            java.time.LocalDateTime.parse(json.getAsString()))
+            .create();
 
-  @Override
-  public void initialize(URL url, ResourceBundle rb) {
-  }
+    public void setData(String auctionId, String itemName, String currentPrice,
+                        String status, String username, long endTime) {
+        this.auctionId    = auctionId;
+        this.itemName     = itemName;
+        this.currentPrice = currentPrice;
+        this.status       = status;
+        this.username     = username;
+        this.endTime      = endTime;
+        titleLabel.setText("Biểu đồ giá - " + itemName);
+        loadChartData();
+        startListening();
+    }
 
-  private void loadChartData() {
-    new Thread(() -> {
-      try {
-        String pwd = SessionManager.getInstance().getPassword();
-        ServerConnection conn = new ServerConnection("localhost", 9999);
-        conn.connectDirect();
-        conn.sendAndReceive("LOGIN|" + username + "|" + pwd);
-        String response = conn.sendAndReceive("GET_HISTORY|" + auctionId);
-        System.out.println("Chart history: " + response);
+    @Override
+    public void initialize(URL url, ResourceBundle rb) {
+        xAxis.setLabel("Lần đặt giá");
+        yAxis.setLabel("Giá (VND)");
+    }
 
-        if (response != null && response.contains("HISTORY_RES")) {
-          String[] parts = response.split("\\|", 3);
-          if (parts.length >= 3) {
-            String json = parts[2].trim();
-            if (!json.equals("[]") && !json.isEmpty()) {
-              String[] entries = json.substring(1, json.length() - 1).split("\\},\\{");
+    private void loadChartData() {
+        new Thread(() -> {
+            ServerConnection conn = new ServerConnection("localhost", 9999);
+            try {
+                String pwd = SessionManager.getInstance().getPassword();
+                if (!conn.connectDirect()) return;
 
-              XYChart.Series<Number, Number> series = new XYChart.Series<>();
-              series.setName("Giá đặt");
+                conn.sendAndReceive(
+                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
+                );
+                String response = conn.sendAndReceive(
+                        Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
+                );
+                System.out.println("Chart history: " + response);
 
-              for (int i = 0; i < entries.length; i++) {
-                String entry = entries[i];
-                try {
-                  String amount = entry.replaceAll(".*\"amount\":(\\S+?)[,}].*", "$1");
-                  double price = Double.parseDouble(amount);
-                  final int index = i + 1;
-                  final double finalPrice = price;
-                  series.getData().add(new XYChart.Data<>(index, finalPrice));
-                } catch (Exception e) {
-                  System.err.println("Chart parse error: " + e.getMessage());
+                if (response == null || !response.startsWith(Protocol.RES_HISTORY)) return;
+
+                String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+                if (parts.length < 3 || parts[2].trim().equals("[]")) return;
+
+                BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
+                if (history == null || history.length == 0) return;
+
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                series.setName("Giá đặt");
+
+                for (int i = 0; i < history.length; i++) {
+                    final int idx = i + 1;
+                    final double price = history[i].getAmount();
+                    series.getData().add(new XYChart.Data<>(idx, price));
                 }
-              }
 
-              javafx.application.Platform.runLater(() -> {
-                bidChart.getData().clear();
-                bidChart.getData().add(series);
-              });
+                final XYChart.Series<Number, Number> finalSeries = series;
+                Platform.runLater(() -> {
+                    bidChart.getData().clear();
+                    if (!finalSeries.getData().isEmpty()) {
+                        bidChart.getData().add(finalSeries);
+                    }
+                });
+
+            } catch (Exception e) {
+                System.err.println("Lỗi load chart: " + e.getMessage());
+            } finally {
+                conn.disconnectDirect();
             }
-          }
-        }
-      } catch (Exception e) {
-        System.err.println("Lỗi load chart: " + e.getMessage());
-      }
-    }).start();
-  }
+        }).start();
+    }
 
-  @FXML
-  private void handleBack() {
-    Stage stage = (Stage) bidChart.getScene().getWindow();
-    BidView bidView = new BidView(stage, auctionId, itemName, currentPrice, status, username);
-    bidView.show();
-  }
+    private void startListening() {
+        String pwd = SessionManager.getInstance().getPassword();
+        if (pwd == null) return;
+
+        listenerThread = new Thread(() -> {
+            listenerConn = new ServerConnection("localhost", 9999);
+            try {
+                if (!listenerConn.connectDirect()) return;
+
+                listenerConn.sendAndReceive(
+                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
+                );
+
+                while (!Thread.currentThread().isInterrupted()) {
+                    String message = listenerConn.receive();
+                    if (message == null) break;
+
+                    if (message.startsWith(Protocol.UPDATE)) {
+                        String[] parts = message.split("\\" + Protocol.SEPARATOR);
+                        if (parts.length >= 3 && parts[1].equals(auctionId)) {
+                            double newPrice = Double.parseDouble(parts[2]);
+                            Platform.runLater(() -> appendPoint(newPrice));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                if (!Thread.currentThread().isInterrupted())
+                    System.err.println("Chart listener error: " + e.getMessage());
+            } finally {
+                if (listenerConn != null) listenerConn.disconnectDirect();
+            }
+        });
+        listenerThread.setDaemon(true);
+        listenerThread.start();
+    }
+
+    private void appendPoint(double price) {
+        if (bidChart.getData().isEmpty()) return;
+        XYChart.Series<Number, Number> series = bidChart.getData().get(0);
+        int nextIndex = series.getData().size() + 1;
+        series.getData().add(new XYChart.Data<>(nextIndex, price));
+    }
+
+    @FXML
+    private void handleBack() {
+        if (listenerThread != null) listenerThread.interrupt();
+        Stage stage = (Stage) bidChart.getScene().getWindow();
+        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
+    }
 }
