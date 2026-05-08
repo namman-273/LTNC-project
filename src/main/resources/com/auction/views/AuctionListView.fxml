@@ -3,8 +3,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
@@ -18,12 +17,11 @@
       stylesheets="@style.css"
       style="-fx-background-color: #F0F4FF;">
 
-    <!-- ═══════════════ HEADER ═══════════════ -->
+    <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="14"
           style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
                  -fx-padding: 0 28; -fx-pref-height: 60;
                  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
-
         <HBox spacing="10" alignment="CENTER_LEFT">
             <Label text="🏛" style="-fx-font-size: 26px;"/>
             <VBox spacing="0">
@@ -33,24 +31,19 @@
                        style="-fx-font-size: 8px; -fx-text-fill: #90CAF9;"/>
             </VBox>
         </HBox>
-
         <Region HBox.hgrow="ALWAYS"/>
-
         <Label fx:id="welcomeLabel" text="Xin chào!"
                style="-fx-font-size: 13px; -fx-text-fill: #E3F2FD; -fx-font-weight: bold;"/>
-
         <Button text="💰 Số dư" onAction="#handleBalance"
                 style="-fx-background-color: rgba(255,255,255,0.15); -fx-text-fill: white;
                        -fx-font-size: 12px; -fx-background-radius: 20; -fx-cursor: hand;
                        -fx-border-color: rgba(255,255,255,0.45); -fx-border-radius: 20;
                        -fx-border-width: 1; -fx-padding: 6 16;"/>
-
         <Button text="🔔" onAction="#handleNotification"
                 style="-fx-background-color: rgba(255,255,255,0.15); -fx-text-fill: white;
                        -fx-font-size: 14px; -fx-background-radius: 20; -fx-cursor: hand;
                        -fx-border-color: rgba(255,255,255,0.45); -fx-border-radius: 20;
                        -fx-border-width: 1; -fx-padding: 5 12;"/>
-
         <Button text="Đăng xuất" onAction="#handleLogout"
                 style="-fx-background-color: rgba(255,255,255,0.15); -fx-text-fill: white;
                        -fx-font-size: 11px; -fx-background-radius: 20; -fx-cursor: hand;
@@ -58,13 +51,13 @@
                        -fx-border-width: 1; -fx-padding: 6 14;"/>
     </HBox>
 
-    <!-- ═══════════════ SCROLLABLE BODY ═══════════════ -->
+    <!-- SCROLLABLE BODY -->
     <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
                 style="-fx-background-color: transparent; -fx-background: transparent;
                        -fx-border-color: transparent;">
         <VBox spacing="0">
 
-            <!-- ═══════════════ HERO BANNER ═══════════════ -->
+            <!-- HERO BANNER -->
             <VBox style="-fx-padding: 20 28 16 28;">
                 <VBox style="-fx-background-color: linear-gradient(to bottom right, #1565C0, #1976D2, #42A5F5);
                              -fx-background-radius: 16; -fx-padding: 28 36;
@@ -76,8 +69,7 @@
                                           -fx-font-weight: bold;"/>
                             <Label text="Đấu giá trực tuyến minh bạch"
                                    style="-fx-font-size: 24px; -fx-font-weight: bold;
-                                          -fx-text-fill: white;
-                                          -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 3, 0, 0, 1);"/>
+                                          -fx-text-fill: white;"/>
                             <Label text="Khám phá hàng nghìn phiên đấu giá độc đáo"
                                    style="-fx-font-size: 13px; -fx-text-fill: rgba(255,255,255,0.85);"/>
                             <HBox spacing="10" style="-fx-padding: 6 0 0 0;">
@@ -97,89 +89,32 @@
                             </HBox>
                         </VBox>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Label text="🏆"
-                               style="-fx-font-size: 72px;
-                                      -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);"/>
+                        <Label text="🏆" style="-fx-font-size: 72px;"/>
                     </HBox>
                 </VBox>
             </VBox>
 
-            <!-- ═══════════════ STAT CARDS ═══════════════ -->
-            <HBox spacing="16" style="-fx-padding: 0 28 20 28;">
-                <VBox HBox.hgrow="ALWAYS" alignment="CENTER" spacing="4"
-                      style="-fx-background-color: white; -fx-background-radius: 14;
-                             -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.08), 10, 0, 0, 3);
-                             -fx-padding: 16 20; -fx-border-color: #EEF2FF;
-                             -fx-border-radius: 14; -fx-border-width: 1;">
-                    <Label text="Phiên đang diễn ra"
-                           style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
-                    <Label text="128"
-                           style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
-                </VBox>
-                <VBox HBox.hgrow="ALWAYS" alignment="CENTER" spacing="4"
-                      style="-fx-background-color: white; -fx-background-radius: 14;
-                             -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.08), 10, 0, 0, 3);
-                             -fx-padding: 16 20; -fx-border-color: #EEF2FF;
-                             -fx-border-radius: 14; -fx-border-width: 1;">
-                    <Label text="Người tham gia"
-                           style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
-                    <Label text="2,547"
-                           style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
-                </VBox>
-                <VBox HBox.hgrow="ALWAYS" alignment="CENTER" spacing="4"
-                      style="-fx-background-color: white; -fx-background-radius: 14;
-                             -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.08), 10, 0, 0, 3);
-                             -fx-padding: 16 20; -fx-border-color: #EEF2FF;
-                             -fx-border-radius: 14; -fx-border-width: 1;">
-                    <Label text="Đã giao dịch"
-                           style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
-                    <Label text="15.2 tỷ"
-                           style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2E7D32;"/>
-                </VBox>
-                <VBox HBox.hgrow="ALWAYS" alignment="CENTER" spacing="4"
-                      style="-fx-background-color: white; -fx-background-radius: 14;
-                             -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.08), 10, 0, 0, 3);
-                             -fx-padding: 16 20; -fx-border-color: #EEF2FF;
-                             -fx-border-radius: 14; -fx-border-width: 1;">
-                    <Label text="Sản phẩm"
-                           style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
-                    <Label text="3,891"
-                           style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
-                </VBox>
-            </HBox>
-
-            <!-- ═══════════════ TOOLBAR ═══════════════ -->
+            <!-- TOOLBAR -->
             <HBox alignment="CENTER_LEFT" spacing="10"
                   style="-fx-background-color: white; -fx-padding: 14 28;
                          -fx-border-color: transparent transparent #EEEEEE transparent;
                          -fx-border-width: 1;
                          -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 4, 0, 0, 2);">
-
                 <VBox spacing="2">
                     <Label text="🔥 Phiên đấu giá nổi bật"
                            style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
                     <Label text="Những phiên đấu giá hot nhất"
                            style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
                 </VBox>
-
                 <Region HBox.hgrow="ALWAYS"/>
-
                 <Button fx:id="adminButton" text="⚙️ Admin" onAction="#handleAdminDashboard"
                         prefHeight="36" prefWidth="90" styleClass="btn-danger"/>
-
                 <Button text="➕ Tạo phiên" onAction="#handleCreateAuction"
                         prefHeight="36" prefWidth="110" styleClass="btn-primary"/>
-
                 <Button text="🔄 Làm mới" onAction="#handleRefresh"
                         prefHeight="36" prefWidth="95" styleClass="btn-outline"/>
-
-                <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
-                        prefHeight="36" prefWidth="120" styleClass="btn-success"/>
-
-                <Button fx:id="sellerButton" text="🛒 Seller"
-                        onAction="#handleSellerDashboard"
+                <Button fx:id="sellerButton" text="🛒 Seller" onAction="#handleSellerDashboard"
                         prefHeight="36" prefWidth="90" styleClass="btn-success"/>
-
                 <MenuButton text="⭐ Watchlist ▼" prefHeight="36" prefWidth="130"
                             style="-fx-background-color: #1565C0; -fx-text-fill: white;
                                    -fx-font-size: 12px; -fx-font-weight: bold;
@@ -196,27 +131,15 @@
             <Label fx:id="statusBarLabel" text=""
                    style="-fx-font-size: 12px; -fx-padding: 6 28 2 28; -fx-text-fill: #666;"/>
 
-            <!-- ═══════════════ TABLE ═══════════════ -->
-            <VBox style="-fx-padding: 8 28 28 28;">
-                <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
-                           prefHeight="300" styleClass="table-view">
-                    <columns>
-                        <TableColumn fx:id="idCol"     text="ID Phiên"     prefWidth="200"/>
-                        <TableColumn fx:id="nameCol"   text="Tên sản phẩm" prefWidth="280"/>
-                        <TableColumn fx:id="priceCol"  text="Giá hiện tại" prefWidth="170"/>
-                        <TableColumn fx:id="statusCol" text="Trạng thái"   prefWidth="120"/>
-                    </columns>
-                    <placeholder>
-                        <Label text="Chưa có phiên nào. Nhấn 🔄 Làm mới để tải."
-                               style="-fx-text-fill: #AAAAAA; -fx-font-size: 13px;"/>
-                    </placeholder>
-                </TableView>
-            </VBox>
+            <!-- CARD GRID — populated dynamically by controller -->
+            <FlowPane fx:id="auctionGrid"
+                      hgap="16" vgap="16"
+                      style="-fx-padding: 12 28 28 28; -fx-background-color: transparent;"/>
 
         </VBox>
     </ScrollPane>
 
-    <!-- ═══════════════ FOOTER ═══════════════ -->
+    <!-- FOOTER -->
     <HBox alignment="CENTER"
           style="-fx-background-color: white; -fx-padding: 12 28;
                  -fx-border-color: #EEEEEE transparent transparent transparent;
