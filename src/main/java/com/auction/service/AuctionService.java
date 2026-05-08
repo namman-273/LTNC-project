@@ -178,8 +178,7 @@ public class AuctionService implements Serializable {
               : Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
               + Protocol.SEPARATOR + "No winner";
 
-      // Đảm bảo notifyObservers đã dùng bản copy để tránh
-      // ConcurrentModificationException
+      
       a.notifyObservers(msg);
 
       // Giải phóng tài nguyên/dừng thread nếu cần

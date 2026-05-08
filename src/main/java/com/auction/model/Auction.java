@@ -3,6 +3,7 @@ package com.auction.model;
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
+import com.auction.network.Protocol;
 import com.auction.service.UserManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -258,13 +259,14 @@ public class Auction extends Entity {
     // Lưu lịch sử giao dịch
     this.history.add(new BidTransaction(bidder, amount));
 
-    notifyObservers("UPDATE|" + getId() + "|" + amount + "|" + bidder.getUsername());
+    notifyObservers(Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR
+        + getId() + "|" + amount + "|" + bidder.getUsername());
   }
 
   /**
    * // Hàm để người dùng đăng ký Auto-bid từ giao diện.
    */
-  public void addAutoBidConfig(String bidderId, double maxBid, double customStep) 
+  public void addAutoBidConfig(String bidderId, double maxBid, double customStep)
       throws InvalidBidException {
     lock.lock();
     try {
@@ -313,7 +315,7 @@ public class Auction extends Entity {
         break; // DỪNG VÒNG LẶP: Không tự đấu giá với chính mình
       }
 
-      // 3. Tính toán mức giá mới 
+      // 3. Tính toán mức giá mới
       double nextPrice = currentPrice + top.getbidStep();
 
       // 4. Kiểm tra ngân sách tối đa của bot (Max Bid)
@@ -348,7 +350,8 @@ public class Auction extends Entity {
       this.endTime += TWO_MINUTES_MS; // Cộng thêm 2 phút
       this.extensionCount++;
 
-      notifyObservers("SNIPING|" + getId() + "|" + this.endTime + "|" + extensionCount);
+      notifyObservers(Protocol.NOTI_SNIPING_UPDATE 
+          + Protocol.SEPARATOR + getId() + "|" + this.endTime + "|" + extensionCount);
     }
   }
 

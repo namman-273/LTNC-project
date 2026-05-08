@@ -19,7 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * .
+ *  * .
+ *  
  */
 public class ClientHandler implements Runnable, Observer {
 
@@ -124,8 +125,9 @@ public class ClientHandler implements Runnable, Observer {
               handleWatch(parts, auctionService);
             break;
           case Protocol.CMD_UNWATCH:
-            if (validatePayload(parts, REQ_UNWATCH))
-              handleUnwatch(parts);
+            if (validatePayload(parts, REQ_UNWATCH)) {
+              handleUnwatch(parts, auctionService);
+            }
             break;
           case Protocol.CMD_GET_WATCHLIST:
             if (validatePayload(parts, REQ_GET_WATCHLIST))
@@ -160,9 +162,7 @@ public class ClientHandler implements Runnable, Observer {
       User user = UserManager.getInstance().login(parts[1], parts[2]);
       if (user != null) {
         this.currentUser = user;
-        for (Auction auction : auctionService.getAllAuctions()) {
-          auction.addObserver(this);
-        }
+
         sendMessage(Protocol.RES_LOGIN_SUCCESS + Protocol.SEPARATOR + user.getRole()
             + Protocol.SEPARATOR + "Chào " + user.getUsername());
       }
@@ -175,17 +175,10 @@ public class ClientHandler implements Runnable, Observer {
    * Trả JSON dùng AuctionRow thay vì toString().
    */
   private void handleListAuctions(AuctionService auctionService) {
-    List<AuctionRow> dtoList = new ArrayList<>();
-    for (Auction a : auctionService.getAllAuctions()) {
-      dtoList.add(new AuctionRow(
-          a.getId(),
-          a.getItem() != null ? a.getItem().getItemName() : "---",
-          a.getCurrentPrice(),
-          a.getStatus().name(),
-          a.getEndTime(),
-          a.getSellerId()));
-    }
-    sendMessage(Protocol.RES_LIST_SUCCESS + Protocol.SEPARATOR + gson.toJson(dtoList));
+    // Trả về danh sách thô (Trong thực tế nên dùng JSON hoặc toString chuẩn)
+    String jsonAuctions = gson.toJson(auctionService.getAllAuctions());
+    sendMessage(Protocol.RES_LIST_SUCCESS + Protocol.SEPARATOR + jsonAuctions);
+
   }
 
   private void handleCreateAuction(final String[] parts, AuctionService auctionService) {
@@ -245,12 +238,8 @@ public class ClientHandler implements Runnable, Observer {
     try {
       String auctionId = parts[1];
       double amount = Double.parseDouble(parts[2]);
-      if (amount <= 0) {
-        sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá bid phải lớn hơn 0");
-        return;
-      }
-      if (Double.isNaN(amount) || Double.isInfinite(amount)) {
-        sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền không hợp lệ (NaN/Infinite)");
+      if (amount <= 0 || Double.isNaN(amount) || Double.isInfinite(amount)) {
+        sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền không hợp lệ.");
         return;
       }
       Auction auction = auctionService.getAuctionById(auctionId);
@@ -281,7 +270,7 @@ public class ClientHandler implements Runnable, Observer {
         DataManager.getInstance().saveData();
         sendMessage(Protocol.RES_DEPOSIT_SUCCESS + Protocol.SEPARATOR
             + currentUser.getBalance() + Protocol.SEPARATOR
-            + "Đã nạp thành công: " + amount + "$");
+            + "Đã nạp thành công: " + amount);
       } else {
         sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Số tiền nạp không hợp lệ.");
       }
@@ -343,12 +332,16 @@ public class ClientHandler implements Runnable, Observer {
     }
   }
 
-  private void handleUnwatch(String[] parts) {
+  private void handleUnwatch(String[] parts, AuctionService auctionService) {
     if (currentUser instanceof Bidder) {
       String auctionId = parts[1];
       ((Bidder) currentUser).removeFromWatchlist(auctionId);
-      DataManager.getInstance().saveData();
+      Auction auction = auctionService.getAuctionById(auctionId);
+      if (auction != null) {
+        auction.removeObserver(this); // 'this' là ClientHandler hiện tại
+      }
       sendMessage(Protocol.RES_UNWATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
+      DataManager.getInstance().saveData();
     }
   }
 
@@ -400,7 +393,6 @@ public class ClientHandler implements Runnable, Observer {
       sendMessage(Protocol.RES_AUTO_BID_SUCCESS + Protocol.SEPARATOR
           + auctionId + Protocol.SEPARATOR + "Autobid bot đã sẵn sàng với hạn mức: "
           + (long) maxBid + " VNĐ");
-
       System.out.println(
           "[AUTOBID] Người dùng " + currentUser.getUsername() + " đã kích hoạt Autobid cho phiên "
               + auctionId);
@@ -413,11 +405,16 @@ public class ClientHandler implements Runnable, Observer {
   }
 
   /**
-   * send msg.
+   *  * send msg.
+   *  
    */
   public final void sendMessage(final String msg) {
-    if (out != null) {
-      out.println(msg);
+    try {
+      if (out != null && !socket.isClosed()) {
+        out.println(msg);
+      }
+    } catch (Exception e) {
+      // Nếu lỗi, âm thầm bỏ qua để tiếp tục gửi cho người sau
     }
   }
 
