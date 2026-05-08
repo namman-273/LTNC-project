@@ -43,6 +43,14 @@ public class Protocol {
   // Thông báo chung cho mọi người: Giá đã tăng
   public static final String NOTI_BID_UPDATE = "BID_UPDATE";
 
+  // FIX: Thêm thông báo gia hạn thời gian (Anti-Sniping)
+  public static final String NOTI_SNIPING_UPDATE = "SNIPING_UPDATE";
+
+  
+  //tất cả Client đang mở App sẽ thấy món hàng đó tự động hiện ra 
+  // trên JTable mà không cần phải bấm nút Refresh.
+  public static final String NOTI_NEW_AUCTION = "NEW_AUCTION";
+
   // Delimiter (Ký tự phân tách)
   public static final String SEPARATOR = "|";
 }

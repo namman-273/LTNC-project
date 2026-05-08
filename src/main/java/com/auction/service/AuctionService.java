@@ -175,8 +175,7 @@ public class AuctionService implements Serializable {
               + maxPrice + "$"
           : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
 
-      // Đảm bảo notifyObservers đã dùng bản copy để tránh
-      // ConcurrentModificationException
+      
       a.notifyObservers(msg);
 
       // Giải phóng tài nguyên/dừng thread nếu cần
