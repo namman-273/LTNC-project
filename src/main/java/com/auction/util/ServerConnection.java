@@ -1,15 +1,16 @@
 package com.auction.util;
 
+import com.auction.network.Protocol;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import com.auction.network.Protocol;
 
 /**
  * .
@@ -26,13 +27,13 @@ public class ServerConnection {
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
-    
 
   // --- FIX 1 & 2: CƠ CHẾ TÁCH BIỆT TIN NHẮN ---
   // Queue này giữ các phản hồi (ví dụ: LOGIN_SUCCESS, BID_FAILED...)
   private final BlockingQueue<String> responseQueue = new LinkedBlockingQueue<>();
   // Listener này xử lý các tin Real-time (ví dụ: BID_UPDATE, SNIPING...)
-  private Consumer<String> pushListener;
+  // Sử dụng CopyOnWriteArrayList để tránh lỗi khi vừa duyệt vừa xóa listener
+  private final List<Consumer<String>> pushListeners = new CopyOnWriteArrayList<>();
   private boolean isListening = false;
 
   private static volatile ServerConnection instance;
@@ -40,11 +41,6 @@ public class ServerConnection {
   private ServerConnection() {
     this.host = HOST;
     this.port = PORT;
-  }
-
-  public ServerConnection(String host, int port) {
-    this.host = host;
-    this.port = port;
   }
 
   public static ServerConnection getInstance() {
@@ -85,7 +81,9 @@ public class ServerConnection {
     if (isListening) {
       return;
     }
+    // Lưu lại tham chiếu socket hiện tại vào một biến cục bộ
     isListening = true;
+    final Socket currentSocket = this.socket;
 
     Thread listenerThread = new Thread(() -> {
       try {
@@ -93,8 +91,9 @@ public class ServerConnection {
         while (isListening && (line = in.readLine()) != null) {
           // Kiểm tra xem là tin nhắn Real-time (Push) hay Phản hồi lệnh (Response)
           if (isPushMessage(line)) {
-            if (pushListener != null) {
-              pushListener.accept(line); // Đẩy cho UI xử lý
+            // Duyệt qua danh sách để phát sóng cho tất cả các màn hình đã đăng ký
+            for (Consumer<String> listener : pushListeners) {
+              listener.accept(line);
             }
           } else {
             responseQueue.offer(line); // Đẩy vào hàng đợi cho sendAndReceive lấy
@@ -103,8 +102,22 @@ public class ServerConnection {
       } catch (Exception e) {
         System.err.println("Mất kết nối Thread lắng nghe.");
       } finally {
-        isListening = false;
-        socket = null;
+        // CHỈ DỌN DẸP NẾU SOCKET VẪN LÀ CÁI CŨ
+        synchronized (this) {
+          if (this.socket == currentSocket) {
+            isListening = false;
+            try {
+              if (socket != null && !socket.isClosed()) {
+                socket.close();
+              }
+            } catch (Exception ex) {
+            }
+            socket = null;
+            System.out.println("Đã dọn dẹp Socket cũ an toàn.");
+          } else {
+            System.out.println("Phát hiện Socket đã được thay mới, không xóa nhầm.");
+          }
+        }
       }
     });
     listenerThread.setDaemon(true); // Tự tắt khi App đóng
@@ -147,9 +160,14 @@ public class ServerConnection {
         header.equals(Protocol.ERROR);
   }
 
-  // Đăng ký để UI nhận tin Real-time
-  public void setPushListener(Consumer<String> listener) {
-    this.pushListener = listener;
+  public void addPushListener(Consumer<String> listener) {
+    if (listener != null && !pushListeners.contains(listener)) {
+      pushListeners.add(listener);
+    }
+  }
+
+  public void removePushListener(Consumer<String> listener) {
+    pushListeners.remove(listener);
   }
 
   /**

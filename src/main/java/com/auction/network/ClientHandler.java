@@ -322,11 +322,12 @@ public class ClientHandler implements Runnable, Observer {
       sendMessage(Protocol.RES_WATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
       Auction targetAuction = auctionService.getAuctionById(auctionId);
       if (targetAuction != null) {
-        targetAuction.addObserver(this);
+        targetAuction.addObserver(this); // Đăng ký chính ClientHandler này để nhận tin nhắn
         System.out.println("[WATCHLIST] User " + currentUser.getUsername()
             + " đã bắt đầu nhận thông báo từ phiên " + auctionId);
       }
     } else {
+      // Thêm phản hồi nếu Watchlist đầy hoặc sản phẩm đã có sẵn
       sendMessage(Protocol.ERROR + Protocol.SEPARATOR
           + "Theo dõi thất bại! (Sản phẩm đã có trong danh sách hoặc không tồn tại)");
     }
