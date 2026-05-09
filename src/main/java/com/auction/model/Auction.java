@@ -272,8 +272,7 @@ public class Auction extends Entity {
     try {
       double systemMin = getMinimumIncrement(currentPrice);
       if (customStep < systemMin) {
-        throw new 
-        InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
+        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
       }
       if (this.autoBidQueue == null) {
         restoreTransients();
@@ -309,10 +308,16 @@ public class Auction extends Entity {
       String lastBidderId = history.isEmpty() ? ""
           : history.get(history.size() - 1).getBidder().getUsername();
 
-      // 2. Nếu người này đang giữ giá cao nhất -> Tạm dừng lượt của họ
+      // 2. Nếu ng mạnh nhất đang thắng, lấy ngay ng mạnh thứ hai ra đấu
       if (top.getBidderId().equals(lastBidderId)) {
-        autoBidQueue.add(top); // Trả lại vào Queue để chờ đối thủ
-        break; // DỪNG VÒNG LẶP: Không tự đấu giá với chính mình
+        AutoBid second = autoBidQueue.poll();
+        if (second == null) {
+          autoBidQueue.add(top);
+          break; // Hết đối thủ
+        }
+        // Trả ng mạnh nhất vào lại để đợi đối thủ nâng giá
+        autoBidQueue.add(top);
+        top = second; // Đổi mục tiêu sang ng thứ hai
       }
 
       // 3. Tính toán mức giá mới
@@ -344,13 +349,13 @@ public class Auction extends Entity {
     }
   }
 
-  private synchronized void handleAntiSniping() {
+  private void handleAntiSniping() {
     long timeLeft = this.endTime - System.currentTimeMillis();
     if (timeLeft > 0 && timeLeft < ONE_MINUTE_MS && extensionCount < MAX_EXTENSIONS) { // < 1 phút
       this.endTime += TWO_MINUTES_MS; // Cộng thêm 2 phút
       this.extensionCount++;
 
-      notifyObservers(Protocol.NOTI_SNIPING_UPDATE 
+      notifyObservers(Protocol.NOTI_SNIPING_UPDATE
           + Protocol.SEPARATOR + getId() + "|" + this.endTime + "|" + extensionCount);
     }
   }
