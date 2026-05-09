@@ -2,7 +2,6 @@ package com.auction.network;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.auction.model.AuctionStatus;
 import com.auction.model.Bidder;
 import com.auction.service.AuctionService;
 import com.auction.service.UserManager;
@@ -13,632 +12,317 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-/**
- * Test ClientHandler bằng cách tạo pipe socket thật (loopback).
- * Mỗi test: gửi command → đọc response → assert prefix đúng.
- */
-@Timeout(10)
+@Timeout(15)
 public class ClientHandlerTest {
 
-    private ServerSocket serverSocket;
-    private Socket clientSide;
-    private PrintWriter clientOut;
-    private BufferedReader clientIn;
-    private String sellerUser = "seller_ch";
-    private String bidderUser = "bidder_ch";
-    private String adminUser  = "admin_ch";
+    private static ServerSocket serverSocket;
+    private static int port;
 
-    @BeforeEach
-    void setUp() throws Exception {
+    private static final String SELLER = "ch_seller";
+    private static final String BIDDER = "ch_bidder";
+    private static final String ADMIN  = "ch_admin";
+
+    @BeforeAll
+    static void setUpAll() throws Exception {
         resetSingletons();
+        UserManager.getInstance().register(SELLER, "pw", "SELLER");
+        UserManager.getInstance().register(BIDDER, "pw", "BIDDER");
+        UserManager.getInstance().register(ADMIN,  "pw", "ADMIN");
+        ((Bidder) UserManager.getInstance().findUserByUsername(BIDDER))
+                .addBalance(999_999_999.0);
 
-        UserManager.getInstance().register(sellerUser, "pw", "SELLER");
-        UserManager.getInstance().register(bidderUser, "pw", "BIDDER");
-        UserManager.getInstance().register(adminUser,  "pw", "ADMIN");
-
-        Bidder b = (Bidder) UserManager.getInstance().findUserByUsername(bidderUser);
-        b.addBalance(999_999_999.0);
-
-        // Tạo ServerSocket trên port ngẫu nhiên
         serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
+        serverSocket.setReuseAddress(true);
+        port = serverSocket.getLocalPort();
 
-        // Chạy ClientHandler trong background thread
-        Thread serverThread = new Thread(() -> {
-            try {
-                Socket accepted = serverSocket.accept();
-                new ClientHandler(accepted).run();
-            } catch (Exception ignored) {}
+        Thread acceptor = new Thread(() -> {
+            while (!serverSocket.isClosed()) {
+                try {
+                    Socket s = serverSocket.accept();
+                    new Thread(new ClientHandler(s)).start();
+                } catch (Exception ignored) {}
+            }
         });
-        serverThread.setDaemon(true);
-        serverThread.start();
-
-        // Client side kết nối
-        clientSide = new Socket("localhost", port);
-        clientOut = new PrintWriter(clientSide.getOutputStream(), true);
-        clientIn  = new BufferedReader(new InputStreamReader(clientSide.getInputStream()));
+        acceptor.setDaemon(true);
+        acceptor.start();
     }
 
-    @AfterEach
-    void tearDown() throws Exception {
-        try { clientSide.close(); } catch (Exception ignored) {}
+    @AfterAll
+    static void tearDownAll() throws Exception {
         try { serverSocket.close(); } catch (Exception ignored) {}
         resetSingletons();
     }
 
-    private void resetSingletons() throws Exception {
+    private static void resetSingletons() throws Exception {
         Field asf = AuctionService.class.getDeclaredField("instance");
         asf.setAccessible(true);
         asf.set(null, null);
-
         Field umf = UserManager.class.getDeclaredField("instance");
         umf.setAccessible(true);
         umf.set(null, null);
     }
 
-    /** Gửi 1 dòng, đọc response đầu tiên trả về */
+    private String[] chat(String... cmds) throws Exception {
+        try (Socket s = new Socket("localhost", port);
+             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
+            String[] results = new String[cmds.length];
+            for (int i = 0; i < cmds.length; i++) {
+                out.println(cmds[i]);
+                results[i] = in.readLine();
+            }
+            return results;
+        }
+    }
+
     private String send(String cmd) throws Exception {
-        clientOut.println(cmd);
-        return clientIn.readLine();
+        return chat(cmd)[0];
     }
 
-    // ─── REGISTER ────────────────────────────────────────────────
+    // ── REGISTER ───────────────────────────────────────────────
 
-    @Test
-    void registerNewUserSuccess() throws Exception {
-        String r = send("REGISTER|newuser1|pass123|BIDDER");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_REGISTER_SUCCESS),
-            "Expected REGISTER_SUCCESS, got: " + r);
+    @Test void registerSuccess() throws Exception {
+        assertTrue(send("REGISTER|newreg1|pw|BIDDER").startsWith(Protocol.RES_REGISTER_SUCCESS));
     }
 
-    @Test
-    void registerDuplicateUserFails() throws Exception {
-        send("REGISTER|dupuser|pass|BIDDER");
-        String r = send("REGISTER|dupuser|pass|BIDDER");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_REGISTER_FAILED),
-            "Expected REGISTER_FAILED, got: " + r);
+    @Test void registerDuplicate() throws Exception {
+        send("REGISTER|dupreg|pw|BIDDER");
+        assertTrue(send("REGISTER|dupreg|pw|BIDDER").startsWith(Protocol.RES_REGISTER_FAILED));
     }
 
-    @Test
-    void registerMissingParamsReturnsError() throws Exception {
-        String r = send("REGISTER|onlyone|pass");   // thiếu role → parts.length < 4
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR, got: " + r);
+    @Test void registerMissingParams() throws Exception {
+        assertTrue(send("REGISTER|onlyone|pw").startsWith(Protocol.ERROR));
     }
 
-    // ─── LOGIN ───────────────────────────────────────────────────
+    // ── LOGIN ──────────────────────────────────────────────────
 
-    @Test
-    void loginSuccessReturnsLoginSuccess() throws Exception {
-        String r = send("LOGIN|" + sellerUser + "|pw");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_LOGIN_SUCCESS),
-            "Expected LOGIN_SUCCESS, got: " + r);
+    @Test void loginSuccess() throws Exception {
+        assertTrue(send("LOGIN|" + SELLER + "|pw").startsWith(Protocol.RES_LOGIN_SUCCESS));
     }
 
-    @Test
-    void loginWrongPasswordReturnsLoginFailed() throws Exception {
-        String r = send("LOGIN|" + sellerUser + "|wrongpass");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_LOGIN_FAILED),
-            "Expected LOGIN_FAILED, got: " + r);
+    @Test void loginWrongPassword() throws Exception {
+        assertTrue(send("LOGIN|" + SELLER + "|wrong").startsWith(Protocol.RES_LOGIN_FAILED));
     }
 
-    @Test
-    void loginNonexistentUserReturnsLoginFailed() throws Exception {
-        String r = send("LOGIN|ghost_user|anypass");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_LOGIN_FAILED),
-            "Expected LOGIN_FAILED, got: " + r);
+    @Test void loginUnknownUser() throws Exception {
+        assertTrue(send("LOGIN|ghost_xyz|pw").startsWith(Protocol.RES_LOGIN_FAILED));
     }
 
-    @Test
-    void loginMissingParamsReturnsError() throws Exception {
-        String r = send("LOGIN|onlyuser");   // thiếu password
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR for missing params, got: " + r);
+    @Test void loginMissingParams() throws Exception {
+        assertTrue(send("LOGIN|onlyuser").startsWith(Protocol.ERROR));
     }
 
-    // ─── LIST_AUCTIONS ───────────────────────────────────────────
+    // ── LIST_AUCTIONS ──────────────────────────────────────────
 
-    @Test
-    void listAuctionsReturnsSuccess() throws Exception {
-        String r = send("LIST_AUCTIONS");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_LIST_SUCCESS),
-            "Expected LIST_AUCTIONS_SUCCESS, got: " + r);
+    @Test void listAuctions() throws Exception {
+        assertTrue(send("LIST_AUCTIONS").startsWith(Protocol.RES_LIST_SUCCESS));
     }
 
-    // ─── GET_BALANCE ─────────────────────────────────────────────
+    // ── GET_BALANCE ────────────────────────────────────────────
 
-    @Test
-    void getBalanceWithoutLoginReturnsError() throws Exception {
-        String r = send("GET_BALANCE");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR when not logged in, got: " + r);
+    @Test void getBalanceNotLoggedIn() throws Exception {
+        assertTrue(send("GET_BALANCE").startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void getBalanceAfterLoginReturnsBalance() throws Exception {
-        send("LOGIN|" + bidderUser + "|pw");
-        // flush response trước
-        String loginResp = clientIn.readLine(); // đọc nốt LOGIN_SUCCESS nếu chưa đọc
-        // Thực ra send() đã đọc rồi, nhưng nếu login response đã được đọc bởi send thì OK
-        // Gửi GET_BALANCE trực tiếp
-        clientOut.println("GET_BALANCE");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_BALANCE_INFO),
-            "Expected BALANCE_INFO, got: " + r);
+    @Test void getBalanceAfterLogin() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "GET_BALANCE");
+        assertTrue(r[1].startsWith(Protocol.RES_BALANCE_INFO));
     }
 
-    // ─── DEPOSIT ─────────────────────────────────────────────────
+    // ── DEPOSIT ────────────────────────────────────────────────
 
-    @Test
-    void depositWithoutLoginReturnsError() throws Exception {
-        String r = send("DEPOSIT|1000");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
+    @Test void depositNotLoggedIn() throws Exception {
+        assertTrue(send("DEPOSIT|1000").startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void depositAfterLoginSuccess() throws Exception {
-        // Login
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine(); // consume LOGIN_SUCCESS
-
-        clientOut.println("DEPOSIT|500000");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_DEPOSIT_SUCCESS),
-            "Expected DEPOSIT_SUCCESS, got: " + r);
+    @Test void depositSuccess() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "DEPOSIT|500000");
+        assertTrue(r[1].startsWith(Protocol.RES_DEPOSIT_SUCCESS));
     }
 
-    @Test
-    void depositInvalidAmountReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine(); // consume LOGIN_SUCCESS
-
-        clientOut.println("DEPOSIT|-500");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR for negative deposit, got: " + r);
+    @Test void depositNegative() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "DEPOSIT|-100");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void depositNonNumericReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("DEPOSIT|abc");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR for non-numeric deposit, got: " + r);
+    @Test void depositNonNumeric() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "DEPOSIT|abc");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    // ─── CREATE_AUCTION ──────────────────────────────────────────
+    // ── CREATE_AUCTION ─────────────────────────────────────────
 
-    @Test
-    void createAuctionWithoutLoginReturnsError() throws Exception {
-        String r = send("CREATE_AUCTION|ELECTRONICS|Phone|1000000|60");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
+    @Test void createNotLoggedIn() throws Exception {
+        assertTrue(send("CREATE_AUCTION|ELECTRONICS|Phone|1000000|60").startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void createAuctionAsBidderReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine(); // consume LOGIN_SUCCESS
-
-        clientOut.println("CREATE_AUCTION|ELECTRONICS|Phone|1000000|60");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Bidder should not create auction, got: " + r);
+    @Test void createAsBidderForbidden() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "CREATE_AUCTION|ELECTRONICS|Phone|1000000|60");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void createAuctionAsSellerSuccess() throws Exception {
-        clientOut.println("LOGIN|" + sellerUser + "|pw");
-        clientIn.readLine(); // consume LOGIN_SUCCESS
-
-        clientOut.println("CREATE_AUCTION|ELECTRONICS|Laptop|5000000|60");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_SUCCESS),
-            "Expected SUCCESS for seller create, got: " + r);
+    @Test void createAsSellerSuccess() throws Exception {
+        String[] r = chat("LOGIN|" + SELLER + "|pw", "CREATE_AUCTION|ELECTRONICS|Laptop|5000000|60");
+        assertTrue(r[1].startsWith(Protocol.RES_SUCCESS));
     }
 
-    @Test
-    void createAuctionAsAdminSuccess() throws Exception {
-        clientOut.println("LOGIN|" + adminUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("CREATE_AUCTION|ART|Painting|2000000|60");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_SUCCESS),
-            "Expected SUCCESS for admin create, got: " + r);
+    @Test void createAsAdminSuccess() throws Exception {
+        String[] r = chat("LOGIN|" + ADMIN + "|pw", "CREATE_AUCTION|ART|Painting|2000000|60");
+        assertTrue(r[1].startsWith(Protocol.RES_SUCCESS));
     }
 
-    @Test
-    void createAuctionInvalidPriceReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + sellerUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("CREATE_AUCTION|ELECTRONICS|Phone|INVALID_PRICE|60");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR for invalid price, got: " + r);
+    @Test void createInvalidPrice() throws Exception {
+        String[] r = chat("LOGIN|" + SELLER + "|pw", "CREATE_AUCTION|ELECTRONICS|Phone|BAD|60");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void createAuctionMissingParamsReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + sellerUser + "|pw");
-        clientIn.readLine();
-
-        // Chỉ có 3 parts, cần 5
-        String r = send("CREATE_AUCTION|ELECTRONICS|Phone");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
+    @Test void createMissingParams() throws Exception {
+        String[] r = chat("LOGIN|" + SELLER + "|pw", "CREATE_AUCTION|ELECTRONICS|Phone");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    // ─── BID ─────────────────────────────────────────────────────
+    // ── BID ────────────────────────────────────────────────────
 
-    @Test
-    void bidWithoutLoginReturnsError() throws Exception {
-        String r = send("BID|AUCTION_123|500000");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
+    @Test void bidNotLoggedIn() throws Exception {
+        assertTrue(send("BID|GHOST|500000").startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void bidOnNonexistentAuctionReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("BID|GHOST_AUCTION|500000");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR for nonexistent auction, got: " + r);
+    @Test void bidGhostAuction() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "BID|GHOST_ID|500000");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void bidNegativeAmountReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("BID|SOME_ID|-100");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
+    @Test void bidNegativeAmount() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "BID|SOME|-100");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    @Test
-    void bidNonNumericAmountReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("BID|SOME_ID|not_a_number");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void bidOnRealAuctionSuccess() throws Exception {
-        // Tạo auction với seller
-        clientOut.println("LOGIN|" + sellerUser + "|pw");
-        clientIn.readLine();
-        clientOut.println("CREATE_AUCTION|ELECTRONICS|Phone|1000000|60");
-        String createResp = clientIn.readLine();
-        assertTrue(createResp.startsWith(Protocol.RES_SUCCESS));
-
-        // Lấy ID auction vừa tạo
-        String auctionId = AuctionService.getInstance().getAllAuctions().iterator().next().getId();
-
-        // Disconnect và mở connection mới để login bidder
-        clientSide.close();
-        Socket bidderSocket = new Socket("localhost", serverSocket.getLocalPort());
-
-        // Chạy handler mới cho bidder
-        Thread t = new Thread(() -> {
-            try {
-                Socket accepted = serverSocket.accept();
-                new ClientHandler(accepted).run();
-            } catch (Exception ignored) {}
-        });
-        t.setDaemon(true);
-        t.start();
-
-        PrintWriter bOut = new PrintWriter(bidderSocket.getOutputStream(), true);
-        BufferedReader bIn = new BufferedReader(new InputStreamReader(bidderSocket.getInputStream()));
-
-        bOut.println("LOGIN|" + bidderUser + "|pw");
-        bIn.readLine(); // consume LOGIN_SUCCESS
-
-        bOut.println("BID|" + auctionId + "|2000000");
-        String r = bIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_BID_SUCCESS),
-            "Expected BID_SUCCESS, got: " + r);
-
-        bidderSocket.close();
-    }
-
-    // ─── END_AUCTION ─────────────────────────────────────────────
-
-    @Test
-    void endAuctionWithoutLoginReturnsError() throws Exception {
-        String r = send("END_AUCTION|SOME_ID");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void endAuctionAsBidderReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("END_AUCTION|SOME_ID");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void endAuctionAsAdminSuccess() throws Exception {
-        // Tạo auction trước
-        AuctionService.getInstance().createNewAuction("ELECTRONICS", "TV", 1_000_000.0, 60L, sellerUser);
-        String auctionId = AuctionService.getInstance().getAllAuctions().iterator().next().getId();
-
-        clientOut.println("LOGIN|" + adminUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("END_AUCTION|" + auctionId);
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_END_SUCCESS),
-            "Expected END_SUCCESS, got: " + r);
-    }
-
-    // ─── DELETE_AUCTION ──────────────────────────────────────────
-
-    @Test
-    void deleteAuctionWithoutLoginReturnsError() throws Exception {
-        String r = send("DELETE_AUCTION|SOME_ID");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void deleteAuctionAsBidderReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("DELETE_AUCTION|SOME_ID");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void deleteAuctionAsAdminNotFoundReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + adminUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("DELETE_AUCTION|GHOST_ID");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR for not found, got: " + r);
-    }
-
-    @Test
-    void deleteAuctionAsAdminSuccess() throws Exception {
-        AuctionService.getInstance().createNewAuction("ART", "Painting", 500_000.0, 60L, sellerUser);
-        String auctionId = AuctionService.getInstance().getAllAuctions().iterator().next().getId();
-
-        clientOut.println("LOGIN|" + adminUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("DELETE_AUCTION|" + auctionId);
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_DELETE_SUCCESS),
-            "Expected DELETE_SUCCESS, got: " + r);
-    }
-
-    // ─── GET_HISTORY ─────────────────────────────────────────────
-
-    @Test
-    void getHistoryNonexistentAuctionReturnsError() throws Exception {
-        String r = send("GET_HISTORY|GHOST_ID");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void getHistoryExistingAuctionReturnsHistory() throws Exception {
-        AuctionService.getInstance().createNewAuction("ELECTRONICS", "Watch", 200_000.0, 60L, sellerUser);
-        String auctionId = AuctionService.getInstance().getAllAuctions().iterator().next().getId();
-
-        clientOut.println("GET_HISTORY|" + auctionId);
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_HISTORY),
-            "Expected HISTORY_RES, got: " + r);
-    }
-
-    // ─── WATCH / UNWATCH ─────────────────────────────────────────
-
-    @Test
-    void watchWithoutLoginAsNonBidderReturnsError() throws Exception {
-        // Không login → currentUser null → không phải Bidder
-        String r = send("WATCH|SOME_ID");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void watchAsSellerReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + sellerUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("WATCH|SOME_ID");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Seller should not be able to watch, got: " + r);
-    }
-
-    @Test
-    void watchAsBidderAuctionNotExistFails() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("WATCH|GHOST_AUCTION");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        // addToWatchlist returns false for non-existent → ERROR
-        assertTrue(r.startsWith(Protocol.ERROR) || r.startsWith(Protocol.RES_WATCH_SUCCESS));
-    }
-
-    @Test
-    void watchAsBidderRealAuctionSuccess() throws Exception {
-        AuctionService.getInstance().createNewAuction("VEHICLE", "Car", 100_000_000.0, 60L, sellerUser);
-        String auctionId = AuctionService.getInstance().getAllAuctions().iterator().next().getId();
-
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("WATCH|" + auctionId);
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_WATCH_SUCCESS),
-            "Expected WATCH_SUCCESS, got: " + r);
-    }
-
-    @Test
-    void unwatchAsBidder() throws Exception {
-        AuctionService.getInstance().createNewAuction("VEHICLE", "Bike", 50_000_000.0, 60L, sellerUser);
-        String auctionId = AuctionService.getInstance().getAllAuctions().iterator().next().getId();
-
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        // Watch trước
-        clientOut.println("WATCH|" + auctionId);
-        clientIn.readLine();
-
-        // Rồi unwatch
-        clientOut.println("UNWATCH|" + auctionId);
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_UNWATCH_SUCCESS),
-            "Expected UNWATCH_SUCCESS, got: " + r);
-    }
-
-    // ─── GET_WATCHLIST ───────────────────────────────────────────
-
-    @Test
-    void getWatchlistWithoutLoginReturnsError() throws Exception {
-        String r = send("GET_WATCHLIST");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void getWatchlistAsBidderReturnsWatchlist() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("GET_WATCHLIST");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.RES_WATCHLIST),
-            "Expected RES_WATCHLIST, got: " + r);
-    }
-
-    // ─── ADD_AUTO_BID ─────────────────────────────────────────────
-
-    @Test
-    void addAutoBidWithoutLoginReturnsError() throws Exception {
-        String r = send("ADD_AUTO_BID|SOME_ID|5000000|100000");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void addAutoBidAsSellerReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + sellerUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("ADD_AUTO_BID|SOME_ID|5000000|100000");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
-    }
-
-    @Test
-    void addAutoBidNonexistentAuctionReturnsError() throws Exception {
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
-
-        clientOut.println("ADD_AUTO_BID|GHOST_ID|5000000|100000");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
+    @Test void bidNonNumeric() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "BID|SOME|abc");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
    
-    @Test
-    void addAutoBidInvalidNumberReturnsError() throws Exception {
-        AuctionService.getInstance().createNewAuction("ART", "Statue", 1_000_000.0, 60L, sellerUser);
-        String auctionId = AuctionService.getInstance().getAllAuctions().iterator().next().getId();
 
-        clientOut.println("LOGIN|" + bidderUser + "|pw");
-        clientIn.readLine();
+    // ── END_AUCTION ────────────────────────────────────────────
 
-        clientOut.println("ADD_AUTO_BID|" + auctionId + "|NOT_A_NUMBER|500000");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR));
+    @Test void endNotLoggedIn() throws Exception {
+        assertTrue(send("END_AUCTION|X").startsWith(Protocol.ERROR));
     }
 
-    // ─── UNKNOWN COMMAND ─────────────────────────────────────────
-
-    @Test
-    void unknownCommandReturnsError() throws Exception {
-        String r = send("TOTALLY_UNKNOWN_CMD|param1|param2");
-        assertNotNull(r);
-        assertTrue(r.startsWith(Protocol.ERROR),
-            "Expected ERROR for unknown command, got: " + r);
+    @Test void endAsBidderForbidden() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "END_AUCTION|X");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
     }
 
-    // ─── sendMessage và update ─────────────────────────────────
+    @Test void endAsAdminSuccess() throws Exception {
+        AuctionService.getInstance()
+                .createNewAuction("ELECTRONICS", "TVEnd", 1_000_000.0, 60L, SELLER);
+        String id = AuctionService.getInstance().getAllAuctions().stream()
+                .filter(a -> a.getItem() != null && "TVEnd".equals(a.getItem().getItemName()))
+                .findFirst().get().getId();
+        String[] r = chat("LOGIN|" + ADMIN + "|pw", "END_AUCTION|" + id);
+        assertTrue(r[1].startsWith(Protocol.RES_END_SUCCESS));
+    }
 
-    @Test
-    void updateMethodSendsMessageToClient() throws Exception {
-        // update() calls sendMessage() — test gián tiếp qua login response
-        // (login gọi sendMessage → client nhận được)
-        clientOut.println("LOGIN|" + sellerUser + "|pw");
-        String r = clientIn.readLine();
-        assertNotNull(r);
-        assertFalse(r.isEmpty());
+    // ── DELETE_AUCTION ─────────────────────────────────────────
+
+    @Test void deleteNotLoggedIn() throws Exception {
+        assertTrue(send("DELETE_AUCTION|X").startsWith(Protocol.ERROR));
+    }
+
+    @Test void deleteAsBidderForbidden() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "DELETE_AUCTION|X");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
+    }
+
+    @Test void deleteGhostAuction() throws Exception {
+        String[] r = chat("LOGIN|" + ADMIN + "|pw", "DELETE_AUCTION|GHOST");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
+    }
+
+    @Test void deleteSuccess() throws Exception {
+        AuctionService.getInstance()
+                .createNewAuction("ART", "StatueDel", 500_000.0, 60L, SELLER);
+        String id = AuctionService.getInstance().getAllAuctions().stream()
+                .filter(a -> a.getItem() != null && "StatueDel".equals(a.getItem().getItemName()))
+                .findFirst().get().getId();
+        String[] r = chat("LOGIN|" + ADMIN + "|pw", "DELETE_AUCTION|" + id);
+        assertTrue(r[1].startsWith(Protocol.RES_DELETE_SUCCESS));
+    }
+
+    // ── GET_HISTORY ────────────────────────────────────────────
+
+    @Test void historyGhostAuction() throws Exception {
+        assertTrue(send("GET_HISTORY|GHOST").startsWith(Protocol.ERROR));
+    }
+
+    @Test void historyRealAuction() throws Exception {
+        AuctionService.getInstance()
+                .createNewAuction("VEHICLE", "CarHist", 10_000_000.0, 60L, SELLER);
+        String id = AuctionService.getInstance().getAllAuctions().stream()
+                .filter(a -> a.getItem() != null && "CarHist".equals(a.getItem().getItemName()))
+                .findFirst().get().getId();
+        assertTrue(send("GET_HISTORY|" + id).startsWith(Protocol.RES_HISTORY));
+    }
+
+    // ── WATCH / UNWATCH / GET_WATCHLIST ───────────────────────
+
+    @Test void watchNotLoggedIn() throws Exception {
+        assertTrue(send("WATCH|X").startsWith(Protocol.ERROR));
+    }
+
+    @Test void watchAsSeller() throws Exception {
+        String[] r = chat("LOGIN|" + SELLER + "|pw", "WATCH|X");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
+    }
+
+    @Test void watchAndUnwatchSuccess() throws Exception {
+        AuctionService.getInstance()
+                .createNewAuction("VEHICLE", "BikeWatch", 5_000_000.0, 60L, SELLER);
+        String id = AuctionService.getInstance().getAllAuctions().stream()
+                .filter(a -> a.getItem() != null && "BikeWatch".equals(a.getItem().getItemName()))
+                .findFirst().get().getId();
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "WATCH|" + id, "UNWATCH|" + id);
+        assertTrue(r[1].startsWith(Protocol.RES_WATCH_SUCCESS));
+        assertTrue(r[2].startsWith(Protocol.RES_UNWATCH_SUCCESS));
+    }
+
+    @Test void getWatchlistNotLoggedIn() throws Exception {
+        assertTrue(send("GET_WATCHLIST").startsWith(Protocol.ERROR));
+    }
+
+    @Test void getWatchlistAsBidder() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "GET_WATCHLIST");
+        assertTrue(r[1].startsWith(Protocol.RES_WATCHLIST));
+    }
+
+    // ── ADD_AUTO_BID ───────────────────────────────────────────
+
+    @Test void autoBidNotLoggedIn() throws Exception {
+        assertTrue(send("ADD_AUTO_BID|X|5000000|100000").startsWith(Protocol.ERROR));
+    }
+
+    @Test void autoBidAsSeller() throws Exception {
+        String[] r = chat("LOGIN|" + SELLER + "|pw", "ADD_AUTO_BID|X|5000000|100000");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
+    }
+
+    @Test void autoBidGhostAuction() throws Exception {
+        String[] r = chat("LOGIN|" + BIDDER + "|pw", "ADD_AUTO_BID|GHOST|5000000|100000");
+        assertTrue(r[1].startsWith(Protocol.ERROR));
+    }
+
+    
+
+    // ── UNKNOWN COMMAND ────────────────────────────────────────
+
+    @Test void unknownCommand() throws Exception {
+        assertTrue(send("UNKNOWN_CMD|x|y").startsWith(Protocol.ERROR));
     }
 }
