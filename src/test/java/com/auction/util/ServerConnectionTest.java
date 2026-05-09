@@ -1,9 +1,6 @@
 package com.auction.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -46,12 +43,14 @@ public class ServerConnectionTest {
         f.set(null, null);
     }
 
+    /** Khởi động mock server trên port ngẫu nhiên */
     private void startTestServer() throws Exception {
         testServer = new ServerSocket(0);
         testServer.setReuseAddress(true);
         testPort = testServer.getLocalPort();
     }
 
+    /** Mock server: accept 1 client rồi echo lại "ECHO:<message>" */
     private void acceptOneClientEcho() {
         Thread t = new Thread(() -> {
             try {
@@ -67,6 +66,7 @@ public class ServerConnectionTest {
         t.start();
     }
 
+    /** Mock server: accept rồi đóng ngay (không gửi gì) */
     private void acceptOneClientSilent() {
         Thread t = new Thread(() -> {
             try { Socket c = testServer.accept(); c.close(); } catch (Exception ignored) {}
@@ -75,14 +75,16 @@ public class ServerConnectionTest {
         t.start();
     }
 
-    // --- Tests không cần ServerSocket ---
+    // ── Singleton ─────────────────────────────────────────────
 
     @Test
     void getInstanceReturnsSameObject() {
         ServerConnection a = ServerConnection.getInstance();
         ServerConnection b = ServerConnection.getInstance();
-        assertTrue(a == b);
+        assertSame(a, b);
     }
+
+    // ── isConnected trước khi kết nối ─────────────────────────
 
     @Test
     void isConnectedReturnsFalseWhenNotConnected() {
@@ -90,11 +92,25 @@ public class ServerConnectionTest {
         assertFalse(conn.isConnected());
     }
 
+    // ── connect() fail khi không có server ────────────────────
+
+    @Test
+    void connectReturnsFalseWhenNoServer() {
+        conn = ServerConnection.getInstance(); // host=localhost, port=9999 — không có ai
+        assertFalse(conn.connect());
+    }
+
+    // ── sendAndReceive khi offline ────────────────────────────
+
     @Test
     void sendAndReceiveWhenNotConnectedReturnsError() {
         conn = ServerConnection.getInstance();
-        assertTrue(conn.sendAndReceive("HELLO").startsWith("ERROR|"));
+        String resp = conn.sendAndReceive("HELLO");
+        assertTrue(resp.startsWith("ERROR|"),
+            "Expected ERROR| prefix, got: " + resp);
     }
+
+    // ── receive() khi offline ─────────────────────────────────
 
     @Test
     void receiveWhenNotConnectedReturnsNull() {
@@ -102,20 +118,22 @@ public class ServerConnectionTest {
         assertNull(conn.receive());
     }
 
+    // ── disconnect khi chưa kết nối ───────────────────────────
+
     @Test
     void disconnectWhenNotConnectedDoesNotThrow() {
+        conn = ServerConnection.getInstance();
+        assertDoesNotThrow(() -> conn.disconnect());
+    }
+
+    @Test
+    void isConnectedFalseAfterDisconnectWithoutConnect() {
         conn = ServerConnection.getInstance();
         conn.disconnect();
         assertFalse(conn.isConnected());
     }
 
-    @Test
-    void connectReturnsFalseWhenNoServer() {
-        conn = ServerConnection.getInstance();
-        assertFalse(conn.connect()); // port 9999 không có server
-    }
-
-    // --- Tests có ServerSocket ---
+    // ── connectDirect() với mock server ──────────────────────
 
     @Test
     void connectDirectSucceedsWithLocalServer() throws Exception {
@@ -127,7 +145,7 @@ public class ServerConnectionTest {
     }
 
     @Test
-    void connectDirectReturnsFalseWhenNoServer() throws Exception {
+    void connectDirectReturnsFalseWhenServerClosed() throws Exception {
         startTestServer();
         int port = testPort;
         testServer.close();
@@ -137,14 +155,19 @@ public class ServerConnectionTest {
         assertFalse(conn.isConnected());
     }
 
+    // ── sendAndReceive với mock server ───────────────────────
+
     @Test
     void sendAndReceiveEchoesResponse() throws Exception {
         startTestServer();
         acceptOneClientEcho();
         conn = new ServerConnection("localhost", testPort);
         assertTrue(conn.connectDirect());
-        assertEquals("ECHO:PING", conn.sendAndReceive("PING"));
+        String resp = conn.sendAndReceive("PING");
+        assertEquals("ECHO:PING", resp);
     }
+
+    // ── disconnect khi đang kết nối ───────────────────────────
 
     @Test
     void disconnectWhenConnectedClosesSocket() throws Exception {
@@ -156,12 +179,44 @@ public class ServerConnectionTest {
         assertFalse(conn.isConnected());
     }
 
+    // ── isConnected sau khi kết nối thành công ────────────────
+
     @Test
-    void isConnectedTrueAfterSuccessfulConnect() throws Exception {
+    void isConnectedTrueAfterSuccessfulConnectDirect() throws Exception {
         startTestServer();
         acceptOneClientSilent();
         conn = new ServerConnection("localhost", testPort);
         conn.connectDirect();
         assertTrue(conn.isConnected());
+    }
+
+    // ── disconnectDirect ─────────────────────────────────────
+
+    @Test
+    void disconnectDirectClosesSocket() throws Exception {
+        startTestServer();
+        acceptOneClientSilent();
+        conn = new ServerConnection("localhost", testPort);
+        conn.connectDirect();
+        assertDoesNotThrow(() -> conn.disconnectDirect());
+        assertFalse(conn.isConnected());
+    }
+
+    @Test
+    void disconnectDirectWhenNotConnectedDoesNotThrow() {
+        conn = new ServerConnection("localhost", 19999);
+        assertDoesNotThrow(() -> conn.disconnectDirect());
+    }
+
+    // ── connect() idempotent khi đã connected ─────────────────
+
+    @Test
+    void connectWhenAlreadyConnectedReturnsTrue() throws Exception {
+        startTestServer();
+        acceptOneClientSilent();
+        conn = new ServerConnection("localhost", testPort);
+        conn.connectDirect();
+        // Giờ gọi connect() — socket đã connected, phải trả true ngay
+        assertTrue(conn.connect());
     }
 }
