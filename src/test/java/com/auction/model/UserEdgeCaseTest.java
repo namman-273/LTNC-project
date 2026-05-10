@@ -191,8 +191,5 @@ public class UserEdgeCaseTest {
 
     // --- update (Observer implementation) ---
 
-    @Test
-    void updateDoesNotThrow() {
-        user.update("TEST_MESSAGE");
-    }
+    
 }

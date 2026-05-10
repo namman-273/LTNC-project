@@ -43,9 +43,61 @@ public class Protocol {
   public static final String NOTI_BALANCE_CHANGED = "BALANCE_CHANGED";
   // Thông báo chung cho mọi người: Giá đã tăng
   public static final String NOTI_BID_UPDATE = "BID_UPDATE";
+  /**
+   * NOTI_OUTBID: Thông báo riêng cho người bị vượt giá
+   * Format: OUTBID|auctionId|newBidder|newAmount
+   * NEW: Notification đặc biệt chỉ gửi cho người đang giữ giá cao nhất
+   * khi họ bị vượt giá bởi người khác.
+   * 
+   */
+  public static final String NOTI_OUTBID = "OUTBID";
 
-  // Delimiter
+  /**
+   * NOTI_REFUND: Thông báo khi tiền được hoàn lại vào ví
+   * Format: REFUND|auctionId|refundAmount|reason
+   * NEW: Notification khi user nhận lại tiền do bị outbid hoặc auction bị hủy.
+   * Reasons:
+   * - "OUTBID": Bị người khác vượt giá
+   * - "AUCTION_CANCELLED": Phiên đấu giá bị hủy
+   * - "AUCTION_ENDED": Phiên kết thúc, không phải winner
+   */
+  public static final String NOTI_REFUND = "REFUND";
+
+  // FIX: Thêm thông báo gia hạn thời gian (Anti-Sniping)
+  public static final String NOTI_SNIPING_UPDATE = "SNIPING_UPDATE";
+
+  // tất cả Client đang mở App sẽ thấy món hàng đó tự động hiện ra
+  // trên JTable mà không cần phải bấm nút Refresh.
+  public static final String NOTI_NEW_AUCTION = "NEW_AUCTION";
+
+  // Delimiter (Ký tự phân tách)
   public static final String SEPARATOR = "|";
-  public static final String UPDATE  = "UPDATE";
-  public static final String SNIPING = "SNIPING";
+
+  // --- HELPER METHODS ---
+
+  /**
+   * Parse notification header từ message string.
+   * 
+   * @param message Full notification message
+   * @return Notification type (header)
+   */
+  public static String getNotificationHeader(String message) {
+    if (message == null || message.isEmpty()) {
+      return null;
+    }
+    String[] parts = message.split("\\" + SEPARATOR);
+    return parts.length > 0 ? parts[0] : null;
+  }
+
+  /**
+   * Kiểm tra xem message có phải là notification type không. 
+   * @param   message cần kiểm tra. 
+   * @param notificationType Protocol constant (e.g., NOTI_BID_UPDATE)
+   * @return true nếu message thuộc type này
+   */
+  public static boolean isNotificationType(String message, String notificationType) {
+    String header = getNotificationHeader(message);
+    return header != null && header.equals(notificationType);
+  }
+
 }

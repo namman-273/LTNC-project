@@ -9,6 +9,7 @@ import com.auction.model.CreateItem;
 import com.auction.model.Item;
 import com.auction.model.Observer;
 import com.auction.model.User;
+import com.auction.network.Protocol;
 import com.auction.util.DataManager;
 import java.io.Serializable;
 import java.util.Collection;
@@ -21,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import com.auction.network.Protocol;
+
 
 /**
  *  * .
@@ -100,6 +101,31 @@ public class AuctionService implements Serializable {
   }
 
   /**
+   * FIX 2: Hàm tiện ích giúp khôi phục lại toàn bộ báo thức (scheduler)
+   * khi hệ thống khởi động lại.
+   */
+  private void recoverScheduledTasks() {
+    if (this.scheduler == null || this.scheduler.isShutdown()) {
+      this.scheduler = Executors.newScheduledThreadPool(5);
+    }
+
+    long now = System.currentTimeMillis();
+    for (Auction a : auctions.values()) {
+      if (a.getStatus() == AuctionStatus.OPEN) {
+        long delay = a.getEndTime() - now;
+        if (delay > 0) {
+          // Nếu vẫn còn thời gian -> Lên lịch lại
+          scheduler.schedule(() -> endAuction(a.getId()), delay, TimeUnit.MILLISECONDS);
+        } else {
+          // Nếu trong lúc Server tắt mà phiên đã hết giờ -> Đóng luôn lập tức
+          endAuction(a.getId());
+        }
+      }
+    }
+    System.out.println("[SERVICE] Đã khôi phục lịch trình đóng phiên cho các đấu giá đang mở.");
+  }
+
+  /**
    * FIX LỖI: Singleton bị phá khi deserialize
    * Java sẽ gọi hàm này sau khi load file để đảm bảo chỉ có 1 instance duy nhất.
    */
@@ -108,21 +134,7 @@ public class AuctionService implements Serializable {
     // Khi load từ file, gán instance hiện tại chính là đối tượng vừa load
     instance = this;
 
-    // Khởi tạo lại scheduler vì nó là transient (không được lưu xuống file)
-    if (this.scheduler == null || this.scheduler.isShutdown()) {
-      this.scheduler = Executors.newScheduledThreadPool(5);
-    }
-    // Khôi phục lại lịch đóng phiên cho các đấu giá đang mở (OPEN)
-    for (Auction a : auctions.values()) {
-      if (a.getStatus() == AuctionStatus.OPEN) {
-        long delay = a.getEndTime() - System.currentTimeMillis();
-        if (delay > 0) {
-          scheduler.schedule(() -> endAuction(a.getId()), delay, TimeUnit.MILLISECONDS);
-        } else {
-          endAuction(a.getId());
-        }
-      }
-    }
+    recoverScheduledTasks(); // Gọi khôi phục
 
     return instance;
   }
@@ -138,6 +150,15 @@ public class AuctionService implements Serializable {
 
     // 1. Dùng synchronized để đảm bảo chỉ có 1 thread được xử lý thanh toán
     synchronized (a) {
+      // FIX 1: KIỂM TRA LẠI THỜI GIAN (Xử lý xung đột với Anti-sniping)
+      long now = System.currentTimeMillis();
+      if (now < a.getEndTime()) {
+        // Nếu chưa thực sự hết giờ (do mới được cộng thêm 2 phút)
+        // -> Hẹn giờ lại và hủy bỏ lần chạy này
+        long remaining = a.getEndTime() - now;
+        scheduler.schedule(() -> endAuction(auctionId), remaining, TimeUnit.MILLISECONDS);
+        return;
+      }
       // Kiểm tra lại trạng thái để tránh xử lý 2 lần (Double Payment)
       if (a.getStatus() == AuctionStatus.FINISHED || a.getStatus() == AuctionStatus.PAID) {
         return;
@@ -165,6 +186,15 @@ public class AuctionService implements Serializable {
           seller.addBalance(maxPrice);
           // Nâng cấp trạng thái thành ĐÃ THANH TOÁN
           a.setStatus(AuctionStatus.PAID);
+
+          // --- THÊM ĐOẠN NÀY: Bắn thông báo "Ting Ting" cho Seller ---
+          // Format: NOTI_BALANCE_CHANGED|Số_dư_mới|+Số_tiền_cộng
+          String sellerMsg = Protocol.NOTI_BALANCE_CHANGED + Protocol.SEPARATOR
+              + seller.getBalance() + Protocol.SEPARATOR
+              + "+" + maxPrice;
+
+          a.notifySpecificUser(seller.getUsername(), sellerMsg);
+
         } else {
           System.err.println("[ERROR] Không tìm thấy seller: " + a.getSellerId());
         }
@@ -172,15 +202,13 @@ public class AuctionService implements Serializable {
 
       // 3. Gửi thông báo (FE nhận qua socket)
       String msg = (winner != null)
-              ? Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+          ? Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
               + Protocol.SEPARATOR + "Winner:" + winner.getUsername()
               + Protocol.SEPARATOR + "Bid:" + maxPrice + "$"
-              : Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+          : Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
               + Protocol.SEPARATOR + "No winner";
 
-      // Đảm bảo notifyObservers đã dùng bản copy để tránh
-      // ConcurrentModificationException
-      a.notifyObservers(msg);
+      a.notifyAllParticipants(msg, null);
 
       // Giải phóng tài nguyên/dừng thread nếu cần
       a.closeAuction();
@@ -229,6 +257,9 @@ public class AuctionService implements Serializable {
     if (loadedAuctions != null) {
       this.auctions.clear(); // Xóa sạch dữ liệu trắng hiện tại
       this.auctions.putAll(loadedAuctions); // Đổ toàn bộ dữ liệu từ file vào
+
+      // Khôi phục lại lịch trình cho các đối tượng vừa được nạp vào Map
+      recoverScheduledTasks();
     }
   }
 
@@ -265,18 +296,22 @@ public class AuctionService implements Serializable {
       System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: " + e.getMessage());
     }
   }
+
   /**
    * Xóa phiên đấu giá — chỉ Admin mới được gọi.
    */
   public boolean deleteAuction(String auctionId) {
     Auction a = auctions.get(auctionId);
-    if (a == null) return false;
+    if (a == null) {
+      return false;
+    }
     a.closeAuction();
     auctions.remove(auctionId);
     DataManager.getInstance().saveData();
     System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
     return true;
   }
+
   // Trong AuctionService.java
   /**
    *  * Ngắt bỏ mọi obersever.

@@ -3,10 +3,14 @@ package com.auction.model;
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
+import com.auction.network.ClientHandler;
+import com.auction.network.Protocol;
 import com.auction.service.UserManager;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
@@ -44,7 +48,8 @@ public class Auction extends Entity {
   public Auction(String id, Item item, long durationMinutes, String sellerId) {
     super(id);
     if (item == null) {
-      throw new IllegalArgumentException("Item cannot be null.Mỗi phiên đấu giá phải có một món hàng!");
+      throw new IllegalArgumentException("Item cannot be null "
+          + ".Mỗi phiên đấu giá phải có một món hàng!");
     } else {
       this.item = item;
     }
@@ -126,6 +131,9 @@ public class Auction extends Entity {
   public void addObserver(Observer obs) {
     if (observers == null) {
       restoreTransients();
+      if (!observers.contains(obs)) {
+        observers.add(obs);
+      }
     }
     observers.add(obs);
   }
@@ -139,23 +147,88 @@ public class Auction extends Entity {
     }
   }
 
+  // --- NEW NOTIFICATION METHODS ---
+
   /**
-   * Cài đạt thông báo.
+   * IMPROVED: Get the current highest bidder (last person to bid).
+   * 
+   * @return User who placed the last bid, or null if no bids yet
    */
-  public void notifyObservers(String message) {
+  private User getPreviousHighestBidder() {
+    if (history.isEmpty()) {
+      return null;
+    }
+    return history.get(history.size() - 1).getBidder();
+  }
+
+  /**
+   * . Chỉ duyệt qua danh sách observers (ClientHandler)
+   * vì đây mới là những đường ống Socket có thể gửi tin nhắn về máy khách.
+   */
+  public void notifyAllParticipants(String message, User excludeUser) {
+    if (observers == null || observers.isEmpty()) {
+      return;
+    }
+
     for (Observer observer : observers) {
+      // Ép kiểu sang ClientHandler để lấy thông tin User đang giữ kết nối này
+      if (observer instanceof ClientHandler) {
+        ClientHandler handler = (ClientHandler) observer;
+
+        // Bỏ qua không gửi cho người vừa tạo ra hành động này (để tránh tự spam chính
+        // mình)
+        if (excludeUser != null && handler.getCurrentUser() != null) {
+          if (handler.getCurrentUser().getUsername().equals(excludeUser.getUsername())) {
+            continue;
+          }
+        }
+      }
+
+      // Gửi tin nhắn bất đồng bộ
       notifyExecutor.submit(() -> {
         try {
-          // Kiểm tra null hoặc trạng thái kết nối nếu cần
           if (observer != null) {
             observer.update(message);
           }
         } catch (Exception e) {
-          // Nếu update lỗi (do client mất kết nối đột ngột), tự động xóa observer
-          removeObserver(observer);
+          removeObserver(observer); // Nếu Socket sập, gỡ luôn khỏi danh sách
           System.out.println("Removed faulty observer: " + e.getMessage());
         }
       });
+    }
+
+    System.out.println("[NOTIFICATION] Đã phát sóng thông báo tới "
+        + observers.size() + " đường truyền mạng.");
+  }
+
+  /**
+   * NEW: Gắn thẳng tin nhắn vào Socket của một người dùng cụ thể.
+   * Dùng để gửi NOTI_OUTBID (Bị vượt giá).
+   */
+
+  public void notifySpecificUser(String targetUsername, String message) {
+    if (observers == null
+        || observers.isEmpty()
+        || targetUsername == null) {
+      return;
+    }
+
+    for (Observer observer : observers) {
+      if (observer instanceof ClientHandler) {
+        ClientHandler handler = (ClientHandler) observer;
+
+        if (handler.getCurrentUser() != null
+            && handler.getCurrentUser().getUsername().equals(targetUsername)) {
+          notifyExecutor.submit(() -> {
+            try {
+              observer.update(message);
+            } catch (Exception e) {
+              removeObserver(observer);
+            }
+          });
+          break; // Tìm thấy và gửi rồi thì dừng vòng lặp
+        }
+      }
     }
   }
 
@@ -185,7 +258,7 @@ public class Auction extends Entity {
       validateBidAmount(bidAmount);
 
       updateAuctionState(bidder, bidAmount);
-      handleAntiSniping();
+      handleAntiSniping(bidder);
 
       // Kích hoạt hệ thống tự động trả giá
       executeAutoBids();
@@ -224,6 +297,7 @@ public class Auction extends Entity {
   }
 
   private void updateAuctionState(User bidder, double amount) throws InvalidBidException {
+    User previousHighestBidder = getPreviousHighestBidder();
     // 1. CHỐT CHẶN BẢO MẬT: Người bán không được tự đấu giá
     if (bidder.getUsername().equals(this.sellerId)) {
       throw new InvalidBidException("Bạn không thể đấu giá sản phẩm của chính mình!");
@@ -237,18 +311,26 @@ public class Auction extends Entity {
       throw new InvalidBidException("Số dư tài khoản không đủ để đặt mức giá này!");
     }
 
-    // HOÀN TIỀN CHO NGƯỜI CŨ (Chỉ khi đã cầm được tiền của người mới)
-    if (!history.isEmpty()) {
+    // Refund previous bidder (only after new bidder's money is secured)
+    if (previousHighestBidder != null && !previousHighestBidder.equals(bidder)) {
       BidTransaction lastTransaction = history.get(history.size() - 1);
-      User oldBidder = lastTransaction.getBidder();
-      if (oldBidder != null && !oldBidder.equals(bidder)) {
-        oldBidder.addBalance(lastTransaction.getAmount());
-        // Thông báo tiền về ví cho người cũ
-        String refundMessage = "REFUND|Phiên " + getId()
-            + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount();
-        oldBidder.update(refundMessage);
+      double refundAmount = lastTransaction.getAmount();
+      previousHighestBidder.addBalance(refundAmount);
 
-      }
+      // IMPROVED: Send specific "OUTBID" notification to previous highest bidder
+      String outbidMessage = Protocol.NOTI_OUTBID + Protocol.SEPARATOR
+          + getId() + Protocol.SEPARATOR
+          + bidder.getUsername() + Protocol.SEPARATOR
+          + amount;
+      notifySpecificUser(previousHighestBidder.getUsername(), outbidMessage);
+      // 2. Gửi thông báo hoàn tiền (REFUND) - SỬ DỤNG LỆNH CÓ SẴN
+      // Cấu trúc gợi ý: NOTI_REFUND|AuctionID|Số_tiền_được_hoàn|Số_dư_hiện_tại
+      String refundMessage = Protocol.NOTI_REFUND + Protocol.SEPARATOR
+          + getId() + Protocol.SEPARATOR
+          + refundAmount + Protocol.SEPARATOR
+          + previousHighestBidder.getBalance();
+      notifySpecificUser(previousHighestBidder.getUsername(), refundMessage);
+    
     }
 
     this.currentPrice = amount;
@@ -258,20 +340,22 @@ public class Auction extends Entity {
     // Lưu lịch sử giao dịch
     this.history.add(new BidTransaction(bidder, amount));
 
-    notifyObservers("UPDATE|" + getId() + "|" + amount + "|" + bidder.getUsername());
+    String bidUpdateMessage = Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR
+        + getId() + "|" + amount + "|" + bidder.getUsername();
+    notifyAllParticipants(bidUpdateMessage, bidder);
+
   }
 
   /**
    * // Hàm để người dùng đăng ký Auto-bid từ giao diện.
    */
-  public void addAutoBidConfig(String bidderId, double maxBid, double customStep) 
+  public void addAutoBidConfig(String bidderId, double maxBid, double customStep)
       throws InvalidBidException {
     lock.lock();
     try {
       double systemMin = getMinimumIncrement(currentPrice);
       if (customStep < systemMin) {
-        throw new 
-        InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
+        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
       }
       if (this.autoBidQueue == null) {
         restoreTransients();
@@ -307,13 +391,19 @@ public class Auction extends Entity {
       String lastBidderId = history.isEmpty() ? ""
           : history.get(history.size() - 1).getBidder().getUsername();
 
-      // 2. Nếu người này đang giữ giá cao nhất -> Tạm dừng lượt của họ
+      // 2. Nếu ng mạnh nhất đang thắng, lấy ngay ng mạnh thứ hai ra đấu
       if (top.getBidderId().equals(lastBidderId)) {
-        autoBidQueue.add(top); // Trả lại vào Queue để chờ đối thủ
-        break; // DỪNG VÒNG LẶP: Không tự đấu giá với chính mình
+        AutoBid second = autoBidQueue.poll();
+        if (second == null) {
+          autoBidQueue.add(top);
+          break; // Hết đối thủ
+        }
+        // Trả ng mạnh nhất vào lại để đợi đối thủ nâng giá
+        autoBidQueue.add(top);
+        top = second; // Đổi mục tiêu sang ng thứ hai
       }
 
-      // 3. Tính toán mức giá mới 
+      // 3. Tính toán mức giá mới
       double nextPrice = currentPrice + top.getbidStep();
 
       // 4. Kiểm tra ngân sách tối đa của bot (Max Bid)
@@ -342,13 +432,22 @@ public class Auction extends Entity {
     }
   }
 
-  private synchronized void handleAntiSniping() {
+  private void handleAntiSniping(User bidder) {
     long timeLeft = this.endTime - System.currentTimeMillis();
     if (timeLeft > 0 && timeLeft < ONE_MINUTE_MS && extensionCount < MAX_EXTENSIONS) { // < 1 phút
       this.endTime += TWO_MINUTES_MS; // Cộng thêm 2 phút
       this.extensionCount++;
 
-      notifyObservers("SNIPING|" + getId() + "|" + this.endTime + "|" + extensionCount);
+      String message = Protocol.NOTI_SNIPING_UPDATE
+          + Protocol.SEPARATOR + getId()
+          + "|" + this.endTime
+          + "|" + extensionCount;
+
+      // Truyền null vào excludeUser vì ngay cả người vừa bid cũng cần thấy EndTime
+      // mới trên UI của họ
+      notifyAllParticipants(message, null);
+      System.out.println("[ANTI-SNIPING] Phiên "
+          + getId() + " được gia hạn thêm 2p bởi " + bidder.getUsername());
     }
   }
 
@@ -386,7 +485,7 @@ public class Auction extends Entity {
       autoBidQueue.clear();
     }
     if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
-      notifyExecutor.shutdown(); // Giải phóng 10 threads ngay lập tức
+      notifyExecutor.shutdown(); // Giải phóng threads ngay lập tức
     }
   }
 

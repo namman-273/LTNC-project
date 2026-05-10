@@ -6,7 +6,7 @@ import com.auction.util.SecurityUtils;
  *  * .
  *  
  */
-public abstract class User extends Entity implements Observer {
+public abstract class User extends Entity {
   protected String username;
   private String password; // Lưu trữ dưới dạng hash đơn giản
   private String role; // "ADMIN", "SELLER", hoặc "BIDDER"
@@ -42,11 +42,6 @@ public abstract class User extends Entity implements Observer {
 
   public boolean checkPassword(String inputPassword) {
     return this.password.equals(SecurityUtils.hashPassword(inputPassword, username));
-  }
-
-  public void update(String message) {
-    // Sau này chỗ này sẽ hiển thị lên màn hình JavaFX
-    System.out.println("[NOTIFY - " + username + "]: " + message);
   }
 
   public String toString() {
@@ -87,16 +82,14 @@ public abstract class User extends Entity implements Observer {
         // Nếu an toàn thì mới cộng dồn như bình thường
         this.balance += amount;
       }
-
-      // Thông báo biến động số dư qua hàm update (để Client nhận được)
-      this.update("BALANCE_CHANGED|+" + (long) amount + "|" + (long) this.balance);
     }
   }
 
   /**
    * Trừ tiền khi đặt Bid thành công.
    * 
-   * <p>return true nếu trừ tiền thành công, nếu k đủ số dư
+   * <p>
+   * return true nếu trừ tiền thành công, nếu k đủ số dư
    */
   public boolean deductBalance(double amount) {
     synchronized (getLock()) {
@@ -108,7 +101,6 @@ public abstract class User extends Entity implements Observer {
       if (this.balance >= amount) {
         this.balance -= amount;
 
-        this.update("BALANCE_CHANGED|-" + (long) amount + "|" + (long) this.balance);
         return true;
       }
       return false;
