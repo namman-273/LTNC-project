@@ -331,8 +331,7 @@ public class BidController implements Initializable {
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("✅ Đặt giá thành công!");
                     bidAmountField.clear();
-                    // FIX: KHÔNG gọi loadHistory() ở đây
-                    // BID_UPDATE push từ server sẽ tự cập nhật historyItems qua handleServerPush()
+                    loadHistory(); // Reload vì server không gửi BID_UPDATE cho chính người vừa bid
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
