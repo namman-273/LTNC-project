@@ -1,7 +1,6 @@
 package com.auction.controllers;
 
 import com.auction.dto.AuctionRow;
-import com.auction.model.BidTransaction;
 import com.auction.network.Protocol;
 import com.auction.util.NotificationManager;
 import com.auction.util.ServerConnection;
@@ -10,6 +9,12 @@ import com.auction.views.AuctionListView;
 import com.auction.views.CreateAuctionView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,10 +28,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
 
 public class SellerController implements Initializable {
 
@@ -160,8 +161,8 @@ public class SellerController implements Initializable {
     private void loadMyAuctions() {
         statsLabel.setText("Đang tải...");
         new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
+            String response = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
 
             if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
                 String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
@@ -191,16 +192,19 @@ public class SellerController implements Initializable {
         }).start();
     }
 
+    /**
+     * FIX: Parse thủ công bằng JsonParser thay vì gson.fromJson(BidTransaction[].class).
+     * BidTransaction chứa User object lồng nhau — Gson không đọc được bidder.username
+     * → history hiển thị "---" hoặc trống hoàn toàn.
+     */
     private void loadHistory(String auctionId, String itemName) {
         historyTitleLabel.setText("📋 Lịch sử đặt giá - " + itemName);
         historyData.clear();
         historyData.add("Đang tải...");
 
         new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive(
-                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
-            );
+            String response = ServerConnection.getInstance().sendAndReceive(
+                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
 
             Platform.runLater(() -> {
                 historyData.clear();
@@ -215,17 +219,35 @@ public class SellerController implements Initializable {
                     return;
                 }
 
-                BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
-                if (history != null) {
-                    for (int i = 0; i < history.length; i++) {
-                        BidTransaction bt = history[i];
-                        String bidder = bt.getBidder() != null
-                                ? bt.getBidder().getUsername() : "---";
-                        historyData.add((i + 1) + ". " + bidder + " đặt: "
-                                + String.format("%,.0f VND", bt.getAmount()));
+                try {
+                    JsonArray array = JsonParser.parseString(parts[2].trim()).getAsJsonArray();
+                    if (array.size() == 0) {
+                        historyData.add("Chưa có lịch sử đặt giá.");
+                        return;
                     }
+
+                    for (int i = 0; i < array.size(); i++) {
+                        JsonObject obj = array.get(i).getAsJsonObject();
+
+                        // FIX: đọc bidder.username từ nested object
+                        String bidder = "---";
+                        if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
+                            JsonObject bidderObj = obj.get("bidder").getAsJsonObject();
+                            if (bidderObj.has("username")) {
+                                bidder = bidderObj.get("username").getAsString();
+                            }
+                        }
+
+                        double amount = obj.has("amount")
+                                ? obj.get("amount").getAsDouble() : 0;
+
+                        historyData.add((i + 1) + ". " + bidder + "  đặt:  "
+                                + String.format("%,.0f VNĐ", amount));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Lỗi parse history seller: " + e.getMessage());
+                    historyData.add("Lỗi tải lịch sử.");
                 }
-                if (historyData.isEmpty()) historyData.add("Chưa có lịch sử đặt giá.");
             });
         }).start();
     }
