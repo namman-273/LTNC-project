@@ -251,21 +251,16 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.NOTI_SNIPING_UPDATE:
-                // SNIPING_UPDATE|auctionId|newEndTime|extensionCount
-                // FIX 1: cập nhật endTime → countdown chính tự cộng thêm 2 phút
-                // FIX 2: chỉ hiện snipingBox khi thời gian còn lại < 60 giây
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
                     try {
                         long newEndTime = Long.parseLong(parts[2]);
-                        this.endTime = newEndTime; // countdown chính tự cập nhật
                         long remaining = newEndTime - System.currentTimeMillis();
-                        // Chỉ hiện hộp gia hạn nếu còn dưới 60 giây trước khi gia hạn
                         if (remaining < 60_000) {
+                            this.endTime = newEndTime;
                             Platform.runLater(() -> showSnipingAlert(count));
                             NotificationManager.getInstance().add(
                                     "⏱ Phiên " + auctionId + " được gia hạn lần " + count);
-
                         }
                     } catch (NumberFormatException ignored) {}
                 }
@@ -290,9 +285,13 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String refundAmt = parts[2];
                     String newBal    = parts[3];
-                    Platform.runLater(() ->
-                            showInfo("💰 Hoàn " + formatPrice(refundAmt)
-                                    + " → Số dư: " + formatPrice(newBal)));
+                    Platform.runLater(() -> {
+                        showInfo("💰 Hoàn " + formatPrice(refundAmt)
+                                + " → Số dư: " + formatPrice(newBal));
+                        NotificationManager.getInstance().add(
+                                "💰 Hoàn " + formatPrice(refundAmt)
+                                        + " → Số dư: " + formatPrice(newBal));
+                    });
                 }
                 break;
 
@@ -475,7 +474,16 @@ public class BidController implements Initializable {
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("✅ Đặt giá thành công!");
                     bidAmountField.clear();
-                    loadHistory(); // server không gửi BID_UPDATE cho chính người vừa bid
+                    // Lấy giá mới từ response nếu có
+                    if (parts.length > 1) {
+                        try {
+                            double newPrice = Double.parseDouble(parts[1]);
+                            currentPriceValue = newPrice;
+                            currentPriceLabel.setText(formatPrice(String.valueOf(newPrice)));
+                            updateBidSuggestion(newPrice);
+                        } catch (NumberFormatException ignored) {}
+                    }
+                    loadHistory();
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
@@ -518,9 +526,11 @@ public class BidController implements Initializable {
 
     private String formatPrice(String raw) {
         try {
-            return String.format("%,.0f VNĐ",
-                    Double.parseDouble(raw.replace(",", "")
-                            .replace(" VND", "").replace(" VNĐ", "").trim()));
+            double val = Double.parseDouble(raw.replace(",", "")
+                    .replace(" VND", "").replace(" VNĐ", "").trim());
+            // Giới hạn tối đa 999 tỷ để tránh số BE bị lỗi
+            if (val > 999_000_000_000.0 || val < 0) return "N/A";
+            return String.format("%,.0f VNĐ", val);
         } catch (NumberFormatException e) { return raw; }
     }
 
