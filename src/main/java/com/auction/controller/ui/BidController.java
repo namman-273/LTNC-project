@@ -203,6 +203,7 @@ public class BidController implements Initializable {
     }
 
     private void handleServerPush(String message) {
+        System.out.println("PUSH RECEIVED: " + message);
         String[] parts = message.split("\\" + Protocol.SEPARATOR);
         if (parts.length == 0) return;
 
