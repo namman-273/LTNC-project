@@ -1,8 +1,9 @@
 package com.auction;
 
+import com.auction.views.java.LoginView;
+
 import javafx.application.Application;
 import javafx.stage.Stage;
-import com.auction.views.LoginView;
 
 public class MainApp extends Application {
 

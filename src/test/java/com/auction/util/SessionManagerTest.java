@@ -9,6 +9,8 @@ import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.auction.util.core.SessionManager;
+
 
 public class SessionManagerTest {
 

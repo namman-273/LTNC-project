@@ -9,12 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
- 
-import com.auction.exception.AuthenticationException;
-import com.auction.model.Admin;
-import com.auction.model.Bidder;
-import com.auction.model.Seller;
-import com.auction.model.User;
+
+import com.auction.model.entities.user.Admin;
+import com.auction.model.entities.user.Bidder;
+import com.auction.model.entities.user.Seller;
+import com.auction.model.entities.user.User;
+import com.auction.util.exception.AuthenticationException;
+
 import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

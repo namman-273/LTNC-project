@@ -1,0 +1,129 @@
+package com.auction.controller.ui;
+
+import com.auction.network.Protocol;
+import com.auction.util.ServerConnection;
+import com.auction.views.java.BidView;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Label;
+import javafx.stage.Stage;
+
+public class BidChartController implements Initializable {
+
+    @FXML private LineChart<Number, Number> bidChart;
+    @FXML private NumberAxis xAxis;
+    @FXML private NumberAxis yAxis;
+    @FXML private Label titleLabel;
+
+    private String auctionId;
+    private String itemName;
+    private String currentPrice;
+    private String status;
+    private String username;
+    private long endTime;
+    private Consumer<String> pushListener;
+
+    public void setData(String auctionId, String itemName, String currentPrice,
+                        String status, String username, long endTime) {
+        this.auctionId    = auctionId;
+        this.itemName     = itemName;
+        this.currentPrice = currentPrice;
+        this.status       = status;
+        this.username     = username;
+        this.endTime      = endTime;
+        titleLabel.setText("Biểu đồ giá - " + itemName);
+        loadChartData();
+        registerPushListener();
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle rb) {
+        xAxis.setLabel("Lần đặt giá");
+        yAxis.setLabel("Giá (VNĐ)");
+    }
+
+    /**
+     * FIX: Parse thủ công bằng JsonParser thay vì gson.fromJson(BidTransaction[].class).
+     * BidTransaction chứa User object lồng nhau — Gson không deserialize được đúng
+     * → amount bị 0 → chart trống. Giờ chỉ lấy đúng field "amount".
+     */
+    private void loadChartData() {
+        new Thread(() -> {
+            String response = ServerConnection.getInstance().sendAndReceive(
+                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+            System.out.println("Chart history: " + response);
+
+            if (response == null || !response.startsWith(Protocol.RES_HISTORY)) return;
+
+            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+            if (parts.length < 3 || parts[2].trim().equals("[]")) return;
+
+            try {
+                JsonArray array = JsonParser.parseString(parts[2].trim()).getAsJsonArray();
+                if (array.size() == 0) return;
+
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                series.setName("Giá đặt");
+
+                for (int i = 0; i < array.size(); i++) {
+                    JsonObject obj = array.get(i).getAsJsonObject();
+                    double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
+                    final int idx = i + 1;
+                    series.getData().add(new XYChart.Data<>(idx, amount));
+                }
+
+                Platform.runLater(() -> {
+                    bidChart.getData().clear();
+                    if (!series.getData().isEmpty()) {
+                        bidChart.getData().add(series);
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Lỗi parse chart data: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private void registerPushListener() {
+        pushListener = message -> {
+            if (Protocol.isNotificationType(message, Protocol.NOTI_BID_UPDATE)) {
+                String[] parts = message.split("\\" + Protocol.SEPARATOR);
+                if (parts.length >= 3 && parts[1].equals(auctionId)) {
+                    try {
+                        double newPrice = Double.parseDouble(parts[2]);
+                        Platform.runLater(() -> appendPoint(newPrice));
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
+    }
+
+    private void appendPoint(double price) {
+        if (bidChart.getData().isEmpty()) return;
+        XYChart.Series<Number, Number> series = bidChart.getData().get(0);
+        int nextIndex = series.getData().size() + 1;
+        series.getData().add(new XYChart.Data<>(nextIndex, price));
+    }
+
+    @FXML
+    private void handleBack() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
+        Stage stage = (Stage) bidChart.getScene().getWindow();
+        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
+    }
+}

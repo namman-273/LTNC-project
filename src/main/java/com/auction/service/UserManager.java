@@ -1,12 +1,13 @@
 package com.auction.service;
 
-import com.auction.exception.AuthenticationException;
-import com.auction.model.Admin;
-import com.auction.model.Bidder;
-import com.auction.model.Seller;
-import com.auction.model.User;
-import com.auction.util.DataManager;
-import com.auction.util.SecurityUtils;
+import com.auction.model.entities.user.Admin;
+import com.auction.model.entities.user.Bidder;
+import com.auction.model.entities.user.Seller;
+import com.auction.model.entities.user.User;
+import com.auction.util.core.DataManager;
+import com.auction.util.core.SecurityUtils;
+import com.auction.util.exception.AuthenticationException;
+
 import java.util.HashMap;
 import java.util.Map;
 

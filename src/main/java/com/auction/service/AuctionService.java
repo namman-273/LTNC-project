@@ -1,16 +1,17 @@
 package com.auction.service;
 
-import com.auction.factory.ItemFactory;
-import com.auction.model.Auction;
-import com.auction.model.AuctionStatus;
-import com.auction.model.BidTransaction;
-import com.auction.model.Bidder;
-import com.auction.model.CreateItem;
-import com.auction.model.Item;
-import com.auction.model.Observer;
-import com.auction.model.User;
-import com.auction.network.Protocol;
-import com.auction.util.DataManager;
+import com.auction.model.entities.Auction;
+import com.auction.model.entities.BidTransaction;
+import com.auction.model.entities.item.Item;
+import com.auction.model.entities.user.Bidder;
+import com.auction.model.entities.user.User;
+import com.auction.model.enums.AuctionStatus;
+import com.auction.model.factory.ItemFactory;
+import com.auction.model.factory.ItemFactoryRegistry;
+import com.auction.model.observer.Observer;
+import com.auction.network.protocol.Protocol;
+import com.auction.util.core.DataManager;
+import com.auction.util.core.IDataStorage;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,7 +23,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 
 /**
  *  * .
@@ -38,7 +38,11 @@ public class AuctionService implements Serializable {
   private final Map<String, Auction> auctions = new ConcurrentHashMap<>();
   private static volatile AuctionService instance;
 
-  private AuctionService() {
+  // ÁP DỤNG DIP: Khai báo Interface (dùng transient để không lỗi khi lưu file)
+  private transient IDataStorage dataStorage;
+
+  private AuctionService(IDataStorage dataStorage) {
+    this.dataStorage = dataStorage;
   }
 
   /**
@@ -49,7 +53,7 @@ public class AuctionService implements Serializable {
     if (instance == null) {
       synchronized (AuctionService.class) {
         if (instance == null) {
-          instance = new AuctionService();
+          instance = new AuctionService(DataManager.getInstance());
         }
       }
     }
@@ -85,7 +89,7 @@ public class AuctionService implements Serializable {
     String auctionId = "AUC_" + System.currentTimeMillis();
 
     // 2. Sử dụng Factory để tạo Item
-    ItemFactory factory = CreateItem.getFactory(itemType);
+    ItemFactory factory = ItemFactoryRegistry.getFactory(itemType);
     Item newItem = factory.create(auctionId, itemName, startingPrice);
 
     // 3. Khởi tạo đối tượng Auction mới
@@ -95,7 +99,9 @@ public class AuctionService implements Serializable {
     this.auctions.put(auctionId, newAuction);
 
     // 5. Lưu xuống file .dat ngay lập tức
-    DataManager.getInstance().saveData();
+    if (this.dataStorage != null) {
+      this.dataStorage.saveData();
+    }
 
     scheduler.schedule(() -> endAuction(auctionId), durationMinutes, TimeUnit.MINUTES);
   }
@@ -133,6 +139,9 @@ public class AuctionService implements Serializable {
   protected Object readResolve() {
     // Khi load từ file, gán instance hiện tại chính là đối tượng vừa load
     instance = this;
+    if (this.dataStorage == null) {
+      this.dataStorage = DataManager.getInstance();
+    }
 
     recoverScheduledTasks(); // Gọi khôi phục
 
@@ -214,7 +223,9 @@ public class AuctionService implements Serializable {
       a.closeAuction();
 
       // 4. LƯU DỮ LIỆU NGAY LẬP TỨC
-      DataManager.getInstance().saveData();
+      if (this.dataStorage != null) {
+        this.dataStorage.saveData();
+      }
 
       System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId + " hoàn tất. Trạng thái cuối: "
           + a.getStatus());
@@ -290,7 +301,9 @@ public class AuctionService implements Serializable {
     // QUAN TRỌNG: Lưu toàn bộ dữ liệu hiện tại xuống file .dat
     // Điều này đảm bảo giá thầu và trạng thái phiên đấu giá được bảo toàn
     try {
-      DataManager.getInstance().saveData();
+      if (this.dataStorage != null) {
+        this.dataStorage.saveData();
+      }
       System.out.println("[SERVICE] Dữ liệu đã được lưu an toàn vào file .dat.");
     } catch (Exception e) {
       System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: " + e.getMessage());
@@ -307,7 +320,9 @@ public class AuctionService implements Serializable {
     }
     a.closeAuction();
     auctions.remove(auctionId);
-    DataManager.getInstance().saveData();
+    if (this.dataStorage != null) {
+      this.dataStorage.saveData();
+    }
     System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
     return true;
   }

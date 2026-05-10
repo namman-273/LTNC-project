@@ -9,6 +9,11 @@ import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.auction.model.entities.user.Admin;
+import com.auction.model.entities.user.Bidder;
+import com.auction.model.entities.user.Seller;
+import com.auction.model.entities.user.User;
+
 /**
  * Covers missed branches in User:
  * - balanceLock null re-init (after deserialization)
@@ -140,13 +145,13 @@ public class UserEdgeCaseTest {
 
     @Test
     void checkPasswordCorrectReturnsTrue() {
-        Bidder b = new Bidder("alice", com.auction.util.SecurityUtils.hashPassword("secret", "alice"));
+        Bidder b = new Bidder("alice", com.auction.util.core.SecurityUtils.hashPassword("secret", "alice"));
         assertTrue(b.checkPassword("secret"));
     }
 
     @Test
     void checkPasswordWrongReturnsFalse() {
-        Bidder b = new Bidder("alice", com.auction.util.SecurityUtils.hashPassword("secret", "alice"));
+        Bidder b = new Bidder("alice", com.auction.util.core.SecurityUtils.hashPassword("secret", "alice"));
         assertFalse(b.checkPassword("wrong"));
     }
 
