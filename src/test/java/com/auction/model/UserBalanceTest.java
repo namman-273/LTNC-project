@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.auction.model.entities.user.Bidder;
+
 /**
  * Test đầy đủ các nhánh logic của addBalance và deductBalance trong User.
  * Đây là logic tài chính quan trọng, mỗi nhánh đều cần được kiểm tra.

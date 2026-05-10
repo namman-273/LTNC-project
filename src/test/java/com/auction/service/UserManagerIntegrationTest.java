@@ -3,9 +3,10 @@ package com.auction.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
- 
-import com.auction.exception.AuthenticationException;
-import com.auction.model.User;
+
+import com.auction.model.entities.user.User;
+import com.auction.util.exception.AuthenticationException;
+
 import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

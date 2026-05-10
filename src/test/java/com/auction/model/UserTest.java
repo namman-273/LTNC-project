@@ -6,8 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
- 
-import com.auction.util.SecurityUtils;
+
+import com.auction.model.entities.user.Admin;
+import com.auction.model.entities.user.Bidder;
+import com.auction.model.entities.user.Seller;
+import com.auction.model.entities.user.User;
+import com.auction.util.core.SecurityUtils;
+
 import org.junit.jupiter.api.Test;
  
 public class UserTest {

@@ -3,13 +3,17 @@ package com.auction.factory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
- 
-import com.auction.model.Art;
-import com.auction.model.CreateItem;
-import com.auction.model.Electronics;
-import com.auction.model.Item;
-import com.auction.model.Vehicle;
+
 import org.junit.jupiter.api.Test;
+
+import com.auction.model.entities.item.Art;
+import com.auction.model.entities.item.Electronics;
+import com.auction.model.entities.item.Item;
+import com.auction.model.entities.item.Vehicle;
+import com.auction.model.factory.ArtFactory;
+import com.auction.model.factory.ItemFactoryRegistry;
+import com.auction.model.factory.ElectronicsFactory;
+import com.auction.model.factory.VehicleFactory;
  
 public class FactoryTest {
  
@@ -19,37 +23,37 @@ public class FactoryTest {
  
   @Test
   void getFactoryArtReturnsArtFactory() {
-    assertInstanceOf(ArtFactory.class, CreateItem.getFactory("ART"));
+    assertInstanceOf(ArtFactory.class, ItemFactoryRegistry.getFactory("ART"));
   }
  
   @Test
   void getFactoryElectronicsReturnsElectronicsFactory() {
-    assertInstanceOf(ElectronicsFactory.class, CreateItem.getFactory("ELECTRONICS"));
+    assertInstanceOf(ElectronicsFactory.class, ItemFactoryRegistry.getFactory("ELECTRONICS"));
   }
  
   @Test
   void getFactoryVehicleReturnsVehicleFactory() {
-    assertInstanceOf(VehicleFactory.class, CreateItem.getFactory("VEHICLE"));
+    assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory("VEHICLE"));
   }
  
   @Test
   void getFactoryArtLowercaseReturnsArtFactory() {
-    assertInstanceOf(ArtFactory.class, CreateItem.getFactory("art"));
+    assertInstanceOf(ArtFactory.class, ItemFactoryRegistry.getFactory("art"));
   }
  
   @Test
   void getFactoryElectronicsLowercaseReturnsElectronicsFactory() {
-    assertInstanceOf(ElectronicsFactory.class, CreateItem.getFactory("electronics"));
+    assertInstanceOf(ElectronicsFactory.class, ItemFactoryRegistry.getFactory("electronics"));
   }
  
   @Test
   void getFactoryVehicleLowercaseReturnsVehicleFactory() {
-    assertInstanceOf(VehicleFactory.class, CreateItem.getFactory("vehicle"));
+    assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory("vehicle"));
   }
  
   @Test
   void getFactoryUnknownTypeReturnsVehicleFactoryAsDefault() {
-    assertInstanceOf(VehicleFactory.class, CreateItem.getFactory("UNKNOWN"));
+    assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory("UNKNOWN"));
   }
  
   // --- ArtFactory ---

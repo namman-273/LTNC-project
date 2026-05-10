@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.auction.model.entities.Auction;
+import com.auction.model.entities.user.Bidder;
 import com.auction.service.AuctionService;
 import com.auction.service.UserManager;
 import java.lang.reflect.Field;

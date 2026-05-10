@@ -5,6 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
  
 import org.junit.jupiter.api.Test;
+
+import com.auction.model.entities.item.Art;
+import com.auction.model.entities.item.Electronics;
+import com.auction.model.entities.item.Item;
+import com.auction.model.entities.item.Vehicle;
  
 public class ItemTest {
  

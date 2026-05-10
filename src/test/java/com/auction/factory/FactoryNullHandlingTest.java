@@ -4,8 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.auction.model.Item;
 import org.junit.jupiter.api.Test;
+
+import com.auction.model.entities.item.Item;
+import com.auction.model.factory.ArtFactory;
+import com.auction.model.factory.ElectronicsFactory;
+import com.auction.model.factory.VehicleFactory;
 
 
 public class FactoryNullHandlingTest {
@@ -16,7 +20,7 @@ public class FactoryNullHandlingTest {
 
     @Test
     void getFactoryEmptyStringReturnsNonNull() {
-        assertNotNull(com.auction.model.CreateItem.getFactory(""));
+        assertNotNull(com.auction.model.factory.ItemFactoryRegistry.getFactory(""));
     }
 
     // --- ElectronicsFactory: null/empty id/name vẫn tạo được object ---
