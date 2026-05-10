@@ -87,8 +87,7 @@ public abstract class User extends Entity {
 
   /**
    * Trừ tiền khi đặt Bid thành công.
-   * 
-   * <p>
+   *
    * return true nếu trừ tiền thành công, nếu k đủ số dư
    */
   public boolean deductBalance(double amount) {

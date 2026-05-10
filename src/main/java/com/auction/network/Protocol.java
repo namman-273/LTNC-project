@@ -73,31 +73,4 @@ public class Protocol {
   // Delimiter (Ký tự phân tách)
   public static final String SEPARATOR = "|";
 
-  // --- HELPER METHODS ---
-
-  /**
-   * Parse notification header từ message string.
-   * 
-   * @param message Full notification message
-   * @return Notification type (header)
-   */
-  public static String getNotificationHeader(String message) {
-    if (message == null || message.isEmpty()) {
-      return null;
-    }
-    String[] parts = message.split("\\" + SEPARATOR);
-    return parts.length > 0 ? parts[0] : null;
-  }
-
-  /**
-   * Kiểm tra xem message có phải là notification type không. 
-   * @param   message cần kiểm tra. 
-   * @param notificationType Protocol constant (e.g., NOTI_BID_UPDATE)
-   * @return true nếu message thuộc type này
-   */
-  public static boolean isNotificationType(String message, String notificationType) {
-    String header = getNotificationHeader(message);
-    return header != null && header.equals(notificationType);
-  }
-
 }

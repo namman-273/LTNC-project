@@ -7,10 +7,8 @@ import com.auction.network.ClientHandler;
 import com.auction.network.Protocol;
 import com.auction.service.UserManager;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
@@ -152,7 +150,7 @@ public class Auction extends Entity {
   /**
    * IMPROVED: Get the current highest bidder (last person to bid).
    * 
-   * @return User who placed the last bid, or null if no bids yet
+   * <p>User who placed the last bid, or null if no bids yet
    */
   private User getPreviousHighestBidder() {
     if (history.isEmpty()) {
@@ -297,7 +295,7 @@ public class Auction extends Entity {
   }
 
   private void updateAuctionState(User bidder, double amount) throws InvalidBidException {
-    User previousHighestBidder = getPreviousHighestBidder();
+
     // 1. CHỐT CHẶN BẢO MẬT: Người bán không được tự đấu giá
     if (bidder.getUsername().equals(this.sellerId)) {
       throw new InvalidBidException("Bạn không thể đấu giá sản phẩm của chính mình!");
@@ -310,7 +308,7 @@ public class Auction extends Entity {
 
       throw new InvalidBidException("Số dư tài khoản không đủ để đặt mức giá này!");
     }
-
+    User previousHighestBidder = getPreviousHighestBidder();
     // Refund previous bidder (only after new bidder's money is secured)
     if (previousHighestBidder != null && !previousHighestBidder.equals(bidder)) {
       BidTransaction lastTransaction = history.get(history.size() - 1);
@@ -330,7 +328,7 @@ public class Auction extends Entity {
           + refundAmount + Protocol.SEPARATOR
           + previousHighestBidder.getBalance();
       notifySpecificUser(previousHighestBidder.getUsername(), refundMessage);
-    
+
     }
 
     this.currentPrice = amount;
@@ -355,7 +353,8 @@ public class Auction extends Entity {
     try {
       double systemMin = getMinimumIncrement(currentPrice);
       if (customStep < systemMin) {
-        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
+        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng "
+            + (long) systemMin + " VNĐ");
       }
       if (this.autoBidQueue == null) {
         restoreTransients();
