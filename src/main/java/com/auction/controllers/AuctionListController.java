@@ -205,7 +205,8 @@ public class AuctionListController implements Initializable {
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
         new BidView(stage, row.getId(), row.getItemName(),
                 String.valueOf(row.getCurrentPrice()), row.getStatus(),
-                username, row.getEndTime()).show();
+                username, row.getEndTime(),
+                row.getImageUrl(), row.getDescription()).show();
     }
 
     // ─── Watchlist ────────────────────────────────────────────────────────────

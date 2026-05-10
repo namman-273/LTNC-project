@@ -45,7 +45,8 @@
             <Label text="Số dư khả dụng"
                    style="-fx-font-size: 13px; -fx-text-fill: rgba(255,255,255,0.9);"/>
             <Label fx:id="balanceLabel" text="Đang tải..."
-                   style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"
+                   wrapText="true" maxWidth="440"/>
             <HBox spacing="10" style="-fx-padding: 10 0 0 0;">
                 <Button text="💳 Nạp tiền" onAction="#handleDeposit"
                         style="-fx-background-color: white;

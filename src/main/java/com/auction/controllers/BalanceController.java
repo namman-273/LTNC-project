@@ -57,7 +57,7 @@ public class BalanceController implements Initializable {
                         double balance = Double.parseDouble(parts[1]);
                         balanceLabel.setText(String.format("%,.0f VNĐ", balance));
                         balanceLabel.setStyle(
-                                "-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white;");
+                                "-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
                     } catch (NumberFormatException e) {
                         balanceLabel.setText(parts[1]);
                     }
