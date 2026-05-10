@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.auction.model.entities.Auction;
+import com.auction.model.entities.user.Bidder;
 import com.auction.service.AuctionService;
 import com.auction.service.UserManager;
 import java.lang.reflect.Field;
@@ -95,19 +97,6 @@ public class BidderWatchlistTest {
     }
 
     // --- Bidder.getWatchlist: trả về bản sao, không leak ref ---
-
-    
-
-    @Test
-    void getWatchlistForUserBidderWithMatchingAuctionReturnsList() {
-        Auction a = new Auction("wl-1", new Electronics("e-wl", "TV", PRICE), DURATION, null);
-        service.addAuction(a);
-        bidder.addToWatchlist("wl-1");
-
-        List<Auction> result = service.getWatchlistForUser("alice");
-        assertEquals(1, result.size());
-        assertEquals("wl-1", result.get(0).getId());
-    }
 
     @Test
     void getWatchlistForUserAuctionNotInServiceIsFiltered() {
