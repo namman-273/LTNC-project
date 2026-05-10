@@ -19,6 +19,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -40,6 +41,7 @@ public class AuctionListController implements Initializable {
     private String username;
     private AuctionRow selectedRow = null;
     private final List<AuctionRow> currentRows = new ArrayList<>();
+    private Consumer<String> pushListener;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -64,6 +66,20 @@ public class AuctionListController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         loadFromServer();
+        registerPushListener();
+    }
+
+    private void registerPushListener() {
+        pushListener = message -> {
+            String header = message.split("\\|")[0];
+            if (header.equals(Protocol.NOTI_NEW_AUCTION)) {
+                Platform.runLater(() -> {
+                    setStatusBar("🆕 Có phiên đấu giá mới! Đang tải lại...");
+                    loadFromServer();
+                });
+            }
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
     }
 
     private void loadFromServer() {
@@ -261,6 +277,10 @@ public class AuctionListController implements Initializable {
 
     @FXML
     private void handleLogout() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
         ServerConnection.getInstance().disconnect();
         SessionManager.getInstance().clear();
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
