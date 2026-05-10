@@ -9,6 +9,7 @@ import com.auction.model.CreateItem;
 import com.auction.model.Item;
 import com.auction.model.Observer;
 import com.auction.model.User;
+import com.auction.network.Protocol;
 import com.auction.util.DataManager;
 import java.io.Serializable;
 import java.util.Collection;
@@ -21,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import com.auction.network.Protocol;
+
 
 /**
  *  * .
@@ -185,6 +186,15 @@ public class AuctionService implements Serializable {
           seller.addBalance(maxPrice);
           // Nâng cấp trạng thái thành ĐÃ THANH TOÁN
           a.setStatus(AuctionStatus.PAID);
+
+          // --- THÊM ĐOẠN NÀY: Bắn thông báo "Ting Ting" cho Seller ---
+          // Format: NOTI_BALANCE_CHANGED|Số_dư_mới|+Số_tiền_cộng
+          String sellerMsg = Protocol.NOTI_BALANCE_CHANGED + Protocol.SEPARATOR
+              + seller.getBalance() + Protocol.SEPARATOR
+              + "+" + maxPrice;
+
+          a.notifySpecificUser(seller.getUsername(), sellerMsg);
+
         } else {
           System.err.println("[ERROR] Không tìm thấy seller: " + a.getSellerId());
         }
@@ -292,8 +302,9 @@ public class AuctionService implements Serializable {
    */
   public boolean deleteAuction(String auctionId) {
     Auction a = auctions.get(auctionId);
-    if (a == null)
-      {return false;}
+    if (a == null) {
+      return false;
+    }
     a.closeAuction();
     auctions.remove(auctionId);
     DataManager.getInstance().saveData();

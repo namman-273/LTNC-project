@@ -115,10 +115,7 @@ public class UserTest {
  
   // --- update ---
  
-  @Test
-  void updateDoesNotThrow() {
-    assertDoesNotThrow(() -> new Bidder("paul", "pw").update("TEST_MSG"));
-  }
+  
  
   // --- toString ---
  

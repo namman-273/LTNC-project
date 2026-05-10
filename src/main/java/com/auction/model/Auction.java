@@ -3,6 +3,7 @@ package com.auction.model;
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
+import com.auction.network.ClientHandler;
 import com.auction.network.Protocol;
 import com.auction.service.UserManager;
 import java.util.ArrayList;
@@ -130,6 +131,9 @@ public class Auction extends Entity {
   public void addObserver(Observer obs) {
     if (observers == null) {
       restoreTransients();
+      if (!observers.contains(obs)) {
+        observers.add(obs);
+      }
     }
     observers.add(obs);
   }
@@ -146,22 +150,6 @@ public class Auction extends Entity {
   // --- NEW NOTIFICATION METHODS ---
 
   /**
-   * IMPROVED: Get all unique bidders who have participated in this auction.
-   * This includes everyone who has placed at least one bid.
-   * 
-   * @return Set of Users who have bid, with no duplicates
-   */
-  private Set<User> getAllBidders() {
-    Set<User> bidders = new HashSet<>();
-    for (BidTransaction transaction : history) {
-      if (transaction.getBidder() != null) {
-        bidders.add(transaction.getBidder());
-      }
-    }
-    return bidders;
-  }
-
-  /**
    * IMPROVED: Get the current highest bidder (last person to bid).
    * 
    * @return User who placed the last bid, or null if no bids yet
@@ -174,53 +162,74 @@ public class Auction extends Entity {
   }
 
   /**
-   * IMPROVED: Notify all participants in the auction.
-   * This includes:
-   * - All watchers (observers)
-   * - All bidders (people who have placed bids)
-   * 
-   * Prevents duplicates: If someone is both a watcher and a bidder,
-   * they only receive one notification.
-   * 
-   * Excludes the person who just bid to avoid self-notification.
-   * 
-   * @param message     The notification message to send
-   * @param excludeUser User to exclude from notifications (typically the bidder)
+   * . Chỉ duyệt qua danh sách observers (ClientHandler)
+   * vì đây mới là những đường ống Socket có thể gửi tin nhắn về máy khách.
    */
   public void notifyAllParticipants(String message, User excludeUser) {
-    // 1. Collect all recipients using a Set to prevent duplicates
-    Set<Observer> recipients = new HashSet<>();
-
-    // 1a. Add all watchers
-    if (observers != null) {
-      recipients.addAll(observers);
+    if (observers == null || observers.isEmpty()) {
+      return;
     }
 
-    // 1b. Add all bidders (Set automatically prevents duplicates)
-    recipients.addAll(getAllBidders());
+    for (Observer observer : observers) {
+      // Ép kiểu sang ClientHandler để lấy thông tin User đang giữ kết nối này
+      if (observer instanceof ClientHandler) {
+        ClientHandler handler = (ClientHandler) observer;
 
-    // 2. Remove the user who just performed the action
-    if (excludeUser != null) {
-      recipients.remove(excludeUser);
-    }
+        // Bỏ qua không gửi cho người vừa tạo ra hành động này (để tránh tự spam chính
+        // mình)
+        if (excludeUser != null && handler.getCurrentUser() != null) {
+          if (handler.getCurrentUser().getUsername().equals(excludeUser.getUsername())) {
+            continue;
+          }
+        }
+      }
 
-    // 3. Send notifications asynchronously
-    for (Observer observer : recipients) {
+      // Gửi tin nhắn bất đồng bộ
       notifyExecutor.submit(() -> {
         try {
           if (observer != null) {
             observer.update(message);
           }
         } catch (Exception e) {
-          removeObserver(observer);
+          removeObserver(observer); // Nếu Socket sập, gỡ luôn khỏi danh sách
           System.out.println("Removed faulty observer: " + e.getMessage());
         }
       });
     }
 
-    // Log for debugging
-    System.out.println("[NOTIFICATION] Sent to "
-        + recipients.size() + " participants (watchers + bidders)");
+    System.out.println("[NOTIFICATION] Đã phát sóng thông báo tới "
+        + observers.size() + " đường truyền mạng.");
+  }
+
+  /**
+   * NEW: Gắn thẳng tin nhắn vào Socket của một người dùng cụ thể.
+   * Dùng để gửi NOTI_OUTBID (Bị vượt giá).
+   */
+
+  public void notifySpecificUser(String targetUsername, String message) {
+    if (observers == null
+        || observers.isEmpty()
+        || targetUsername == null) {
+      return;
+    }
+
+    for (Observer observer : observers) {
+      if (observer instanceof ClientHandler) {
+        ClientHandler handler = (ClientHandler) observer;
+
+        if (handler.getCurrentUser() != null
+            && handler.getCurrentUser().getUsername().equals(targetUsername)) {
+          notifyExecutor.submit(() -> {
+            try {
+              observer.update(message);
+            } catch (Exception e) {
+              removeObserver(observer);
+            }
+          });
+          break; // Tìm thấy và gửi rồi thì dừng vòng lặp
+        }
+      }
+    }
   }
 
   // --- LOGIC PHIÊN ĐẤU GIÁ ---
@@ -305,14 +314,23 @@ public class Auction extends Entity {
     // Refund previous bidder (only after new bidder's money is secured)
     if (previousHighestBidder != null && !previousHighestBidder.equals(bidder)) {
       BidTransaction lastTransaction = history.get(history.size() - 1);
-      previousHighestBidder.addBalance(lastTransaction.getAmount());
+      double refundAmount = lastTransaction.getAmount();
+      previousHighestBidder.addBalance(refundAmount);
 
       // IMPROVED: Send specific "OUTBID" notification to previous highest bidder
       String outbidMessage = Protocol.NOTI_OUTBID + Protocol.SEPARATOR
           + getId() + Protocol.SEPARATOR
           + bidder.getUsername() + Protocol.SEPARATOR
           + amount;
-      previousHighestBidder.update(outbidMessage);
+      notifySpecificUser(previousHighestBidder.getUsername(), outbidMessage);
+      // 2. Gửi thông báo hoàn tiền (REFUND) - SỬ DỤNG LỆNH CÓ SẴN
+      // Cấu trúc gợi ý: NOTI_REFUND|AuctionID|Số_tiền_được_hoàn|Số_dư_hiện_tại
+      String refundMessage = Protocol.NOTI_REFUND + Protocol.SEPARATOR
+          + getId() + Protocol.SEPARATOR
+          + refundAmount + Protocol.SEPARATOR
+          + previousHighestBidder.getBalance();
+      notifySpecificUser(previousHighestBidder.getUsername(), refundMessage);
+    
     }
 
     this.currentPrice = amount;

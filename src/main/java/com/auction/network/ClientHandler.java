@@ -248,6 +248,7 @@ public class ClientHandler implements Runnable, Observer {
         return;
       }
       auction.processNewBid(currentUser, amount);
+      auction.addObserver(this);
       sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId
           + Protocol.SEPARATOR + amount);
       DataManager.getInstance().saveData();
@@ -424,6 +425,16 @@ public class ClientHandler implements Runnable, Observer {
    */
   public final void update(final String msg) {
     this.sendMessage(msg);
+  }
+
+  /**
+   * Lấy thông tin User đang nắm giữ kết nối Socket này.
+   * Dùng để Auction kiểm tra danh tính khi gửi thông báo (tránh tự spam chính
+   * mình hoặc gửi riêng tư).
+   */
+  public User getCurrentUser() {
+    return this.currentUser; 
+    // Chú ý: Biến này trong code của Leader có thể tên là 'user' hoặc 'currentUser'
   }
 
   private void cleanUp() {
