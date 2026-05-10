@@ -12,7 +12,7 @@
 <?import javafx.geometry.Insets?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.CreateAuctionController"
+      fx:controller="com.auction.controller.ui.CreateAuctionController"
       prefWidth="820" prefHeight="620" spacing="0"
       stylesheets="@style.css"
       style="-fx-background-color: #F0F4FF;">

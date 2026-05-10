@@ -10,7 +10,7 @@
 <?import javafx.geometry.Insets?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.RegisterController"
+      fx:controller="com.auction.controller.ui.RegisterController"
       prefWidth="700" prefHeight="500"
       stylesheets="@style.css">
 

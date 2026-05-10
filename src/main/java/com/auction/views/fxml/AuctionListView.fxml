@@ -12,7 +12,7 @@
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.AuctionListController"
+      fx:controller="com.auction.controller.ui.AuctionListController"
       prefWidth="980" prefHeight="680" spacing="0"
       stylesheets="@style.css"
       style="-fx-background-color: #F0F4FF;">

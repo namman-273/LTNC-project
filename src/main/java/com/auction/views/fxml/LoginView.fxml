@@ -10,7 +10,7 @@
 <?import javafx.geometry.Insets?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.LoginController"
+      fx:controller="com.auction.controller.ui.LoginController"
       prefWidth="720" prefHeight="520"
       stylesheets="@style.css">
 
