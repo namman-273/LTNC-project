@@ -1,6 +1,6 @@
 package com.auction.controller.ui;
 
-import com.auction.dto.AuctionRow;
+import com.auction.model.dto.AuctionRow;
 import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
 import com.auction.views.java.AuctionListView;
