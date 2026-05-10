@@ -26,6 +26,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public class SellerController implements Initializable {
 
@@ -43,9 +44,7 @@ public class SellerController implements Initializable {
     private final ObservableList<AuctionRow> auctionData = FXCollections.observableArrayList();
     private final ObservableList<String> historyData = FXCollections.observableArrayList();
     private String username;
-
-    private ServerConnection listenerConn;
-    private Thread listenerThread;
+    private Consumer<String> pushListener;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -88,40 +87,17 @@ public class SellerController implements Initializable {
         );
 
         loadMyAuctions();
-        startListening();
+        registerPushListener();
     }
 
-    // ─── Listener ────────────────────────────────────────────────────────────
+    // ─── Push Listener ────────────────────────────────────────────────────────
 
-    private void startListening() {
-        String pwd = SessionManager.getInstance().getPassword();
-        if (pwd == null) return;
-
-        listenerThread = new Thread(() -> {
-            listenerConn = new ServerConnection("localhost", 9999);
-            try {
-                if (!listenerConn.connectDirect()) return;
-
-                listenerConn.sendAndReceive(
-                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username
-                                + Protocol.SEPARATOR + pwd
-                );
-
-                while (!Thread.currentThread().isInterrupted()) {
-                    String message = listenerConn.receive();
-                    if (message == null) break;
-                    System.out.println("[Seller Listener]: " + message);
-                    handleServerPush(message);
-                }
-            } catch (Exception e) {
-                if (!Thread.currentThread().isInterrupted())
-                    System.err.println("Seller listener error: " + e.getMessage());
-            } finally {
-                if (listenerConn != null) listenerConn.disconnectDirect();
-            }
-        });
-        listenerThread.setDaemon(true);
-        listenerThread.start();
+    private void registerPushListener() {
+        pushListener = message -> {
+            System.out.println("[Seller Push]: " + message);
+            handleServerPush(message);
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
     }
 
     private void handleServerPush(String message) {
@@ -184,44 +160,33 @@ public class SellerController implements Initializable {
     private void loadMyAuctions() {
         statsLabel.setText("Đang tải...");
         new Thread(() -> {
-            ServerConnection conn = new ServerConnection("localhost", 9999);
-            try {
-                String pwd = SessionManager.getInstance().getPassword();
-                if (!conn.connectDirect()) return;
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
 
-                conn.sendAndReceive(
-                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
-                );
-                String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
+            if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
+                String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
+                        + Protocol.SEPARATOR.length());
+                AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
 
-                if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
-                    String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
-                            + Protocol.SEPARATOR.length());
-                    AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-
-                    if (rows != null) {
-                        // Filter chỉ lấy phiên của seller này
-                        ObservableList<AuctionRow> data = FXCollections.observableArrayList();
-                        for (AuctionRow row : rows) {
-                            if (username.equals(row.getSellerId())) {
-                                data.add(row);
-                            }
+                if (rows != null) {
+                    ObservableList<AuctionRow> data = FXCollections.observableArrayList();
+                    for (AuctionRow row : rows) {
+                        if (username.equals(row.getSellerId())) {
+                            data.add(row);
                         }
-                        long open     = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
-                        long finished = data.stream().filter(r -> "FINISHED".equals(r.getStatus())
-                                || "PAID".equals(r.getStatus())).count();
-
-                        Platform.runLater(() -> {
-                            auctionData.setAll(data);
-                            statsLabel.setText("Tổng: " + data.size() + " phiên  |  Đang mở: "
-                                    + open + "  |  Đã kết thúc: " + finished);
-                        });
                     }
+                    long open     = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
+                    long finished = data.stream().filter(r ->
+                            "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
+
+                    Platform.runLater(() -> {
+                        auctionData.setAll(data);
+                        statsLabel.setText("Tổng: " + data.size() + " phiên  |  Đang mở: "
+                                + open + "  |  Đã kết thúc: " + finished);
+                    });
                 }
-            } catch (Exception e) {
+            } else {
                 Platform.runLater(() -> statsLabel.setText("Lỗi tải dữ liệu"));
-            } finally {
-                conn.disconnectDirect();
             }
         }).start();
     }
@@ -232,48 +197,36 @@ public class SellerController implements Initializable {
         historyData.add("Đang tải...");
 
         new Thread(() -> {
-            ServerConnection conn = new ServerConnection("localhost", 9999);
-            try {
-                String pwd = SessionManager.getInstance().getPassword();
-                if (!conn.connectDirect()) return;
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
+            );
 
-                conn.sendAndReceive(
-                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
-                );
-                String response = conn.sendAndReceive(
-                        Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
-                );
+            Platform.runLater(() -> {
+                historyData.clear();
+                if (response == null || !response.startsWith(Protocol.RES_HISTORY)) {
+                    historyData.add("Chưa có lịch sử đặt giá.");
+                    return;
+                }
 
-                Platform.runLater(() -> {
-                    historyData.clear();
-                    if (response == null || !response.startsWith(Protocol.RES_HISTORY)) {
-                        historyData.add("Chưa có lịch sử đặt giá.");
-                        return;
+                String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+                if (parts.length < 3 || parts[2].trim().equals("[]")) {
+                    historyData.add("Chưa có lịch sử đặt giá.");
+                    return;
+                }
+
+                BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
+                if (history != null) {
+                    for (int i = 0; i < history.length; i++) {
+                        BidTransaction bt = history[i];
+                        String bidder = bt.getBidder() != null
+                                ? bt.getBidder().getUsername() : "---";
+                        historyData.add((i + 1) + ". " + bidder + " đặt: "
+                                + String.format("%,.0f VND", bt.getAmount()));
                     }
-
-                    String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-                    if (parts.length < 3 || parts[2].trim().equals("[]")) {
-                        historyData.add("Chưa có lịch sử đặt giá.");
-                        return;
-                    }
-
-                    BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
-                    if (history != null) {
-                        for (int i = 0; i < history.length; i++) {
-                            BidTransaction bt = history[i];
-                            String bidder = bt.getBidder() != null
-                                    ? bt.getBidder().getUsername() : "---";
-                            historyData.add((i + 1) + ". " + bidder + " đặt: "
-                                    + String.format("%,.0f VND", bt.getAmount()));
-                        }
-                    }
-                    if (historyData.isEmpty()) historyData.add("Chưa có lịch sử đặt giá.");
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> historyData.add("Lỗi tải lịch sử."));
-            } finally {
-                conn.disconnectDirect();
-            }
+                }
+                if (historyData.isEmpty()) historyData.add("Chưa có lịch sử đặt giá.");
+            });
         }).start();
     }
 
@@ -294,7 +247,10 @@ public class SellerController implements Initializable {
 
     @FXML
     private void handleBack() {
-        if (listenerThread != null) listenerThread.interrupt();
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }

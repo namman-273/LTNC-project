@@ -29,6 +29,7 @@ import javafx.util.Duration;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class BidController implements Initializable {
 
@@ -52,8 +53,7 @@ public class BidController implements Initializable {
             = new ConcurrentHashMap<>();
 
     private ObservableList<String> historyItems;
-    private ServerConnection listenerConn;
-    private Thread listenerThread;
+    private Consumer<String> pushListener;
     private Timeline snipingTimeline;
     private Timeline countdownTimeline;
 
@@ -87,7 +87,7 @@ public class BidController implements Initializable {
 
         startCountdown();
         loadHistory();
-        startListening();
+        registerPushListener();
     }
 
     @Override
@@ -127,47 +127,15 @@ public class BidController implements Initializable {
         countdownTimeline.play();
     }
 
-    // ─── Listener ────────────────────────────────────────────────────────────
+    // ─── Push Listener ───────────────────────────────────────────────────────
 
-    private void startListening() {
-        String pwd = SessionManager.getInstance().getPassword();
-        if (pwd == null) {
-            System.err.println("Listener: không có session, bỏ qua.");
-            return;
-        }
-
-        listenerThread = new Thread(() -> {
-            listenerConn = new ServerConnection("localhost", 9999);
-            try {
-                if (!listenerConn.connectDirect()) {
-                    System.err.println("Listener: không thể kết nối.");
-                    Platform.runLater(() ->
-                            AlertUtil.showError("Mất kết nối",
-                                    "Không thể kết nối listener realtime!\nGiá sẽ không cập nhật tự động."));
-                    return;
-                }
-
-                listenerConn.sendAndReceive(
-                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username
-                                + Protocol.SEPARATOR + pwd
-                );
-
-                while (!Thread.currentThread().isInterrupted()) {
-                    String message = listenerConn.receive();
-                    if (message == null) break;
-                    System.out.println("Realtime: " + message);
-                    handleServerPush(message);
-                }
-            } catch (Exception e) {
-                if (!Thread.currentThread().isInterrupted()) {
-                    System.err.println("Listener error: " + e.getMessage());
-                }
-            } finally {
-                if (listenerConn != null) listenerConn.disconnectDirect();
-            }
-        });
-        listenerThread.setDaemon(true);
-        listenerThread.start();
+    private void registerPushListener() {
+        // Tạo listener — dùng addPushListener thay vì tạo connection riêng
+        pushListener = message -> {
+            System.out.println("Realtime: " + message);
+            handleServerPush(message);
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
     }
 
     private void handleServerPush(String message) {
@@ -209,12 +177,11 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmount = parts[3];
-                    Platform.runLater(() -> {
-                        showNotification("😮 Bị vượt giá!",
-                                newBidder + " vừa vượt giá bạn!\n"
-                                        + "Giá mới: " + formatPrice(newAmount)
-                                        + "\nHãy đặt giá cao hơn để giành lại!");
-                    });
+                    Platform.runLater(() ->
+                            showNotification("😮 Bị vượt giá!",
+                                    newBidder + " vừa vượt giá bạn!\n"
+                                            + "Giá mới: " + formatPrice(newAmount)
+                                            + "\nHãy đặt giá cao hơn để giành lại!"));
                 }
                 break;
 
@@ -228,11 +195,10 @@ public class BidController implements Initializable {
                             : "AUCTION_ENDED".equals(reason)
                             ? "phiên kết thúc, bạn không thắng"
                             : "phiên bị hủy";
-                    Platform.runLater(() -> {
-                        showNotification("💸 Hoàn tiền!",
-                                "Đã hoàn " + formatPrice(refundAmount)
-                                        + " vào ví của bạn\nLý do: " + reasonText);
-                    });
+                    Platform.runLater(() ->
+                            showNotification("💸 Hoàn tiền!",
+                                    "Đã hoàn " + formatPrice(refundAmount)
+                                            + " vào ví của bạn\nLý do: " + reasonText));
                 }
                 break;
 
@@ -246,7 +212,6 @@ public class BidController implements Initializable {
                         countdownLabel.setText("⏰ Phiên đã kết thúc!");
                         countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
                     }
-
                     String detail = parts.length >= 3 ? parts[2] : "";
                     if (detail.contains("Winner:" + username)) {
                         String bid = detail.contains("Bid:")
@@ -262,7 +227,7 @@ public class BidController implements Initializable {
                         showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
                     }
                 });
-                stopListener();
+                unregisterPushListener();
                 break;
 
             default:
@@ -310,9 +275,7 @@ public class BidController implements Initializable {
             );
             System.out.println("History: " + response);
 
-            if (response == null || response.startsWith("ERROR|Mất kết nối")) {
-                Platform.runLater(() ->
-                        AlertUtil.showError("Mất kết nối", "Không thể tải lịch sử đặt giá!"));
+            if (response == null || response.startsWith("ERROR")) {
                 return;
             }
 
@@ -350,18 +313,16 @@ public class BidController implements Initializable {
             System.out.println("BID response: " + response);
 
             Platform.runLater(() -> {
-                if (response == null || response.startsWith("ERROR|Mất kết nối")) {
-                    showError("Mất kết nối server!");
-                    AlertUtil.showError("Mất kết nối",
-                            "Mất kết nối khi đặt giá!\nVui lòng thử lại.");
+                if (response == null || response.startsWith("ERROR")) {
+                    showError("Lỗi: " + (response != null
+                            ? response.split("\\" + Protocol.SEPARATOR, 2)[1] : "Mất kết nối!"));
                     return;
                 }
-                String[] parts = response.split("\\" + Protocol.SEPARATOR);
-                if (response.startsWith(Protocol.RES_BID_SUCCESS)
-                        || response.startsWith(Protocol.NOTI_BID_UPDATE)) {
+                if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("✅ Đặt giá thành công!");
                     bidAmountField.clear();
                 } else {
+                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
                     String errorMsg = parts.length > 1 ? parts[1] : "Đặt giá thất bại!";
                     showError(errorMsg);
                 }
@@ -371,7 +332,7 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleAutoBid() {
-        stopListener();
+        unregisterPushListener();
         stopSnipingCountdown();
         if (countdownTimeline != null) countdownTimeline.stop();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
@@ -381,7 +342,7 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleBack() {
-        stopListener();
+        unregisterPushListener();
         stopSnipingCountdown();
         if (countdownTimeline != null) countdownTimeline.stop();
         Platform.runLater(() -> {
@@ -392,7 +353,7 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleViewChart() {
-        stopListener();
+        unregisterPushListener();
         stopSnipingCountdown();
         if (countdownTimeline != null) countdownTimeline.stop();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
@@ -400,10 +361,10 @@ public class BidController implements Initializable {
                 currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
     }
 
-    private void stopListener() {
-        if (listenerThread != null) {
-            listenerThread.interrupt();
-            listenerThread = null;
+    private void unregisterPushListener() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
         }
     }
 

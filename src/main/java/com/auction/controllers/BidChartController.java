@@ -3,7 +3,6 @@ package com.auction.controllers;
 import com.auction.model.BidTransaction;
 import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
 import com.auction.views.BidView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -18,6 +17,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public class BidChartController implements Initializable {
 
@@ -28,8 +28,7 @@ public class BidChartController implements Initializable {
 
     private String auctionId, itemName, currentPrice, status, username;
     private long endTime;
-    private ServerConnection listenerConn;
-    private Thread listenerThread;
+    private Consumer<String> pushListener;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -47,7 +46,7 @@ public class BidChartController implements Initializable {
         this.endTime      = endTime;
         titleLabel.setText("Biểu đồ giá - " + itemName);
         loadChartData();
-        startListening();
+        registerPushListener();
     }
 
     @Override
@@ -58,86 +57,52 @@ public class BidChartController implements Initializable {
 
     private void loadChartData() {
         new Thread(() -> {
-            ServerConnection conn = new ServerConnection("localhost", 9999);
-            try {
-                String pwd = SessionManager.getInstance().getPassword();
-                if (!conn.connectDirect()) return;
+            ServerConnection conn = ServerConnection.getInstance();
+            String response = conn.sendAndReceive(
+                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
+            );
+            System.out.println("Chart history: " + response);
 
-                conn.sendAndReceive(
-                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
-                );
-                String response = conn.sendAndReceive(
-                        Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
-                );
-                System.out.println("Chart history: " + response);
+            if (response == null || !response.startsWith(Protocol.RES_HISTORY)) return;
 
-                if (response == null || !response.startsWith(Protocol.RES_HISTORY)) return;
+            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+            if (parts.length < 3 || parts[2].trim().equals("[]")) return;
 
-                String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-                if (parts.length < 3 || parts[2].trim().equals("[]")) return;
+            BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
+            if (history == null || history.length == 0) return;
 
-                BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
-                if (history == null || history.length == 0) return;
+            XYChart.Series<Number, Number> series = new XYChart.Series<>();
+            series.setName("Giá đặt");
 
-                XYChart.Series<Number, Number> series = new XYChart.Series<>();
-                series.setName("Giá đặt");
-
-                for (int i = 0; i < history.length; i++) {
-                    final int idx = i + 1;
-                    final double price = history[i].getAmount();
-                    series.getData().add(new XYChart.Data<>(idx, price));
-                }
-
-                final XYChart.Series<Number, Number> finalSeries = series;
-                Platform.runLater(() -> {
-                    bidChart.getData().clear();
-                    if (!finalSeries.getData().isEmpty()) {
-                        bidChart.getData().add(finalSeries);
-                    }
-                });
-
-            } catch (Exception e) {
-                System.err.println("Lỗi load chart: " + e.getMessage());
-            } finally {
-                conn.disconnectDirect();
+            for (int i = 0; i < history.length; i++) {
+                final int idx = i + 1;
+                final double price = history[i].getAmount();
+                series.getData().add(new XYChart.Data<>(idx, price));
             }
+
+            final XYChart.Series<Number, Number> finalSeries = series;
+            Platform.runLater(() -> {
+                bidChart.getData().clear();
+                if (!finalSeries.getData().isEmpty()) {
+                    bidChart.getData().add(finalSeries);
+                }
+            });
         }).start();
     }
 
-    private void startListening() {
-        String pwd = SessionManager.getInstance().getPassword();
-        if (pwd == null) return;
-
-        listenerThread = new Thread(() -> {
-            listenerConn = new ServerConnection("localhost", 9999);
-            try {
-                if (!listenerConn.connectDirect()) return;
-
-                listenerConn.sendAndReceive(
-                        Protocol.CMD_LOGIN + Protocol.SEPARATOR + username + Protocol.SEPARATOR + pwd
-                );
-
-                while (!Thread.currentThread().isInterrupted()) {
-                    String message = listenerConn.receive();
-                    if (message == null) break;
-
-                    if (message.startsWith(Protocol.UPDATE)) {
-                        String[] parts = message.split("\\" + Protocol.SEPARATOR);
-                        if (parts.length >= 3 && parts[1].equals(auctionId)) {
-                            double newPrice = Double.parseDouble(parts[2]);
-                            Platform.runLater(() -> appendPoint(newPrice));
-                        }
-                    }
+    private void registerPushListener() {
+        pushListener = message -> {
+            if (Protocol.isNotificationType(message, Protocol.NOTI_BID_UPDATE)) {
+                String[] parts = message.split("\\" + Protocol.SEPARATOR);
+                if (parts.length >= 3 && parts[1].equals(auctionId)) {
+                    try {
+                        double newPrice = Double.parseDouble(parts[2]);
+                        Platform.runLater(() -> appendPoint(newPrice));
+                    } catch (NumberFormatException ignored) {}
                 }
-            } catch (Exception e) {
-                if (!Thread.currentThread().isInterrupted())
-                    System.err.println("Chart listener error: " + e.getMessage());
-            } finally {
-                if (listenerConn != null) listenerConn.disconnectDirect();
             }
-        });
-        listenerThread.setDaemon(true);
-        listenerThread.start();
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
     }
 
     private void appendPoint(double price) {
@@ -149,7 +114,10 @@ public class BidChartController implements Initializable {
 
     @FXML
     private void handleBack() {
-        if (listenerThread != null) listenerThread.interrupt();
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
         Stage stage = (Stage) bidChart.getScene().getWindow();
         new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
     }
