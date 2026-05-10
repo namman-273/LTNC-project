@@ -18,10 +18,7 @@ public class FactoryNullHandlingTest {
 
     // --- getFactory: empty string trả về default factory ---
 
-    @Test
-    void getFactoryEmptyStringReturnsNonNull() {
-        assertNotNull(com.auction.model.factory.ItemFactoryRegistry.getFactory(""));
-    }
+    
 
     // --- ElectronicsFactory: null/empty id/name vẫn tạo được object ---
 

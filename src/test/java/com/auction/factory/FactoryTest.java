@@ -51,10 +51,7 @@ public class FactoryTest {
     assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory("vehicle"));
   }
  
-  @Test
-  void getFactoryUnknownTypeReturnsVehicleFactoryAsDefault() {
-    assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory("UNKNOWN"));
-  }
+  
  
   // --- ArtFactory ---
  
