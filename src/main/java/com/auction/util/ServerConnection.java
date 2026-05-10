@@ -124,12 +124,17 @@ public class ServerConnection {
     listenerThread.start();
   }
 
-  // Hàm nhận diện tin nhắn Real-time (Leader có thể thêm các đầu mục Protocol vào
-  // đây)
   /**
-   * Bộ lọc này nhận diện tất cả các tin nhắn mang tính chất THÔNG BÁO (PUSH).
+   * IMPROVED: Bộ lọc nhận diện tất cả các tin nhắn mang tính chất THÔNG BÁO
+   * (PUSH).
    * Đặc điểm: Đây là các tin nhắn Server tự gửi xuống mà không cần Client phải
    * gọi lệnh ngay lúc đó, hoặc gửi cho nhiều người cùng lúc qua Observer Pattern.
+   * UPDATED: Thêm support cho các notification types mới:
+   * - NOTI_OUTBID: Thông báo riêng cho người bị vượt giá
+   * - NOTI_REFUND: Thông báo khi tiền được hoàn lại
+   * 
+   * @param line Message từ server
+   * @return true nếu là push notification, false nếu là response
    */
   private boolean isPushMessage(String line) {
     if (line == null || line.isEmpty()) {
@@ -140,26 +145,47 @@ public class ServerConnection {
     String header = line.split("\\|")[0];
 
     return
-    // --- NHÓM 1: CÁC NOTI MẶC ĐỊNH ---
+    // --- NHÓM 1: NOTIFICATIONS CHUNG ---
+    // Thông báo về thay đổi giá đấu (gửi cho watchers + bidders)
     header.equals(Protocol.NOTI_BID_UPDATE)
-        || // Giá nhảy (Real-time)
+        ||
+        // Thông báo về gia hạn thời gian (Anti-sniping)
         header.equals(Protocol.NOTI_SNIPING_UPDATE)
-        || // Gia hạn thời gian
+        ||
+        // Thông báo về thay đổi số dư ví
         header.equals(Protocol.NOTI_BALANCE_CHANGED)
-        || // Ví tiền biến động
+        ||
+        // Thông báo về auction mới được tạo
+        header.equals(Protocol.NOTI_NEW_AUCTION)
+        ||
 
-        // --- NHÓM 2: CÁC LỆNH KẾT THÚC / THÀNH CÔNG GỬI QUA OBSERVER ---
+        // --- NHÓM 2: NOTIFICATIONS CÁ NHÂN (NEW) ---
+        // Thông báo riêng cho người bị vượt giá
+        header.equals(Protocol.NOTI_OUTBID)
+        ||
+        // Thông báo khi tiền được hoàn lại vào ví
+        header.equals(Protocol.NOTI_REFUND)
+        ||
+
+        // --- NHÓM 3: KẾT THÚC PHIÊN ĐẤU GIÁ ---
         // Khi một phiên kết thúc, Server dùng notify để báo cho TOÀN BỘ người đang xem
         header.equals(Protocol.RES_END_SUCCESS)
         ||
         header.equals(Protocol.RES_SUCCESS)
         ||
 
-        // --- NHÓM 3: CÁC TRƯỜNG HỢP LỖI HỆ THỐNG GỬI NGẦM ---
+        // --- NHÓM 4: LỖI HỆ THỐNG ---
         // Ví dụ: Server sắp bảo trì hoặc lỗi logic tự động
         header.equals(Protocol.ERROR);
+
   }
 
+  /**
+   * Đăng ký listener để nhận push notifications.
+   * Listener sẽ được gọi mỗi khi có message từ server thuộc loại push.
+   * 
+   * @param listener Consumer xử lý notification message
+   */
   public void addPushListener(Consumer<String> listener) {
     if (listener != null && !pushListeners.contains(listener)) {
       pushListeners.add(listener);
