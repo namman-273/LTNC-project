@@ -48,7 +48,6 @@ public class BidController implements Initializable {
     private String username;
     private long endTime;
 
-    // Static cache giữ lịch sử khi quay lại
     private static final ConcurrentHashMap<String, ObservableList<String>> historyCache
             = new ConcurrentHashMap<>();
 
@@ -75,12 +74,10 @@ public class BidController implements Initializable {
         currentPriceLabel.setText(formatPrice(currentPrice));
         statusLabel.setText(status);
 
-        // Lấy lịch sử từ cache hoặc tạo mới
         historyItems = historyCache.computeIfAbsent(
                 auctionId, k -> FXCollections.observableArrayList());
         bidHistoryList.setItems(historyItems);
 
-        // Gợi ý giá ban đầu
         try {
             double price = Double.parseDouble(
                     currentPrice.replace(",", "").replace(" VND", "").trim());
@@ -178,14 +175,14 @@ public class BidController implements Initializable {
         if (parts.length == 0) return;
 
         switch (parts[0]) {
-            case Protocol.UPDATE:
+            // BID_UPDATE|auctionId|newPrice|bidder
+            case Protocol.NOTI_BID_UPDATE:
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
                     String bidder   = parts[3];
                     Platform.runLater(() -> {
                         currentPriceLabel.setText(formatPrice(newPrice));
                         historyItems.add(0, bidder + " đặt: " + formatPrice(newPrice));
-                        // Cập nhật gợi ý giá
                         try {
                             double price = Double.parseDouble(newPrice);
                             long suggested = (long)(price + 1_000_000);
@@ -196,7 +193,8 @@ public class BidController implements Initializable {
                 }
                 break;
 
-            case Protocol.SNIPING:
+            // SNIPING_UPDATE|auctionId|newEndTime|extensionCount
+            case Protocol.NOTI_SNIPING_UPDATE:
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
                     try {
@@ -206,9 +204,40 @@ public class BidController implements Initializable {
                 }
                 break;
 
+            // OUTBID|auctionId|newBidder|newAmount
+            case Protocol.NOTI_OUTBID:
+                if (parts.length >= 4 && parts[1].equals(auctionId)) {
+                    String newBidder = parts[2];
+                    String newAmount = parts[3];
+                    Platform.runLater(() -> {
+                        showNotification("😮 Bị vượt giá!",
+                                newBidder + " vừa vượt giá bạn!\n"
+                                        + "Giá mới: " + formatPrice(newAmount)
+                                        + "\nHãy đặt giá cao hơn để giành lại!");
+                    });
+                }
+                break;
+
+            // REFUND|auctionId|refundAmount|reason
+            case Protocol.NOTI_REFUND:
+                if (parts.length >= 4 && parts[1].equals(auctionId)) {
+                    String refundAmount = parts[2];
+                    String reason = parts[3];
+                    String reasonText = "OUTBID".equals(reason)
+                            ? "bị người khác vượt giá"
+                            : "AUCTION_ENDED".equals(reason)
+                            ? "phiên kết thúc, bạn không thắng"
+                            : "phiên bị hủy";
+                    Platform.runLater(() -> {
+                        showNotification("💸 Hoàn tiền!",
+                                "Đã hoàn " + formatPrice(refundAmount)
+                                        + " vào ví của bạn\nLý do: " + reasonText);
+                    });
+                }
+                break;
+
+            // END_SUCCESS|auctionId|Winner:xxx|Bid:yyy$
             case Protocol.RES_END_SUCCESS:
-            case "END_AUCTION_SUCCESS":
-                // END_SUCCESS|auctionId|Winner:xxx|Bid:yyy$
                 Platform.runLater(() -> {
                     statusLabel.setText("FINISHED");
                     stopSnipingCountdown();
@@ -218,10 +247,8 @@ public class BidController implements Initializable {
                         countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
                     }
 
-                    // Parse winner
                     String detail = parts.length >= 3 ? parts[2] : "";
                     if (detail.contains("Winner:" + username)) {
-                        // Mày thắng
                         String bid = detail.contains("Bid:")
                                 ? detail.substring(detail.indexOf("Bid:") + 4) : "";
                         showSuccess("🎉 Bạn đã thắng phiên đấu giá!");
@@ -236,6 +263,9 @@ public class BidController implements Initializable {
                     }
                 });
                 stopListener();
+                break;
+
+            default:
                 break;
         }
     }
@@ -328,16 +358,13 @@ public class BidController implements Initializable {
                 }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)
-                        || response.startsWith(Protocol.UPDATE)) {
-                    showSuccess("Đặt giá thành công!");
-
-
+                        || response.startsWith(Protocol.NOTI_BID_UPDATE)) {
+                    showSuccess("✅ Đặt giá thành công!");
                     bidAmountField.clear();
                 } else {
                     String errorMsg = parts.length > 1 ? parts[1] : "Đặt giá thất bại!";
                     showError(errorMsg);
                 }
-
             });
         }).start();
     }
@@ -402,6 +429,11 @@ public class BidController implements Initializable {
         messageLabel.setText(msg);
     }
 
+    private void showInfo(String msg) {
+        messageLabel.setStyle("-fx-text-fill: #1565C0; -fx-font-size: 12px;");
+        messageLabel.setText(msg);
+    }
+
     private void showNotification(String title, String message) {
         NotificationManager.getInstance().add(title + ": " + message);
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -409,9 +441,5 @@ public class BidController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.show();
-    }
-    private void showInfo(String msg) {
-        messageLabel.setStyle("-fx-text-fill: #1565C0; -fx-font-size: 12px;");
-        messageLabel.setText(msg);
     }
 }

@@ -129,7 +129,7 @@ public class SellerController implements Initializable {
         if (parts.length == 0) return;
 
         switch (parts[0]) {
-            case Protocol.UPDATE:
+            case Protocol.NOTI_BID_UPDATE:
                 if (parts.length >= 4) {
                     String auctionId = parts[1];
                     String newPrice  = parts[2];
