@@ -1,9 +1,12 @@
 package com.auction.views.java;
 
 import com.auction.controller.ui.BidController;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 public class BidView {
-
 
   private final Stage stage;
   private final String auctionId;
@@ -12,8 +15,8 @@ public class BidView {
   private final String status;
   private final String username;
   private final long endTime;
-  private final String imageUrl;    // Thêm mới
-  private final String description; // Thêm mới
+  private final String imageUrl;
+  private final String description;
 
   public BidView(Stage stage, String auctionId, String itemName,
                  String currentPrice, String status, String username,
@@ -24,21 +27,21 @@ public class BidView {
   public BidView(Stage stage, String auctionId, String itemName,
                  String currentPrice, String status, String username,
                  long endTime, String imageUrl, String description) {
-    this.stage       = stage;
-    this.auctionId   = auctionId;
-    this.itemName    = itemName;
+    this.stage        = stage;
+    this.auctionId    = auctionId;
+    this.itemName     = itemName;
     this.currentPrice = currentPrice;
-    this.status      = status;
-    this.username    = username;
-    this.endTime     = endTime;
-    this.imageUrl    = imageUrl != null ? imageUrl : "";
-    this.description = description != null ? description : "";
+    this.status       = status;
+    this.username     = username;
+    this.endTime      = endTime;
+    this.imageUrl     = imageUrl != null ? imageUrl : "";
+    this.description  = description != null ? description : "";
   }
 
   public void show() {
     try {
       FXMLLoader loader = new FXMLLoader(
-              getClass().getResource("/com/auction/views/BidView.fxml"));
+              getClass().getResource("/com/auction/views/fxml/BidView.fxml"));
       Parent root = loader.load();
 
       BidController controller = loader.getController();
