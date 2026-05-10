@@ -3,7 +3,6 @@ package com.auction.model;
 import com.auction.exception.AuctionClosedException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.InvalidBidException;
-import com.auction.network.Protocol;
 import com.auction.service.UserManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -259,20 +258,20 @@ public class Auction extends Entity {
     // Lưu lịch sử giao dịch
     this.history.add(new BidTransaction(bidder, amount));
 
-    notifyObservers(Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR
-        + getId() + "|" + amount + "|" + bidder.getUsername());
+    notifyObservers("UPDATE|" + getId() + "|" + amount + "|" + bidder.getUsername());
   }
 
   /**
    * // Hàm để người dùng đăng ký Auto-bid từ giao diện.
    */
-  public void addAutoBidConfig(String bidderId, double maxBid, double customStep)
+  public void addAutoBidConfig(String bidderId, double maxBid, double customStep) 
       throws InvalidBidException {
     lock.lock();
     try {
       double systemMin = getMinimumIncrement(currentPrice);
       if (customStep < systemMin) {
-        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
+        throw new 
+        InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
       }
       if (this.autoBidQueue == null) {
         restoreTransients();
@@ -308,19 +307,13 @@ public class Auction extends Entity {
       String lastBidderId = history.isEmpty() ? ""
           : history.get(history.size() - 1).getBidder().getUsername();
 
-      // 2. Nếu ng mạnh nhất đang thắng, lấy ngay ng mạnh thứ hai ra đấu
+      // 2. Nếu người này đang giữ giá cao nhất -> Tạm dừng lượt của họ
       if (top.getBidderId().equals(lastBidderId)) {
-        AutoBid second = autoBidQueue.poll();
-        if (second == null) {
-          autoBidQueue.add(top);
-          break; // Hết đối thủ
-        }
-        // Trả ng mạnh nhất vào lại để đợi đối thủ nâng giá
-        autoBidQueue.add(top);
-        top = second; // Đổi mục tiêu sang ng thứ hai
+        autoBidQueue.add(top); // Trả lại vào Queue để chờ đối thủ
+        break; // DỪNG VÒNG LẶP: Không tự đấu giá với chính mình
       }
 
-      // 3. Tính toán mức giá mới
+      // 3. Tính toán mức giá mới 
       double nextPrice = currentPrice + top.getbidStep();
 
       // 4. Kiểm tra ngân sách tối đa của bot (Max Bid)
@@ -349,14 +342,13 @@ public class Auction extends Entity {
     }
   }
 
-  private void handleAntiSniping() {
+  private synchronized void handleAntiSniping() {
     long timeLeft = this.endTime - System.currentTimeMillis();
     if (timeLeft > 0 && timeLeft < ONE_MINUTE_MS && extensionCount < MAX_EXTENSIONS) { // < 1 phút
       this.endTime += TWO_MINUTES_MS; // Cộng thêm 2 phút
       this.extensionCount++;
 
-      notifyObservers(Protocol.NOTI_SNIPING_UPDATE
-          + Protocol.SEPARATOR + getId() + "|" + this.endTime + "|" + extensionCount);
+      notifyObservers("SNIPING|" + getId() + "|" + this.endTime + "|" + extensionCount);
     }
   }
 

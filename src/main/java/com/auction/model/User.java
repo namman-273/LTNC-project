@@ -45,6 +45,7 @@ public abstract class User extends Entity implements Observer {
   }
 
   public void update(String message) {
+    // Sau này chỗ này sẽ hiển thị lên màn hình JavaFX
     System.out.println("[NOTIFY - " + username + "]: " + message);
   }
 
