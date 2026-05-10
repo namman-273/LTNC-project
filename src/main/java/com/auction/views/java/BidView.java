@@ -46,7 +46,7 @@ public class BidView {
 
       BidController controller = loader.getController();
       controller.setData(auctionId, itemName, currentPrice, status,
-              username, endTime, imageUrl, description);
+              username, endTime);
 
       stage.setTitle("Đấu giá - " + itemName);
       stage.setScene(new Scene(root));

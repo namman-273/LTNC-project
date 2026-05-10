@@ -1,6 +1,6 @@
 package com.auction.controller.ui;
 
-import com.auction.model.AutoBid;
+import com.auction.model.entities.AutoBid;
 import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;;

@@ -97,7 +97,7 @@ public class BidChartController implements Initializable {
 
     private void registerPushListener() {
         pushListener = message -> {
-            if (Protocol.isNotificationType(message, Protocol.NOTI_BID_UPDATE)) {
+            if (message.startsWith(Protocol.NOTI_BID_UPDATE)) {
                 String[] parts = message.split("\\" + Protocol.SEPARATOR);
                 if (parts.length >= 3 && parts[1].equals(auctionId)) {
                     try {
