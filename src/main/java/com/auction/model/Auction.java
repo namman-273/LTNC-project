@@ -150,7 +150,7 @@ public class Auction extends Entity {
   /**
    * IMPROVED: Get the current highest bidder (last person to bid).
    * 
-   * @return User who placed the last bid, or null if no bids yet
+   * <p>User who placed the last bid, or null if no bids yet
    */
   private User getPreviousHighestBidder() {
     if (history.isEmpty()) {
@@ -353,7 +353,8 @@ public class Auction extends Entity {
     try {
       double systemMin = getMinimumIncrement(currentPrice);
       if (customStep < systemMin) {
-        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
+        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng "
+            + (long) systemMin + " VNĐ");
       }
       if (this.autoBidQueue == null) {
         restoreTransients();

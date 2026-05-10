@@ -76,53 +76,64 @@ public class ClientHandler implements Runnable, Observer {
       String request;
       while ((request = in.readLine()) != null) {
         String[] parts = request.trim().split("\\|");
-        if (parts.length == 0)
+        if (parts.length == 0) {
           continue;
+        }
         String cmd = parts[0];
 
         switch (cmd) {
           case Protocol.CMD_REGISTER:
-            if (validatePayload(parts, REQ_REGISTER))
+            if (validatePayload(parts, REQ_REGISTER)) {
               handleRegister(parts);
+            }
             break;
           case Protocol.CMD_LOGIN:
-            if (validatePayload(parts, REQ_LOGIN))
+            if (validatePayload(parts, REQ_LOGIN)) {
               handleLogin(parts, auctionService);
+            }
             break;
           case Protocol.CMD_LIST_AUCTIONS:
             handleListAuctions(auctionService);
             break;
           case Protocol.CMD_BID:
-            if (validatePayload(parts, REQ_BID))
+            if (validatePayload(parts, REQ_BID)) {
               handleBid(parts, auctionService);
+            }
             break;
           case Protocol.CMD_CREATE_AUCTION:
-            if (validatePayload(parts, REQ_CREATE))
+            if (validatePayload(parts, REQ_CREATE)) {
               handleCreateAuction(parts, auctionService);
+            }
             break;
           case Protocol.CMD_END_AUCTION:
-            if (validatePayload(parts, REQ_END))
+            if (validatePayload(parts, REQ_END)) {
               handleEndAuction(parts, auctionService);
+            }
             break;
           case Protocol.CMD_DELETE_AUCTION:
-            if (validatePayload(parts, REQ_DELETE))
+            if (validatePayload(parts, REQ_DELETE)) {
               handleDeleteAuction(parts, auctionService);
+            }
             break;
           case Protocol.CMD_GET_HISTORY:
-            if (validatePayload(parts, REQ_HISTORY))
+            if (validatePayload(parts, REQ_HISTORY)) {
               handleGetHistory(parts, auctionService);
+            }
             break;
           case Protocol.CMD_DEPOSIT:
-            if (validatePayload(parts, REQ_DEPOSIT))
+            if (validatePayload(parts, REQ_DEPOSIT)) {
               handleDeposit(parts);
+            }
             break;
           case Protocol.CMD_GET_BALANCE:
-            if (validatePayload(parts, REQ_GET_BALANCE))
+            if (validatePayload(parts, REQ_GET_BALANCE)) {
               handleGetBalance();
+            }
             break;
           case Protocol.CMD_WATCH:
-            if (validatePayload(parts, REQ_WATCH))
+            if (validatePayload(parts, REQ_WATCH)) {
               handleWatch(parts, auctionService);
+            }
             break;
           case Protocol.CMD_UNWATCH:
             if (validatePayload(parts, REQ_UNWATCH)) {
@@ -130,12 +141,14 @@ public class ClientHandler implements Runnable, Observer {
             }
             break;
           case Protocol.CMD_GET_WATCHLIST:
-            if (validatePayload(parts, REQ_GET_WATCHLIST))
+            if (validatePayload(parts, REQ_GET_WATCHLIST)) {
               handleGetWatchlist(auctionService);
+            }
             break;
           case Protocol.CMD_ADD_AUTO_BID:
-            if (validatePayload(parts, REQ_AUTO_BID))
+            if (validatePayload(parts, REQ_AUTO_BID)) {
               handleAddAutoBid(parts, auctionService);
+            }
             break;
           default:
             sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lệnh không hợp lệ");
@@ -433,19 +446,22 @@ public class ClientHandler implements Runnable, Observer {
    * mình hoặc gửi riêng tư).
    */
   public User getCurrentUser() {
-    return this.currentUser; 
+    return this.currentUser;
     // Chú ý: Biến này trong code của Leader có thể tên là 'user' hoặc 'currentUser'
   }
 
   private void cleanUp() {
     try {
       AuctionService.getInstance().removeObserverFromAll(this);
-      if (in != null)
+      if (in != null) {
         in.close();
-      if (out != null)
+      }
+      if (out != null) {
         out.close();
-      if (socket != null && !socket.isClosed())
+      }
+      if (socket != null && !socket.isClosed()) {
         socket.close();
+      }
     } catch (IOException e) {
       System.err.println("Lỗi khi đóng tài nguyên Client: " + e.getMessage());
     }
