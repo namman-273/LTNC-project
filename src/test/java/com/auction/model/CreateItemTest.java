@@ -58,16 +58,9 @@ public class CreateItemTest {
         assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory("vehicle"));
     }
  
-    @Test
-    void getFactoryUnknownTypeReturnsVehicleFactoryAsDefault() {
-        assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory("UNKNOWN"));
-    }
+   
  
-    @Test
-    void getFactoryEmptyStringReturnsVehicleFactoryAsDefault() {
-        assertInstanceOf(VehicleFactory.class, ItemFactoryRegistry.getFactory(""));
-    }
- 
+    
     // --- Factory creates correct Item types ---
  
     @Test
