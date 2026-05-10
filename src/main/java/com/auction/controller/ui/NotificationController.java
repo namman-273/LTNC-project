@@ -1,6 +1,6 @@
 package com.auction.controller.ui;
 
-import com.auction.util.NotificationManager;
+import com.auction.util.ui.NotificationManager;
 import com.auction.views.java.AuctionListView;
 
 import javafx.fxml.FXML;

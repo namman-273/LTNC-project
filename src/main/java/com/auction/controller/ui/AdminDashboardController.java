@@ -1,9 +1,9 @@
 package com.auction.controller.ui;
 
 import com.auction.model.dto.AuctionRow;
-import com.auction.network.Protocol;
-import com.auction.util.AlertUtil;
-import com.auction.util.ServerConnection;
+import com.auction.network.protocol.Protocol;
+import com.auction.util.ui.AlertUtil;
+import com.auction.network.client.ServerConnection;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.CreateAuctionView;
 import com.google.gson.Gson;
