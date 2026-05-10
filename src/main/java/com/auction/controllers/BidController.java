@@ -23,10 +23,15 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -42,7 +47,7 @@ public class BidController implements Initializable {
     @FXML private Label messageLabel;
     @FXML private Label countdownLabel;
     @FXML private TextField bidAmountField;
-    @FXML private ListView<String> bidHistoryList;
+    @FXML private ListView<HistoryEntry> bidHistoryList;
     @FXML private VBox snipingBox;
     @FXML private Label snipingCountdownLabel;
     @FXML private Label snipingCountLabel;
@@ -54,12 +59,136 @@ public class BidController implements Initializable {
 
     private Consumer<String> pushListener;
 
-    private static final ConcurrentHashMap<String, ObservableList<String>> historyCache
+    private static final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache
             = new ConcurrentHashMap<>();
 
-    private ObservableList<String> historyItems;
+    private ObservableList<HistoryEntry> historyItems;
     private Timeline snipingTimeline;
     private Timeline countdownTimeline;
+
+    // ─── HistoryEntry DTO ────────────────────────────────────────────────────
+
+    /**
+     * DTO nhỏ gọn để hiển thị một dòng lịch sử đấu giá.
+     * Thay thế String thô để custom cell render đẹp hơn.
+     */
+    public static class HistoryEntry {
+        final String bidder;
+        final double amount;
+        final boolean isMe;
+        final boolean isLeading;
+
+        HistoryEntry(String bidder, double amount, boolean isMe, boolean isLeading) {
+            this.bidder    = bidder;
+            this.amount    = amount;
+            this.isMe      = isMe;
+            this.isLeading = isLeading;
+        }
+    }
+
+    // ─── Custom cell ─────────────────────────────────────────────────────────
+
+    /**
+     * Custom ListCell — render mỗi dòng history giống ảnh mẫu:
+     * [Avatar] Tên người dùng  [Badge]          Giá
+     *          thời gian phụ
+     */
+    private class HistoryCell extends ListCell<HistoryEntry> {
+        private final HBox root      = new HBox(12);
+        private final Label avatar   = new Label();
+        private final VBox info      = new VBox(3);
+        private final HBox nameLine  = new HBox(8);
+        private final Label nameLabel  = new Label();
+        private final Label badge      = new Label();
+        private final Label priceLabel = new Label();
+
+        HistoryCell() {
+            // Avatar circle
+            avatar.setPrefSize(38, 38);
+            avatar.setMinSize(38, 38);
+            avatar.setAlignment(Pos.CENTER);
+            avatar.setStyle(
+                    "-fx-background-radius: 50%; -fx-font-size: 14px; -fx-font-weight: bold;");
+
+            // Name + badge row
+            nameLine.setAlignment(Pos.CENTER_LEFT);
+            nameLine.getChildren().addAll(nameLabel, badge);
+
+            // Price — push to right
+            priceLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
+            HBox.setHgrow(info, Priority.ALWAYS);
+
+            info.getChildren().addAll(nameLine);
+            root.setAlignment(Pos.CENTER_LEFT);
+            root.setPadding(new Insets(10, 14, 10, 14));
+            root.getChildren().addAll(avatar, info, priceLabel);
+            setGraphic(root);
+            setText(null);
+        }
+
+        @Override
+        protected void updateItem(HistoryEntry entry, boolean empty) {
+            super.updateItem(entry, empty);
+            if (empty || entry == null) {
+                setGraphic(null);
+                setStyle("");
+                return;
+            }
+
+            // Avatar
+            String initials = entry.bidder.length() >= 2
+                    ? entry.bidder.substring(0, 2).toUpperCase()
+                    : entry.bidder.toUpperCase();
+            avatar.setText(initials);
+
+            // Màu nền avatar + row
+            if (entry.isMe) {
+                avatar.setStyle(avatar.getStyle()
+                        + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
+                setStyle("-fx-background-color: #F0F7FF; -fx-background-radius: 10;");
+            } else if (entry.isLeading) {
+                avatar.setStyle(avatar.getStyle()
+                        + "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;");
+                setStyle("-fx-background-color: #F0FFF4; -fx-background-radius: 10;");
+            } else {
+                avatar.setStyle(avatar.getStyle()
+                        + "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280;");
+                setStyle("-fx-background-color: transparent;");
+            }
+
+            // Name
+            nameLabel.setText(entry.isMe ? "Bạn" : entry.bidder);
+            nameLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937;");
+
+            // Badge
+            if (entry.isLeading && entry.isMe) {
+                badge.setText("Lượt của bạn");
+                badge.setStyle("-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;"
+                        + "-fx-background-radius: 6; -fx-padding: 1 7;"
+                        + "-fx-font-size: 10px; -fx-font-weight: bold;");
+                badge.setVisible(true);
+            } else if (entry.isLeading) {
+                badge.setText("Đang dẫn đầu");
+                badge.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;"
+                        + "-fx-background-radius: 6; -fx-padding: 1 7;"
+                        + "-fx-font-size: 10px; -fx-font-weight: bold;");
+                badge.setVisible(true);
+            } else {
+                badge.setText("");
+                badge.setVisible(false);
+            }
+
+            // Price
+            priceLabel.setText(String.format("%,.0f VNĐ", entry.amount));
+            priceLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;"
+                    + (entry.isLeading ? "-fx-text-fill: #1D4ED8;" : "-fx-text-fill: #374151;"));
+
+            setGraphic(root);
+            setText(null);
+        }
+    }
+
+    // ─── Setup ───────────────────────────────────────────────────────────────
 
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime) {
@@ -74,7 +203,7 @@ public class BidController implements Initializable {
 
         try {
             currentPriceValue = Double.parseDouble(
-                    currentPrice.replace(",", "").replace(" VND", "").trim());
+                    currentPrice.replace(",", "").replace(" VND", "").replace(" VNĐ", "").trim());
         } catch (NumberFormatException ignored) {}
 
         updateBidSuggestion(currentPriceValue);
@@ -82,6 +211,7 @@ public class BidController implements Initializable {
         historyItems = historyCache.computeIfAbsent(
                 auctionId, k -> FXCollections.observableArrayList());
         bidHistoryList.setItems(historyItems);
+        bidHistoryList.setCellFactory(lv -> new HistoryCell());
 
         startCountdown();
         loadHistory();
@@ -105,7 +235,6 @@ public class BidController implements Initializable {
         switch (parts[0]) {
 
             case Protocol.NOTI_BID_UPDATE:
-                // BID_UPDATE|auctionId|newPrice|bidderUsername
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
                     String bidder   = parts[3];
@@ -114,16 +243,14 @@ public class BidController implements Initializable {
                         try { currentPriceValue = Double.parseDouble(newPrice); }
                         catch (Exception ignored) {}
                         currentPriceLabel.setText(formatPrice(newPrice));
-                        // FIX: push BID_UPDATE tự thêm vào history — không cần loadHistory()
-                        historyItems.add(0, (isMe ? "⭐ Bạn" : "👤 " + bidder)
-                                + "  •  " + formatPrice(newPrice));
+                        // Reload toàn bộ history để cập nhật badge "Đang dẫn đầu" đúng
+                        loadHistory();
                         updateBidSuggestion(currentPriceValue);
                     });
                 }
                 break;
 
             case Protocol.NOTI_SNIPING_UPDATE:
-                // SNIPING_UPDATE|auctionId|newEndTime|extensionCount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
                     try { this.endTime = Long.parseLong(parts[2]); }
@@ -133,7 +260,6 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.NOTI_OUTBID:
-                // OUTBID|auctionId|newBidder|newAmount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
@@ -144,7 +270,6 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.NOTI_REFUND:
-                // REFUND|auctionId|refundAmount|newBalance
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String refundAmt = parts[2];
                     String newBal    = parts[3];
@@ -262,12 +387,6 @@ public class BidController implements Initializable {
 
     // ─── History ──────────────────────────────────────────────────────────────
 
-    /**
-     * FIX: Dùng JsonParser thủ công thay vì gson.fromJson(BidTransaction[].class).
-     * Lý do: BidTransaction chứa User object phức tạp — Gson deserialize
-     * có thể không đọc được username nếu server serialize User khác cấu trúc FE expect.
-     * Parse thủ công chỉ lấy đúng field cần thiết: bidder.username + amount.
-     */
     private void loadHistory() {
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
@@ -285,11 +404,9 @@ public class BidController implements Initializable {
                 JsonArray array = JsonParser.parseString(json).getAsJsonArray();
                 Platform.runLater(() -> {
                     historyItems.clear();
-                    // Đảo ngược — mới nhất lên đầu
                     for (int i = array.size() - 1; i >= 0; i--) {
                         JsonObject obj = array.get(i).getAsJsonObject();
 
-                        // FIX: lấy username từ nested object bidder.username
                         String bidder = "---";
                         if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
                             JsonObject bidderObj = obj.get("bidder").getAsJsonObject();
@@ -301,9 +418,11 @@ public class BidController implements Initializable {
                         double amount = obj.has("amount")
                                 ? obj.get("amount").getAsDouble() : 0;
 
-                        boolean isMe = bidder.equals(username);
-                        historyItems.add((isMe ? "⭐ Bạn" : "👤 " + bidder)
-                                + "  •  " + String.format("%,.0f VND", amount));
+                        boolean isMe      = bidder.equals(username);
+                        // Phần tử index 0 sau khi đảo = bid cao nhất = đang dẫn đầu
+                        boolean isLeading = (i == array.size() - 1);
+
+                        historyItems.add(new HistoryEntry(bidder, amount, isMe, isLeading));
                     }
                 });
             } catch (Exception e) {
@@ -331,7 +450,7 @@ public class BidController implements Initializable {
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("✅ Đặt giá thành công!");
                     bidAmountField.clear();
-                    loadHistory(); // Reload vì server không gửi BID_UPDATE cho chính người vừa bid
+                    loadHistory(); // server không gửi BID_UPDATE cho chính người vừa bid
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
@@ -374,8 +493,9 @@ public class BidController implements Initializable {
 
     private String formatPrice(String raw) {
         try {
-            return String.format("%,.0f VND",
-                    Double.parseDouble(raw.replace(",", "").replace(" VND", "").trim()));
+            return String.format("%,.0f VNĐ",
+                    Double.parseDouble(raw.replace(",", "")
+                            .replace(" VND", "").replace(" VNĐ", "").trim()));
         } catch (NumberFormatException e) { return raw; }
     }
 
