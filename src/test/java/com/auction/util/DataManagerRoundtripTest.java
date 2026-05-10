@@ -3,10 +3,12 @@ package com.auction.util;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.auction.model.Auction;
-import com.auction.model.Electronics;
+import com.auction.model.entities.Auction;
+import com.auction.model.entities.item.Electronics;
 import com.auction.service.AuctionService;
 import com.auction.service.UserManager;
+import com.auction.util.core.DataManager;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.HashMap;

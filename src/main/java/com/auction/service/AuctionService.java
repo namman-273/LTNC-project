@@ -1,15 +1,17 @@
 package com.auction.service;
 
-import com.auction.factory.ItemFactory;
-import com.auction.model.Auction;
-import com.auction.model.AuctionStatus;
-import com.auction.model.BidTransaction;
-import com.auction.model.Bidder;
-import com.auction.model.CreateItem;
-import com.auction.model.Item;
-import com.auction.model.Observer;
-import com.auction.model.User;
-import com.auction.util.DataManager;
+import com.auction.model.entities.Auction;
+import com.auction.model.entities.BidTransaction;
+import com.auction.model.entities.item.Item;
+import com.auction.model.entities.user.Bidder;
+import com.auction.model.entities.user.User;
+import com.auction.model.enums.AuctionStatus;
+import com.auction.model.factory.ItemFactory;
+import com.auction.model.factory.ItemFactoryRegistry;
+import com.auction.model.observer.Observer;
+import com.auction.network.protocol.Protocol;
+import com.auction.util.core.DataManager;
+import com.auction.util.core.IDataStorage;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,8 +25,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * .
- */
+ *  * .
+ *  
+ */
 public class AuctionService implements Serializable {
   private static final long serialVersionUID = 1L;
 
@@ -35,17 +38,22 @@ public class AuctionService implements Serializable {
   private final Map<String, Auction> auctions = new ConcurrentHashMap<>();
   private static volatile AuctionService instance;
 
-  private AuctionService() {
+  // ÁP DỤNG DIP: Khai báo Interface (dùng transient để không lỗi khi lưu file)
+  private transient IDataStorage dataStorage;
+
+  private AuctionService(IDataStorage dataStorage) {
+    this.dataStorage = dataStorage;
   }
 
   /**
- * Áp dụng singleton.
- */
+   *  * Áp dụng singleton.
+   *  
+   */
   public static AuctionService getInstance() {
     if (instance == null) {
       synchronized (AuctionService.class) {
         if (instance == null) {
-          instance = new AuctionService();
+          instance = new AuctionService(DataManager.getInstance());
         }
       }
     }
@@ -53,8 +61,9 @@ public class AuctionService implements Serializable {
   }
 
   /**
- * get watchlist.
- */
+   *  * get watchlist.
+   *  
+   */
   public List<Auction> getWatchlistForUser(String username) {
     User user = UserManager.getInstance().findUserByUsername(username);
 
@@ -71,15 +80,16 @@ public class AuctionService implements Serializable {
   }
 
   /**
- * Tạo phiên mới.
- */
+   *  * Tạo phiên mới.
+   *  
+   */
   public synchronized void createNewAuction(String itemType, String itemName, double startingPrice,
       long durationMinutes, String sellerId) {
     // 1. Tạo ID duy nhất cho phiên đấu giá (Ví dụ: AUC_171400...)
     String auctionId = "AUC_" + System.currentTimeMillis();
 
     // 2. Sử dụng Factory để tạo Item
-    ItemFactory factory = CreateItem.getFactory(itemType);
+    ItemFactory factory = ItemFactoryRegistry.getFactory(itemType);
     Item newItem = factory.create(auctionId, itemName, startingPrice);
 
     // 3. Khởi tạo đối tượng Auction mới
@@ -89,9 +99,36 @@ public class AuctionService implements Serializable {
     this.auctions.put(auctionId, newAuction);
 
     // 5. Lưu xuống file .dat ngay lập tức
-    DataManager.getInstance().saveData();
+    if (this.dataStorage != null) {
+      this.dataStorage.saveData();
+    }
 
     scheduler.schedule(() -> endAuction(auctionId), durationMinutes, TimeUnit.MINUTES);
+  }
+
+  /**
+   * FIX 2: Hàm tiện ích giúp khôi phục lại toàn bộ báo thức (scheduler)
+   * khi hệ thống khởi động lại.
+   */
+  private void recoverScheduledTasks() {
+    if (this.scheduler == null || this.scheduler.isShutdown()) {
+      this.scheduler = Executors.newScheduledThreadPool(5);
+    }
+
+    long now = System.currentTimeMillis();
+    for (Auction a : auctions.values()) {
+      if (a.getStatus() == AuctionStatus.OPEN) {
+        long delay = a.getEndTime() - now;
+        if (delay > 0) {
+          // Nếu vẫn còn thời gian -> Lên lịch lại
+          scheduler.schedule(() -> endAuction(a.getId()), delay, TimeUnit.MILLISECONDS);
+        } else {
+          // Nếu trong lúc Server tắt mà phiên đã hết giờ -> Đóng luôn lập tức
+          endAuction(a.getId());
+        }
+      }
+    }
+    System.out.println("[SERVICE] Đã khôi phục lịch trình đóng phiên cho các đấu giá đang mở.");
   }
 
   /**
@@ -102,38 +139,13 @@ public class AuctionService implements Serializable {
   protected Object readResolve() {
     // Khi load từ file, gán instance hiện tại chính là đối tượng vừa load
     instance = this;
+    if (this.dataStorage == null) {
+      this.dataStorage = DataManager.getInstance();
+    }
 
-    // Khởi tạo lại scheduler vì nó là transient (không được lưu xuống file)
-    if (this.scheduler == null || this.scheduler.isShutdown()) {
-      this.scheduler = Executors.newScheduledThreadPool(5);
-    }
-    // Khôi phục lại lịch đóng phiên cho các đấu giá đang mở (OPEN)
-    for (Auction a : auctions.values()) {
-      if (a.getStatus() == AuctionStatus.OPEN) {
-        long delay = a.getEndTime() - System.currentTimeMillis();
-        if (delay > 0) {
-          scheduler.schedule(() -> endAuction(a.getId()), delay, TimeUnit.MILLISECONDS);
-        } else {
-          endAuction(a.getId());
-        }
-      }
-    }
+    recoverScheduledTasks(); // Gọi khôi phục
 
     return instance;
-  }
-
-  /**
- * Thêm phiên.
- */
-  public void addAuction(Auction auction) {
-    if (auction != null) {
-      auctions.put(auction.getId(), auction);
-
-      // TỰ ĐỘNG ĐÓNG PHIÊN SAU 5 PHÚT(tạm thời để 20s)
-      scheduler.schedule(() -> {
-        endAuction(auction.getId());
-      }, 20000, TimeUnit.MILLISECONDS);
-    }
   }
 
   /**
@@ -147,6 +159,15 @@ public class AuctionService implements Serializable {
 
     // 1. Dùng synchronized để đảm bảo chỉ có 1 thread được xử lý thanh toán
     synchronized (a) {
+      // FIX 1: KIỂM TRA LẠI THỜI GIAN (Xử lý xung đột với Anti-sniping)
+      long now = System.currentTimeMillis();
+      if (now < a.getEndTime()) {
+        // Nếu chưa thực sự hết giờ (do mới được cộng thêm 2 phút)
+        // -> Hẹn giờ lại và hủy bỏ lần chạy này
+        long remaining = a.getEndTime() - now;
+        scheduler.schedule(() -> endAuction(auctionId), remaining, TimeUnit.MILLISECONDS);
+        return;
+      }
       // Kiểm tra lại trạng thái để tránh xử lý 2 lần (Double Payment)
       if (a.getStatus() == AuctionStatus.FINISHED || a.getStatus() == AuctionStatus.PAID) {
         return;
@@ -174,6 +195,15 @@ public class AuctionService implements Serializable {
           seller.addBalance(maxPrice);
           // Nâng cấp trạng thái thành ĐÃ THANH TOÁN
           a.setStatus(AuctionStatus.PAID);
+
+          // --- THÊM ĐOẠN NÀY: Bắn thông báo "Ting Ting" cho Seller ---
+          // Format: NOTI_BALANCE_CHANGED|Số_dư_mới|+Số_tiền_cộng
+          String sellerMsg = Protocol.NOTI_BALANCE_CHANGED + Protocol.SEPARATOR
+              + seller.getBalance() + Protocol.SEPARATOR
+              + "+" + maxPrice;
+
+          a.notifySpecificUser(seller.getUsername(), sellerMsg);
+
         } else {
           System.err.println("[ERROR] Không tìm thấy seller: " + a.getSellerId());
         }
@@ -181,19 +211,21 @@ public class AuctionService implements Serializable {
 
       // 3. Gửi thông báo (FE nhận qua socket)
       String msg = (winner != null)
-          ? "END_AUCTION_SUCCESS|" + auctionId + "|Winner:" + winner.getUsername() + "|Bid:"
-              + maxPrice + "$"
-          : "END_AUCTION_SUCCESS|" + auctionId + "|No winner";
+          ? Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+              + Protocol.SEPARATOR + "Winner:" + winner.getUsername()
+              + Protocol.SEPARATOR + "Bid:" + maxPrice + "$"
+          : Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
+              + Protocol.SEPARATOR + "No winner";
 
-      // Đảm bảo notifyObservers đã dùng bản copy để tránh
-      // ConcurrentModificationException
-      a.notifyObservers(msg);
+      a.notifyAllParticipants(msg, null);
 
       // Giải phóng tài nguyên/dừng thread nếu cần
       a.closeAuction();
 
       // 4. LƯU DỮ LIỆU NGAY LẬP TỨC
-      DataManager.getInstance().saveData();
+      if (this.dataStorage != null) {
+        this.dataStorage.saveData();
+      }
 
       System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId + " hoàn tất. Trạng thái cuối: "
           + a.getStatus());
@@ -212,10 +244,11 @@ public class AuctionService implements Serializable {
     Auction a = auctions.get(auctionId);
     return (a != null) ? a.getItem() : null;
   }
-  
+
   /**
- * set instance.
- */
+   *  * set instance.
+   *  
+   */
   public static void setInstance(AuctionService loadedInstance) {
     synchronized (AuctionService.class) {
       instance = loadedInstance;
@@ -227,20 +260,24 @@ public class AuctionService implements Serializable {
     return this.auctions; // auctions là cái Map<String, Auction>
   }
 
-  
   /**
- *  Dùng để khôi phục dữ liệu sau khi đọc từ file .dat lên.
- */
+   *  * Dùng để khôi phục dữ liệu sau khi đọc từ file .dat lên.
+   *  
+   */
   public void setAuctions(Map<String, Auction> loadedAuctions) {
     if (loadedAuctions != null) {
       this.auctions.clear(); // Xóa sạch dữ liệu trắng hiện tại
       this.auctions.putAll(loadedAuctions); // Đổ toàn bộ dữ liệu từ file vào
+
+      // Khôi phục lại lịch trình cho các đối tượng vừa được nạp vào Map
+      recoverScheduledTasks();
     }
   }
-  
+
   /**
- * shutdown.
- */
+   *  * shutdown.
+   *  
+   */
   public void shutdown() {
     System.out.println("[SERVICE] Đang tiến hành dọn dẹp và lưu dữ liệu...");
 
@@ -264,17 +301,37 @@ public class AuctionService implements Serializable {
     // QUAN TRỌNG: Lưu toàn bộ dữ liệu hiện tại xuống file .dat
     // Điều này đảm bảo giá thầu và trạng thái phiên đấu giá được bảo toàn
     try {
-      DataManager.getInstance().saveData();
+      if (this.dataStorage != null) {
+        this.dataStorage.saveData();
+      }
       System.out.println("[SERVICE] Dữ liệu đã được lưu an toàn vào file .dat.");
     } catch (Exception e) {
       System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: " + e.getMessage());
     }
   }
 
+  /**
+   * Xóa phiên đấu giá — chỉ Admin mới được gọi.
+   */
+  public boolean deleteAuction(String auctionId) {
+    Auction a = auctions.get(auctionId);
+    if (a == null) {
+      return false;
+    }
+    a.closeAuction();
+    auctions.remove(auctionId);
+    if (this.dataStorage != null) {
+      this.dataStorage.saveData();
+    }
+    System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
+    return true;
+  }
+
   // Trong AuctionService.java
   /**
- * Ngắt bỏ mọi obersever.
- */
+   *  * Ngắt bỏ mọi obersever.
+   *  
+   */
   public void removeObserverFromAll(Observer obs) {
     for (Auction auction : auctions.values()) {
       auction.removeObserver(obs);
