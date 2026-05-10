@@ -2,12 +2,8 @@ package com.auction.views.java;
 
 import com.auction.controller.ui.BidController;
 
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-
 public class BidView {
+
 
   private final Stage stage;
   private final String auctionId;
@@ -16,16 +12,27 @@ public class BidView {
   private final String status;
   private final String username;
   private final long endTime;
+  private final String imageUrl;    // Thêm mới
+  private final String description; // Thêm mới
 
   public BidView(Stage stage, String auctionId, String itemName,
-                 String currentPrice, String status, String username, long endTime) {
-    this.stage        = stage;
-    this.auctionId    = auctionId;
-    this.itemName     = itemName;
+                 String currentPrice, String status, String username,
+                 long endTime) {
+    this(stage, auctionId, itemName, currentPrice, status, username, endTime, "", "");
+  }
+
+  public BidView(Stage stage, String auctionId, String itemName,
+                 String currentPrice, String status, String username,
+                 long endTime, String imageUrl, String description) {
+    this.stage       = stage;
+    this.auctionId   = auctionId;
+    this.itemName    = itemName;
     this.currentPrice = currentPrice;
-    this.status       = status;
-    this.username     = username;
-    this.endTime      = endTime;
+    this.status      = status;
+    this.username    = username;
+    this.endTime     = endTime;
+    this.imageUrl    = imageUrl != null ? imageUrl : "";
+    this.description = description != null ? description : "";
   }
 
   public void show() {
@@ -35,7 +42,8 @@ public class BidView {
       Parent root = loader.load();
 
       BidController controller = loader.getController();
-      controller.setData(auctionId, itemName, currentPrice, status, username, endTime);
+      controller.setData(auctionId, itemName, currentPrice, status,
+              username, endTime, imageUrl, description);
 
       stage.setTitle("Đấu giá - " + itemName);
       stage.setScene(new Scene(root));
