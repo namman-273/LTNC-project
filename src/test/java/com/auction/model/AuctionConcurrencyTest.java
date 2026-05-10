@@ -11,9 +11,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.auction.exception.AuctionClosedException;
-import com.auction.exception.InvalidBidException;
+import com.auction.model.entities.Auction;
+import com.auction.model.entities.item.Electronics;
+import com.auction.model.entities.item.Item;
+import com.auction.model.entities.user.Bidder;
+import com.auction.model.enums.AuctionStatus;
 import com.auction.service.UserManager;
+import com.auction.util.exception.AuctionClosedException;
+import com.auction.util.exception.InvalidBidException;
  
 public class AuctionConcurrencyTest {
  
