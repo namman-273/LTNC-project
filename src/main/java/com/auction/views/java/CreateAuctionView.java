@@ -20,7 +20,7 @@ public class CreateAuctionView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/CreateAuctionView.fxml")
+                    getClass().getResource("/com/auction/views/fxml/CreateAuctionView.fxml")
             );
             Parent root = loader.load();
 

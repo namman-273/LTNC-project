@@ -20,7 +20,7 @@ public class WatchlistView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/WatchlistView.fxml")
+                    getClass().getResource("/com/auction/views/fxml/WatchlistView.fxml")
             );
             Parent root = loader.load();
 

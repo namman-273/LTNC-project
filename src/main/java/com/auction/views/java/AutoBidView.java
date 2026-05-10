@@ -31,7 +31,7 @@ public class AutoBidView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/AutoBidView.fxml")
+                    getClass().getResource("/com/auction/views/fxml/AutoBidView.fxml")
             );
             Parent root = loader.load();
 

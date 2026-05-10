@@ -31,7 +31,7 @@ public class BidChartView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/BidChartView.fxml")
+                    getClass().getResource("/com/auction/views/fxml/BidChartView.fxml")
             );
             Parent root = loader.load();
 
