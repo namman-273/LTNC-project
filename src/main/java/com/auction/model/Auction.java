@@ -6,8 +6,10 @@ import com.auction.exception.InvalidBidException;
 import com.auction.network.Protocol;
 import com.auction.service.UserManager;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,7 +47,8 @@ public class Auction extends Entity {
   public Auction(String id, Item item, long durationMinutes, String sellerId) {
     super(id);
     if (item == null) {
-      throw new IllegalArgumentException("Item cannot be null.Mỗi phiên đấu giá phải có một món hàng!");
+      throw new IllegalArgumentException("Item cannot be null "
+          + ".Mỗi phiên đấu giá phải có một món hàng!");
     } else {
       this.item = item;
     }
@@ -140,24 +143,84 @@ public class Auction extends Entity {
     }
   }
 
+  // --- NEW NOTIFICATION METHODS ---
+
   /**
-   * Cài đạt thông báo.
+   * IMPROVED: Get all unique bidders who have participated in this auction.
+   * This includes everyone who has placed at least one bid.
+   * 
+   * @return Set of Users who have bid, with no duplicates
    */
-  public void notifyObservers(String message) {
-    for (Observer observer : observers) {
+  private Set<User> getAllBidders() {
+    Set<User> bidders = new HashSet<>();
+    for (BidTransaction transaction : history) {
+      if (transaction.getBidder() != null) {
+        bidders.add(transaction.getBidder());
+      }
+    }
+    return bidders;
+  }
+
+  /**
+   * IMPROVED: Get the current highest bidder (last person to bid).
+   * 
+   * @return User who placed the last bid, or null if no bids yet
+   */
+  private User getPreviousHighestBidder() {
+    if (history.isEmpty()) {
+      return null;
+    }
+    return history.get(history.size() - 1).getBidder();
+  }
+
+  /**
+   * IMPROVED: Notify all participants in the auction.
+   * This includes:
+   * - All watchers (observers)
+   * - All bidders (people who have placed bids)
+   * 
+   * Prevents duplicates: If someone is both a watcher and a bidder,
+   * they only receive one notification.
+   * 
+   * Excludes the person who just bid to avoid self-notification.
+   * 
+   * @param message     The notification message to send
+   * @param excludeUser User to exclude from notifications (typically the bidder)
+   */
+  public void notifyAllParticipants(String message, User excludeUser) {
+    // 1. Collect all recipients using a Set to prevent duplicates
+    Set<Observer> recipients = new HashSet<>();
+
+    // 1a. Add all watchers
+    if (observers != null) {
+      recipients.addAll(observers);
+    }
+
+    // 1b. Add all bidders (Set automatically prevents duplicates)
+    recipients.addAll(getAllBidders());
+
+    // 2. Remove the user who just performed the action
+    if (excludeUser != null) {
+      recipients.remove(excludeUser);
+    }
+
+    // 3. Send notifications asynchronously
+    for (Observer observer : recipients) {
       notifyExecutor.submit(() -> {
         try {
-          // Kiểm tra null hoặc trạng thái kết nối nếu cần
           if (observer != null) {
             observer.update(message);
           }
         } catch (Exception e) {
-          // Nếu update lỗi (do client mất kết nối đột ngột), tự động xóa observer
           removeObserver(observer);
           System.out.println("Removed faulty observer: " + e.getMessage());
         }
       });
     }
+
+    // Log for debugging
+    System.out.println("[NOTIFICATION] Sent to "
+        + recipients.size() + " participants (watchers + bidders)");
   }
 
   // --- LOGIC PHIÊN ĐẤU GIÁ ---
@@ -186,7 +249,7 @@ public class Auction extends Entity {
       validateBidAmount(bidAmount);
 
       updateAuctionState(bidder, bidAmount);
-      handleAntiSniping();
+      handleAntiSniping(bidder);
 
       // Kích hoạt hệ thống tự động trả giá
       executeAutoBids();
@@ -225,6 +288,7 @@ public class Auction extends Entity {
   }
 
   private void updateAuctionState(User bidder, double amount) throws InvalidBidException {
+    User previousHighestBidder = getPreviousHighestBidder();
     // 1. CHỐT CHẶN BẢO MẬT: Người bán không được tự đấu giá
     if (bidder.getUsername().equals(this.sellerId)) {
       throw new InvalidBidException("Bạn không thể đấu giá sản phẩm của chính mình!");
@@ -238,18 +302,17 @@ public class Auction extends Entity {
       throw new InvalidBidException("Số dư tài khoản không đủ để đặt mức giá này!");
     }
 
-    // HOÀN TIỀN CHO NGƯỜI CŨ (Chỉ khi đã cầm được tiền của người mới)
-    if (!history.isEmpty()) {
+    // Refund previous bidder (only after new bidder's money is secured)
+    if (previousHighestBidder != null && !previousHighestBidder.equals(bidder)) {
       BidTransaction lastTransaction = history.get(history.size() - 1);
-      User oldBidder = lastTransaction.getBidder();
-      if (oldBidder != null && !oldBidder.equals(bidder)) {
-        oldBidder.addBalance(lastTransaction.getAmount());
-        // Thông báo tiền về ví cho người cũ
-        String refundMessage = "REFUND|Phiên " + getId()
-            + " bị vượt giá. Đã hoàn: " + lastTransaction.getAmount();
-        oldBidder.update(refundMessage);
+      previousHighestBidder.addBalance(lastTransaction.getAmount());
 
-      }
+      // IMPROVED: Send specific "OUTBID" notification to previous highest bidder
+      String outbidMessage = Protocol.NOTI_OUTBID + Protocol.SEPARATOR
+          + getId() + Protocol.SEPARATOR
+          + bidder.getUsername() + Protocol.SEPARATOR
+          + amount;
+      previousHighestBidder.update(outbidMessage);
     }
 
     this.currentPrice = amount;
@@ -259,8 +322,10 @@ public class Auction extends Entity {
     // Lưu lịch sử giao dịch
     this.history.add(new BidTransaction(bidder, amount));
 
-    notifyObservers(Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR
-        + getId() + "|" + amount + "|" + bidder.getUsername());
+    String bidUpdateMessage = Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR
+        + getId() + "|" + amount + "|" + bidder.getUsername();
+    notifyAllParticipants(bidUpdateMessage, bidder);
+
   }
 
   /**
@@ -349,14 +414,22 @@ public class Auction extends Entity {
     }
   }
 
-  private void handleAntiSniping() {
+  private void handleAntiSniping(User bidder) {
     long timeLeft = this.endTime - System.currentTimeMillis();
     if (timeLeft > 0 && timeLeft < ONE_MINUTE_MS && extensionCount < MAX_EXTENSIONS) { // < 1 phút
       this.endTime += TWO_MINUTES_MS; // Cộng thêm 2 phút
       this.extensionCount++;
 
-      notifyObservers(Protocol.NOTI_SNIPING_UPDATE
-          + Protocol.SEPARATOR + getId() + "|" + this.endTime + "|" + extensionCount);
+      String message = Protocol.NOTI_SNIPING_UPDATE
+          + Protocol.SEPARATOR + getId()
+          + "|" + this.endTime
+          + "|" + extensionCount;
+
+      // Truyền null vào excludeUser vì ngay cả người vừa bid cũng cần thấy EndTime
+      // mới trên UI của họ
+      notifyAllParticipants(message, null);
+      System.out.println("[ANTI-SNIPING] Phiên "
+          + getId() + " được gia hạn thêm 2p bởi " + bidder.getUsername());
     }
   }
 
@@ -394,7 +467,7 @@ public class Auction extends Entity {
       autoBidQueue.clear();
     }
     if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
-      notifyExecutor.shutdown(); // Giải phóng 10 threads ngay lập tức
+      notifyExecutor.shutdown(); // Giải phóng threads ngay lập tức
     }
   }
 

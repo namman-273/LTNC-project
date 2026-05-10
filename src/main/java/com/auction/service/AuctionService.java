@@ -198,7 +198,7 @@ public class AuctionService implements Serializable {
           : Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
               + Protocol.SEPARATOR + "No winner";
 
-      a.notifyObservers(msg);
+      a.notifyAllParticipants(msg, null);
 
       // Giải phóng tài nguyên/dừng thread nếu cần
       a.closeAuction();
@@ -293,7 +293,7 @@ public class AuctionService implements Serializable {
   public boolean deleteAuction(String auctionId) {
     Auction a = auctions.get(auctionId);
     if (a == null)
-      return false;
+      {return false;}
     a.closeAuction();
     auctions.remove(auctionId);
     DataManager.getInstance().saveData();

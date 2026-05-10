@@ -169,14 +169,8 @@ public class ServerConnection {
 
         // --- NHÓM 3: KẾT THÚC PHIÊN ĐẤU GIÁ ---
         // Khi một phiên kết thúc, Server dùng notify để báo cho TOÀN BỘ người đang xem
-        header.equals(Protocol.RES_END_SUCCESS)
-        ||
-        header.equals(Protocol.RES_SUCCESS)
-        ||
-
-        // --- NHÓM 4: LỖI HỆ THỐNG ---
-        // Ví dụ: Server sắp bảo trì hoặc lỗi logic tự động
-        header.equals(Protocol.ERROR);
+        header.equals(Protocol.RES_END_SUCCESS);
+        
 
   }
 
