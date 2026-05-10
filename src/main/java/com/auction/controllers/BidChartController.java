@@ -1,11 +1,15 @@
 package com.auction.controllers;
 
-import com.auction.model.BidTransaction;
 import com.auction.network.Protocol;
 import com.auction.util.ServerConnection;
 import com.auction.views.BidView;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -15,10 +19,6 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
-
 public class BidChartController implements Initializable {
 
     @FXML private LineChart<Number, Number> bidChart;
@@ -26,15 +26,13 @@ public class BidChartController implements Initializable {
     @FXML private NumberAxis yAxis;
     @FXML private Label titleLabel;
 
-    private String auctionId, itemName, currentPrice, status, username;
+    private String auctionId;
+    private String itemName;
+    private String currentPrice;
+    private String status;
+    private String username;
     private long endTime;
     private Consumer<String> pushListener;
-
-    private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(java.time.LocalDateTime.class,
-                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
-                            java.time.LocalDateTime.parse(json.getAsString()))
-            .create();
 
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime) {
@@ -52,15 +50,18 @@ public class BidChartController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         xAxis.setLabel("Lần đặt giá");
-        yAxis.setLabel("Giá (VND)");
+        yAxis.setLabel("Giá (VNĐ)");
     }
 
+    /**
+     * FIX: Parse thủ công bằng JsonParser thay vì gson.fromJson(BidTransaction[].class).
+     * BidTransaction chứa User object lồng nhau — Gson không deserialize được đúng
+     * → amount bị 0 → chart trống. Giờ chỉ lấy đúng field "amount".
+     */
     private void loadChartData() {
         new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive(
-                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
-            );
+            String response = ServerConnection.getInstance().sendAndReceive(
+                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
             System.out.println("Chart history: " + response);
 
             if (response == null || !response.startsWith(Protocol.RES_HISTORY)) return;
@@ -68,25 +69,29 @@ public class BidChartController implements Initializable {
             String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
             if (parts.length < 3 || parts[2].trim().equals("[]")) return;
 
-            BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
-            if (history == null || history.length == 0) return;
+            try {
+                JsonArray array = JsonParser.parseString(parts[2].trim()).getAsJsonArray();
+                if (array.size() == 0) return;
 
-            XYChart.Series<Number, Number> series = new XYChart.Series<>();
-            series.setName("Giá đặt");
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                series.setName("Giá đặt");
 
-            for (int i = 0; i < history.length; i++) {
-                final int idx = i + 1;
-                final double price = history[i].getAmount();
-                series.getData().add(new XYChart.Data<>(idx, price));
-            }
-
-            final XYChart.Series<Number, Number> finalSeries = series;
-            Platform.runLater(() -> {
-                bidChart.getData().clear();
-                if (!finalSeries.getData().isEmpty()) {
-                    bidChart.getData().add(finalSeries);
+                for (int i = 0; i < array.size(); i++) {
+                    JsonObject obj = array.get(i).getAsJsonObject();
+                    double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
+                    final int idx = i + 1;
+                    series.getData().add(new XYChart.Data<>(idx, amount));
                 }
-            });
+
+                Platform.runLater(() -> {
+                    bidChart.getData().clear();
+                    if (!series.getData().isEmpty()) {
+                        bidChart.getData().add(series);
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Lỗi parse chart data: " + e.getMessage());
+            }
         }).start();
     }
 

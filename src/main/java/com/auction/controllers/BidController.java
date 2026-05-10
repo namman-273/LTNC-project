@@ -251,11 +251,20 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.NOTI_SNIPING_UPDATE:
+                // SNIPING_UPDATE|auctionId|newEndTime|extensionCount
+                // FIX 1: cập nhật endTime → countdown chính tự cộng thêm 2 phút
+                // FIX 2: chỉ hiện snipingBox khi thời gian còn lại < 60 giây
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
-                    try { this.endTime = Long.parseLong(parts[2]); }
-                    catch (NumberFormatException ignored) {}
-                    Platform.runLater(() -> startSnipingCountdown(120, count));
+                    try {
+                        long newEndTime = Long.parseLong(parts[2]);
+                        this.endTime = newEndTime; // countdown chính tự cập nhật
+                        long remaining = newEndTime - System.currentTimeMillis();
+                        // Chỉ hiện hộp gia hạn nếu còn dưới 60 giây trước khi gia hạn
+                        if (remaining < 60_000) {
+                            Platform.runLater(() -> showSnipingAlert(count));
+                        }
+                    } catch (NumberFormatException ignored) {}
                 }
                 break;
 
@@ -362,27 +371,34 @@ public class BidController implements Initializable {
         countdownTimeline.play();
     }
 
-    // ─── Sniping countdown ────────────────────────────────────────────────────
+    // ─── Sniping alert ────────────────────────────────────────────────────────
 
-    private void startSnipingCountdown(int totalSeconds, String extensionCount) {
-        stopSnipingCountdown();
+    /**
+     * FIX: Hiện thông báo gia hạn ngắn gọn — tự ẩn sau 5 giây.
+     * Countdown chính (countdownLabel) đã tự cộng thêm thời gian vì endTime được cập nhật.
+     * Chỉ hiện khi thời gian còn lại < 60 giây để không spam user.
+     */
+    private void showSnipingAlert(String extensionCount) {
+        if (snipingBox == null) return;
         snipingBox.setVisible(true);
         snipingBox.setManaged(true);
         snipingCountLabel.setText("Lần gia hạn thứ: " + extensionCount);
-        final int[] secondsLeft = {totalSeconds};
-        snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            secondsLeft[0]--;
-            snipingCountdownLabel.setText(String.format("Còn: %02d:%02d",
-                    secondsLeft[0] / 60, secondsLeft[0] % 60));
-            if (secondsLeft[0] <= 0) stopSnipingCountdown();
-        }));
-        snipingTimeline.setCycleCount(totalSeconds);
+        snipingCountdownLabel.setText("⏱ +2 phút vừa được cộng thêm!");
+
+        // Tự ẩn sau 5 giây
+        if (snipingTimeline != null) snipingTimeline.stop();
+        snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> stopSnipingAlert()));
+        snipingTimeline.setCycleCount(1);
         snipingTimeline.play();
     }
 
-    private void stopSnipingCountdown() {
+    private void stopSnipingAlert() {
         if (snipingTimeline != null) { snipingTimeline.stop(); snipingTimeline = null; }
         if (snipingBox != null) { snipingBox.setVisible(false); snipingBox.setManaged(false); }
+    }
+
+    private void stopSnipingCountdown() {
+        stopSnipingAlert();
     }
 
     // ─── History ──────────────────────────────────────────────────────────────
