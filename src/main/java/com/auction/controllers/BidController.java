@@ -1,6 +1,5 @@
 package com.auction.controllers;
 
-import com.auction.model.BidTransaction;
 import com.auction.network.Protocol;
 import com.auction.util.AlertUtil;
 import com.auction.util.NotificationManager;
@@ -9,8 +8,14 @@ import com.auction.util.SessionManager;
 import com.auction.views.AuctionListView;
 import com.auction.views.AutoBidView;
 import com.auction.views.BidChartView;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -22,22 +27,16 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-
 public class BidController implements Initializable {
 
     @FXML private Label auctionTitleLabel;
-    @FXML private Label auctionIdLabel;
     @FXML private Label itemNameLabel;
+    @FXML private Label itemTypeLabel;
+    @FXML private Label sellerLabel;
     @FXML private Label currentPriceLabel;
     @FXML private Label statusLabel;
     @FXML private Label messageLabel;
@@ -47,28 +46,20 @@ public class BidController implements Initializable {
     @FXML private VBox snipingBox;
     @FXML private Label snipingCountdownLabel;
     @FXML private Label snipingCountLabel;
-    @FXML private ImageView productImage;
-    @FXML private VBox imagePlaceholder;
-    @FXML private VBox descriptionBox;
-    @FXML private Label descriptionLabel;
 
     private String auctionId;
     private String username;
     private long endTime;
+    private double currentPriceValue = 0;
+
+    private Consumer<String> pushListener;
 
     private static final ConcurrentHashMap<String, ObservableList<String>> historyCache
             = new ConcurrentHashMap<>();
 
     private ObservableList<String> historyItems;
-    private Consumer<String> pushListener;
     private Timeline snipingTimeline;
     private Timeline countdownTimeline;
-
-    private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(java.time.LocalDateTime.class,
-                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
-                            java.time.LocalDateTime.parse(json.getAsString()))
-            .create();
 
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime) {
@@ -76,99 +67,34 @@ public class BidController implements Initializable {
         this.username  = username;
         this.endTime   = endTime;
 
-        auctionTitleLabel.setText("Đấu giá - " + itemName);
-        if (auctionIdLabel != null) auctionIdLabel.setText(auctionId);
+        auctionTitleLabel.setText(itemName);
         itemNameLabel.setText(itemName);
         currentPriceLabel.setText(formatPrice(currentPrice));
         statusLabel.setText(status);
 
+        try {
+            currentPriceValue = Double.parseDouble(
+                    currentPrice.replace(",", "").replace(" VND", "").trim());
+        } catch (NumberFormatException ignored) {}
+
+        updateBidSuggestion(currentPriceValue);
+
         historyItems = historyCache.computeIfAbsent(
                 auctionId, k -> FXCollections.observableArrayList());
         bidHistoryList.setItems(historyItems);
-
-        try {
-            double price = Double.parseDouble(
-                    currentPrice.replace(",", "").replace(" VND", "").trim());
-            long suggested = (long)(price + 1_000_000);
-            bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
-        } catch (NumberFormatException ignored) {}
 
         startCountdown();
         loadHistory();
         registerPushListener();
     }
 
-    public void setData(String auctionId, String itemName, String currentPrice,
-                        String status, String username, long endTime,
-                        String imageUrl, String description) {
-        setData(auctionId, itemName, currentPrice, status, username, endTime);
-
-        // Hiển thị ảnh
-        if (imageUrl != null && !imageUrl.isEmpty() && productImage != null) {
-            try {
-                productImage.setImage(new Image(imageUrl, true));
-                productImage.setVisible(true);
-                productImage.setManaged(true);
-                if (imagePlaceholder != null) {
-                    imagePlaceholder.setVisible(false);
-                    imagePlaceholder.setManaged(false);
-                }
-            } catch (Exception e) {
-                System.err.println("Không load được ảnh: " + e.getMessage());
-            }
-        }
-
-        // Hiển thị mô tả
-        if (description != null && !description.isEmpty() && descriptionBox != null) {
-            descriptionLabel.setText(description);
-            descriptionBox.setVisible(true);
-            descriptionBox.setManaged(true);
-        }
-    }
-
     @Override
     public void initialize(URL url, ResourceBundle rb) {}
-
-    // ─── Countdown ───────────────────────────────────────────────────────────
-
-    private void startCountdown() {
-        if (countdownTimeline != null) countdownTimeline.stop();
-
-        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            long remaining = endTime - System.currentTimeMillis();
-            if (countdownLabel == null) return;
-
-            if (remaining <= 0) {
-                countdownLabel.setText("⏰ Hết giờ!");
-                countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
-                countdownTimeline.stop();
-                return;
-            }
-
-            long hours   = remaining / 3_600_000;
-            long minutes = (remaining % 3_600_000) / 60_000;
-            long seconds = (remaining % 60_000) / 1_000;
-            countdownLabel.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
-
-            if (remaining < 300_000) {
-                countdownLabel.setStyle(
-                        "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 16px;");
-            } else {
-                countdownLabel.setStyle(
-                        "-fx-text-fill: #1565C0; -fx-font-weight: bold; -fx-font-size: 16px;");
-            }
-        }));
-        countdownTimeline.setCycleCount(Timeline.INDEFINITE);
-        countdownTimeline.play();
-    }
 
     // ─── Push Listener ───────────────────────────────────────────────────────
 
     private void registerPushListener() {
-        pushListener = message -> {
-            System.out.println("Realtime: " + message);
-            handleServerPush(message);
-        };
+        pushListener = this::handleServerPush;
         ServerConnection.getInstance().addPushListener(pushListener);
     }
 
@@ -177,58 +103,54 @@ public class BidController implements Initializable {
         if (parts.length == 0) return;
 
         switch (parts[0]) {
+
             case Protocol.NOTI_BID_UPDATE:
+                // BID_UPDATE|auctionId|newPrice|bidderUsername
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
                     String bidder   = parts[3];
+                    boolean isMe    = bidder.equals(username);
                     Platform.runLater(() -> {
+                        try { currentPriceValue = Double.parseDouble(newPrice); }
+                        catch (Exception ignored) {}
                         currentPriceLabel.setText(formatPrice(newPrice));
-                        historyItems.add(0, bidder + " đặt: " + formatPrice(newPrice));
-                        try {
-                            double price = Double.parseDouble(newPrice);
-                            long suggested = (long)(price + 1_000_000);
-                            bidAmountField.setPromptText(
-                                    "Gợi ý: " + String.format("%,d", suggested));
-                        } catch (NumberFormatException ignored) {}
+                        // FIX: push BID_UPDATE tự thêm vào history — không cần loadHistory()
+                        historyItems.add(0, (isMe ? "⭐ Bạn" : "👤 " + bidder)
+                                + "  •  " + formatPrice(newPrice));
+                        updateBidSuggestion(currentPriceValue);
                     });
                 }
                 break;
 
             case Protocol.NOTI_SNIPING_UPDATE:
+                // SNIPING_UPDATE|auctionId|newEndTime|extensionCount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String count = parts[3];
-                    try {
-                        this.endTime = Long.parseLong(parts[2]);
-                    } catch (NumberFormatException ignored) {}
+                    try { this.endTime = Long.parseLong(parts[2]); }
+                    catch (NumberFormatException ignored) {}
                     Platform.runLater(() -> startSnipingCountdown(120, count));
                 }
                 break;
 
             case Protocol.NOTI_OUTBID:
+                // OUTBID|auctionId|newBidder|newAmount
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
-                    String newAmount = parts[3];
+                    String newAmt    = parts[3];
                     Platform.runLater(() ->
-                            showNotification("😮 Bị vượt giá!",
-                                    newBidder + " vừa vượt giá bạn!\n"
-                                            + "Giá mới: " + formatPrice(newAmount)
-                                            + "\nHãy đặt giá cao hơn!"));
+                            showError("⚠️ Bạn bị vượt giá bởi " + newBidder
+                                    + "! Giá mới: " + formatPrice(newAmt)));
                 }
                 break;
 
             case Protocol.NOTI_REFUND:
+                // REFUND|auctionId|refundAmount|newBalance
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
-                    String refundAmount = parts[2];
-                    String reason = parts[3];
-                    String reasonText = "OUTBID".equals(reason)
-                            ? "bị người khác vượt giá"
-                            : "AUCTION_ENDED".equals(reason)
-                            ? "phiên kết thúc, bạn không thắng"
-                            : "phiên bị hủy";
+                    String refundAmt = parts[2];
+                    String newBal    = parts[3];
                     Platform.runLater(() ->
-                            showNotification("💸 Hoàn tiền!",
-                                    "Đã hoàn " + formatPrice(refundAmount)
-                                            + " vào ví\nLý do: " + reasonText));
+                            showInfo("💰 Hoàn " + formatPrice(refundAmt)
+                                    + " → Số dư: " + formatPrice(newBal)));
                 }
                 break;
 
@@ -239,24 +161,20 @@ public class BidController implements Initializable {
                     if (countdownTimeline != null) countdownTimeline.stop();
                     if (countdownLabel != null) {
                         countdownLabel.setText("⏰ Hết giờ!");
-                        countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
+                        countdownLabel.setStyle(
+                                "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
                     }
                     String detail = parts.length >= 3 ? parts[2] : "";
                     if (detail.contains("Winner:" + username)) {
-                        String bid = detail.contains("Bid:")
-                                ? detail.substring(detail.indexOf("Bid:") + 4) : "";
-                        showSuccess("🎉 Bạn đã thắng!");
-                        showNotification("🎉 Chúc mừng!",
-                                "Bạn đã thắng phiên: " + auctionId
-                                        + "\nGiá thắng: " + bid
-                                        + "\nTiền đã bị trừ khỏi tài khoản.");
+                        showSuccess("🎉 Bạn đã thắng phiên đấu giá!");
+                        showNotification("🎉 Chúc mừng!", "Bạn đã thắng phiên: " + auctionId);
                     } else if (detail.contains("No winner")) {
                         showInfo("Phiên kết thúc — không có người thắng.");
                     } else {
                         showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
                     }
                 });
-                unregisterPushListener();
+                removePushListener();
                 break;
 
             default:
@@ -264,19 +182,73 @@ public class BidController implements Initializable {
         }
     }
 
+    private void removePushListener() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
+    }
+
+    // ─── Quick-add buttons ────────────────────────────────────────────────────
+
+    @FXML private void handleAdd1M()  { addAmount(1_000_000); }
+    @FXML private void handleAdd5M()  { addAmount(5_000_000); }
+    @FXML private void handleAdd10M() { addAmount(10_000_000); }
+
+    private void addAmount(double amount) {
+        try {
+            String current = bidAmountField.getText().trim();
+            double base = current.isEmpty() ? currentPriceValue
+                    : Double.parseDouble(current.replace(",", "").replace(" VND", "").trim());
+            bidAmountField.setText(String.valueOf((long)(base + amount)));
+        } catch (NumberFormatException ignored) {
+            bidAmountField.setText(String.valueOf((long)(currentPriceValue + amount)));
+        }
+    }
+
+    private void updateBidSuggestion(double price) {
+        long suggested = (long)(price + 1_000_000);
+        bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
+    }
+
+    // ─── Countdown ────────────────────────────────────────────────────────────
+
+    private void startCountdown() {
+        if (countdownTimeline != null) countdownTimeline.stop();
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            long remaining = endTime - System.currentTimeMillis();
+            if (countdownLabel == null) return;
+            if (remaining <= 0) {
+                countdownLabel.setText("⏰ Hết giờ!");
+                countdownLabel.setStyle(
+                        "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+                countdownTimeline.stop();
+                return;
+            }
+            long hours   = remaining / 3_600_000;
+            long minutes = (remaining % 3_600_000) / 60_000;
+            long seconds = (remaining % 60_000) / 1_000;
+            countdownLabel.setText(String.format("%02d : %02d : %02d", hours, minutes, seconds));
+            countdownLabel.setStyle(remaining < 300_000
+                    ? "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;"
+                    : "-fx-text-fill: #1565C0; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;");
+        }));
+        countdownTimeline.setCycleCount(Timeline.INDEFINITE);
+        countdownTimeline.play();
+    }
+
+    // ─── Sniping countdown ────────────────────────────────────────────────────
+
     private void startSnipingCountdown(int totalSeconds, String extensionCount) {
         stopSnipingCountdown();
         snipingBox.setVisible(true);
         snipingBox.setManaged(true);
         snipingCountLabel.setText("Lần gia hạn thứ: " + extensionCount);
-
         final int[] secondsLeft = {totalSeconds};
-
         snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             secondsLeft[0]--;
-            int min = secondsLeft[0] / 60;
-            int sec = secondsLeft[0] % 60;
-            snipingCountdownLabel.setText(String.format("Còn: %02d:%02d", min, sec));
+            snipingCountdownLabel.setText(String.format("Còn: %02d:%02d",
+                    secondsLeft[0] / 60, secondsLeft[0] % 60));
             if (secondsLeft[0] <= 0) stopSnipingCountdown();
         }));
         snipingTimeline.setCycleCount(totalSeconds);
@@ -284,73 +256,84 @@ public class BidController implements Initializable {
     }
 
     private void stopSnipingCountdown() {
-        if (snipingTimeline != null) {
-            snipingTimeline.stop();
-            snipingTimeline = null;
-        }
-        if (snipingBox != null) {
-            snipingBox.setVisible(false);
-            snipingBox.setManaged(false);
-        }
+        if (snipingTimeline != null) { snipingTimeline.stop(); snipingTimeline = null; }
+        if (snipingBox != null) { snipingBox.setVisible(false); snipingBox.setManaged(false); }
     }
 
-    // ─── History ─────────────────────────────────────────────────────────────
+    // ─── History ──────────────────────────────────────────────────────────────
 
+    /**
+     * FIX: Dùng JsonParser thủ công thay vì gson.fromJson(BidTransaction[].class).
+     * Lý do: BidTransaction chứa User object phức tạp — Gson deserialize
+     * có thể không đọc được username nếu server serialize User khác cấu trúc FE expect.
+     * Parse thủ công chỉ lấy đúng field cần thiết: bidder.username + amount.
+     */
     private void loadHistory() {
         new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive(
-                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId
-            );
-            System.out.println("History: " + response);
-
+            String response = ServerConnection.getInstance().sendAndReceive(
+                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
             if (response == null || response.startsWith("ERROR")) return;
+            if (!response.startsWith(Protocol.RES_HISTORY)) return;
 
-            if (response.startsWith(Protocol.RES_HISTORY)) {
-                String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-                if (parts.length >= 3) {
-                    BidTransaction[] history = gson.fromJson(parts[2].trim(), BidTransaction[].class);
-                    if (history != null) {
-                        Platform.runLater(() -> {
-                            historyItems.clear();
-                            for (BidTransaction bt : history) {
-                                String bidder = bt.getBidder() != null
-                                        ? bt.getBidder().getUsername() : "---";
-                                historyItems.add(bidder + " đặt: "
-                                        + String.format("%,.0f VND", bt.getAmount()));
+            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+            if (parts.length < 3) return;
+
+            String json = parts[2].trim();
+            if (json.isEmpty() || json.equals("[]")) return;
+
+            try {
+                JsonArray array = JsonParser.parseString(json).getAsJsonArray();
+                Platform.runLater(() -> {
+                    historyItems.clear();
+                    // Đảo ngược — mới nhất lên đầu
+                    for (int i = array.size() - 1; i >= 0; i--) {
+                        JsonObject obj = array.get(i).getAsJsonObject();
+
+                        // FIX: lấy username từ nested object bidder.username
+                        String bidder = "---";
+                        if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
+                            JsonObject bidderObj = obj.get("bidder").getAsJsonObject();
+                            if (bidderObj.has("username")) {
+                                bidder = bidderObj.get("username").getAsString();
                             }
-                        });
+                        }
+
+                        double amount = obj.has("amount")
+                                ? obj.get("amount").getAsDouble() : 0;
+
+                        boolean isMe = bidder.equals(username);
+                        historyItems.add((isMe ? "⭐ Bạn" : "👤 " + bidder)
+                                + "  •  " + String.format("%,.0f VND", amount));
                     }
-                }
+                });
+            } catch (Exception e) {
+                System.err.println("Lỗi parse history: " + e.getMessage());
             }
         }).start();
     }
 
-    // ─── Actions ─────────────────────────────────────────────────────────────
+    // ─── Actions ──────────────────────────────────────────────────────────────
 
     @FXML
     private void handleBid() {
         String amountStr = bidAmountField.getText().trim();
+        if (amountStr.isEmpty()) { showError("Vui lòng nhập giá!"); return; }
 
         new Thread(() -> {
-            ServerConnection conn = ServerConnection.getInstance();
-            String response = conn.sendAndReceive(
-                    Protocol.CMD_BID + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amountStr
-            );
-            System.out.println("BID response: " + response);
-
+            String response = ServerConnection.getInstance().sendAndReceive(
+                    Protocol.CMD_BID + Protocol.SEPARATOR + auctionId
+                            + Protocol.SEPARATOR + amountStr);
             Platform.runLater(() -> {
-                if (response == null || response.startsWith("ERROR")) {
-                    String[] parts = response != null
-                            ? response.split("\\" + Protocol.SEPARATOR) : new String[0];
-                    showError(parts.length > 1 ? parts[1] : "Mất kết nối!");
-                    return;
+                if (response == null || response.startsWith("ERROR|Mất kết nối")) {
+                    showError("Mất kết nối server!"); return;
                 }
+                String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("✅ Đặt giá thành công!");
                     bidAmountField.clear();
+                    // FIX: KHÔNG gọi loadHistory() ở đây
+                    // BID_UPDATE push từ server sẽ tự cập nhật historyItems qua handleServerPush()
                 } else {
-                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
             });
@@ -358,32 +341,8 @@ public class BidController implements Initializable {
     }
 
     @FXML
-    private void handleQuickBid1M() { addQuickBid(1_000_000); }
-
-    @FXML
-    private void handleQuickBid5M() { addQuickBid(5_000_000); }
-
-    @FXML
-    private void handleQuickBid10M() { addQuickBid(10_000_000); }
-
-    private void addQuickBid(long amount) {
-        try {
-            String current = bidAmountField.getText().trim();
-            double base = current.isEmpty()
-                    ? Double.parseDouble(currentPriceLabel.getText()
-                    .replace(",", "").replace(" VND", "").trim())
-                    : Double.parseDouble(current.replace(",", ""));
-            bidAmountField.setText(String.format("%.0f", base + amount));
-        } catch (NumberFormatException ignored) {
-            bidAmountField.setText(String.valueOf(amount));
-        }
-    }
-
-    @FXML
     private void handleAutoBid() {
-        unregisterPushListener();
-        stopSnipingCountdown();
-        if (countdownTimeline != null) countdownTimeline.stop();
+        stopAll();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
         new AutoBidView(stage, auctionId, itemNameLabel.getText(),
                 currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
@@ -391,9 +350,7 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleBack() {
-        unregisterPushListener();
-        stopSnipingCountdown();
-        if (countdownTimeline != null) countdownTimeline.stop();
+        stopAll();
         Platform.runLater(() -> {
             Stage stage = (Stage) bidAmountField.getScene().getWindow();
             new AuctionListView(stage, username).show();
@@ -402,44 +359,41 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleViewChart() {
-        unregisterPushListener();
-        stopSnipingCountdown();
-        if (countdownTimeline != null) countdownTimeline.stop();
+        stopAll();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
         new BidChartView(stage, auctionId, itemNameLabel.getText(),
                 currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
     }
 
-    private void unregisterPushListener() {
-        if (pushListener != null) {
-            ServerConnection.getInstance().removePushListener(pushListener);
-            pushListener = null;
-        }
+    private void stopAll() {
+        removePushListener();
+        stopSnipingCountdown();
+        if (countdownTimeline != null) countdownTimeline.stop();
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private String formatPrice(String raw) {
         try {
-            double price = Double.parseDouble(
-                    raw.replace(",", "").replace(" VND", "").trim());
-            return String.format("%,.0f VND", price);
-        } catch (NumberFormatException e) {
-            return raw;
-        }
+            return String.format("%,.0f VND",
+                    Double.parseDouble(raw.replace(",", "").replace(" VND", "").trim()));
+        } catch (NumberFormatException e) { return raw; }
     }
 
     private void showError(String msg) {
-        messageLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        if (messageLabel == null) return;
+        messageLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
 
     private void showSuccess(String msg) {
-        messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
+        if (messageLabel == null) return;
+        messageLabel.setStyle("-fx-text-fill: #16A34A; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
 
     private void showInfo(String msg) {
+        if (messageLabel == null) return;
         messageLabel.setStyle("-fx-text-fill: #1565C0; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
