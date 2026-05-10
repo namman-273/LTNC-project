@@ -263,6 +263,9 @@ public class BidController implements Initializable {
                         // Chỉ hiện hộp gia hạn nếu còn dưới 60 giây trước khi gia hạn
                         if (remaining < 60_000) {
                             Platform.runLater(() -> showSnipingAlert(count));
+                            NotificationManager.getInstance().add(
+                                    "⏱ Phiên " + auctionId + " được gia hạn lần " + count);
+
                         }
                     } catch (NumberFormatException ignored) {}
                 }
@@ -272,9 +275,14 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
-                    Platform.runLater(() ->
-                            showError("⚠️ Bạn bị vượt giá bởi " + newBidder
-                                    + "! Giá mới: " + formatPrice(newAmt)));
+                    Platform.runLater(() -> {
+                        showError("⚠️ Bạn bị vượt giá bởi " + newBidder
+                                + "! Giá mới: " + formatPrice(newAmt));
+                        // Thêm dòng này:
+                        NotificationManager.getInstance().add(
+                                "⚠️ Bị vượt giá trong phiên " + auctionId
+                                        + " — Giá mới: " + formatPrice(newAmt));
+                    });
                 }
                 break;
 
@@ -287,6 +295,7 @@ public class BidController implements Initializable {
                                     + " → Số dư: " + formatPrice(newBal)));
                 }
                 break;
+
 
             case Protocol.RES_END_SUCCESS:
                 Platform.runLater(() -> {

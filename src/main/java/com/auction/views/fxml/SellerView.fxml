@@ -13,7 +13,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.SellerController"
       prefWidth="860" prefHeight="600" spacing="0"
-      stylesheets="@style.css"
+      stylesheets="@../style/style.css"
       style="-fx-background-color: #F8F9FA;">
 
     <!-- HEADER -->

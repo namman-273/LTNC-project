@@ -14,7 +14,7 @@
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.BidController"
       prefWidth="1000" prefHeight="680" spacing="0"
-      stylesheets="@style.css"
+      stylesheets="@../style/style.css"
       style="-fx-background-color: #F0F4FF;">
 
     <!-- ═══════════════ CỘT TRÁI ═══════════════ -->

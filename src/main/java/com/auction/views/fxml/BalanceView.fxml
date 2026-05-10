@@ -12,7 +12,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.BalanceController"
       prefWidth="520" prefHeight="620" spacing="0"
-      stylesheets="@style.css"
+      stylesheets="@../style/style.css"
       style="-fx-background-color: #F0F4FF;">
 
     <!-- HEADER -->
