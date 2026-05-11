@@ -35,15 +35,12 @@ public class ToastManager {
             toast.setOpacity(0);
             container.getChildren().add(0, toast);
 
-            // Fade in
             Timeline fadeIn = new Timeline(
-                    new KeyFrame(Duration.ZERO, new KeyValue(toast.opacityProperty(), 0)),
+                    new KeyFrame(Duration.ZERO,        new KeyValue(toast.opacityProperty(), 0)),
                     new KeyFrame(Duration.millis(250), new KeyValue(toast.opacityProperty(), 1))
             );
-
-            // Fade out sau 3.5s
             Timeline fadeOut = new Timeline(
-                    new KeyFrame(Duration.ZERO, new KeyValue(toast.opacityProperty(), 1)),
+                    new KeyFrame(Duration.ZERO,        new KeyValue(toast.opacityProperty(), 1)),
                     new KeyFrame(Duration.millis(300), new KeyValue(toast.opacityProperty(), 0))
             );
             fadeOut.setDelay(Duration.seconds(3.5));
@@ -55,32 +52,59 @@ public class ToastManager {
     }
 
     private static HBox buildToast(Type type, String message) {
-        String bg, border, color, icon;
+        // Dùng text thuần thay vì emoji để tránh lỗi font trên Windows
+        String bg, borderLeft, textColor, iconText, iconBg;
         switch (type) {
-            case SUCCESS: bg="#F0FFF4"; border="#A5D6A7"; color="#1B5E20"; icon="✅"; break;
-            case WARNING: bg="#FFF8E1"; border="#FFE082"; color="#E65100"; icon="⚠️"; break;
-            case DANGER:  bg="#FFEBEE"; border="#EF9A9A"; color="#B71C1C"; icon="❌"; break;
-            default:      bg="#E3F2FD"; border="#90CAF9"; color="#0D47A1"; icon="💡"; break;
+            case SUCCESS:
+                bg = "#F0FFF4"; borderLeft = "#22C55E"; textColor = "#14532D";
+                iconText = "✓";  iconBg = "#22C55E";
+                break;
+            case WARNING:
+                bg = "#FFFBEB"; borderLeft = "#F59E0B"; textColor = "#78350F";
+                iconText = "!";  iconBg = "#F59E0B";
+                break;
+            case DANGER:
+                bg = "#FFF1F2"; borderLeft = "#EF4444"; textColor = "#7F1D1D";
+                iconText = "✕";  iconBg = "#EF4444";
+                break;
+            default: // INFO
+                bg = "#EFF6FF"; borderLeft = "#3B82F6"; textColor = "#1E3A5F";
+                iconText = "i";  iconBg = "#3B82F6";
+                break;
         }
 
-        Label iconLabel = new Label(icon);
-        iconLabel.setStyle("-fx-font-size: 14px;");
+        // Icon circle
+        Label iconLabel = new Label(iconText);
+        iconLabel.setPrefSize(28, 28);
+        iconLabel.setMinSize(28, 28);
+        iconLabel.setAlignment(Pos.CENTER);
+        iconLabel.setStyle(
+                "-fx-background-color: " + iconBg + ";" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 13px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-background-radius: 14;"
+        );
 
         Label msgLabel = new Label(message);
-        msgLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + color
-                + "; -fx-wrap-text: true;");
-        msgLabel.setMaxWidth(260);
+        msgLabel.setStyle(
+                "-fx-font-size: 12px;" +
+                        "-fx-text-fill: " + textColor + ";" +
+                        "-fx-wrap-text: true;"
+        );
+        msgLabel.setMaxWidth(250);
+        msgLabel.setWrapText(true);
 
-        HBox toast = new HBox(8, iconLabel, msgLabel);
+        HBox toast = new HBox(10, iconLabel, msgLabel);
         toast.setAlignment(Pos.CENTER_LEFT);
-        toast.setPadding(new Insets(10, 14, 10, 14));
+        toast.setPadding(new Insets(10, 16, 10, 12));
+        toast.setMaxWidth(320);
         toast.setStyle(
-                "-fx-background-color: " + bg + ";"
-                        + "-fx-border-color: " + border + ";"
-                        + "-fx-border-width: 1;"
-                        + "-fx-border-radius: 10;"
-                        + "-fx-background-radius: 10;"
-                        + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);"
+                "-fx-background-color: " + bg + ";" +
+                        "-fx-border-color: transparent transparent transparent " + borderLeft + ";" +
+                        "-fx-border-width: 0 0 0 4;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 10, 0, 0, 3);"
         );
         return toast;
     }

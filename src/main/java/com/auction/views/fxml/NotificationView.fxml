@@ -11,41 +11,50 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.NotificationController"
-      prefWidth="480" prefHeight="580" spacing="0"
+      prefWidth="500" prefHeight="620" spacing="0"
       stylesheets="@../style/style.css"
       style="-fx-background-color: #F0F4FF;">
 
-    <!-- HEADER -->
-    <HBox alignment="CENTER_LEFT" spacing="14"
+    <!-- ═══ HEADER ════════════════════════════════════════════════════════ -->
+    <HBox alignment="CENTER_LEFT" spacing="12"
           style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
-                 -fx-padding: 0 24; -fx-pref-height: 60;
-                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
+                 -fx-padding: 0 20; -fx-pref-height: 64;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.22), 8, 0, 0, 3);">
 
         <Button text="← Quay lại" onAction="#handleBack"
-                style="-fx-background-color: rgba(255,255,255,0.15);
+                style="-fx-background-color:
+                rgba(255,255,255,0.15);
                        -fx-text-fill: white; -fx-font-size: 12px;
                        -fx-background-radius: 8; -fx-cursor: hand;
                        -fx-border-color: rgba(255,255,255,0.4);
                        -fx-border-radius: 8; -fx-border-width: 1;
                        -fx-padding: 6 14;"/>
 
-        <Label text="🔔 THÔNG BÁO"
-               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        <!-- Title + subtitle -->
+        <VBox spacing="1">
+            <Label text="Thông báo"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <Label fx:id="countLabel" text="0 thông báo"
+                   style="-fx-font-size: 11px; -fx-text-fill: rgba(255,255,255,0.75);"/>
+        </VBox>
 
         <Region HBox.hgrow="ALWAYS"/>
 
-        <!-- Count badge -->
-        <StackPane>
-            <Label fx:id="countLabel" text="0"
-                   style="-fx-background-color: #EF4444;
-                          -fx-text-fill: white;
-                          -fx-font-size: 11px; -fx-font-weight: bold;
-                          -fx-background-radius: 12;
-                          -fx-padding: 2 8;
-                          -fx-min-width: 24;"/>
-        </StackPane>
+        <!-- Unread status -->
+        <Label fx:id="unreadCountLabel" text=""
+               style="-fx-font-size: 11px; -fx-text-fill: #FED7AA;"/>
 
-        <Button text="🗑 Xóa tất cả" onAction="#handleClear"
+        <!-- Mark all read -->
+        <Button text="✓ Đọc tất cả" onAction="#handleMarkAll"
+                style="-fx-background-color: rgba(255,255,255,0.15);
+                       -fx-text-fill: white; -fx-font-size: 11px;
+                       -fx-background-radius: 8; -fx-cursor: hand;
+                       -fx-border-color: rgba(255,255,255,0.4);
+                       -fx-border-radius: 8; -fx-border-width: 1;
+                       -fx-padding: 6 12;"/>
+
+        <!-- Clear read -->
+        <Button text="🗑 Xóa đã đọc" onAction="#handleClearRead"
                 style="-fx-background-color: rgba(255,255,255,0.15);
                        -fx-text-fill: white; -fx-font-size: 11px;
                        -fx-background-radius: 8; -fx-cursor: hand;
@@ -54,52 +63,54 @@
                        -fx-padding: 6 12;"/>
     </HBox>
 
-    <!-- BODY -->
-    <VBox spacing="0" VBox.vgrow="ALWAYS">
-        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+    <!-- ═══ TAB BAR ═══════════════════════════════════════════════════════ -->
+    <HBox spacing="4" alignment="CENTER_LEFT"
+          style="-fx-background-color: white;
+                 -fx-padding: 10 20 10 20;
+                 -fx-border-color: transparent transparent #E5E7EB transparent;
+                 -fx-border-width: 1;">
 
-        <!-- Summary bar -->
-        <HBox alignment="CENTER_LEFT" spacing="10"
-              style="-fx-background-color: white;
-                     -fx-background-radius: 12 12 0 0;
-                     -fx-border-color: #E5E7EB;
-                     -fx-border-radius: 12 12 0 0;
-                     -fx-border-width: 1 1 0 1;
-                     -fx-padding: 12 16;">
-            <Label text="🔔"
-                   style="-fx-font-size: 16px;"/>
-            <VBox spacing="2">
-                <Label text="Trung tâm thông báo"
-                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937;"/>
-                <Label text="Cập nhật realtime từ hệ thống đấu giá"
-                       style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
+        <Button fx:id="tabAll" text="Tất cả" onAction="#handleTabAll"
+                style="-fx-background-color: #1565C0; -fx-text-fill: white;
+                       -fx-font-weight: bold; -fx-background-radius: 20;
+                       -fx-padding: 6 18; -fx-cursor: hand; -fx-font-size: 12px;"/>
+
+        <Button fx:id="tabUnread" text="Chưa đọc" onAction="#handleTabUnread"
+                style="-fx-background-color: transparent; -fx-text-fill: #6B7280;
+                       -fx-background-radius: 20; -fx-padding: 6 18;
+                       -fx-cursor: hand; -fx-font-size: 12px;"/>
+
+        <Button fx:id="tabAuction" text="Đấu giá" onAction="#handleTabAuction"
+                style="-fx-background-color: transparent; -fx-text-fill: #6B7280;
+                       -fx-background-radius: 20; -fx-padding: 6 18;
+                       -fx-cursor: hand; -fx-font-size: 12px;"/>
+
+        <Button fx:id="tabSystem" text="Hệ thống" onAction="#handleTabSystem"
+                style="-fx-background-color: transparent; -fx-text-fill: #6B7280;
+                       -fx-background-radius: 20; -fx-padding: 6 18;
+                       -fx-cursor: hand; -fx-font-size: 12px;"/>
+    </HBox>
+
+    <!-- ═══ LIST ══════════════════════════════════════════════════════════ -->
+    <ListView fx:id="notificationList" VBox.vgrow="ALWAYS"
+              style="-fx-background-color: #F0F4FF;
+                     -fx-border-color: transparent;
+                     -fx-background-insets: 0;
+                     -fx-padding: 8 12 8 12;">
+        <placeholder>
+            <VBox alignment="CENTER" spacing="14" style="-fx-padding: 60 0;">
+                <Label text="🔔"
+                       style="-fx-font-size: 52px; -fx-opacity: 0.25;"/>
+                <Label text="Chưa có thông báo nào"
+                       style="-fx-font-size: 14px; -fx-text-fill: #9CA3AF;
+                              -fx-font-weight: bold;"/>
+                <Label text="Thông báo sẽ hiện khi có cập nhật giá,&#10;kết quả đấu giá hoặc giao dịch mới."
+                       style="-fx-font-size: 12px; -fx-text-fill: #D1D5DB;
+                              -fx-text-alignment: center;"
+                       wrapText="true"/>
             </VBox>
-        </HBox>
-
-        <!-- List -->
-        <ListView fx:id="notificationList" VBox.vgrow="ALWAYS"
-                  style="-fx-background-color: white;
-                         -fx-border-color: #E5E7EB;
-                         -fx-border-radius: 0 0 12 12;
-                         -fx-border-width: 1;
-                         -fx-background-radius: 0 0 12 12;
-                         -fx-background-insets: 0;
-                         -fx-padding: 4;">
-            <placeholder>
-                <VBox alignment="CENTER" spacing="14" style="-fx-padding: 60 0;">
-                    <Label text="🔔"
-                           style="-fx-font-size: 48px; -fx-opacity: 0.3;"/>
-                    <Label text="Chưa có thông báo nào"
-                           style="-fx-font-size: 14px; -fx-text-fill: #9CA3AF;
-                                  -fx-font-weight: bold;"/>
-                    <Label text="Thông báo sẽ xuất hiện khi có cập nhật giá,\nkết quả đấu giá hoặc giao dịch mới."
-                           style="-fx-font-size: 12px; -fx-text-fill: #D1D5DB;
-                                  -fx-text-alignment: center;"
-                           wrapText="true"/>
-                </VBox>
-            </placeholder>
-        </ListView>
-
-    </VBox>
+        </placeholder>
+    </ListView>
 
 </VBox>
+
