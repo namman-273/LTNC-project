@@ -114,10 +114,10 @@ public class WatchlistController implements Initializable {
     }
 
     @FXML
-    private void handleRefresh() { loadWatchlist(); }
+    public void handleRefresh() { loadWatchlist(); }
 
     @FXML
-    private void handleUnwatch() {
+    public void handleUnwatch() {
         AuctionRow selected = watchlistTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showMessage("Vui lòng chọn một phiên!", "red");
@@ -145,7 +145,7 @@ public class WatchlistController implements Initializable {
     }
 
     @FXML
-    private void handleViewDetail() {
+    public void handleViewDetail() {
         AuctionRow selected = watchlistTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showMessage("Vui lòng chọn một phiên!", "red");
@@ -173,7 +173,7 @@ public class WatchlistController implements Initializable {
         }
     }
 
-    private void handleBack() {
+    public void handleBack() {
         stopAutoRefresh();
         Stage stage = (Stage) watchlistTable.getScene().getWindow();
         new AuctionListView(stage, username).show();

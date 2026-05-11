@@ -64,9 +64,6 @@
         <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"
                 prefHeight="36" prefWidth="130"
                 styleClass="btn-primary"/>
-
-        prefHeight="36" prefWidth="95"
-        styleClass="btn-outline"/>
     </HBox>
 
     <!-- CONTENT: bảng + lịch sử -->

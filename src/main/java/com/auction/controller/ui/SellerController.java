@@ -4,7 +4,7 @@ import com.auction.model.dto.AuctionRow;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.NotificationManager;
 import com.auction.network.client.ServerConnection;
-import com.auction.util.core.SessionManager;;
+import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.CreateAuctionView;
 import com.google.gson.Gson;
@@ -56,7 +56,6 @@ public class SellerController implements Initializable {
                             java.time.LocalDateTime.parse(json.getAsString()))
             .create();
 
-    @Override
     private Timeline autoRefreshTimeline;
 
     public void initialize(URL url, ResourceBundle rb) {
@@ -261,14 +260,14 @@ public class SellerController implements Initializable {
     // ─── Actions ─────────────────────────────────────────────────────────────
 
     @FXML
-    private void handleRefresh() {
+    public void handleRefresh() {
         historyData.clear();
         historyTitleLabel.setText("📋 Lịch sử đặt giá");
         loadMyAuctions();
     }
 
     @FXML
-    private void handleCreateAuction() {
+    public void handleCreateAuction() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new CreateAuctionView(stage, username).show();
     }
@@ -289,7 +288,7 @@ public class SellerController implements Initializable {
         }
     }
 
-    private void handleBack() {
+    public void handleBack() {
         if (pushListener != null) {
             ServerConnection.getInstance().removePushListener(pushListener);
             pushListener = null;

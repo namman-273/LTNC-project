@@ -14,7 +14,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.AuctionListController"
       prefWidth="980" prefHeight="680" spacing="0"
-      stylesheets="@../style/style.css"
+      stylesheets="@/com/auction/views/style/style.css"
       style="-fx-background-color: #F0F4FF;">
 
     <!-- HEADER -->

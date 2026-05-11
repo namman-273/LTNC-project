@@ -233,7 +233,7 @@ public class AuctionListController implements Initializable {
     // ─── Watchlist ────────────────────────────────────────────────────────────
 
     @FXML
-    private void handleWatch() {
+    public void handleWatch() {
         if (selectedRow == null) { setStatusBar("⚠️ Vui lòng click vào một phiên trước!"); return; }
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
@@ -250,7 +250,7 @@ public class AuctionListController implements Initializable {
     }
 
     @FXML
-    private void handleUnwatch() {
+    public void handleUnwatch() {
         if (selectedRow == null) { setStatusBar("⚠️ Vui lòng click vào một phiên trước!"); return; }
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
@@ -266,7 +266,7 @@ public class AuctionListController implements Initializable {
     }
 
     @FXML
-    private void handleGetWatchlist() {
+    public void handleGetWatchlist() {
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
         new WatchlistView(stage, username).show();
     }
@@ -296,7 +296,7 @@ public class AuctionListController implements Initializable {
         }
     }
 
-    private void handleLogout() {
+    public void handleLogout() {
         stopAutoRefresh();
         if (pushListener != null) {
             ServerConnection.getInstance().removePushListener(pushListener);
@@ -309,31 +309,31 @@ public class AuctionListController implements Initializable {
     }
 
     @FXML
-    private void handleCreateAuction() {
+    public void handleCreateAuction() {
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
         new CreateAuctionView(stage, username).show();
     }
 
     @FXML
-    private void handleAdminDashboard() {
+    public void handleAdminDashboard() {
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
         new AdminDashboardView(stage, username).show();
     }
 
     @FXML
-    private void handleSellerDashboard() {
+    public void handleSellerDashboard() {
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
         new SellerView(stage, username).show();
     }
 
     @FXML
-    private void handleBalance() {
+    public void handleBalance() {
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
         new BalanceView(stage, username).show();
     }
 
     @FXML
-    private void handleNotification() {
+    public void handleNotification() {
         Stage stage = (Stage) auctionGrid.getScene().getWindow();
         new NotificationView(stage, username).show();
     }

@@ -3,6 +3,7 @@ package com.auction.model.helpers;
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.User;
+import com.auction.model.observer.AuctionParticipant;
 import com.auction.model.observer.Observer;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -16,15 +17,15 @@ public class AuctionNotifier {
 
     for (Observer observer : observers) {
       // Ép kiểu sang ClientHandler để lấy thông tin User đang giữ kết nối này
-      if (observer instanceof ClientHandler) {
-        ClientHandler handler = (ClientHandler) observer;
+      if (observer instanceof AuctionParticipant) {
+        AuctionParticipant participant = (AuctionParticipant) observer;
         // Bỏ qua không gửi cho người vừa tạo ra hành động này (để tránh tự spam chính
         // mình)
-        if (excludeUser != null && handler.getCurrentUser() != null) {
-          if (handler.getCurrentUser().getUsername().equals(excludeUser.getUsername())) {
-            continue;
-          }
+        if (excludeUser != null
+            && excludeUser.getUsername().equals(participant.getAssociatedUsername())) {
+          continue; // Bỏ qua người gửi
         }
+
       }
       notifyExecutor.submit(() -> {
         try {
@@ -46,10 +47,9 @@ public class AuctionNotifier {
       return;
 
     for (Observer observer : observers) {
-      if (observer instanceof ClientHandler) {
-        ClientHandler handler = (ClientHandler) observer;
-        if (handler.getCurrentUser() != null
-            && handler.getCurrentUser().getUsername().equals(targetUsername)) {
+      if (observer instanceof AuctionParticipant) {
+        AuctionParticipant participant = (AuctionParticipant) observer;
+        if (targetUsername.equals(participant.getAssociatedUsername())) {
           notifyExecutor.submit(() -> {
             try {
               observer.update(message);

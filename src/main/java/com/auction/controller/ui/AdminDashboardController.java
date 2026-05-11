@@ -111,7 +111,7 @@ public class AdminDashboardController implements Initializable {
     // ─── Deposit / Balance ───────────────────────────────────────────────────
 
     @FXML
-    private void handleDeposit() {
+    public void handleDeposit() {
         String amount = depositAmountField != null
                 ? depositAmountField.getText().trim() : "";
 
@@ -160,10 +160,10 @@ public class AdminDashboardController implements Initializable {
     // ─── Auction Management ──────────────────────────────────────────────────
 
     @FXML
-    private void handleRefresh() { loadFromServer(); }
+    public void handleRefresh() { loadFromServer(); }
 
     @FXML
-    private void handleEndAuction() {
+    public void handleEndAuction() {
         AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showMessage("Vui lòng chọn một phiên để kết thúc!", "red");
@@ -194,7 +194,7 @@ public class AdminDashboardController implements Initializable {
     }
 
     @FXML
-    private void handleDeleteAuction() {
+    public void handleDeleteAuction() {
         AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showMessage("Vui lòng chọn một phiên để xóa!", "red");
@@ -237,7 +237,7 @@ public class AdminDashboardController implements Initializable {
     }
 
     @FXML
-    private void handleCreateAuction() {
+    public void handleCreateAuction() {
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new CreateAuctionView(stage, username).show();
     }
@@ -258,7 +258,7 @@ public class AdminDashboardController implements Initializable {
         }
     }
 
-    private void handleBack() {
+    public void handleBack() {
         stopAutoRefresh();
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
