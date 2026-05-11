@@ -28,9 +28,8 @@
         <Label text="⭐ WATCHLIST CỦA TÔI"
                style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         <HBox HBox.hgrow="ALWAYS"/>
-        <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                style="-fx-background-color: white; -fx-text-fill: #1565C0;
-                       -fx-font-weight: bold; -fx-background-radius: 5;"/>
+        style="-fx-background-color: white; -fx-text-fill: #1565C0;
+        -fx-font-weight: bold; -fx-background-radius: 5;"/>
     </HBox>
 
     <!-- TABLE -->

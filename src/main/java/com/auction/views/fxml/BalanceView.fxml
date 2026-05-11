@@ -55,12 +55,11 @@
                                -fx-background-radius: 8;
                                -fx-cursor: hand;
                                -fx-padding: 8 20;"/>
-                <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                        style="-fx-background-color: rgba(255,255,255,0.2);
-                               -fx-text-fill: white;
-                               -fx-background-radius: 8;
-                               -fx-cursor: hand;
-                               -fx-padding: 8 20;"/>
+                style="-fx-background-color: rgba(255,255,255,0.2);
+                -fx-text-fill: white;
+                -fx-background-radius: 8;
+                -fx-cursor: hand;
+                -fx-padding: 8 20;"/>
             </HBox>
         </VBox>
 

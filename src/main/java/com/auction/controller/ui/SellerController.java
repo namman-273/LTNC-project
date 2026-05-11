@@ -15,7 +15,10 @@ import com.google.gson.JsonParser;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -54,6 +57,8 @@ public class SellerController implements Initializable {
             .create();
 
     @Override
+    private Timeline autoRefreshTimeline;
+
     public void initialize(URL url, ResourceBundle rb) {
         username = SessionManager.getInstance().getUsername();
         welcomeLabel.setText("Xin chào, " + username + "!");
@@ -99,6 +104,7 @@ public class SellerController implements Initializable {
             handleServerPush(message);
         };
         ServerConnection.getInstance().addPushListener(pushListener);
+        startAutoRefresh();
     }
 
     private void handleServerPush(String message) {
@@ -268,6 +274,21 @@ public class SellerController implements Initializable {
     }
 
     @FXML
+    private void startAutoRefresh() {
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(10), e -> loadMyAuctions())
+        );
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+    }
+
+    private void stopAutoRefresh() {
+        if (autoRefreshTimeline != null) {
+            autoRefreshTimeline.stop();
+            autoRefreshTimeline = null;
+        }
+    }
+
     private void handleBack() {
         if (pushListener != null) {
             ServerConnection.getInstance().removePushListener(pushListener);

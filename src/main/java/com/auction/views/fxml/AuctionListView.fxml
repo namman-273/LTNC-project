@@ -111,8 +111,7 @@
                         prefHeight="36" prefWidth="90" styleClass="btn-danger"/>
                 <Button text="➕ Tạo phiên" onAction="#handleCreateAuction"
                         prefHeight="36" prefWidth="110" styleClass="btn-primary"/>
-                <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                        prefHeight="36" prefWidth="95" styleClass="btn-outline"/>
+                prefHeight="36" prefWidth="95" styleClass="btn-outline"/>
                 <Button fx:id="sellerButton" text="🛒 Seller" onAction="#handleSellerDashboard"
                         prefHeight="36" prefWidth="90" styleClass="btn-success"/>
                 <MenuButton text="⭐ Watchlist ▼" prefHeight="36" prefWidth="130"

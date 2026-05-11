@@ -4,7 +4,10 @@ import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
 import com.auction.views.java.AuctionListView;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -32,10 +35,13 @@ public class BalanceController implements Initializable {
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+    private Timeline autoRefreshTimeline;
+
     public void setUsername(String username) {
         this.username = username;
         usernameLabel.setText("Tài khoản: " + username);
         loadBalance();
+        startAutoRefresh();
     }
 
     @Override
@@ -114,7 +120,23 @@ public class BalanceController implements Initializable {
     private void handleRefresh() { loadBalance(); }
 
     @FXML
+    private void startAutoRefresh() {
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(10), e -> loadBalance())
+        );
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+    }
+
+    private void stopAutoRefresh() {
+        if (autoRefreshTimeline != null) {
+            autoRefreshTimeline.stop();
+            autoRefreshTimeline = null;
+        }
+    }
+
     private void handleBack() {
+        stopAutoRefresh();
         Stage stage = (Stage) balanceLabel.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }

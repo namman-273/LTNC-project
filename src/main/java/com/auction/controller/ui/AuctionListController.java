@@ -20,7 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.util.Duration;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -42,6 +45,7 @@ public class AuctionListController implements Initializable {
     private AuctionRow selectedRow = null;
     private final List<AuctionRow> currentRows = new ArrayList<>();
     private Consumer<String> pushListener;
+    private Timeline autoRefreshTimeline;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -67,6 +71,7 @@ public class AuctionListController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         loadFromServer();
         registerPushListener();
+        startAutoRefresh();
     }
 
     private void registerPushListener() {
@@ -276,7 +281,23 @@ public class AuctionListController implements Initializable {
     public  void refreshList()        { loadFromServer(); }
 
     @FXML
+    private void startAutoRefresh() {
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(8), e -> loadFromServer())
+        );
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+    }
+
+    private void stopAutoRefresh() {
+        if (autoRefreshTimeline != null) {
+            autoRefreshTimeline.stop();
+            autoRefreshTimeline = null;
+        }
+    }
+
     private void handleLogout() {
+        stopAutoRefresh();
         if (pushListener != null) {
             ServerConnection.getInstance().removePushListener(pushListener);
             pushListener = null;

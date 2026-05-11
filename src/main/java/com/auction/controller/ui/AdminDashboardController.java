@@ -8,7 +8,10 @@ import com.auction.views.java.AuctionListView;
 import com.auction.views.java.CreateAuctionView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -44,6 +47,8 @@ public class AdminDashboardController implements Initializable {
                             java.time.LocalDateTime.parse(json.getAsString()))
             .create();
 
+    private Timeline autoRefreshTimeline;
+
     public void setUsername(String username) {
         this.username = username;
         loadBalance();
@@ -72,6 +77,7 @@ public class AdminDashboardController implements Initializable {
         });
 
         loadFromServer();
+        startAutoRefresh();
     }
 
     public void loadFromServer() {
@@ -237,7 +243,23 @@ public class AdminDashboardController implements Initializable {
     }
 
     @FXML
+    private void startAutoRefresh() {
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(10), e -> loadFromServer())
+        );
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+    }
+
+    private void stopAutoRefresh() {
+        if (autoRefreshTimeline != null) {
+            autoRefreshTimeline.stop();
+            autoRefreshTimeline = null;
+        }
+    }
+
     private void handleBack() {
+        stopAutoRefresh();
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
