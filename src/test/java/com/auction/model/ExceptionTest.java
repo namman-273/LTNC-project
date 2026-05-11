@@ -1,4 +1,4 @@
-package com.auction.exception;
+package com.auction.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
