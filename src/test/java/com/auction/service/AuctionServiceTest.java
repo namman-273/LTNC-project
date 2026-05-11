@@ -65,35 +65,35 @@ public class AuctionServiceTest {
 
     @Test
     void createNewAuctionAddsToMap() {
-        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller", "", "");
         assertFalse(auctionService.getAllAuctions().isEmpty());
     }
 
     @Test
     void createNewAuctionCreatesCorrectItem() {
-        auctionService.createNewAuction("ELECTRONICS", "Laptop", 1_000_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Laptop", 1_000_000.0, 9999L, "defaultSeller", "", "");
         Auction auction = auctionService.getAllAuctions().iterator().next();
         assertEquals("Laptop", auction.getItem().getItemName());
     }
 
     @Test
     void createNewAuctionStatusIsOpen() {
-        auctionService.createNewAuction("ELECTRONICS", "Monitor", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Monitor", 500_000.0, 9999L, "defaultSeller", "", "");
         Auction auction = auctionService.getAllAuctions().iterator().next();
         assertEquals(AuctionStatus.OPEN, auction.getStatus());
     }
 
     @Test
     void createNewAuctionStartingPriceCorrect() {
-        auctionService.createNewAuction("ART", "Painting", 2_000_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ART", "Painting", 2_000_000.0, 9999L, "defaultSeller", "", "");
         Auction auction = auctionService.getAllAuctions().iterator().next();
         assertEquals(2_000_000.0, auction.getCurrentPrice(), 0.001);
     }
 
     @Test
     void createMultipleAuctionsAllPresent() {
-        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller");
-        auctionService.createNewAuction("ART", "Vase", 300_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller", "", "");
+        auctionService.createNewAuction("ART", "Vase", 300_000.0, 9999L, "defaultSeller", "", "");
         assertEquals(2, auctionService.getAllAuctions().size());
     }
 
@@ -101,7 +101,7 @@ public class AuctionServiceTest {
 
     @Test
     void getAuctionByIdReturnsCorrectAuction() {
-        auctionService.createNewAuction("ELECTRONICS", "Camera", 1_500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Camera", 1_500_000.0, 9999L, "defaultSeller", "", "");
         Auction auction = auctionService.getAllAuctions().iterator().next();
         String id = auction.getId();
         assertSame(auction, auctionService.getAuctionById(id));
@@ -128,7 +128,7 @@ public class AuctionServiceTest {
 
     @Test
     void getItemInAuctionReturnsItem() {
-        auctionService.createNewAuction("VEHICLE", "Car", 50_000_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("VEHICLE", "Car", 50_000_000.0, 9999L, "defaultSeller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         assertNotNull(auctionService.getItemInAuction(a.getId()));
     }
@@ -147,7 +147,7 @@ public class AuctionServiceTest {
 
     @Test
     void getAuctionsMapReflectsCreatedAuctions() {
-        auctionService.createNewAuction("ELECTRONICS", "Phone", 5_000_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Phone", 5_000_000.0, 9999L, "defaultSeller", "", "");
         assertFalse(auctionService.getAuctionsMap().isEmpty());
     }
 
@@ -170,7 +170,7 @@ public class AuctionServiceTest {
 
     @Test
     void setAuctionsClearsOldData() {
-        auctionService.createNewAuction("ELECTRONICS", "OldItem", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "OldItem", 500_000.0, 9999L, "defaultSeller", "", "");
         Map<String, Auction> empty = new HashMap<>();
         auctionService.setAuctions(empty);
         assertTrue(auctionService.getAllAuctions().isEmpty());
@@ -181,7 +181,7 @@ public class AuctionServiceTest {
    
     @Test
     void deleteAuctionReturnsTrueWhenFound() {
-        auctionService.createNewAuction("ELECTRONICS", "Tablet", 2_000_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Tablet", 2_000_000.0, 9999L, "defaultSeller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         assertTrue(auctionService.deleteAuction(a.getId()));
     }
@@ -193,7 +193,7 @@ public class AuctionServiceTest {
 
     @Test
     void deleteAuctionRemovesFromMap() {
-        auctionService.createNewAuction("ELECTRONICS", "Headset", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Headset", 500_000.0, 9999L, "defaultSeller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         String id = a.getId();
         auctionService.deleteAuction(id);
@@ -209,7 +209,7 @@ public class AuctionServiceTest {
 
     @Test
     void endAuctionWithFutureEndTimeReschedulesDoesNotThrow() {
-        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         // endTime is in the future → endAuction should reschedule and not change status
         assertDoesNotThrow(() -> auctionService.endAuction(a.getId()));
@@ -217,7 +217,7 @@ public class AuctionServiceTest {
 
     @Test
     void endAuctionWithPastEndTimeAndNoBidsSetsFinished() throws Exception {
-        auctionService.createNewAuction("ELECTRONICS", "Radio", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Radio", 500_000.0, 9999L, "defaultSeller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
 
         // Set endTime to the past
@@ -231,7 +231,7 @@ public class AuctionServiceTest {
    
     @Test
     void endAuctionAlreadyFinishedDoesNotReprocess() throws Exception {
-        auctionService.createNewAuction("ELECTRONICS", "TV2", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "TV2", 500_000.0, 9999L, "defaultSeller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         setEndTimeToPast(a);
         auctionService.endAuction(a.getId()); // first call → FINISHED
@@ -265,7 +265,7 @@ public class AuctionServiceTest {
         UserManager.getInstance().register("watcher2", "pw", "BIDDER");
         Bidder watcher = (Bidder) UserManager.getInstance().findUserByUsername("watcher2");
 
-        auctionService.createNewAuction("ELECTRONICS", "Watched", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "Watched", 500_000.0, 9999L, "defaultSeller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         watcher.addToWatchlist(a.getId());
 
@@ -284,7 +284,7 @@ public class AuctionServiceTest {
 
     @Test
     void removeObserverFromAllWithAuctionsDoesNotThrow() {
-        auctionService.createNewAuction("ELECTRONICS", "ObsItem", 500_000.0, 9999L, "defaultSeller");
+        auctionService.createNewAuction("ELECTRONICS", "ObsItem", 500_000.0, 9999L, "defaultSeller", "", "");
         Observer fakeObs = msg -> {};
         assertDoesNotThrow(() -> auctionService.removeObserverFromAll(fakeObs));
     }
