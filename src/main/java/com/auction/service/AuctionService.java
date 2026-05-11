@@ -84,13 +84,15 @@ public class AuctionService implements Serializable {
    *  
    */
   public synchronized void createNewAuction(String itemType, String itemName, double startingPrice,
-      long durationMinutes, String sellerId) {
+      long durationMinutes, String sellerId, String description, String imageUrl) {
     // 1. Tạo ID duy nhất cho phiên đấu giá (Ví dụ: AUC_171400...)
     String auctionId = "AUC_" + System.currentTimeMillis();
 
     // 2. Sử dụng Factory để tạo Item
     ItemFactory factory = ItemFactoryRegistry.getFactory(itemType);
     Item newItem = factory.create(auctionId, itemName, startingPrice);
+    newItem.setDescription(description);
+    newItem.setImageUrl(imageUrl);
 
     // 3. Khởi tạo đối tượng Auction mới
     Auction newAuction = new Auction(auctionId, newItem, durationMinutes, sellerId);
