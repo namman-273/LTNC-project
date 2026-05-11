@@ -30,7 +30,7 @@ public class Auction extends Entity {
 
   private static final int THREAD_POOL_SIZE = 10;
   private static final long TWO_MINUTES_MS = 120000L; // ep kieu sang long
-  private static final long ONE_MINUTE_MS = 600000L;
+  private static final long ONE_MINUTE_MS = 60000L;
   private static final int MAX_EXTENSIONS = 3;
 
   private Item item;
