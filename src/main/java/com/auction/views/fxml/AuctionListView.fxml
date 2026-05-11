@@ -14,7 +14,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.AuctionListController"
       prefWidth="980" prefHeight="680" spacing="0"
-      stylesheets="@/com/auction/views/style/style.css"
+      stylesheets="@../style/style.css"
       style="-fx-background-color: #F0F4FF;">
 
     <!-- HEADER -->
@@ -111,7 +111,6 @@
                         prefHeight="36" prefWidth="90" styleClass="btn-danger"/>
                 <Button text="➕ Tạo phiên" onAction="#handleCreateAuction"
                         prefHeight="36" prefWidth="110" styleClass="btn-primary"/>
-                prefHeight="36" prefWidth="95" styleClass="btn-outline"/>
                 <Button fx:id="sellerButton" text="🛒 Seller" onAction="#handleSellerDashboard"
                         prefHeight="36" prefWidth="90" styleClass="btn-success"/>
                 <MenuButton text="⭐ Watchlist ▼" prefHeight="36" prefWidth="130"
