@@ -135,6 +135,7 @@ public class BalanceController implements Initializable {
         }
     }
 
+    @FXML
     private void handleBack() {
         stopAutoRefresh();
         Stage stage = (Stage) balanceLabel.getScene().getWindow();
