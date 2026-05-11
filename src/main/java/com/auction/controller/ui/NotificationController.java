@@ -17,6 +17,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -24,6 +25,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -35,7 +37,6 @@ import java.util.ResourceBundle;
 public class NotificationController implements Initializable {
 
     @FXML private ListView<NotificationItem> notificationList;
-    @FXML private Label  countLabel;
     @FXML private Label  unreadCountLabel;
     @FXML private Button tabAll;
     @FXML private Button tabUnread;
@@ -46,12 +47,12 @@ public class NotificationController implements Initializable {
     private String activeTab = "all";
 
     private static final String TAB_ACTIVE =
-            "-fx-background-color: #1565C0; -fx-text-fill: white; " +
+            "-fx-background-color: #111827; -fx-text-fill: white; " +
                     "-fx-font-weight: bold; -fx-background-radius: 20; " +
-                    "-fx-padding: 6 18; -fx-cursor: hand; -fx-font-size: 12px;";
+                    "-fx-padding: 7 18; -fx-cursor: hand; -fx-font-size: 12px;";
     private static final String TAB_INACTIVE =
             "-fx-background-color: transparent; -fx-text-fill: #6B7280; " +
-                    "-fx-background-radius: 20; -fx-padding: 6 18; " +
+                    "-fx-background-radius: 20; -fx-padding: 7 18; " +
                     "-fx-cursor: hand; -fx-font-size: 12px;";
 
     public void setUsername(String u) { this.username = u; }
@@ -59,16 +60,17 @@ public class NotificationController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         notificationList.setCellFactory(lv -> new NotificationCell());
+        // Ẩn scrollbar ngang
+        notificationList.setStyle(notificationList.getStyle() +
+                "-fx-background-color: #F5F6FA; -fx-border-color: transparent;" +
+                "-fx-background-insets: 0; -fx-padding: 12 14 12 14;");
+
         applyTab("all");
         updateCount();
 
         NotificationManager.getInstance().getObservableItems()
-                .addListener((javafx.collections.ListChangeListener<NotificationItem>) c -> {
-                    Platform.runLater(() -> {
-                        updateCount();
-                        applyTab(activeTab);
-                    });
-                });
+                .addListener((javafx.collections.ListChangeListener<NotificationItem>) c ->
+                        Platform.runLater(() -> { updateCount(); applyTab(activeTab); }));
     }
 
     // ── Tabs ──────────────────────────────────────────────────────────────────
@@ -84,7 +86,8 @@ public class NotificationController implements Initializable {
         tabAuction.setStyle(TAB_INACTIVE);
         tabSystem.setStyle(TAB_INACTIVE);
 
-        ObservableList<NotificationItem> src = NotificationManager.getInstance().getObservableItems();
+        ObservableList<NotificationItem> src =
+                NotificationManager.getInstance().getObservableItems();
         ObservableList<NotificationItem> filtered = FXCollections.observableArrayList();
 
         switch (tab) {
@@ -94,18 +97,19 @@ public class NotificationController implements Initializable {
                 break;
             case "auction":
                 tabAuction.setStyle(TAB_ACTIVE);
-                src.stream().filter(i -> "auction".equals(i.getCategory())).forEach(filtered::add);
+                src.stream().filter(i -> "auction".equals(i.getCategory()))
+                        .forEach(filtered::add);
                 break;
             case "system":
                 tabSystem.setStyle(TAB_ACTIVE);
                 src.stream()
-                        .filter(i -> "system".equals(i.getCategory()) || "balance".equals(i.getCategory()))
+                        .filter(i -> "system".equals(i.getCategory())
+                                || "balance".equals(i.getCategory()))
                         .forEach(filtered::add);
                 break;
             default:
                 tabAll.setStyle(TAB_ACTIVE);
                 filtered.addAll(src);
-                break;
         }
         notificationList.setItems(filtered);
     }
@@ -113,16 +117,12 @@ public class NotificationController implements Initializable {
     // ── Actions ───────────────────────────────────────────────────────────────
     @FXML private void handleMarkAll() {
         NotificationManager.getInstance().markAllRead();
-        updateCount();
-        applyTab(activeTab);
+        updateCount(); applyTab(activeTab);
     }
-
     @FXML private void handleClearRead() {
         NotificationManager.getInstance().clearRead();
-        updateCount();
-        applyTab(activeTab);
+        updateCount(); applyTab(activeTab);
     }
-
     @FXML private void handleBack() {
         Stage stage = (Stage) notificationList.getScene().getWindow();
         new AuctionListView(stage, username).show();
@@ -131,55 +131,34 @@ public class NotificationController implements Initializable {
     private void updateCount() {
         long unread = NotificationManager.getInstance().unreadCount();
         int  total  = NotificationManager.getInstance().size();
-
-        if (countLabel != null)
-            countLabel.setText(total + " thông báo");
-
         if (unreadCountLabel != null) {
-            if (unread > 0) {
-                unreadCountLabel.setText(unread + " chưa đọc");
-                unreadCountLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #FED7AA;");
-            } else {
-                unreadCountLabel.setText("Tất cả đã đọc");
-                unreadCountLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: rgba(255,255,255,0.6);");
-            }
+            unreadCountLabel.setText(unread > 0
+                    ? unread + " thông báo mới"
+                    : total + " thông báo");
         }
     }
 
-    /**
-     * Mở BidView cho một auctionId.
-     * Gọi LIST_AUCTIONS để lấy thông tin mới nhất rồi mở.
-     */
     private void openBidView(String auctionId) {
         if (auctionId == null || auctionId.isEmpty()) return;
         Stage stage = (Stage) notificationList.getScene().getWindow();
-
         new Thread(() -> {
             try {
                 String resp = ServerConnection.getInstance()
                         .sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
                 if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS)) return;
-
                 String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
                 Gson gson = new Gson();
                 Type listType = new TypeToken<List<AuctionRow>>(){}.getType();
                 List<AuctionRow> rows = gson.fromJson(json, listType);
-
                 AuctionRow target = rows.stream()
                         .filter(r -> auctionId.equals(r.getId()))
                         .findFirst().orElse(null);
-
                 Platform.runLater(() -> {
                     if (target != null) {
-                        new BidView(stage,
-                                target.getId(),
-                                target.getItemName(),
+                        new BidView(stage, target.getId(), target.getItemName(),
                                 String.valueOf(target.getCurrentPrice()),
-                                target.getStatus(),
-                                username,
-                                target.getEndTime()).show();
+                                target.getStatus(), username, target.getEndTime()).show();
                     } else {
-                        // Phiên không còn tồn tại → về danh sách
                         new AuctionListView(stage, username).show();
                     }
                 });
@@ -192,40 +171,57 @@ public class NotificationController implements Initializable {
     // ── Custom Cell ───────────────────────────────────────────────────────────
     private class NotificationCell extends ListCell<NotificationItem> {
 
-        private final HBox  root      = new HBox(12);
+        // ── Layout skeleton ──────────────────────────────────────────────────
+        // Card wrapper (white bg, border-left, shadow, radius)
+        private final HBox card       = new HBox(14);
+        // Icon circle
+        private final StackPane iconWrap = new StackPane();
         private final Label iconLabel = new Label();
-        private final VBox  content   = new VBox(4);
+        // Content
+        private final VBox  content   = new VBox(3);
+        // Row 1: title + badge
         private final HBox  titleRow  = new HBox(8);
-        private final Label message   = new Label();
+        private final Label title     = new Label();
         private final Label newBadge  = new Label("Mới");
+        // Row 2: subtitle/message detail
+        private final Label subtitle  = new Label();
+        // Row 3: time + actions
+        private final HBox  bottomRow = new HBox(10);
         private final Label timeLabel = new Label();
-        private final HBox  actionRow = new HBox(8);
         private final Button bidBtn   = new Button("Đặt giá ngay");
-        private final Button delBtn   = new Button("✕");
+        // Delete button (outside card, top-right)
+        private final Button delBtn   = new Button("⊘");
 
         NotificationCell() {
-            // Icon circle
-            iconLabel.setPrefSize(40, 40);
-            iconLabel.setMinSize(40, 40);
-            iconLabel.setMaxSize(40, 40);
-            iconLabel.setAlignment(Pos.CENTER);
+            // ── Icon circle ──
+            iconWrap.setPrefSize(46, 46);
+            iconWrap.setMinSize(46, 46);
+            iconWrap.setMaxSize(46, 46);
+            iconWrap.setAlignment(Pos.CENTER);
+            iconLabel.setStyle("-fx-font-size: 20px;");
+            iconWrap.getChildren().add(iconLabel);
 
-            // Badge "Mới"
+            // ── Texts ──
+            title.setWrapText(false);
+            title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #111827;");
+
             newBadge.setStyle(
                     "-fx-background-color: #EA580C; -fx-text-fill: white;" +
                             "-fx-font-size: 10px; -fx-font-weight: bold;" +
-                            "-fx-background-radius: 10; -fx-padding: 1 7;");
+                            "-fx-background-radius: 12; -fx-padding: 2 8;");
 
-            message.setWrapText(true);
-            message.setMaxWidth(300);
+            subtitle.setWrapText(true);
+            subtitle.setMaxWidth(330);
+            subtitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #6B7280;");
 
             timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
 
-            // Nút "Đặt giá ngay"
+            // ── Bid button ──
             bidBtn.setStyle(
                     "-fx-background-color: #EA6C0A; -fx-text-fill: white;" +
                             "-fx-font-size: 11px; -fx-font-weight: bold;" +
-                            "-fx-background-radius: 14; -fx-padding: 4 14; -fx-cursor: hand;");
+                            "-fx-background-radius: 16; -fx-padding: 5 16; -fx-cursor: hand;" +
+                            "-fx-effect: dropshadow(gaussian, rgba(234,108,10,0.3), 6, 0, 0, 2);");
             bidBtn.setOnAction(e -> {
                 NotificationItem item = getItem();
                 if (item == null) return;
@@ -233,114 +229,164 @@ public class NotificationController implements Initializable {
                 openBidView(item.getAuctionId());
             });
 
-            // Nút xóa riêng
+            // ── Delete button ──
             delBtn.setStyle(
-                    "-fx-background-color: transparent; -fx-text-fill: #C0C4CC;" +
-                            "-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 0 4;");
+                    "-fx-background-color: transparent; -fx-text-fill: #D1D5DB;" +
+                            "-fx-font-size: 15px; -fx-cursor: hand; -fx-padding: 0 2;");
             delBtn.setOnAction(e -> {
                 NotificationItem item = getItem();
                 if (item == null) return;
                 NotificationManager.getInstance().remove(item);
-                updateCount();
-                applyTab(activeTab);
+                updateCount(); applyTab(activeTab);
             });
 
+            // ── Assemble ──
             titleRow.setAlignment(Pos.CENTER_LEFT);
-            titleRow.getChildren().addAll(message, newBadge);
-            HBox.setHgrow(message, Priority.ALWAYS);
+            titleRow.getChildren().addAll(title, newBadge);
 
-            actionRow.setAlignment(Pos.CENTER_LEFT);
+            bottomRow.setAlignment(Pos.CENTER_LEFT);
+            bottomRow.getChildren().add(timeLabel);
 
+            content.getChildren().addAll(titleRow, subtitle, bottomRow);
             HBox.setHgrow(content, Priority.ALWAYS);
-            content.getChildren().addAll(titleRow, timeLabel, actionRow);
 
-            root.setAlignment(Pos.CENTER_LEFT);
-            root.setPadding(new Insets(12, 14, 12, 14));
-            root.getChildren().addAll(iconLabel, content, delBtn);
+            card.setAlignment(Pos.CENTER_LEFT);
+            card.setPadding(new Insets(14, 14, 14, 16));
+            card.getChildren().addAll(iconWrap, content, delBtn);
+            card.setCursor(Cursor.HAND);
 
-            // ── Click vào card → mark read + refresh tab ──────────────────
-            setOnMouseClicked(e -> {
+            // Outer wrapper (cell padding + card)
+            VBox outer = new VBox(card);
+            outer.setPadding(new Insets(0, 0, 8, 0));
+
+            // ── Click card → mark read ──
+            card.setOnMouseClicked(e -> {
                 NotificationItem item = getItem();
                 if (item == null) return;
                 if (!item.isRead()) {
                     item.markRead();
                     updateCount();
-                    applyTab(activeTab); // nếu đang ở tab "Chưa đọc" thì nó biến mất
+                    applyTab(activeTab);
                 }
             });
 
-            setGraphic(root);
+            setGraphic(outer);
             setText(null);
+            // Transparent list cell bg
+            setStyle("-fx-background-color: transparent; -fx-padding: 0;");
         }
 
         @Override
         protected void updateItem(NotificationItem item, boolean empty) {
             super.updateItem(item, empty);
-            if (empty || item == null) { setGraphic(null); setStyle(""); return; }
+            setStyle("-fx-background-color: transparent; -fx-padding: 0;");
+            if (empty || item == null) { setGraphic(null); return; }
 
-            message.setText(item.getMessage());
-            timeLabel.setText(item.getTime());
-
-            // Badge + font weight theo trạng thái đọc
             boolean unread = !item.isRead();
-            newBadge.setVisible(unread);
-            newBadge.setManaged(unread);
-            message.setStyle("-fx-font-size: 13px; -fx-text-fill: #1F2937;" +
-                    (unread ? "-fx-font-weight: bold;" : "-fx-font-weight: normal;"));
+            String  msg    = item.getMessage();
 
-            // Xác định style theo loại notification
-            String iconTxt, iconBg, iconColor, cardBg, borderColor;
+            // ── Classify ──────────────────────────────────────────────────
+            String iconTxt, iconBg, borderColor;
             boolean showBid;
-            String msg = item.getMessage();
+            String titleTxt, subtitleTxt;
 
             if (msg.contains("vượt giá") || msg.contains("OUTBID")) {
-                iconTxt = "!"; iconBg = "#FEE2E2"; iconColor = "#EF4444";
-                cardBg = unread ? "#FFF1F1" : "#FFF9F9";
-                borderColor = "#EF4444"; showBid = true;
-            } else if (msg.contains("thắng") || msg.contains("Winner")) {
-                iconTxt = "★"; iconBg = "#D1FAE5"; iconColor = "#16A34A";
-                cardBg = unread ? "#F0FDF4" : "#F9FFFC";
-                borderColor = "#22C55E"; showBid = false;
-            } else if (msg.contains("gia hạn") || msg.contains("sắp kết thúc")) {
-                iconTxt = "t"; iconBg = "#FEF9C3"; iconColor = "#CA8A04";
-                cardBg = unread ? "#FEFCE8" : "#FEFDF5";
-                borderColor = "#EAB308"; showBid = true;
-            } else if (msg.contains("Hoàn") || msg.contains("REFUND") || msg.contains("nạp")
-                    || msg.contains("số dư") || msg.contains("VNĐ")) {
-                iconTxt = "$"; iconBg = "#DBEAFE"; iconColor = "#2563EB";
-                cardBg = unread ? "#EFF6FF" : "#F5F8FF";
-                borderColor = "#3B82F6"; showBid = false;
-            } else if ("auction".equals(item.getCategory())) {
-                iconTxt = "A"; iconBg = "#EDE9FE"; iconColor = "#7C3AED";
-                cardBg = unread ? "#F5F3FF" : "#F8F7FF";
-                borderColor = "#8B5CF6"; showBid = item.getAuctionId() != null;
+                iconTxt = "✕"; iconBg = "#FEE2E2"; borderColor = "#EF4444";
+                titleTxt = "Bạn đã bị vượt giá";
+                subtitleTxt = extractDetail(msg, "trong phiên");
+                showBid = true;
+
+            } else if (msg.contains("dẫn đầu") || msg.contains("cao nhất")) {
+                iconTxt = "✓"; iconBg = "#DCFCE7"; borderColor = "#22C55E";
+                titleTxt = "Bạn đang dẫn đầu";
+                subtitleTxt = extractDetail(msg, null);
+                showBid = false;
+
+            } else if (msg.contains("gia hạn") || msg.contains("sắp kết thúc") || msg.contains("⏱")) {
+                iconTxt = "⏰"; iconBg = "#FEF3C7"; borderColor = "#F59E0B";
+                titleTxt = "Sắp kết thúc";
+                subtitleTxt = extractDetail(msg, null);
+                showBid = item.getAuctionId() != null;
+
+            } else if (msg.contains("thắng") || msg.contains("Winner") || msg.contains("🎉")) {
+                iconTxt = "★"; iconBg = "#FEF3C7"; borderColor = "#F59E0B";
+                titleTxt = "Chúc mừng! Bạn đã thắng";
+                subtitleTxt = extractDetail(msg, "phiên");
+                showBid = false;
+
+            } else if (msg.contains("Hoàn") || msg.contains("REFUND")
+                    || msg.contains("nạp") || msg.contains("VNĐ")) {
+                iconTxt = "$"; iconBg = "#DBEAFE"; borderColor = "#3B82F6";
+                titleTxt = "Cập nhật số dư ví";
+                subtitleTxt = msg;
+                showBid = false;
+
             } else {
-                iconTxt = "i"; iconBg = "#F3F4F6"; iconColor = "#6B7280";
-                cardBg = unread ? "white" : "#FAFAFA";
-                borderColor = "#D1D5DB"; showBid = false;
+                iconTxt = "◉"; iconBg = "#F3F4F6"; borderColor = "#E5E7EB";
+                titleTxt = "Thông báo hệ thống";
+                subtitleTxt = msg;
+                showBid = false;
             }
 
+            // ── Apply values ──────────────────────────────────────────────
             iconLabel.setText(iconTxt);
-            iconLabel.setStyle(
-                    "-fx-background-radius: 20; -fx-font-size: 14px; -fx-font-weight: bold;" +
-                            "-fx-text-fill: " + iconColor + ";" +
-                            "-fx-background-color: " + iconBg + ";");
+            iconLabel.setStyle("-fx-font-size: 17px; -fx-font-weight: bold;" +
+                    (iconTxt.length() == 1 && !iconTxt.matches("[★◉⏰]")
+                            ? "-fx-text-fill: " + borderColor + ";"
+                            : "-fx-text-fill: " + borderColor + ";"));
+            iconWrap.setStyle(
+                    "-fx-background-color: " + iconBg + ";" +
+                            "-fx-background-radius: 23;");
 
-            // Border trái màu
-            setStyle(
-                    "-fx-background-color: " + cardBg + ";" +
+            title.setText(titleTxt);
+            title.setStyle("-fx-font-size: 13px; -fx-text-fill: #111827;" +
+                    (unread ? "-fx-font-weight: bold;" : "-fx-font-weight: normal;"));
+
+            subtitle.setText(subtitleTxt);
+
+            newBadge.setVisible(unread);
+            newBadge.setManaged(unread);
+
+            timeLabel.setText(item.getTime() + " trước");
+
+            // ── Card style: white bg + left border + shadow ───────────────
+            String shadow = unread
+                    ? "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.09), 10, 0, 0, 3);"
+                    : "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 6, 0, 0, 2);";
+            card.setStyle(
+                    "-fx-background-color: white;" +
+                            "-fx-background-radius: 14;" +
                             "-fx-border-color: transparent transparent transparent " + borderColor + ";" +
                             "-fx-border-width: 0 0 0 4;" +
-                            "-fx-background-insets: 0;");
+                            "-fx-border-radius: 0 14 14 0;" +
+                            "-fx-background-insets: 0;" +
+                            shadow);
 
-            // Nút đặt giá: chỉ hiện nếu có auctionId và loại phù hợp
-            actionRow.getChildren().clear();
+            // ── Action row ────────────────────────────────────────────────
+            bottomRow.getChildren().clear();
+            bottomRow.getChildren().add(timeLabel);
             if (showBid && item.getAuctionId() != null) {
-                actionRow.getChildren().add(bidBtn);
+                Region spacer = new Region();
+                spacer.setPrefWidth(10);
+                bottomRow.getChildren().addAll(spacer, bidBtn);
             }
 
-            setGraphic(root);
+            // Restore graphic (needed after recycle)
+            VBox outer = new VBox(card);
+            outer.setPadding(new Insets(0, 0, 8, 0));
+            setGraphic(outer);
             setText(null);
+        }
+
+        /** Rút gọn message dài thành subtitle. */
+        private String extractDetail(String msg, String afterKeyword) {
+            if (afterKeyword != null && msg.contains(afterKeyword)) {
+                int idx = msg.indexOf(afterKeyword);
+                return msg.substring(idx).trim();
+            }
+            // Bỏ emoji prefix
+            String clean = msg.replaceAll("^[\\W]+", "").trim();
+            return clean.length() > 70 ? clean.substring(0, 67) + "..." : clean;
         }
     }
 }
