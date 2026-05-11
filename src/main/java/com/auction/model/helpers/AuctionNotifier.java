@@ -1,6 +1,5 @@
 package com.auction.model.helpers;
 
-import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.User;
 import com.auction.model.observer.AuctionParticipant;
