@@ -8,8 +8,8 @@ public class CreateAuctionCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     // Rào chắn bảo vệ: Cần ít nhất 5 phần (Lệnh | Loại | Tên SP | Giá khởi điểm |
-    // Thời gian)
-    if (!client.validatePayload(parts, 5))
+    // Thời gian | mô tả | đường dẫn ảnh)
+    if (!client.validatePayload(parts, 7))
       return;
 
     // Kiểm tra trạng thái đăng nhập
@@ -31,9 +31,12 @@ public class CreateAuctionCommand implements ClientCommand {
       String name = parts[2];
       double price = Double.parseDouble(parts[3]);
       long duration = Long.parseLong(parts[4]);
+      String description = parts[5];
+      String imageUrl = parts[6];
 
       // Xử lý tạo mới bằng AuctionService
-      auctionService.createNewAuction(type, name, price, duration, client.getCurrentUser().getUsername());
+      auctionService.createNewAuction(type, name, price, duration, client.getCurrentUser().getUsername(), description,
+          imageUrl);
 
       // Báo thành công
       client.sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR
