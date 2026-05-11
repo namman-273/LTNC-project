@@ -80,7 +80,7 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   }
 
   // ====================================================================================
-  // CÁC HÀM "VỎ" ĐỂ PASS TEST CASE - Thực chất là gọi ngược lại Command
+  //  gọi ngược lại Command
   // ====================================================================================
   
   public void handleRegister(final String[] parts) {
