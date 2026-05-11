@@ -231,12 +231,10 @@ public class BidController implements Initializable {
                     String count = parts[3];
                     try {
                         long newEndTime = Long.parseLong(parts[2]);
-                        long remaining = newEndTime - System.currentTimeMillis();
-                        if (remaining < 60_000) {
-                            this.endTime = newEndTime;
-                            Platform.runLater(() -> showSnipingAlert(count));
-                            NotificationManager.getInstance().add("⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
-                        }
+                        // Chỉ update endTime khi server xác nhận gia hạn hợp lệ
+                        this.endTime = newEndTime;
+                        Platform.runLater(() -> showSnipingAlert(count));
+                        NotificationManager.getInstance().add("⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
                     } catch (NumberFormatException ignored) {}
                 }
                 break;
@@ -427,9 +425,10 @@ public class BidController implements Initializable {
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("Đặt giá thành công!");
                     bidAmountField.clear();
-                    if (parts.length > 1) {
+                    // parts[0]=BID_SUCCESS, parts[1]=auctionId, parts[2]=amount
+                    if (parts.length > 2) {
                         try {
-                            double newPrice = Double.parseDouble(parts[1]);
+                            double newPrice = Double.parseDouble(parts[2]);
                             currentPriceValue = newPrice;
                             currentPriceLabel.setText(formatPrice(String.valueOf(newPrice)));
                             updateBidSuggestion(newPrice);
