@@ -18,12 +18,12 @@ public class ToastManager {
 
     private static VBox container;
 
-    public static void init(StackPane root) {
+    public static void init(javafx.scene.layout.StackPane root) {
         container = new VBox(8);
         container.setAlignment(Pos.TOP_RIGHT);
         container.setPadding(new Insets(16, 16, 0, 0));
         container.setPickOnBounds(false);
-        container.setMaxWidth(320);
+        container.setMaxWidth(340);
         StackPane.setAlignment(container, Pos.TOP_RIGHT);
         root.getChildren().add(container);
     }
@@ -37,7 +37,7 @@ public class ToastManager {
 
             Timeline fadeIn = new Timeline(
                     new KeyFrame(Duration.ZERO,        new KeyValue(toast.opacityProperty(), 0)),
-                    new KeyFrame(Duration.millis(250), new KeyValue(toast.opacityProperty(), 1))
+                    new KeyFrame(Duration.millis(220), new KeyValue(toast.opacityProperty(), 1))
             );
             Timeline fadeOut = new Timeline(
                     new KeyFrame(Duration.ZERO,        new KeyValue(toast.opacityProperty(), 1)),
@@ -52,59 +52,63 @@ public class ToastManager {
     }
 
     private static HBox buildToast(Type type, String message) {
-        // Dùng text thuần thay vì emoji để tránh lỗi font trên Windows
         String bg, borderLeft, textColor, iconText, iconBg;
         switch (type) {
             case SUCCESS:
                 bg = "#F0FFF4"; borderLeft = "#22C55E"; textColor = "#14532D";
-                iconText = "✓";  iconBg = "#22C55E";
+                iconText = "✔";  iconBg = "#22C55E";
                 break;
             case WARNING:
                 bg = "#FFFBEB"; borderLeft = "#F59E0B"; textColor = "#78350F";
-                iconText = "!";  iconBg = "#F59E0B";
+                iconText = "▲";  iconBg = "#F59E0B";
                 break;
             case DANGER:
                 bg = "#FFF1F2"; borderLeft = "#EF4444"; textColor = "#7F1D1D";
-                iconText = "✕";  iconBg = "#EF4444";
+                iconText = "✖";  iconBg = "#EF4444";
                 break;
             default: // INFO
                 bg = "#EFF6FF"; borderLeft = "#3B82F6"; textColor = "#1E3A5F";
-                iconText = "i";  iconBg = "#3B82F6";
+                iconText = "●";  iconBg = "#3B82F6";
                 break;
         }
 
         // Icon circle
         Label iconLabel = new Label(iconText);
-        iconLabel.setPrefSize(28, 28);
-        iconLabel.setMinSize(28, 28);
-        iconLabel.setAlignment(Pos.CENTER);
         iconLabel.setStyle(
-                "-fx-background-color: " + iconBg + ";" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-size: 13px;" +
+                "-fx-font-size: 11px;" +
                         "-fx-font-weight: bold;" +
-                        "-fx-background-radius: 14;"
+                        "-fx-text-fill: white;"
         );
 
+        StackPane iconCircle = new StackPane(iconLabel);
+        iconCircle.setPrefSize(26, 26);
+        iconCircle.setMinSize(26, 26);
+        iconCircle.setMaxSize(26, 26);
+        iconCircle.setStyle(
+                "-fx-background-color: " + iconBg + ";" +
+                        "-fx-background-radius: 13;"
+        );
+
+        // Message
         Label msgLabel = new Label(message);
         msgLabel.setStyle(
                 "-fx-font-size: 12px;" +
                         "-fx-text-fill: " + textColor + ";" +
                         "-fx-wrap-text: true;"
         );
-        msgLabel.setMaxWidth(250);
+        msgLabel.setMaxWidth(270);
         msgLabel.setWrapText(true);
 
-        HBox toast = new HBox(10, iconLabel, msgLabel);
+        HBox toast = new HBox(10, iconCircle, msgLabel);
         toast.setAlignment(Pos.CENTER_LEFT);
         toast.setPadding(new Insets(10, 16, 10, 12));
-        toast.setMaxWidth(320);
+        toast.setMaxWidth(340);
         toast.setStyle(
                 "-fx-background-color: " + bg + ";" +
                         "-fx-border-color: transparent transparent transparent " + borderLeft + ";" +
                         "-fx-border-width: 0 0 0 4;" +
                         "-fx-background-radius: 10;" +
-                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 10, 0, 0, 3);"
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 10, 0, 0, 3);"
         );
         return toast;
     }

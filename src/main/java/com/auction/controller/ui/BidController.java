@@ -220,7 +220,7 @@ public class BidController implements Initializable {
                         loadHistory();
                         updateBidSuggestion(currentPriceValue);
                         if (!bidder.equals(username)) {
-                            showWarning("⚠️ " + bidder + " vừa đặt " + formatPrice(newPrice));
+                            showWarning(bidder + " vừa đặt " + formatPrice(newPrice));
                         }
                     });
                 }
@@ -245,8 +245,7 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
-                    Platform.runLater(() -> showWarning(
-                            "⚠️ Bị vượt giá bởi " + newBidder + "! Giá mới: " + formatPrice(newAmt)));
+                    Platform.runLater(() -> showWarning("Bị vượt giá bởi " + newBidder + "! Giá mới: " + formatPrice(newAmt)));
                     NotificationManager.getInstance().add("⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt), "auction", auctionId);
                 }
                 break;
@@ -255,10 +254,9 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String refundAmt = parts[2];
                     String newBal    = parts[3];
-                    Platform.runLater(() -> showInfo(
-                            "💰 Hoàn " + formatPrice(refundAmt)
-                                    + " → Số dư: " + formatPrice(newBal)));
-                    NotificationManager.getInstance().add("💰 Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal), "balance", auctionId);
+                    Platform.runLater(() -> showInfo("Hoàn " + formatPrice(refundAmt)
+                            + " → Số dư: " + formatPrice(newBal)));
+                    NotificationManager.getInstance().add("Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal), "balance", auctionId);
                 }
                 break;
 
@@ -274,10 +272,10 @@ public class BidController implements Initializable {
                     }
                     String detail = parts.length >= 3 ? parts[2] : "";
                     if (detail.contains("Winner:" + username)) {
-                        showSuccess("🎉 Bạn đã thắng phiên đấu giá!");
+                        showSuccess("Bạn đã thắng phiên đấu giá!");
                         NotificationManager.getInstance().add("🎉 Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
                     } else if (detail.contains("No winner")) {
-                        showInfo("Phiên kết thúc — không có người thắng.");
+                        showInfo("Phiên kết thúc - không có người thắng.");
                     } else {
                         showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
                     }
@@ -353,7 +351,7 @@ public class BidController implements Initializable {
         snipingBox.setManaged(true);
         snipingCountLabel.setText("Lần gia hạn thứ: " + extensionCount);
         snipingCountdownLabel.setText("⏱ +2 phút vừa được cộng thêm!");
-        showWarning("⏱ Phiên gia hạn lần " + extensionCount + " (+2 phút)");
+        showWarning("Phiên gia hạn lần " + extensionCount + " (+2 phút)");
 
         if (snipingTimeline != null) snipingTimeline.stop();
         snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> stopSnipingAlert()));
@@ -427,7 +425,7 @@ public class BidController implements Initializable {
                 }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
-                    showSuccess("✅ Đặt giá thành công!");
+                    showSuccess("Đặt giá thành công!");
                     bidAmountField.clear();
                     if (parts.length > 1) {
                         try {
