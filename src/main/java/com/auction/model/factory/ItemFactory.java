@@ -8,4 +8,5 @@ import com.auction.model.entities.item.Item;
 public abstract class ItemFactory {
 
   public abstract Item create(String id, String name, double price);
+  
 }

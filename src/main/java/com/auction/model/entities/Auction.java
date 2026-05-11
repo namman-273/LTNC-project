@@ -4,6 +4,7 @@ import com.auction.model.entities.item.Item;
 import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.model.helpers.AuctionFinancialProcessor;
+import com.auction.model.helpers.AuctionHelperFactory;
 import com.auction.model.helpers.AuctionNotifier;
 import com.auction.model.helpers.AuctionSnipingProcessor;
 import com.auction.model.helpers.AuctionValidator;
@@ -92,16 +93,17 @@ public class Auction extends Entity {
       this.notifyExecutor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     }
 
+    AuctionHelperFactory factory = AuctionHelperFactory.getInstance();
     if (this.validator == null)
-      this.validator = new AuctionValidator();
+      this.validator = factory.createValidator();
     if (this.notifier == null)
-      this.notifier = new AuctionNotifier();
+      this.notifier = factory.createNotifier();
     if (this.autoBidProcessor == null)
-      this.autoBidProcessor = new AutoBidProcessor();
+      this.autoBidProcessor = factory.createAutoBidProcessor();
     if (this.financialProcessor == null)
-      this.financialProcessor = new AuctionFinancialProcessor();
+      this.financialProcessor = factory.createFinancialProcessor();
     if (this.snipingProcessor == null)
-      this.snipingProcessor = new AuctionSnipingProcessor();
+      this.snipingProcessor = factory.createSnipingProcessor();
   }
 
   // --- CÁC GETTER/SETTER QUAN TRỌNG ---
