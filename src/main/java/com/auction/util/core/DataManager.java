@@ -1,5 +1,6 @@
 package com.auction.util.core;
 
+import com.auction.model.dto.BidHistoryEntry;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.User;
 import com.auction.service.AuctionService;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,6 +27,7 @@ public final class DataManager implements IDataStorage {
   private static final String AUCTION_DATA_FILE = "auctions.dat";
   private static final String USER_DATA_FILE = "users.dat";
   private static final String TEMP_EXT = ".tmp";
+  private static final String HISTORY_DATA_FILE = "history.dat";
   private static DataManager instance;
 
   // Singleton Pattern để giải quyết lỗi
@@ -48,6 +51,7 @@ public final class DataManager implements IDataStorage {
   public synchronized void saveData() {
     saveMapToFile(UserManager.getInstance().getUsers(), USER_DATA_FILE);
     saveMapToFile(AuctionService.getInstance().getAuctionsMap(), AUCTION_DATA_FILE);
+    saveMapToFile(BidHistoryManager.getInstance().getHistoryMap(), HISTORY_DATA_FILE);
   }
 
   /**
@@ -69,6 +73,12 @@ public final class DataManager implements IDataStorage {
       for (Auction a : loadedAuctions.values()) {
         a.restoreTransients();
       }
+    }
+    // Tải lịch sử đấu giá
+    Map<String, List<BidHistoryEntry>> loadedHistory = loadMapFromFile(
+        HISTORY_DATA_FILE);
+    if (loadedHistory != null) {
+      BidHistoryManager.getInstance().setHistoryMap(loadedHistory);
     }
   }
 

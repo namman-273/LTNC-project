@@ -1,14 +1,16 @@
 package com.auction.model.entities.user;
 
 /**
- * .
- */
+ *  * .
+ *  
+ */
 public class Seller extends User {
-  public Seller(String username, String password) {
-    super(username, password, "SELLER");
-  }
-
   private static final long serialVersionUID = 1L;
+
+  public Seller(String username, String password, String email) {
+    super(username, password, "SELLER", email);
+
+  }
 
   @Override
   public void displayInfo() {
