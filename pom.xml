@@ -60,11 +60,12 @@
             Cung cấp LineChart để vẽ biểu đồ giá đấu realtime theo thời gian.
             Trục X = timestamp, Trục Y = giá đấu hiện tại; mỗi bid hợp lệ
             tự động cập nhật chart mà không cần refresh màn hình.
+            Lưu ý: javafx-charts 17.0.8 không có trên Maven Central → dùng 17.0.6.
         -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-charts</artifactId>
-            <version>${javafx.version}</version>
+            <version>17.0.6</version>
         </dependency>
 
         <!-- JSON serialization — dùng cho giao tiếp Client-Server -->
