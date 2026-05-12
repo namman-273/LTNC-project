@@ -1,6 +1,5 @@
 package com.auction.model.helpers;
 
-import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.User;
 import com.auction.model.observer.AuctionParticipant;
@@ -16,7 +15,7 @@ public class AuctionNotifier {
       return;
 
     for (Observer observer : observers) {
-      // Ép kiểu sang ClientHandler để lấy thông tin User đang giữ kết nối này
+
       if (observer instanceof AuctionParticipant) {
         AuctionParticipant participant = (AuctionParticipant) observer;
         // Bỏ qua không gửi cho người vừa tạo ra hành động này (để tránh tự spam chính
