@@ -1,5 +1,7 @@
 package com.auction.model.dto;
 
+import com.auction.model.entities.Auction;
+
 public class AuctionRow {
   private final String id;
   private final String itemName;
@@ -7,20 +9,22 @@ public class AuctionRow {
   private final String status;
   private final long endTime;
   private final String sellerId;
+  private final String description;
+  private final String imageUrl;
 
-  public AuctionRow(String id, String itemName, double currentPrice,
-      String status, long endTime) {
-    this(id, itemName, currentPrice, status, endTime, "");
-  }
+  public AuctionRow(Auction a) {
+    this.id = a.getId();
+    this.endTime = a.getEndTime();
+    this.itemName = a.getItem().getItemName();
+    this.currentPrice = a.getCurrentPrice();
+    this.status = a.getStatus().toString();
+    String rawSellerId = a.getSellerId();
+        this.sellerId = (rawSellerId != null && !rawSellerId.trim().isEmpty()) 
+                        ? rawSellerId 
+                        : "Anonymous";
 
-  public AuctionRow(String id, String itemName, double currentPrice,
-      String status, long endTime, String sellerId) {
-    this.id = id;
-    this.itemName = itemName;
-    this.currentPrice = currentPrice;
-    this.status = status;
-    this.endTime = endTime;
-    this.sellerId = sellerId != null ? sellerId : "";
+    this.description = a.getItem().getDescription();
+    this.imageUrl = a.getItem().getImageUrl();
   }
 
   public String getId() {
@@ -45,6 +49,14 @@ public class AuctionRow {
 
   public String getSellerId() {
     return sellerId;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public String getImageUrl() {
+    return imageUrl;
   }
 
   public String getCurrentPriceFormatted() {
