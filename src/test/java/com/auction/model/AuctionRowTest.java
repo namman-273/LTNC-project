@@ -5,111 +5,136 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.auction.model.dto.AuctionRow;
+import com.auction.model.entities.Auction;
+import com.auction.model.entities.item.Electronics;
+import com.auction.model.entities.item.Item;
+import com.auction.model.enums.AuctionStatus;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for AuctionRow DTO – both constructors and all getters.
+ * Tests for AuctionRow DTO – sử dụng constructor Auction (đã refactor).
  */
 public class AuctionRowTest {
 
-    private static final String ID = "AUC_001";
     private static final String ITEM_NAME = "Laptop";
     private static final double PRICE = 1_500_000.0;
-    private static final String STATUS = "OPEN";
-    private static final long END_TIME = 9_999_999_999L;
     private static final String SELLER_ID = "seller1";
+    private static final long DURATION = 9999L;
 
-    // ===== 5-arg constructor =====
+    private Auction auction;
+    private AuctionRow row;
 
-    @Test
-    void fiveArgConstructorGetId() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
-        assertEquals(ID, row.getId());
+    @BeforeEach
+    void setUp() {
+        Item item = new Electronics("item-001", ITEM_NAME, PRICE);
+        auction = new Auction("AUC_001", item, DURATION, SELLER_ID);
+        row = new AuctionRow(auction);
     }
 
+    // ===== getId =====
+
     @Test
-    void fiveArgConstructorGetItemName() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
+    void getIdReturnsAuctionId() {
+        assertEquals("AUC_001", row.getId());
+    }
+
+    // ===== getItemName =====
+
+    @Test
+    void getItemNameReturnsCorrectName() {
         assertEquals(ITEM_NAME, row.getItemName());
     }
 
+    // ===== getCurrentPrice =====
+
     @Test
-    void fiveArgConstructorGetCurrentPrice() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
+    void getCurrentPriceReturnsStartingPrice() {
         assertEquals(PRICE, row.getCurrentPrice(), 0.001);
     }
 
+    // ===== getStatus =====
+
     @Test
-    void fiveArgConstructorGetStatus() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
-        assertEquals(STATUS, row.getStatus());
+    void getStatusReturnsOpenForNewAuction() {
+        assertEquals(AuctionStatus.OPEN.toString(), row.getStatus());
     }
 
+    // ===== getEndTime =====
+
     @Test
-    void fiveArgConstructorGetEndTime() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
-        assertEquals(END_TIME, row.getEndTime());
+    void getEndTimeIsInFuture() {
+        assertTrue(row.getEndTime() > System.currentTimeMillis());
     }
 
-    @Test
-    void fiveArgConstructorSellerIdIsEmptyString() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
-        assertEquals("", row.getSellerId());
-    }
-
-    // ===== 6-arg constructor =====
+    // ===== getSellerId =====
 
     @Test
-    void sixArgConstructorGetSellerId() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME, SELLER_ID);
+    void getSellerIdReturnsCorrectSellerId() {
         assertEquals(SELLER_ID, row.getSellerId());
     }
 
     @Test
-    void sixArgConstructorNullSellerIdBecomesEmpty() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME, null);
-        assertEquals("", row.getSellerId());
+    void getSellerIdNullSellerBecomesAnonymous() {
+        Item item = new Electronics("item-002", "Phone", PRICE);
+        Auction auctionNoSeller = new Auction("AUC_002", item, DURATION, null);
+        AuctionRow rowNoSeller = new AuctionRow(auctionNoSeller);
+        assertEquals("Anonymous", rowNoSeller.getSellerId());
     }
 
     @Test
-    void sixArgConstructorAllFieldsCorrect() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME, SELLER_ID);
-        assertEquals(ID, row.getId());
-        assertEquals(ITEM_NAME, row.getItemName());
-        assertEquals(PRICE, row.getCurrentPrice(), 0.001);
-        assertEquals(STATUS, row.getStatus());
-        assertEquals(END_TIME, row.getEndTime());
-        assertEquals(SELLER_ID, row.getSellerId());
+    void getSellerIdEmptySellerBecomesAnonymous() {
+        Item item = new Electronics("item-003", "Watch", PRICE);
+        Auction auctionEmptySeller = new Auction("AUC_003", item, DURATION, "");
+        AuctionRow rowEmpty = new AuctionRow(auctionEmptySeller);
+        assertEquals("Anonymous", rowEmpty.getSellerId());
     }
 
     // ===== getCurrentPriceFormatted =====
 
     @Test
     void getCurrentPriceFormattedIsNotNull() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
         assertNotNull(row.getCurrentPriceFormatted());
     }
 
     @Test
     void getCurrentPriceFormattedContainsVND() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, PRICE, STATUS, END_TIME);
         assertTrue(row.getCurrentPriceFormatted().contains("VNĐ"));
     }
 
     @Test
     void getCurrentPriceFormattedContainsNumericValue() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, 500_000.0, STATUS, END_TIME);
-        // Should contain 500000 or 500,000 depending on locale
-        String formatted = row.getCurrentPriceFormatted();
+        Item item = new Electronics("item-004", "TV", 500_000.0);
+        Auction a = new Auction("AUC_004", item, DURATION, SELLER_ID);
+        AuctionRow r = new AuctionRow(a);
+        String formatted = r.getCurrentPriceFormatted();
         assertTrue(formatted.contains("500"), "Formatted price must contain '500'");
     }
 
     @Test
     void zeroCurrentPriceFormatted() {
-        AuctionRow row = new AuctionRow(ID, ITEM_NAME, 0.0, STATUS, END_TIME);
-        String formatted = row.getCurrentPriceFormatted();
+        Item item = new Electronics("item-005", "Freebie", 0.0);
+        Auction a = new Auction("AUC_005", item, DURATION, SELLER_ID);
+        AuctionRow r = new AuctionRow(a);
+        String formatted = r.getCurrentPriceFormatted();
         assertNotNull(formatted);
         assertTrue(formatted.contains("VNĐ"));
+    }
+
+    // ===== status reflects auction state =====
+
+    @Test
+    void statusIsRunningWhenAuctionIsRunning() {
+        auction.setStatus(AuctionStatus.RUNNING);
+        AuctionRow r = new AuctionRow(auction);
+        assertEquals(AuctionStatus.RUNNING.toString(), r.getStatus());
+    }
+
+    @Test
+    void statusIsFinishedWhenAuctionIsClosed() {
+        auction.closeAuction();
+        AuctionRow r = new AuctionRow(auction);
+        assertEquals(AuctionStatus.FINISHED.toString(), r.getStatus());
     }
 }

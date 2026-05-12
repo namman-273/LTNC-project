@@ -6,12 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.auction.controller.network.ClientHandler;
-import com.auction.model.entities.user.Bidder;
-import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -23,6 +17,12 @@ import java.net.Socket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.auction.controller.network.ClientHandler;
+import com.auction.model.entities.user.Bidder;
+import com.auction.network.protocol.Protocol;
+import com.auction.service.AuctionService;
+import com.auction.service.UserManager;
 
 /**
  * Unit test cho ClientHandler.
@@ -376,7 +376,7 @@ public class ClientHandlerTest {
   void handleDepositFailsForZeroAmount() throws IOException {
     loginAsAdmin();
     handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT, "0"});
-    String response = readResponse();
+    String response = readResponse();O
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
         "Số tiền = 0 phải trả về ERROR, nhận được: " + response);
@@ -402,7 +402,7 @@ public class ClientHandlerTest {
   }
 
   // =========================================================================
-  // handleGetBalance
+  // handleGetBalanceO
   // =========================================================================
 
   @Test
