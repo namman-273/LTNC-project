@@ -15,7 +15,7 @@ public class AuctionNotifier {
       return;
 
     for (Observer observer : observers) {
-      // Ép kiểu sang ClientHandler để lấy thông tin User đang giữ kết nối này
+
       if (observer instanceof AuctionParticipant) {
         AuctionParticipant participant = (AuctionParticipant) observer;
         // Bỏ qua không gửi cho người vừa tạo ra hành động này (để tránh tự spam chính
