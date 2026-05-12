@@ -50,16 +50,11 @@
             <HBox spacing="10" style="-fx-padding: 10 0 0 0;">
                 <Button text="💳 Nạp tiền" onAction="#handleDeposit"
                         style="-fx-background-color: white;
-                               -fx-text-fill: #1565C0;
-                               -fx-font-weight: bold;
-                               -fx-background-radius: 8;
-                               -fx-cursor: hand;
-                               -fx-padding: 8 20;"/>
-                style="-fx-background-color: rgba(255,255,255,0.2);
-                -fx-text-fill: white;
-                -fx-background-radius: 8;
-                -fx-cursor: hand;
-                -fx-padding: 8 20;"/>
+                   -fx-text-fill: #1565C0;
+                   -fx-font-weight: bold;
+                   -fx-background-radius: 8;
+                   -fx-cursor: hand;
+                   -fx-padding: 8 20;"/>
             </HBox>
         </VBox>
 
