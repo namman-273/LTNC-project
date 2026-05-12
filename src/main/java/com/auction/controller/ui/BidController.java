@@ -51,6 +51,10 @@ public class BidController implements Initializable {
     @FXML private VBox snipingBox;
     @FXML private Label snipingCountdownLabel;
     @FXML private Label snipingCountLabel;
+    @FXML private javafx.scene.image.ImageView productImage;
+    @FXML private javafx.scene.layout.VBox imagePlaceholder;
+    @FXML private javafx.scene.layout.VBox descriptionBox;
+    @FXML private javafx.scene.control.Label descriptionLabel;
 
     private String auctionId;
     private String username;
@@ -190,6 +194,38 @@ public class BidController implements Initializable {
         startCountdown();
         loadHistory();
         registerPushListener();
+    }
+    public void setData(String auctionId, String itemName, String currentPrice,
+                        String status, String username, long endTime,
+                        String imageUrl, String description) {
+        // Gọi setData cũ trước
+        setData(auctionId, itemName, currentPrice, status, username, endTime);
+
+        // Hiển thị ảnh nếu có
+        if (imageUrl != null && !imageUrl.isEmpty() && productImage != null) {
+            try {
+                javafx.scene.image.Image img =
+                        new javafx.scene.image.Image(imageUrl, true);
+                productImage.setImage(img);
+                productImage.setVisible(true);
+                productImage.setManaged(true);
+                if (imagePlaceholder != null) {
+                    imagePlaceholder.setVisible(false);
+                    imagePlaceholder.setManaged(false);
+                }
+            } catch (Exception e) {
+                System.err.println("Không load được ảnh: " + e.getMessage());
+            }
+        }
+
+        // Hiển thị mô tả nếu có
+        if (description != null && !description.isEmpty()) {
+            if (descriptionLabel != null) descriptionLabel.setText(description);
+            if (descriptionBox != null) {
+                descriptionBox.setVisible(true);
+                descriptionBox.setManaged(true);
+            }
+        }
     }
 
     @Override

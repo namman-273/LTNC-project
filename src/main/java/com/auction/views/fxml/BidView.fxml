@@ -10,6 +10,7 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.auction.controller.ui.BidController"
@@ -43,23 +44,39 @@
                 <!-- Ảnh sản phẩm -->
                 <VBox style="-fx-padding: 20 24 0 24;">
                     <StackPane style="-fx-background-color: #EEF2FF;
-                                      -fx-background-radius: 14;
-                                      -fx-pref-height: 280; -fx-min-height: 280;
-                                      -fx-border-color: #E0E7FF; -fx-border-radius: 14;
-                                      -fx-border-width: 1;">
-                        <VBox alignment="CENTER" spacing="8">
+                      -fx-background-radius: 14;
+                      -fx-pref-height: 280; -fx-min-height: 280;
+                      -fx-border-color: #E0E7FF; -fx-border-radius: 14;
+                      -fx-border-width: 1;">
+                        <!-- Placeholder khi không có ảnh -->
+                        <VBox fx:id="imagePlaceholder" alignment="CENTER" spacing="8">
                             <Label text="🖼"
                                    style="-fx-font-size: 56px;"/>
                             <Label text="Không có ảnh sản phẩm"
                                    style="-fx-font-size: 12px; -fx-text-fill: #AAAAAA;"/>
                         </VBox>
+                        <!-- Ảnh thật -->
+                        <ImageView fx:id="productImage"
+                                   fitWidth="400" fitHeight="280"
+                                   preserveRatio="true"
+                                   visible="false" managed="false"/>
                         <Label fx:id="itemTypeLabel" text="Nghệ thuật"
                                style="-fx-background-color: #1565C0; -fx-text-fill: white;
-                                      -fx-font-size: 11px; -fx-font-weight: bold;
-                                      -fx-background-radius: 6; -fx-padding: 4 10;"
+                      -fx-font-size: 11px; -fx-font-weight: bold;
+                      -fx-background-radius: 6; -fx-padding: 4 10;"
                                StackPane.alignment="TOP_LEFT"
                                translateX="12" translateY="12"/>
                     </StackPane>
+                </VBox>
+
+                <!-- Mô tả sản phẩm -->
+                <VBox fx:id="descriptionBox" spacing="6" visible="false" managed="false"
+                      style="-fx-padding: 12 24 0 24;">
+                    <Label text="📝 Mô tả sản phẩm"
+                           style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937;"/>
+                    <Label fx:id="descriptionLabel" text=""
+                           style="-fx-font-size: 12px; -fx-text-fill: #6B7280; -fx-wrap-text: true;"
+                           wrapText="true" maxWidth="500"/>
                 </VBox>
 
                 <!-- Tên sản phẩm + ID -->
