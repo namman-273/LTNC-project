@@ -19,9 +19,9 @@ public class AuctionRow {
     this.currentPrice = a.getCurrentPrice();
     this.status = a.getStatus().toString();
     String rawSellerId = a.getSellerId();
-        this.sellerId = (rawSellerId != null && !rawSellerId.trim().isEmpty()) 
-                        ? rawSellerId 
-                        : "Anonymous";
+    this.sellerId = (rawSellerId != null && !rawSellerId.trim().isEmpty())
+        ? rawSellerId
+        : "Anonymous";
 
     this.description = a.getItem().getDescription();
     this.imageUrl = a.getItem().getImageUrl();
