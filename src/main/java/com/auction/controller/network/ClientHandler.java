@@ -19,14 +19,14 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
-  
+
   // Mở public để các Command có thể truy cập
   public final Gson gson = new com.google.gson.GsonBuilder()
       .registerTypeAdapter(java.time.LocalDateTime.class,
           (com.google.gson.JsonSerializer<java.time.LocalDateTime>) (src, typeOfSrc,
               context) -> new com.google.gson.JsonPrimitive(src.toString()))
       .create();
-      
+
   private User currentUser;
   private final Map<String, ClientCommand> commandMap = new HashMap<>();
 
@@ -53,6 +53,8 @@ public class ClientHandler implements Runnable, AuctionParticipant {
     commandMap.put(Protocol.CMD_ADD_AUTO_BID, new AddAutoBidCommand());
     commandMap.put(Protocol.CMD_GET_BID_HISTORY, new GetBidHistoryCommand());
     commandMap.put(Protocol.CMD_GET_PROFILE, new GetProfileCommand());
+    commandMap.put(Protocol.CMD_UPDATE_EMAIL, new UpdateEmailCommand());
+    commandMap.put(Protocol.CMD_UPDATE_PASSWORD, new ChangePasswordCommand());
   }
 
   @Override
@@ -65,8 +67,9 @@ public class ClientHandler implements Runnable, AuctionParticipant {
       String request;
       while ((request = in.readLine()) != null) {
         String[] parts = request.trim().split("\\|");
-        if (parts.length == 0) continue;
-        
+        if (parts.length == 0)
+          continue;
+
         ClientCommand command = commandMap.get(parts[0]);
         if (command != null) {
           command.execute(parts, this, auctionService);
@@ -82,9 +85,9 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   }
 
   // ====================================================================================
-  //  gọi ngược lại Command
+  // gọi ngược lại Command
   // ====================================================================================
-  
+
   public void handleRegister(final String[] parts) {
     commandMap.get(Protocol.CMD_REGISTER).execute(parts, this, AuctionService.getInstance());
   }
@@ -94,7 +97,8 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   }
 
   public void handleListAuctions(AuctionService auctionService) {
-    commandMap.get(Protocol.CMD_LIST_AUCTIONS).execute(new String[]{Protocol.CMD_LIST_AUCTIONS}, this, auctionService);
+    commandMap.get(Protocol.CMD_LIST_AUCTIONS).execute(new String[] { Protocol.CMD_LIST_AUCTIONS },
+        this, auctionService);
   }
 
   public void handleCreateAuction(final String[] parts, AuctionService auctionService) {
@@ -118,7 +122,8 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   }
 
   public void handleGetBalance() {
-    commandMap.get(Protocol.CMD_GET_BALANCE).execute(new String[]{Protocol.CMD_GET_BALANCE}, this, AuctionService.getInstance());
+    commandMap.get(Protocol.CMD_GET_BALANCE).execute(new String[] { Protocol.CMD_GET_BALANCE },
+        this, AuctionService.getInstance());
   }
 
   public void handleGetHistory(String[] parts, AuctionService auctionService) {
@@ -134,17 +139,28 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   }
 
   public void handleGetWatchlist(AuctionService auctionService) {
-    commandMap.get(Protocol.CMD_GET_WATCHLIST).execute(new String[]{Protocol.CMD_GET_WATCHLIST}, this, auctionService);
+    commandMap.get(Protocol.CMD_GET_WATCHLIST).execute(new String[] { Protocol.CMD_GET_WATCHLIST },
+        this, auctionService);
   }
 
   public void handleAddAutoBid(final String[] parts, AuctionService auctionService) {
     commandMap.get(Protocol.CMD_ADD_AUTO_BID).execute(parts, this, auctionService);
   }
+
   public void handleGetProfile(final String[] parts, AuctionService auctionService) {
     commandMap.get(Protocol.CMD_GET_PROFILE).execute(parts, this, auctionService);
   }
+
   public void handleGetBidHistory(final String[] parts, AuctionService auctionService) {
     commandMap.get(Protocol.CMD_GET_BID_HISTORY).execute(parts, this, auctionService);
+  }
+
+  public void handleUpdateEmail(final String[] parts, AuctionService auctionService) {
+    commandMap.get(Protocol.CMD_UPDATE_EMAIL).execute(parts, this, auctionService);
+  }
+
+  public void handleUpdatePassword(final String[] parts, AuctionService auctionService) {
+    commandMap.get(Protocol.CMD_UPDATE_PASSWORD).execute(parts, this, auctionService);
   }
 
   // ====================================================================================
@@ -161,8 +177,12 @@ public class ClientHandler implements Runnable, AuctionParticipant {
 
   public final void sendMessage(final String msg) {
     try {
-      if (out != null && !socket.isClosed()) out.println(msg);
-    } catch (Exception e) {}
+      if (out != null && !socket.isClosed()) {
+        out.println(msg);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   public final void update(final String msg) {
@@ -174,15 +194,23 @@ public class ClientHandler implements Runnable, AuctionParticipant {
     return (this.currentUser != null) ? this.currentUser.getUsername() : null;
   }
 
-  public User getCurrentUser() { return this.currentUser; }
-  public void setCurrentUser(User user) { this.currentUser = user; }
+  public User getCurrentUser() {
+    return this.currentUser;
+  }
+
+  public void setCurrentUser(User user) {
+    this.currentUser = user;
+  }
 
   private void cleanUp() {
     try {
       AuctionService.getInstance().removeObserverFromAll(this);
-      if (in != null) in.close();
-      if (out != null) out.close();
-      if (socket != null && !socket.isClosed()) socket.close();
+      if (in != null)
+        in.close();
+      if (out != null)
+        out.close();
+      if (socket != null && !socket.isClosed())
+        socket.close();
     } catch (IOException e) {
       System.err.println("Lỗi đóng tài nguyên: " + e.getMessage());
     }
