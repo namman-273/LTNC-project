@@ -6,7 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.auction.controller.network.ClientHandler;
+import com.auction.model.entities.user.Bidder;
+import com.auction.network.protocol.Protocol;
+import com.auction.service.AuctionService;
+import com.auction.service.UserManager;
+import com.auction.util.core.DataManager;
+
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -17,12 +25,6 @@ import java.net.Socket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.auction.controller.network.ClientHandler;
-import com.auction.model.entities.user.Bidder;
-import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
 
 /**
  * Unit test cho ClientHandler.
@@ -52,6 +54,7 @@ public class ClientHandlerTest {
     // Reset Singleton để mỗi test độc lập
     resetSingleton(UserManager.class, "instance");
     resetSingleton(AuctionService.class, "instance");
+    resetSingleton(DataManager.class, "instance");
 
     userManager = UserManager.getInstance();
     userManager.initDefaultData(); // tạo admin mặc định
@@ -96,6 +99,10 @@ public class ClientHandlerTest {
     if (clientSide  != null && !clientSide.isClosed())  try { clientSide.close();  } catch (IOException ignored) {}
     if (serverSide  != null && !serverSide.isClosed())  try { serverSide.close();  } catch (IOException ignored) {}
     if (serverSocket != null && !serverSocket.isClosed()) try { serverSocket.close(); } catch (IOException ignored) {}
+    new File("auctions.dat").delete();
+    new File("users.dat").delete();
+    new File("auctions.dat.tmp").delete();
+    new File("users.dat.tmp").delete();
   }
 
   /** Reset field static (Singleton) về null giữa các test. */
@@ -376,7 +383,7 @@ public class ClientHandlerTest {
   void handleDepositFailsForZeroAmount() throws IOException {
     loginAsAdmin();
     handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT, "0"});
-    String response = readResponse();O
+    String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
         "Số tiền = 0 phải trả về ERROR, nhận được: " + response);
@@ -402,7 +409,7 @@ public class ClientHandlerTest {
   }
 
   // =========================================================================
-  // handleGetBalanceO
+  // handleGetBalance
   // =========================================================================
 
   @Test
@@ -430,8 +437,9 @@ public class ClientHandlerTest {
 
   @Test
   void handleCreateAuctionFailsWhenNotLoggedIn() throws IOException {
+    // CreateAuctionCommand yêu cầu 7 parts: CMD|type|name|price|duration|desc|imageUrl
     handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60"},
+        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""},
         auctionService);
     String response = readResponse();
     assertNotNull(response);
@@ -445,7 +453,7 @@ public class ClientHandlerTest {
     readResponse();
 
     handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60"},
+        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""},
         auctionService);
     String response = readResponse();
     assertNotNull(response);
@@ -457,7 +465,7 @@ public class ClientHandlerTest {
   void handleCreateAuctionSuccessForAdmin() throws IOException {
     loginAsAdmin();
     handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop Test", "5000000", "60"},
+        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop Test", "5000000", "60", "", ""},
         auctionService);
     String response = readResponse();
     assertNotNull(response);
@@ -472,7 +480,7 @@ public class ClientHandlerTest {
     readResponse();
 
     handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ART", "Tranh Son Dau", "1000000", "30"},
+        new String[]{Protocol.CMD_CREATE_AUCTION, "ART", "Tranh Son Dau", "1000000", "30", "", ""},
         auctionService);
     String response = readResponse();
     assertNotNull(response);
@@ -484,7 +492,7 @@ public class ClientHandlerTest {
   void handleCreateAuctionFailsForInvalidPrice() throws IOException {
     loginAsAdmin();
     handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "INVALID_PRICE", "60"},
+        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "INVALID_PRICE", "60", "", ""},
         auctionService);
     String response = readResponse();
     assertNotNull(response);
