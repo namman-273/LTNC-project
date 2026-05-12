@@ -31,10 +31,6 @@ public abstract class Item extends Entity {
     return itemName;
   }
 
-  public String getitemType() {
-    return "";
-  }
-
   public double getStartingPrice() {
     return startingPrice;
   }

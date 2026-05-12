@@ -13,10 +13,6 @@ public class Electronics extends Item {
 
   }
 
-  public String getitemType() {
-    return "Electronics";
-  }
-
   @Override
   public void displayInfo() {
     System.out.println("[com.auction.model.Electronics] " + itemName);
