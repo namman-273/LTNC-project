@@ -1,4 +1,4 @@
-package com.auction.model.helpers;
+package com.auction.model.auctionhelpers;
 
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.BidTransaction;

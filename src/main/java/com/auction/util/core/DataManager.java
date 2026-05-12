@@ -5,6 +5,8 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.User;
 import com.auction.service.AuctionService;
 import com.auction.service.UserManager;
+import com.auction.service.bidhistorymanager.BidHistoryManager;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

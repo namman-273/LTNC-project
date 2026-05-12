@@ -1,14 +1,14 @@
 package com.auction.model.entities;
 
+import com.auction.model.auctionhelpers.AuctionFinancialProcessor;
+import com.auction.model.auctionhelpers.AuctionHelperFactory;
+import com.auction.model.auctionhelpers.AuctionNotifier;
+import com.auction.model.auctionhelpers.AuctionSnipingProcessor;
+import com.auction.model.auctionhelpers.AuctionValidator;
+import com.auction.model.auctionhelpers.AutoBidProcessor;
 import com.auction.model.entities.item.Item;
 import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.model.helpers.AuctionFinancialProcessor;
-import com.auction.model.helpers.AuctionHelperFactory;
-import com.auction.model.helpers.AuctionNotifier;
-import com.auction.model.helpers.AuctionSnipingProcessor;
-import com.auction.model.helpers.AuctionValidator;
-import com.auction.model.helpers.AutoBidProcessor;
 import com.auction.model.observer.Observer;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.AuthenticationException;
