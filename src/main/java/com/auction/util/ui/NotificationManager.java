@@ -19,7 +19,7 @@ public class NotificationManager {
         private final String message;
         private final String time;
         private final String category;   // "auction" | "system" | "balance"
-        private final String auctionId;  // null nếu không liên quan đến phiên cụ thể
+        private final String auctionId;
         private boolean read;
 
         public NotificationItem(String message, String category, String auctionId) {
@@ -31,32 +31,34 @@ public class NotificationManager {
                     .format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
         }
 
-        // Compat: không có auctionId
         public NotificationItem(String message, String category) {
             this(message, category, null);
         }
 
+        // ── FIX: nhận dạng đúng "thắng" từ AutoBid + các keyword còn thiếu ──
         private static String detectCategory(String msg) {
             if (msg == null) return "system";
-            if (msg.contains("thắng") || msg.contains("vượt giá") || msg.contains("OUTBID")
-                    || msg.contains("gia hạn") || msg.contains("Hoàn tiền")
-                    || msg.contains("đặt giá") || msg.contains("BID")
-                    || msg.contains("Hoàn")) {
+            String lower = msg.toLowerCase();
+            if (lower.contains("thắng") || lower.contains("winner")
+                    || lower.contains("vượt giá") || lower.contains("outbid")
+                    || lower.contains("gia hạn") || lower.contains("đặt giá")
+                    || lower.contains("bid") || lower.contains("phiên")) {
                 return "auction";
-            } else if (msg.contains("nạp") || msg.contains("số dư")
-                    || msg.contains("BALANCE") || msg.contains("REFUND")
-                    || msg.contains("VNĐ")) {
+            } else if (lower.contains("nạp") || lower.contains("số dư")
+                    || lower.contains("hoàn") || lower.contains("balance")
+                    || lower.contains("refund") || lower.contains("vnđ")
+                    || lower.contains("vnd") || lower.contains("tiền")) {
                 return "balance";
             }
             return "system";
         }
 
-        public String getMessage()   { return message;   }
-        public String getTime()      { return time;      }
-        public String getCategory()  { return category;  }
-        public String getAuctionId() { return auctionId; }
-        public boolean isRead()      { return read;      }
-        public void markRead()       { this.read = true; }
+        public String  getMessage()   { return message;   }
+        public String  getTime()      { return time;      }
+        public String  getCategory()  { return category;  }
+        public String  getAuctionId() { return auctionId; }
+        public boolean isRead()       { return read;      }
+        public void    markRead()     { this.read = true; }
 
         @Override
         public String toString() {
@@ -70,7 +72,6 @@ public class NotificationManager {
     private final List<NotificationItem>           items           = new ArrayList<>();
     private final ObservableList<NotificationItem> observableItems =
             FXCollections.observableArrayList();
-    // Legacy compat cho các màn hình cũ dùng ObservableList<String>
     private final ObservableList<String>            legacyList      =
             FXCollections.observableArrayList();
 
@@ -83,17 +84,14 @@ public class NotificationManager {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    /** Thêm thông báo, tự detect category, không có auctionId. */
     public void add(String message) {
         add(message, null, null);
     }
 
-    /** Thêm thông báo với category tường minh, không có auctionId. */
     public void add(String message, String category) {
         add(message, category, null);
     }
 
-    /** Thêm thông báo đầy đủ với auctionId để mở BidView. */
     public void add(String message, String category, String auctionId) {
         NotificationItem item = new NotificationItem(message, category, auctionId);
         items.add(0, item);
@@ -102,7 +100,7 @@ public class NotificationManager {
     }
 
     public ObservableList<NotificationItem> getObservableItems() { return observableItems; }
-    public ObservableList<String>           getAll()             { return legacyList; }
+    public ObservableList<String>           getAll()             { return legacyList;       }
     public int  size()        { return items.size(); }
     public long unreadCount() { return items.stream().filter(i -> !i.isRead()).count(); }
 

@@ -34,6 +34,12 @@
         <Region HBox.hgrow="ALWAYS"/>
         <Label fx:id="welcomeLabel" text="Xin chào!"
                style="-fx-font-size: 13px; -fx-text-fill: #E3F2FD; -fx-font-weight: bold;"/>
+        <!-- MỚI: nút Profile -->
+        <Button text="👤" onAction="#handleProfile"
+                style="-fx-background-color: rgba(255,255,255,0.15); -fx-text-fill: white;
+                       -fx-font-size: 14px; -fx-background-radius: 20; -fx-cursor: hand;
+                       -fx-border-color: rgba(255,255,255,0.45); -fx-border-radius: 20;
+                       -fx-border-width: 1; -fx-padding: 5 12;"/>
         <Button text="💰 Số dư" onAction="#handleBalance"
                 style="-fx-background-color: rgba(255,255,255,0.15); -fx-text-fill: white;
                        -fx-font-size: 12px; -fx-background-radius: 20; -fx-cursor: hand;
@@ -113,6 +119,12 @@
                         prefHeight="36" prefWidth="110" styleClass="btn-primary"/>
                 <Button fx:id="sellerButton" text="🛒 Seller" onAction="#handleSellerDashboard"
                         prefHeight="36" prefWidth="90" styleClass="btn-success"/>
+                <!-- MỚI: nút lịch sử đấu giá -->
+                <Button text="📜 Lịch sử" onAction="#handleBidHistory"
+                        prefHeight="36" prefWidth="100"
+                        style="-fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                               -fx-font-size: 12px; -fx-font-weight: bold;
+                               -fx-background-radius: 10; -fx-cursor: hand;"/>
                 <MenuButton text="⭐ Watchlist ▼" prefHeight="36" prefWidth="130"
                             style="-fx-background-color: #1565C0; -fx-text-fill: white;
                                    -fx-font-size: 12px; -fx-font-weight: bold;
@@ -125,11 +137,34 @@
                 </MenuButton>
             </HBox>
 
+            <!-- FILTER BAR (MỚI) -->
+            <VBox style="-fx-background-color: white; -fx-padding: 10 28 12 28;
+                         -fx-border-color: transparent transparent #EEEEEE transparent;
+                         -fx-border-width: 1;" spacing="8">
+                <!-- Dòng 1: Filter loại -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Loại SP:" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #374151; -fx-min-width: 60;"/>
+                    <Button fx:id="btnFilterAll"     text="Tất cả"        onAction="#handleFilterType" styleClass="filter-active"/>
+                    <Button fx:id="btnFilterArt"     text="🎨 Nghệ thuật" onAction="#handleFilterType" styleClass="filter-btn"/>
+                    <Button fx:id="btnFilterElec"    text="⚡ Điện tử"    onAction="#handleFilterType" styleClass="filter-btn"/>
+                    <Button fx:id="btnFilterVehicle" text="🚗 Xe cộ"      onAction="#handleFilterType" styleClass="filter-btn"/>
+                    <Button fx:id="btnFilterOther"   text="📦 Khác"       onAction="#handleFilterType" styleClass="filter-btn"/>
+                </HBox>
+                <!-- Dòng 2: Filter giá -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Mức giá:" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #374151; -fx-min-width: 60;"/>
+                    <Button fx:id="btnPriceAll"    text="Tất cả"     onAction="#handleFilterPrice" styleClass="filter-active"/>
+                    <Button fx:id="btnPriceUnder5" text="Dưới 5M"   onAction="#handleFilterPrice" styleClass="filter-btn"/>
+                    <Button fx:id="btnPriceMid"    text="5M – 50M"  onAction="#handleFilterPrice" styleClass="filter-btn"/>
+                    <Button fx:id="btnPriceOver50" text="Trên 50M"  onAction="#handleFilterPrice" styleClass="filter-btn"/>
+                </HBox>
+            </VBox>
+
             <!-- STATUS BAR -->
             <Label fx:id="statusBarLabel" text=""
                    style="-fx-font-size: 12px; -fx-padding: 6 28 2 28; -fx-text-fill: #666;"/>
 
-            <!-- CARD GRID — populated dynamically by controller -->
+            <!-- CARD GRID -->
             <FlowPane fx:id="auctionGrid"
                       hgap="16" vgap="16"
                       style="-fx-padding: 12 28 28 28; -fx-background-color: transparent;"/>

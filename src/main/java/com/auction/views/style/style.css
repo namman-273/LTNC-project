@@ -331,3 +331,20 @@
     -fx-font-size: 11px;
     -fx-padding: 4 8;
 }
+.filter-btn {
+    -fx-background-color: #F3F4F6;
+    -fx-text-fill: #374151;
+    -fx-font-size: 11px;
+    -fx-background-radius: 20;
+    -fx-padding: 5 14;
+    -fx-cursor: hand;
+}
+.filter-active {
+    -fx-background-color: #1565C0;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20;
+    -fx-padding: 5 14;
+    -fx-cursor: hand;
+}

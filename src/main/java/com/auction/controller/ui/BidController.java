@@ -1,6 +1,8 @@
 package com.auction.controller.ui;
 
 import com.auction.network.protocol.Protocol;
+import com.auction.util.core.BidHistoryManager;
+import com.auction.util.core.BidHistoryManager.Result;
 import com.auction.util.ui.NotificationManager;
 import com.auction.util.ui.ToastManager;
 import com.auction.network.client.ServerConnection;
@@ -12,10 +14,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -25,10 +29,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -38,28 +44,40 @@ import javafx.util.Duration;
 
 public class BidController implements Initializable {
 
-    @FXML private StackPane rootPane;
-    @FXML private Label auctionTitleLabel;
-    @FXML private Label itemNameLabel;
-    @FXML private Label itemTypeLabel;
-    @FXML private Label sellerLabel;
-    @FXML private Label currentPriceLabel;
-    @FXML private Label statusLabel;
-    @FXML private Label countdownLabel;
-    @FXML private TextField bidAmountField;
+    @FXML private StackPane  rootPane;
+    @FXML private Label      auctionTitleLabel;
+    @FXML private Label      itemNameLabel;
+    @FXML private Label      itemTypeLabel;
+    @FXML private Label      sellerLabel;
+    @FXML private Label      currentPriceLabel;
+    @FXML private Label      statusLabel;
+    @FXML private Label      countdownLabel;
+    @FXML private TextField  bidAmountField;
     @FXML private ListView<HistoryEntry> bidHistoryList;
-    @FXML private VBox snipingBox;
-    @FXML private Label snipingCountdownLabel;
-    @FXML private Label snipingCountLabel;
-    @FXML private javafx.scene.image.ImageView productImage;
-    @FXML private javafx.scene.layout.VBox imagePlaceholder;
-    @FXML private javafx.scene.layout.VBox descriptionBox;
-    @FXML private javafx.scene.control.Label descriptionLabel;
+    @FXML private VBox       snipingBox;
+    @FXML private Label      snipingCountdownLabel;
+    @FXML private Label      snipingCountLabel;
+    @FXML private ImageView  productImage;
+    @FXML private VBox       imagePlaceholder;
+    @FXML private VBox       descriptionBox;
+    @FXML private Label      descriptionLabel;
+
+    // ── MỚI: Chi tiết sản phẩm toggle ────────────────────────────────────────
+    @FXML private Button toggleDetailBtn;
+    @FXML private VBox   productDetailPanel;
+    @FXML private Label  detailItemType;
+    @FXML private Label  detailStartPrice;
+    @FXML private Label  detailSeller;
+    // ─────────────────────────────────────────────────────────────────────────
 
     private String auctionId;
     private String username;
-    private long endTime;
+    private long   endTime;
     private double currentPriceValue = 0;
+
+    // MỚI: lưu thêm để ghi BidHistory
+    private String itemTypeCached     = "";
+    private double startingPriceCached = 0;
 
     private Consumer<String> pushListener;
 
@@ -70,8 +88,7 @@ public class BidController implements Initializable {
     private Timeline snipingTimeline;
     private Timeline countdownTimeline;
 
-    // ─── HistoryEntry DTO ────────────────────────────────────────────────────
-
+    // ── HistoryEntry DTO ─────────────────────────────────────────────────────
     public static class HistoryEntry {
         final String bidder;
         final double amount;
@@ -86,13 +103,12 @@ public class BidController implements Initializable {
         }
     }
 
-    // ─── Custom cell ─────────────────────────────────────────────────────────
-
+    // ── Custom cell ──────────────────────────────────────────────────────────
     private class HistoryCell extends ListCell<HistoryEntry> {
-        private final HBox root      = new HBox(12);
-        private final Label avatar   = new Label();
-        private final VBox info      = new VBox(3);
-        private final HBox nameLine  = new HBox(8);
+        private final HBox  root       = new HBox(12);
+        private final Label avatar     = new Label();
+        private final VBox  info       = new VBox(3);
+        private final HBox  nameLine   = new HBox(8);
         private final Label nameLabel  = new Label();
         private final Label badge      = new Label();
         private final Label priceLabel = new Label();
@@ -151,26 +167,43 @@ public class BidController implements Initializable {
                         + "-fx-font-size: 10px; -fx-font-weight: bold;");
                 badge.setVisible(true);
             } else {
-                badge.setText("");
-                badge.setVisible(false);
+                badge.setText(""); badge.setVisible(false);
             }
 
             priceLabel.setText(String.format("%,.0f VNĐ", entry.amount));
             priceLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;"
                     + (entry.isLeading ? "-fx-text-fill: #1D4ED8;" : "-fx-text-fill: #374151;"));
 
-            setGraphic(root);
-            setText(null);
+            setGraphic(root); setText(null);
         }
     }
 
-    // ─── Setup ───────────────────────────────────────────────────────────────
+    // ── Setup ────────────────────────────────────────────────────────────────
 
+    /** Backward-compat (gọi từ BidView không có itemType/startingPrice/sellerId) */
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime) {
-        this.auctionId = auctionId;
-        this.username  = username;
-        this.endTime   = endTime;
+        setData(auctionId, itemName, currentPrice, status, username, endTime, "", "", "", 0, "");
+    }
+
+    /** Backward-compat có imageUrl + description */
+    public void setData(String auctionId, String itemName, String currentPrice,
+                        String status, String username, long endTime,
+                        String imageUrl, String description) {
+        setData(auctionId, itemName, currentPrice, status, username, endTime,
+                imageUrl, description, "", 0, "");
+    }
+
+    /** Full setData với itemType, startingPrice, sellerId (MỚI) */
+    public void setData(String auctionId, String itemName, String currentPrice,
+                        String status, String username, long endTime,
+                        String imageUrl, String description,
+                        String itemType, double startingPrice, String sellerId) {
+        this.auctionId          = auctionId;
+        this.username           = username;
+        this.endTime            = endTime;
+        this.itemTypeCached     = itemType  != null ? itemType  : "";
+        this.startingPriceCached = startingPrice;
 
         ToastManager.init(rootPane);
 
@@ -186,26 +219,26 @@ public class BidController implements Initializable {
 
         updateBidSuggestion(currentPriceValue);
 
-        historyItems = historyCache.computeIfAbsent(
-                auctionId, k -> FXCollections.observableArrayList());
-        bidHistoryList.setItems(historyItems);
-        bidHistoryList.setCellFactory(lv -> new HistoryCell());
+        // itemTypeLabel (badge trên ảnh)
+        if (itemTypeLabel != null && !itemTypeCached.isEmpty()) {
+            String displayType = switch (itemTypeCached) {
+                case "Art"         -> "🎨 Nghệ thuật";
+                case "Electronics" -> "⚡ Điện tử";
+                case "Vehicle"     -> "🚗 Xe cộ";
+                default            -> itemTypeCached;
+            };
+            itemTypeLabel.setText(displayType);
+        }
 
-        startCountdown();
-        loadHistory();
-        registerPushListener();
-    }
-    public void setData(String auctionId, String itemName, String currentPrice,
-                        String status, String username, long endTime,
-                        String imageUrl, String description) {
-        // Gọi setData cũ trước
-        setData(auctionId, itemName, currentPrice, status, username, endTime);
+        // sellerLabel
+        if (sellerLabel != null && sellerId != null && !sellerId.isEmpty()) {
+            sellerLabel.setText(sellerId);
+        }
 
-        // Hiển thị ảnh nếu có
+        // Ảnh
         if (imageUrl != null && !imageUrl.isEmpty() && productImage != null) {
             try {
-                javafx.scene.image.Image img =
-                        new javafx.scene.image.Image(imageUrl, true);
+                javafx.scene.image.Image img = new javafx.scene.image.Image(imageUrl, true);
                 productImage.setImage(img);
                 productImage.setVisible(true);
                 productImage.setManaged(true);
@@ -218,7 +251,7 @@ public class BidController implements Initializable {
             }
         }
 
-        // Hiển thị mô tả nếu có
+        // Mô tả
         if (description != null && !description.isEmpty()) {
             if (descriptionLabel != null) descriptionLabel.setText(description);
             if (descriptionBox != null) {
@@ -226,13 +259,53 @@ public class BidController implements Initializable {
                 descriptionBox.setManaged(true);
             }
         }
+
+        // Panel chi tiết SP (MỚI)
+        if (detailItemType != null) {
+            String displayType = switch (itemTypeCached) {
+                case "Art"         -> "🎨 Nghệ thuật";
+                case "Electronics" -> "⚡ Điện tử";
+                case "Vehicle"     -> "🚗 Xe cộ";
+                default            -> itemTypeCached.isEmpty() ? "—" : itemTypeCached;
+            };
+            detailItemType.setText(displayType);
+        }
+        if (detailStartPrice != null) {
+            detailStartPrice.setText(startingPrice > 0
+                    ? String.format("%,.0f VNĐ", startingPrice) : "—");
+        }
+        if (detailSeller != null) {
+            detailSeller.setText((sellerId != null && !sellerId.isEmpty()) ? sellerId : "—");
+        }
+
+        historyItems = historyCache.computeIfAbsent(
+                auctionId, k -> FXCollections.observableArrayList());
+        bidHistoryList.setItems(historyItems);
+        bidHistoryList.setCellFactory(lv -> new HistoryCell());
+
+        startCountdown();
+        loadHistory();
+        registerPushListener();
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {}
 
-    // ─── Push Listener ───────────────────────────────────────────────────────
+    // ── Toggle chi tiết SP (MỚI) ─────────────────────────────────────────────
+    @FXML
+    private void handleToggleDetail() {
+        if (productDetailPanel == null) return;
+        boolean show = !productDetailPanel.isVisible();
+        productDetailPanel.setVisible(show);
+        productDetailPanel.setManaged(show);
+        if (toggleDetailBtn != null) {
+            toggleDetailBtn.setText(show
+                    ? "▲ Ẩn chi tiết sản phẩm"
+                    : "▼ Xem chi tiết sản phẩm");
+        }
+    }
 
+    // ── Push Listener ────────────────────────────────────────────────────────
     private void registerPushListener() {
         pushListener = this::handleServerPush;
         ServerConnection.getInstance().addPushListener(pushListener);
@@ -267,10 +340,11 @@ public class BidController implements Initializable {
                     String count = parts[3];
                     try {
                         long newEndTime = Long.parseLong(parts[2]);
-                        // Chỉ update endTime khi server xác nhận gia hạn hợp lệ
                         this.endTime = newEndTime;
                         Platform.runLater(() -> showSnipingAlert(count));
-                        NotificationManager.getInstance().add("⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
+                        NotificationManager.getInstance().add(
+                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count,
+                                "auction", auctionId);
                     } catch (NumberFormatException ignored) {}
                 }
                 break;
@@ -279,8 +353,11 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
-                    Platform.runLater(() -> showWarning("Bị vượt giá bởi " + newBidder + "! Giá mới: " + formatPrice(newAmt)));
-                    NotificationManager.getInstance().add("⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt), "auction", auctionId);
+                    Platform.runLater(() ->
+                            showWarning("Bị vượt giá bởi " + newBidder + "! Giá mới: " + formatPrice(newAmt)));
+                    NotificationManager.getInstance().add(
+                            "⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt),
+                            "auction", auctionId);
                 }
                 break;
 
@@ -288,9 +365,11 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String refundAmt = parts[2];
                     String newBal    = parts[3];
-                    Platform.runLater(() -> showInfo("Hoàn " + formatPrice(refundAmt)
-                            + " → Số dư: " + formatPrice(newBal)));
-                    NotificationManager.getInstance().add("Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal), "balance", auctionId);
+                    Platform.runLater(() ->
+                            showInfo("Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal)));
+                    NotificationManager.getInstance().add(
+                            "Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal),
+                            "balance", auctionId);
                 }
                 break;
 
@@ -304,10 +383,22 @@ public class BidController implements Initializable {
                         countdownLabel.setStyle(
                                 "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
                     }
-                    String detail = parts.length >= 3 ? parts[2] : "";
-                    if (detail.contains("Winner:" + username)) {
+                    String detail  = parts.length >= 3 ? parts[2] : "";
+                    boolean isWin  = detail.contains("Winner:" + username);
+
+                    // MỚI: ghi vào BidHistoryManager
+                    BidHistoryManager.getInstance().addRecord(
+                            auctionId,
+                            itemNameLabel.getText(),
+                            itemTypeCached,
+                            currentPriceLabel.getText(),
+                            isWin ? Result.WIN : Result.LOSE
+                    );
+
+                    if (isWin) {
                         showSuccess("Bạn đã thắng phiên đấu giá!");
-                        NotificationManager.getInstance().add("🎉 Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+                        NotificationManager.getInstance().add(
+                                "🎉 Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
                     } else if (detail.contains("No winner")) {
                         showInfo("Phiên kết thúc - không có người thắng.");
                     } else {
@@ -329,8 +420,7 @@ public class BidController implements Initializable {
         }
     }
 
-    // ─── Quick-add buttons ────────────────────────────────────────────────────
-
+    // ── Quick-add ────────────────────────────────────────────────────────────
     @FXML private void handleAdd1M()  { addAmount(1_000_000); }
     @FXML private void handleAdd5M()  { addAmount(5_000_000); }
     @FXML private void handleAdd10M() { addAmount(10_000_000); }
@@ -351,8 +441,7 @@ public class BidController implements Initializable {
         bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
     }
 
-    // ─── Countdown ────────────────────────────────────────────────────────────
-
+    // ── Countdown ────────────────────────────────────────────────────────────
     private void startCountdown() {
         if (countdownTimeline != null) countdownTimeline.stop();
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
@@ -377,8 +466,7 @@ public class BidController implements Initializable {
         countdownTimeline.play();
     }
 
-    // ─── Sniping alert ────────────────────────────────────────────────────────
-
+    // ── Sniping ──────────────────────────────────────────────────────────────
     private void showSnipingAlert(String extensionCount) {
         if (snipingBox == null) return;
         snipingBox.setVisible(true);
@@ -386,7 +474,6 @@ public class BidController implements Initializable {
         snipingCountLabel.setText("Lần gia hạn thứ: " + extensionCount);
         snipingCountdownLabel.setText("⏱ +2 phút vừa được cộng thêm!");
         showWarning("Phiên gia hạn lần " + extensionCount + " (+2 phút)");
-
         if (snipingTimeline != null) snipingTimeline.stop();
         snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> stopSnipingAlert()));
         snipingTimeline.setCycleCount(1);
@@ -400,8 +487,7 @@ public class BidController implements Initializable {
 
     private void stopSnipingCountdown() { stopSnipingAlert(); }
 
-    // ─── History ──────────────────────────────────────────────────────────────
-
+    // ── History ──────────────────────────────────────────────────────────────
     private void loadHistory() {
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
@@ -421,7 +507,6 @@ public class BidController implements Initializable {
                     historyItems.clear();
                     for (int i = array.size() - 1; i >= 0; i--) {
                         JsonObject obj = array.get(i).getAsJsonObject();
-
                         String bidder = "---";
                         if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
                             JsonObject bidderObj = obj.get("bidder").getAsJsonObject();
@@ -429,8 +514,7 @@ public class BidController implements Initializable {
                                 bidder = bidderObj.get("username").getAsString();
                             }
                         }
-
-                        double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
+                        double amount    = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
                         boolean isMe      = bidder.equals(username);
                         boolean isLeading = (i == array.size() - 1);
                         historyItems.add(new HistoryEntry(bidder, amount, isMe, isLeading));
@@ -442,8 +526,7 @@ public class BidController implements Initializable {
         }).start();
     }
 
-    // ─── Actions ──────────────────────────────────────────────────────────────
-
+    // ── Actions ──────────────────────────────────────────────────────────────
     @FXML
     private void handleBid() {
         String amountStr = bidAmountField.getText().trim();
@@ -461,7 +544,6 @@ public class BidController implements Initializable {
                 if (response.startsWith(Protocol.RES_BID_SUCCESS)) {
                     showSuccess("Đặt giá thành công!");
                     bidAmountField.clear();
-                    // parts[0]=BID_SUCCESS, parts[1]=auctionId, parts[2]=amount
                     if (parts.length > 2) {
                         try {
                             double newPrice = Double.parseDouble(parts[2]);
@@ -509,8 +591,7 @@ public class BidController implements Initializable {
         if (countdownTimeline != null) countdownTimeline.stop();
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
-
+    // ── Helpers ──────────────────────────────────────────────────────────────
     private String formatPrice(String raw) {
         try {
             double val = Double.parseDouble(raw.replace(",", "")
@@ -520,19 +601,8 @@ public class BidController implements Initializable {
         } catch (NumberFormatException e) { return raw; }
     }
 
-    private void showError(String msg) {
-        ToastManager.show(ToastManager.Type.DANGER, msg);
-    }
-
-    private void showSuccess(String msg) {
-        ToastManager.show(ToastManager.Type.SUCCESS, msg);
-    }
-
-    private void showInfo(String msg) {
-        ToastManager.show(ToastManager.Type.INFO, msg);
-    }
-
-    private void showWarning(String msg) {
-        ToastManager.show(ToastManager.Type.WARNING, msg);
-    }
+    private void showError(String msg)   { ToastManager.show(ToastManager.Type.DANGER,  msg); }
+    private void showSuccess(String msg) { ToastManager.show(ToastManager.Type.SUCCESS, msg); }
+    private void showInfo(String msg)    { ToastManager.show(ToastManager.Type.INFO,    msg); }
+    private void showWarning(String msg) { ToastManager.show(ToastManager.Type.WARNING, msg); }
 }
