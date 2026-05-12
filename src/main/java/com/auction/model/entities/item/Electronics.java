@@ -1,8 +1,9 @@
 package com.auction.model.entities.item;
 
 /**
- * .
- */
+ *  * .
+ *  
+ */
 public class Electronics extends Item {
 
   private static final long serialVersionUID = 1L;
@@ -10,6 +11,10 @@ public class Electronics extends Item {
   public Electronics(String id, String name, double price) {
     super(id, name, price);
 
+  }
+
+  public String getitemType() {
+    return "Electronics";
   }
 
   @Override

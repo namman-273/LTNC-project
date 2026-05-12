@@ -36,7 +36,7 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   }
 
   private void initCommands() {
-    // Nạp đạn cho 14 lệnh
+    // Nạp đạn cho 16 lệnh
     commandMap.put(Protocol.CMD_REGISTER, new RegisterCommand());
     commandMap.put(Protocol.CMD_LOGIN, new LoginCommand());
     commandMap.put(Protocol.CMD_LIST_AUCTIONS, new ListAuctionsCommand());
@@ -51,6 +51,8 @@ public class ClientHandler implements Runnable, AuctionParticipant {
     commandMap.put(Protocol.CMD_UNWATCH, new UnwatchCommand());
     commandMap.put(Protocol.CMD_GET_WATCHLIST, new GetWatchlistCommand());
     commandMap.put(Protocol.CMD_ADD_AUTO_BID, new AddAutoBidCommand());
+    commandMap.put(Protocol.CMD_GET_BID_HISTORY, new GetBidHistoryCommand());
+    commandMap.put(Protocol.CMD_GET_PROFILE, new GetProfileCommand());
   }
 
   @Override
@@ -137,6 +139,12 @@ public class ClientHandler implements Runnable, AuctionParticipant {
 
   public void handleAddAutoBid(final String[] parts, AuctionService auctionService) {
     commandMap.get(Protocol.CMD_ADD_AUTO_BID).execute(parts, this, auctionService);
+  }
+  public void handleGetProfile(final String[] parts, AuctionService auctionService) {
+    commandMap.get(Protocol.CMD_GET_PROFILE).execute(parts, this, auctionService);
+  }
+  public void handleGetBidHistory(final String[] parts, AuctionService auctionService) {
+    commandMap.get(Protocol.CMD_GET_BID_HISTORY).execute(parts, this, auctionService);
   }
 
   // ====================================================================================

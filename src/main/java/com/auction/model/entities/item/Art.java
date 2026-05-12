@@ -11,6 +11,10 @@ public class Art extends Item {
     super(id, name, price);
   }
 
+  public String getitemType() {
+    return "Art";
+  }
+
   @Override
   public void displayInfo() {
     System.out.println("[com.auction.model.Art] " + itemName);

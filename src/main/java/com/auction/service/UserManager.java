@@ -7,7 +7,6 @@ import com.auction.model.entities.user.User;
 import com.auction.util.core.DataManager;
 import com.auction.util.core.SecurityUtils;
 import com.auction.util.exception.AuthenticationException;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +24,7 @@ public class UserManager {
   private static final String DEFAULT_ADMIN_USER = "admin";
   private static final String DEFAULT_ADMIN_PASS = "admin123";
   private static final String ROLE_ADMIN = "ADMIN";
+  private static final String ADMIN_EMAIl = "admin123321@gmail.com";
 
   private UserManager() {
   }
@@ -58,8 +58,11 @@ public class UserManager {
   /**
    * Hỗ trợ đăng ký người dùng mới.
    */
-  public boolean register(String username, String password, String role) {
+  public boolean register(String username, String password, String role, String email) {
     if (users.containsKey(username)) {
+      return false;
+    }
+    if (isEmailExists(email)) {
       return false;
     }
     String hashedPassword = SecurityUtils.hashPassword(password, username);
@@ -67,13 +70,13 @@ public class UserManager {
     // Phân quyền tạo đúng Object tương ứng
     switch (role.toUpperCase()) {
       case "ADMIN":
-        newUser = new Admin(username, hashedPassword);
+        newUser = new Admin(username, hashedPassword, email);
         break;
       case "SELLER":
-        newUser = new Seller(username, hashedPassword);
+        newUser = new Seller(username, hashedPassword, email);
         break;
       default:
-        newUser = new Bidder(username, hashedPassword);
+        newUser = new Bidder(username, hashedPassword, email);
         break;
     }
 
@@ -103,6 +106,26 @@ public class UserManager {
     return user;
   }
 
+  /**
+   * Kiểm tra xem email đã được sử dụng bởi Seller hoặc Bidder nào khác chưa.
+   * 
+   * @param email Email cần kiểm tra'.
+   * @return true nếu đã tồn tại, false nếu chưa
+   */
+  private boolean isEmailExists(String email) {
+    if (email == null || email.isEmpty())
+      return false;
+
+    // Duyệt qua toàn bộ danh sách User hiện có
+    for (User user : users.values()) {
+      // Chỉ so sánh nếu user đó có email (Seller/Bidder)
+      if (email.equalsIgnoreCase(user.getEmail())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Tìm user theo username
   public User findUserByUsername(String username) {
     return users.get(username);
@@ -113,7 +136,7 @@ public class UserManager {
    */
   public void initDefaultData() {
     if (users.isEmpty()) {
-      register(DEFAULT_ADMIN_USER, DEFAULT_ADMIN_PASS, ROLE_ADMIN);
+      register(DEFAULT_ADMIN_USER, DEFAULT_ADMIN_PASS, ROLE_ADMIN, ADMIN_EMAIl);
       System.out.println("Hệ thống trống. Đã tạo tài khoản admin mặc định.");
     }
   }

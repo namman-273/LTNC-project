@@ -28,7 +28,8 @@ public class AuctionFinancialProcessor {
 
     if (previousBidder != null && !previousBidder.equals(bidder)) {
       // Refund previous bidder (only after new bidder's money is secured)
-      BidTransaction lastTransaction = auction.getBidHistory().get(auction.getBidHistory().size() - 1);
+      BidTransaction lastTransaction 
+          = auction.getBidHistory().get(auction.getBidHistory().size() - 1);
       double refundAmount = lastTransaction.getAmount();
       previousBidder.addBalance(refundAmount);
 
@@ -44,7 +45,7 @@ public class AuctionFinancialProcessor {
     updater.applyState(amount, new BidTransaction(bidder, amount));
 
     String bidUpdateMessage = Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR + auction.getId()
-        + "|" + amount + "|" + bidder.getUsername();
+        + "|" + amount + "|" + bidder.getUsername() + "|" + auction.getItem().getitemType();
     auction.notifyAllParticipants(bidUpdateMessage, bidder);
   }
 }
