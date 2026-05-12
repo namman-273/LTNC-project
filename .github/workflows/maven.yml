@@ -1,11 +1,11 @@
 name: Java CI — Build, Checkstyle, Test & Coverage
 
-# Trigger trên tất cả các nhánh quan trọng của nhóm
+# Trigger trên nhánh master
 on:
   push:
-    branches: [ "master"]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "master"]
+    branches: [ "master" ]
 
 jobs:
   build-and-verify:
@@ -36,7 +36,9 @@ jobs:
       #  -Djava.awt.headless=true : chạy không cần màn hình (bắt buộc cho CI)
       #
       - name: Run full verification (compile → test → checkstyle → coverage)
-        run: mvn clean verify -B -e -Djava.awt.headless=true
+        run: mvn clean verify -B -e
+        # -Djava.awt.headless=true đã được khai báo trong <argLine> của Surefire (pom.xml)
+        # Không truyền lại ở đây để tránh warning "configured twice" từ Maven Surefire
 
       # ── 4. Upload JaCoCo HTML report làm Artifact ────────────────────
       #
