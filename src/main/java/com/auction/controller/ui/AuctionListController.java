@@ -5,6 +5,7 @@ import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.AlertUtil;
 import com.auction.util.ui.NotificationManager;
 import com.auction.network.client.ServerConnection;
+import com.auction.util.core.BidHistoryManager;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AdminDashboardView;
 import com.auction.views.java.BalanceView;
@@ -114,15 +115,32 @@ public class AuctionListController implements Initializable {
                 case Protocol.RES_END_SUCCESS: {
                     String auctionId = parts.length >= 2 ? parts[1] : "";
                     String detail    = parts.length >= 3 ? parts[2] : "";
-                    if (detail.contains("Winner:" + username)) {
+                    boolean isWin    = detail.contains("Winner:" + username);
+                    // Lấy tên phiên từ danh sách hiện tại nếu có
+                    String itemNameForHistory = auctionId;
+                    String bidStr = "";
+                    if (detail.contains("Bid:")) {
+                        bidStr = detail.substring(detail.indexOf("Bid:") + 4).replace("$","").trim();
+                    }
+                    final String finalItemName = itemNameForHistory;
+                    final String finalBid      = bidStr;
+                    final boolean finalIsWin   = isWin;
+                    final String finalId       = auctionId;
+                    if (isWin) {
                         NotificationManager.getInstance().add(
-                                "🎉 Bạn đã thắng phiên đấu giá: " + auctionId,
+                                "Bạn đã thắng phiên đấu giá: " + auctionId,
                                 "auction", auctionId);
                     } else if (!auctionId.isEmpty()) {
                         NotificationManager.getInstance().add(
                                 "Phiên " + auctionId + " đã kết thúc. Bạn không thắng.",
                                 "auction", auctionId);
                     }
+                    // FIX BUG AUTOBID: ghi lịch sử khi user không mở BidView
+                    BidHistoryManager.getInstance().addRecord(
+                            finalId, finalItemName, "",
+                            finalBid.isEmpty() ? "—" : finalBid + " VNĐ",
+                            finalIsWin ? BidHistoryManager.Result.WIN : BidHistoryManager.Result.LOSE
+                    );
                     Platform.runLater(this::loadFromServer);
                     break;
                 }
