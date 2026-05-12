@@ -6,7 +6,6 @@ import com.auction.model.entities.user.Seller;
 import com.auction.model.entities.user.User;
 import com.auction.util.core.DataManager;
 import com.auction.util.exception.AuthenticationException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
