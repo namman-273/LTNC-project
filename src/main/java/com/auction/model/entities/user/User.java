@@ -28,7 +28,7 @@ public abstract class User extends Entity {
   public User(String username, String password, String role, String email) {
     super(username);
     this.username = username;
-    this.password = password;
+    this.password = SecurityUtils.hashPassword(password, username);
     this.role = role;
     this.balance = 0.0;
     this.email = email;
@@ -39,8 +39,10 @@ public abstract class User extends Entity {
     return username;
   }
 
-  public String getPassword() {
-    return password;
+  public void setPassword(String rawPassword) {
+    if (rawPassword != null && !rawPassword.isEmpty()) {
+      this.password = SecurityUtils.hashPassword(rawPassword, this.username);
+    }
   }
 
   private String getCurrentDate() {

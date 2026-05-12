@@ -65,18 +65,18 @@ public class UserManager {
     if (isEmailExists(email)) {
       return false;
     }
-    String hashedPassword = SecurityUtils.hashPassword(password, username);
+
     User newUser;
     // Phân quyền tạo đúng Object tương ứng
     switch (role.toUpperCase()) {
       case "ADMIN":
-        newUser = new Admin(username, hashedPassword, email);
+        newUser = new Admin(username, password, email);
         break;
       case "SELLER":
-        newUser = new Seller(username, hashedPassword, email);
+        newUser = new Seller(username, password, email);
         break;
       default:
-        newUser = new Bidder(username, hashedPassword, email);
+        newUser = new Bidder(username, password, email);
         break;
     }
 
@@ -96,10 +96,7 @@ public class UserManager {
       throw new AuthenticationException("Người dùng không tồn tại");
     }
 
-    // PHẢI dùng username của user đó làm Salt để băm lại mật khẩu nhập vào
-    String hashedInput = SecurityUtils.hashPassword(password, username);
-
-    if (!user.getPassword().equals(hashedInput)) {
+    if (!user.checkPassword(password)) {
       throw new AuthenticationException("Sai mật khẩu");
     }
 
@@ -114,7 +111,7 @@ public class UserManager {
    */
   private boolean isEmailExists(String email) {
     if (email == null || email.isEmpty())
-      return false;
+      {return false;}
 
     // Duyệt qua toàn bộ danh sách User hiện có
     for (User user : users.values()) {
@@ -124,6 +121,29 @@ public class UserManager {
       }
     }
     return false;
+  }
+
+  public boolean updateEmail(String username, String newEmail) {
+    if (isEmailExists(newEmail))
+      {return false;}
+
+    User user = users.get(username);
+
+    user.setEmail(newEmail);
+    DataManager.getInstance().saveData(); // Lưu xuống file .dat ngay
+    return true;
+
+  }
+
+  // 3 Cập nhật Password
+  public boolean updatePassword(String username, String oldPass, String newPass) {
+    User user = users.get(username);
+    if (!user.checkPassword(oldPass) || oldPass.equals(newPass))
+      {return false;}
+    user.setPassword(newPass);
+    DataManager.getInstance().saveData();
+    return true;
+
   }
 
   // Tìm user theo username
