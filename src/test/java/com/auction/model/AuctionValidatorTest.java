@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.model.helpers.AuctionValidator;
+import com.auction.model.auctionhelpers.AuctionValidator;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.AuthenticationException;
 import com.auction.util.exception.InvalidBidException;
