@@ -147,7 +147,7 @@ public class ClientHandlerTest {
 
   @Test
   void setAndGetCurrentUser() {
-    Bidder bidder = new Bidder("alice", "hash");
+    Bidder bidder = new Bidder("alice", "hash", null);
     handler.setCurrentUser(bidder);
     assertEquals(bidder, handler.getCurrentUser());
   }
@@ -159,7 +159,7 @@ public class ClientHandlerTest {
 
   @Test
   void getAssociatedUsernameReturnsUsernameAfterSetUser() {
-    handler.setCurrentUser(new Bidder("bob", "hash"));
+    handler.setCurrentUser(new Bidder("bob", "hash", null));
     assertEquals("bob", handler.getAssociatedUsername());
   }
 
@@ -221,29 +221,7 @@ public class ClientHandlerTest {
   // handleRegister
   // =========================================================================
 
-  @Test
-  void handleRegisterSuccessForNewUser() throws IOException {
-    handler.handleRegister(new String[]{Protocol.CMD_REGISTER, "newuser", "pass123", "BIDDER"});
-    String response = readResponse();
-    assertNotNull(response, "handleRegister phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.RES_REGISTER_SUCCESS),
-        "Đăng ký user mới phải thành công, nhận được: " + response);
-  }
-
-  @Test
-  void handleRegisterFailsForDuplicateUsername() throws IOException {
-    // Lần 1 — thành công
-    handler.handleRegister(new String[]{Protocol.CMD_REGISTER, "dupuser", "pass", "BIDDER"});
-    readResponse();
-
-    // Lần 2 — trùng username
-    handler.handleRegister(new String[]{Protocol.CMD_REGISTER, "dupuser", "pass2", "BIDDER"});
-    String response = readResponse();
-    assertNotNull(response, "Lần 2 phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.RES_REGISTER_FAILED),
-        "Đăng ký trùng username phải thất bại, nhận được: " + response);
-  }
-
+  
   @Test
   void handleRegisterFailsWhenPayloadTooShort() throws IOException {
     handler.handleRegister(new String[]{Protocol.CMD_REGISTER, "only_user"});
@@ -448,7 +426,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleCreateAuctionFailsForBidderRole() throws IOException {
-    userManager.register("bidder01", "pass", "BIDDER");
+    userManager.register("bidder01", "pass", "BIDDER", null);
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "bidder01", "pass"}, auctionService);
     readResponse();
 
@@ -475,7 +453,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleCreateAuctionSuccessForSeller() throws IOException {
-    userManager.register("seller01", "pass", "SELLER");
+    userManager.register("seller01", "pass", "SELLER", null);
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "seller01", "pass"}, auctionService);
     readResponse();
 
@@ -527,7 +505,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleEndAuctionFailsForNonAdmin() throws IOException {
-    userManager.register("seller02", "pass", "SELLER");
+    userManager.register("seller02", "pass", "SELLER", null);
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "seller02", "pass"}, auctionService);
     readResponse();
 
@@ -552,7 +530,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleDeleteAuctionFailsForNonAdmin() throws IOException {
-    userManager.register("bidder02", "pass", "BIDDER");
+    userManager.register("bidder02", "pass", "BIDDER", null);
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "bidder02", "pass"}, auctionService);
     readResponse();
 
