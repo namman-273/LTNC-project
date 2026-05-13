@@ -236,36 +236,67 @@ public class BidController implements Initializable {
             sellerLabel.setText(sellerId);
         }
 
+        // FIX: nếu imageUrl trống nhưng description là URL → dùng description làm ảnh
+        System.out.println("[BidView] imageUrl=" + imageUrl);
+        System.out.println("[BidView] description=" + description);
+        String resolvedImageUrl = (imageUrl != null && !imageUrl.isEmpty()) ? imageUrl
+                : (description != null && (description.startsWith("http")
+                || description.startsWith("data:image"))) ? description : "";
+        String resolvedDescription = (resolvedImageUrl.equals(description)) ? "" : description;
+        System.out.println("[BidView] resolvedImageUrl=" + resolvedImageUrl);
+
         // Ảnh — hỗ trợ cả URL lẫn base64 data:image/...
-        if (imageUrl != null && !imageUrl.isEmpty() && productImage != null) {
-            try {
-                javafx.scene.image.Image img;
-                if (imageUrl.startsWith("data:image")) {
-                    // base64 — decode thành byte array rồi load
-                    String base64 = imageUrl.substring(imageUrl.indexOf(",") + 1);
-                    byte[] bytes = java.util.Base64.getDecoder().decode(base64);
-                    img = new javafx.scene.image.Image(
-                            new java.io.ByteArrayInputStream(bytes));
-                } else {
-                    // URL thường
-                    img = new javafx.scene.image.Image(imageUrl, true);
+        if (!resolvedImageUrl.isEmpty() && productImage != null) {
+            final String finalImageUrl = resolvedImageUrl;
+            new Thread(() -> {
+                try {
+                    javafx.scene.image.Image img;
+                    if (finalImageUrl.startsWith("data:image")) {
+                        // base64 — decode thành byte array rồi load
+                        String base64 = finalImageUrl.substring(finalImageUrl.indexOf(",") + 1);
+                        byte[] bytes = java.util.Base64.getDecoder().decode(base64);
+                        img = new javafx.scene.image.Image(
+                                new java.io.ByteArrayInputStream(bytes));
+                    } else {
+                        // URL — fetch bytes thủ công để tránh giới hạn SSL/redirect của JavaFX Image
+                        java.net.HttpURLConnection conn =
+                                (java.net.HttpURLConnection) new java.net.URL(finalImageUrl).openConnection();
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                        conn.setInstanceFollowRedirects(true);
+                        conn.connect();
+                        try (java.io.InputStream is = conn.getInputStream()) {
+                            byte[] bytes = is.readAllBytes();
+                            img = new javafx.scene.image.Image(
+                                    new java.io.ByteArrayInputStream(bytes));
+                        } finally {
+                            conn.disconnect();
+                        }
+                    }
+                    final javafx.scene.image.Image finalImg = img;
+                    if (!finalImg.isError()) {
+                        javafx.application.Platform.runLater(() -> {
+                            productImage.setImage(finalImg);
+                            productImage.setVisible(true);
+                            productImage.setManaged(true);
+                            if (imagePlaceholder != null) {
+                                imagePlaceholder.setVisible(false);
+                                imagePlaceholder.setManaged(false);
+                            }
+                        });
+                    } else {
+                        System.err.println("Ảnh lỗi: " + finalImg.getException());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Không load được ảnh: " + e.getMessage());
                 }
-                productImage.setImage(img);
-                productImage.setVisible(true);
-                productImage.setManaged(true);
-                if (imagePlaceholder != null) {
-                    imagePlaceholder.setVisible(false);
-                    imagePlaceholder.setManaged(false);
-                }
-            } catch (Exception e) {
-                System.err.println("Không load được ảnh: " + e.getMessage());
-            }
+            }).start();
         }
 
-        // Mô tả — chỉ hiện nếu không phải base64
-        if (description != null && !description.isEmpty()
-                && !description.startsWith("data:image")) {
-            if (descriptionLabel != null) descriptionLabel.setText(description);
+        // Mô tả — chỉ hiện nếu không phải URL hoặc base64
+        if (resolvedDescription != null && !resolvedDescription.isEmpty()
+                && !resolvedDescription.startsWith("http")
+                && !resolvedDescription.startsWith("data:image")) {
+            if (descriptionLabel != null) descriptionLabel.setText(resolvedDescription);
             if (descriptionBox != null) {
                 descriptionBox.setVisible(true);
                 descriptionBox.setManaged(true);
