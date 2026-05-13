@@ -1,4 +1,4 @@
-package com.auction.factory;
+package com.auction.model;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

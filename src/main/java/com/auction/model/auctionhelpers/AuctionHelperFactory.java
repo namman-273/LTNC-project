@@ -1,4 +1,4 @@
-package com.auction.model.helpers;
+package com.auction.model.auctionhelpers;
 
 public class AuctionHelperFactory {
   private static AuctionHelperFactory instance;

@@ -15,6 +15,7 @@ import com.auction.model.entities.user.User;
 import com.auction.util.exception.AuthenticationException;
 
 import java.lang.reflect.Field;
+import com.auction.service.usermanger.UserManager;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,7 @@ public class UserManagerExtendedTest {
  
     @Test
     void initDefaultDataWhenNotEmptyDoesNotAddAdmin() {
-        manager.register("existingUser", "pw", "BIDDER");
+        manager.register("existingUser", "pw", "BIDDER", "existingUser@test.com");
         int sizeBefore = manager.getUsers().size();
         manager.initDefaultData();
         assertEquals(sizeBefore, manager.getUsers().size());
@@ -58,47 +59,48 @@ public class UserManagerExtendedTest {
  
     @Test
     void registerAdminUppercaseCreatesAdmin() {
-        manager.register("admin2", "pw", "ADMIN");
+        manager.register("admin2", "pw", "ADMIN", "admin2@test.com");
         assertInstanceOf(Admin.class, manager.findUserByUsername("admin2"));
     }
  
     @Test
     void registerSellerUppercaseCreatesSeller() {
-        manager.register("seller1", "pw", "SELLER");
+        manager.register("seller1", "pw", "SELLER", "seller1@test.com");
         assertInstanceOf(Seller.class, manager.findUserByUsername("seller1"));
     }
  
     @Test
     void registerBidderUppercaseCreatesBidder() {
-        manager.register("bidder1", "pw", "BIDDER");
+        manager.register("bidder1", "pw", "BIDDER", "bidder1@test.com");
         assertInstanceOf(Bidder.class, manager.findUserByUsername("bidder1"));
     }
  
     @Test
     void registerDefaultRoleCreatesBidder() {
-        manager.register("guest1", "pw", "RANDOM_ROLE");
+        manager.register("guest1", "pw", "RANDOM_ROLE", "guest1@test.com");
         assertInstanceOf(Bidder.class, manager.findUserByUsername("guest1"));
     }
  
     @Test
     void registerSameUsernameTwiceReturnsFalseSecondTime() {
-        manager.register("dup", "pw1", "BIDDER");
-        assertFalse(manager.register("dup", "pw2", "SELLER"));
+        manager.register("dup", "pw1", "BIDDER", "dup@test.com");
+        assertFalse(manager.register("dup", "pw2", "SELLER", "dup@test.com"));
     }
  
     @Test
     void registerHashesPassword() {
-        manager.register("user1", "mypassword", "BIDDER");
+        manager.register("user1", "mypassword", "BIDDER", "user1@test.com");
         User user = manager.findUserByUsername("user1");
         // stored password should not be plain text
-        assertFalse("mypassword".equals(user.getPassword()));
+        // getPassword() không public; kiểm tra hashing qua checkPassword
+        assertTrue(user.checkPassword("mypassword"));
     }
  
     // --- login ---
  
     @Test
     void loginSuccessReturnsCorrectRole() throws Exception {
-        manager.register("seller2", "pw", "SELLER");
+        manager.register("seller2", "pw", "SELLER", "seller2@test.com");
         User user = manager.login("seller2", "pw");
         assertEquals("SELLER", user.getRole());
     }
@@ -112,7 +114,7 @@ public class UserManagerExtendedTest {
  
     @Test
     void loginEmptyPasswordThrowsAuthenticationException() {
-        manager.register("user2", "realpass", "BIDDER");
+        manager.register("user2", "realpass", "BIDDER", "user2@test.com");
         assertThrows(
                 AuthenticationException.class,
                 () -> manager.login("user2", ""));
@@ -134,22 +136,22 @@ public class UserManagerExtendedTest {
  
     @Test
     void getUsersSizeIncreasesAfterRegister() {
-        manager.register("u1", "pw", "BIDDER");
-        manager.register("u2", "pw", "SELLER");
+        manager.register("u1", "pw", "BIDDER", "u1@test.com");
+        manager.register("u2", "pw", "SELLER", "u2@test.com");
         assertEquals(2, manager.getUsers().size());
     }
  
     @Test
     void setUsersWithValidMapUpdatesUsers() {
         Map<String, User> map = new HashMap<>();
-        map.put("injected", new Bidder("injected", "pw"));
+        map.put("injected", new Bidder("injected", "pw", null));
         manager.setUsers(map);
         assertNotNull(manager.findUserByUsername("injected"));
     }
  
     @Test
     void setUsersWithNullDoesNotThrowAndKeepsPreviousUsers() {
-        manager.register("keep1", "pw", "BIDDER");
+        manager.register("keep1", "pw", "BIDDER", "keep1@test.com");
         assertDoesNotThrow(() -> manager.setUsers(null));
         assertNotNull(manager.findUserByUsername("keep1"));
     }
@@ -158,13 +160,13 @@ public class UserManagerExtendedTest {
  
     @Test
     void findUserByUsernameReturnsCorrectInstance() {
-        manager.register("findme", "pw", "ADMIN");
+        manager.register("findme", "pw", "ADMIN", "findme@test.com");
         assertInstanceOf(Admin.class, manager.findUserByUsername("findme"));
     }
  
     @Test
     void findUserByUsernameNonExistentReturnsNull() {
-        manager.register("existing", "pw", "BIDDER");
+        manager.register("existing", "pw", "BIDDER", "existing@test.com");
         assertEquals(null, manager.findUserByUsername("ghost"));
     }
 }

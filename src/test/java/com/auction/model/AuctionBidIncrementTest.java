@@ -8,7 +8,7 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
 
 import java.lang.reflect.Field;
@@ -31,7 +31,7 @@ public class AuctionBidIncrementTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder.addBalance(100_000_000.0);
     }
@@ -128,7 +128,7 @@ public class AuctionBidIncrementTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("bob", "pw", "BIDDER");
+        UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
         Bidder bob = (Bidder) UserManager.getInstance().findUserByUsername("bob");
         bob.addBalance(100_000_000.0);
 

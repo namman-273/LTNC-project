@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.Bidder;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.usermanger.UserManager;
 import java.lang.reflect.Field;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ public class BidderWatchlistTest {
         asField.setAccessible(true);
         asField.set(null, null);
 
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         service = AuctionService.getInstance();
     }
@@ -110,7 +110,7 @@ public class BidderWatchlistTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("bob", "pw", "SELLER");
+        UserManager.getInstance().register("bob", "pw", "SELLER", "bob@test.com");
 
         List<Auction> result = service.getWatchlistForUser("bob");
         assertTrue(result.isEmpty());

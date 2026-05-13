@@ -1,8 +1,8 @@
-package com.auction.network.sever;
+package com.auction.network.server;
 
 import com.auction.controller.network.ClientHandler;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.core.DataManager;
 
 import java.io.IOException;

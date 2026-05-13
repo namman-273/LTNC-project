@@ -16,7 +16,7 @@ import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.item.Item;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.InvalidBidException;
  
@@ -40,8 +40,8 @@ public class AuctionConcurrencyTest {
         umField.setAccessible(true);
         umField.set(null, null);
  
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
-        UserManager.getInstance().register("bob", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
+        UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
  
         Item item = new Electronics("item-c", "Laptop", STARTING_PRICE);
         auction = new Auction("auction-c", item, DURATION, null);

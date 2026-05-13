@@ -5,7 +5,7 @@ import com.auction.model.dto.AuctionRow;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.Bidder;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
+import com.auction.service.auctionservice.AuctionService;
 
 import java.util.ArrayList;
 import java.util.List;

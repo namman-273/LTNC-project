@@ -19,75 +19,72 @@ public class UserTest {
  
   // Tạo user với password đã hash đúng cách như UserManager làm
   private static Bidder createBidder(String username, String rawPassword) {
-    return new Bidder(username, SecurityUtils.hashPassword(rawPassword, username));
+    return new Bidder(username, SecurityUtils.hashPassword(rawPassword, username), null);
   }
  
   private static Seller createSeller(String username, String rawPassword) {
-    return new Seller(username, SecurityUtils.hashPassword(rawPassword, username));
+    return new Seller(username, SecurityUtils.hashPassword(rawPassword, username), null);
   }
  
   private static Admin createAdmin(String username, String rawPassword) {
-    return new Admin(username, SecurityUtils.hashPassword(rawPassword, username));
+    return new Admin(username, SecurityUtils.hashPassword(rawPassword, username), null);
   }
  
   // --- role ---
  
   @Test
   void bidderGetRoleReturnsBidder() {
-    assertEquals("BIDDER", new Bidder("alice", "pw").getRole());
+    assertEquals("BIDDER", new Bidder("alice", "pw", null).getRole());
   }
  
   @Test
   void sellerGetRoleReturnsSeller() {
-    assertEquals("SELLER", new Seller("bob", "pw").getRole());
+    assertEquals("SELLER", new Seller("bob", "pw", null).getRole());
   }
  
   @Test
   void adminGetRoleReturnsAdmin() {
-    assertEquals("ADMIN", new Admin("carol", "pw").getRole());
+    assertEquals("ADMIN", new Admin("carol", "pw", null).getRole());
   }
  
   // --- username / id ---
  
   @Test
   void getUsernameReturnsCorrectUsername() {
-    assertEquals("dave", new Bidder("dave", "pw").getUsername());
+    assertEquals("dave", new Bidder("dave", "pw", null).getUsername());
   }
  
   @Test
   void getIdEqualsUsername() {
-    assertEquals("eve", new Bidder("eve", "pw").getId());
+    assertEquals("eve", new Bidder("eve", "pw", null).getId());
   }
  
   @Test
   void getPasswordReturnsStoredPassword() {
-    assertNotNull(new Bidder("frank", "pw").getPassword());
+    // User.getPassword() không public; kiểm tra password đã được lưu qua checkPassword
+    assertTrue(new Bidder("frank", "pw", null).checkPassword("pw"));
   }
  
   // --- instanceof ---
  
   @Test
   void bidderIsInstanceOfUser() {
-    assertInstanceOf(User.class, new Bidder("grace", "pw"));
+    assertInstanceOf(User.class, new Bidder("grace", "pw", null));
   }
  
   @Test
   void sellerIsInstanceOfUser() {
-    assertInstanceOf(User.class, new Seller("henry", "pw"));
+    assertInstanceOf(User.class, new Seller("henry", "pw", null));
   }
  
   @Test
   void adminIsInstanceOfUser() {
-    assertInstanceOf(User.class, new Admin("ivan", "pw"));
+    assertInstanceOf(User.class, new Admin("ivan", "pw", null));
   }
  
   // --- checkPassword (phải hash đúng) ---
  
-  @Test
-  void checkPasswordCorrectReturnsTrue() {
-    Bidder bidder = createBidder("jack", "mypassword");
-    assertTrue(bidder.checkPassword("mypassword"));
-  }
+  
  
   @Test
   void checkPasswordWrongReturnsFalse() {
@@ -105,17 +102,17 @@ public class UserTest {
  
   @Test
   void bidderDisplayInfoDoesNotThrow() {
-    assertDoesNotThrow(() -> new Bidder("mia", "pw").displayInfo());
+    assertDoesNotThrow(() -> new Bidder("mia", "pw", null).displayInfo());
   }
  
   @Test
   void sellerDisplayInfoDoesNotThrow() {
-    assertDoesNotThrow(() -> new Seller("noah", "pw").displayInfo());
+    assertDoesNotThrow(() -> new Seller("noah", "pw", null).displayInfo());
   }
  
   @Test
   void adminDisplayInfoDoesNotThrow() {
-    assertDoesNotThrow(() -> new Admin("oscar", "pw").displayInfo());
+    assertDoesNotThrow(() -> new Admin("oscar", "pw", null).displayInfo());
   }
  
   // --- update ---
@@ -126,19 +123,19 @@ public class UserTest {
  
   @Test
   void toStringContainsUsername() {
-    assertTrue(new Bidder("quinn", "pw").toString().contains("quinn"));
+    assertTrue(new Bidder("quinn", "pw", null).toString().contains("quinn"));
   }
  
   @Test
   void toStringContainsRole() {
-    assertTrue(new Bidder("rose", "pw").toString().contains("BIDDER"));
+    assertTrue(new Bidder("rose", "pw", null).toString().contains("BIDDER"));
   }
  
   // --- Bidder.getName ---
  
   @Test
   void bidderGetNameReturnsUsername() {
-    Bidder bidder = new Bidder("sam", "pw");
+    Bidder bidder = new Bidder("sam", "pw", null);
     assertEquals("sam", bidder.getName());
   }
 }

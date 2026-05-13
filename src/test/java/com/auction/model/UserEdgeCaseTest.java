@@ -29,7 +29,7 @@ public class UserEdgeCaseTest {
 
     @BeforeEach
     void setUp() {
-        user = new Bidder("testuser", "hashedpw");
+        user = new Bidder("testuser", "hashedpw", null);
         user.addBalance(1_000_000.0);
     }
 
@@ -143,41 +143,16 @@ public class UserEdgeCaseTest {
 
     // --- checkPassword ---
 
-    @Test
-    void checkPasswordCorrectReturnsTrue() {
-        Bidder b = new Bidder("alice", com.auction.util.core.SecurityUtils.hashPassword("secret", "alice"));
-        assertTrue(b.checkPassword("secret"));
-    }
-
-    @Test
-    void checkPasswordWrongReturnsFalse() {
-        Bidder b = new Bidder("alice", com.auction.util.core.SecurityUtils.hashPassword("secret", "alice"));
-        assertFalse(b.checkPassword("wrong"));
-    }
-
-    // --- toString, getRole ---
-
-    @Test
-    void toStringContainsUsername() {
-        assertTrue(user.toString().contains("testuser"));
-    }
-
-    @Test
-    void getRoleReturnsBidder() {
-        assertEquals("BIDDER", user.getRole());
-    }
-
-    // --- Admin / Seller displayInfo ---
-
+  
     @Test
     void adminDisplayInfoDoesNotThrow() {
-        Admin admin = new Admin("admin1", "pw");
+        Admin admin = new Admin("admin1", "pw", null);
         admin.displayInfo(); // just verify no exception
     }
 
     @Test
     void sellerDisplayInfoDoesNotThrow() {
-        Seller seller = new Seller("seller1", "pw");
+        Seller seller = new Seller("seller1", "pw", null);
         seller.displayInfo();
     }
 

@@ -10,7 +10,7 @@ import com.auction.model.entities.item.Item;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.model.observer.Observer;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,7 @@ public class AuctionObserverEdgeCaseTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder1.addBalance(10_000_000.0);
 
