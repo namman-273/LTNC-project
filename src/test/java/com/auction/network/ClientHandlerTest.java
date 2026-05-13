@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.user.Bidder;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.core.DataManager;
 
 import java.io.BufferedReader;
@@ -222,6 +222,9 @@ public class ClientHandlerTest {
   // =========================================================================
 
   
+
+ 
+
   @Test
   void handleRegisterFailsWhenPayloadTooShort() throws IOException {
     handler.handleRegister(new String[]{Protocol.CMD_REGISTER, "only_user"});
@@ -426,7 +429,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleCreateAuctionFailsForBidderRole() throws IOException {
-    userManager.register("bidder01", "pass", "BIDDER", null);
+    userManager.register("bidder01", "pass", "BIDDER", "bidder01@test.com");
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "bidder01", "pass"}, auctionService);
     readResponse();
 
@@ -453,7 +456,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleCreateAuctionSuccessForSeller() throws IOException {
-    userManager.register("seller01", "pass", "SELLER", null);
+    userManager.register("seller01", "pass", "SELLER", "seller01@test.com");
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "seller01", "pass"}, auctionService);
     readResponse();
 
@@ -505,7 +508,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleEndAuctionFailsForNonAdmin() throws IOException {
-    userManager.register("seller02", "pass", "SELLER", null);
+    userManager.register("seller02", "pass", "SELLER", "seller02@test.com");
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "seller02", "pass"}, auctionService);
     readResponse();
 
@@ -530,7 +533,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleDeleteAuctionFailsForNonAdmin() throws IOException {
-    userManager.register("bidder02", "pass", "BIDDER", null);
+    userManager.register("bidder02", "pass", "BIDDER", "bidder02@test.com");
     handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "bidder02", "pass"}, auctionService);
     readResponse();
 
