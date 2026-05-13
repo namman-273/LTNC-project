@@ -67,13 +67,13 @@ jobs:
       - name: Write job summary
         if: always()
         run: |
-          echo "## Ket qua CI — ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Kết quả CI — ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Buoc | Trang thai |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bước | Trạng thái |" >> $GITHUB_STEP_SUMMARY
           echo "|------|-----------|" >> $GITHUB_STEP_SUMMARY
           echo "| Compile | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Checkstyle (Google Style) | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
           echo "| JUnit Tests | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
           echo "| JaCoCo Coverage (>= 60%) | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Xem bao cao chi tiet trong tab **Artifacts** phia tren." >> $GITHUB_STEP_SUMMARY
+          echo "Xem báo cáo chi tiết trong tab **Artifacts** phía trên." >> $GITHUB_STEP_SUMMARY
