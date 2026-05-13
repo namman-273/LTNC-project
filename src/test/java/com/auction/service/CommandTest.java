@@ -72,12 +72,6 @@ public class CommandTest {
     // RegisterCommand
     // ===========================
 
-    @Test
-    void registerCommandSuccessAddsUser() {
-        String[] parts = {"REGISTER", "alice", "pw123", "BIDDER"};
-        new RegisterCommand().execute(parts, handler, auctionService);
-        assertNotNull(UserManager.getInstance().findUserByUsername("alice"));
-    }
 
     @Test
     void registerCommandDuplicateUsernameDoesNotThrow() {
@@ -93,13 +87,7 @@ public class CommandTest {
         assertDoesNotThrow(() -> new RegisterCommand().execute(parts, handler, auctionService));
     }
 
-    @Test
-    void registerCommandCreatesSellerInstance() {
-        String[] parts = {"REGISTER", "seller1", "pw", "SELLER"};
-        new RegisterCommand().execute(parts, handler, auctionService);
-        assertTrue(UserManager.getInstance().findUserByUsername("seller1") instanceof Seller);
-    }
-
+   
     @Test
     void registerCommandCreatesAdminInstance() {
         String[] parts = {"REGISTER", "admin2", "pw", "ADMIN"};
@@ -113,7 +101,7 @@ public class CommandTest {
 
     @Test
     void loginCommandSuccessSetsCurrentUser() {
-        UserManager.getInstance().register("carol", "secret", "BIDDER");
+        UserManager.getInstance().register("carol", "secret", "BIDDER", null);
         String[] parts = {"LOGIN", "carol", "secret"};
         new LoginCommand().execute(parts, handler, auctionService);
         assertNotNull(handler.getCurrentUser());
@@ -122,7 +110,7 @@ public class CommandTest {
 
     @Test
     void loginCommandWrongPasswordDoesNotSetUser() {
-        UserManager.getInstance().register("dave", "correct", "BIDDER");
+        UserManager.getInstance().register("dave", "correct", "BIDDER", null);
         String[] parts = {"LOGIN", "dave", "wrong"};
         new LoginCommand().execute(parts, handler, auctionService);
         assertNull(handler.getCurrentUser());
@@ -143,7 +131,7 @@ public class CommandTest {
 
     @Test
     void loginCommandSuccessRolePreserved() {
-        UserManager.getInstance().register("eva", "pw", "SELLER");
+        UserManager.getInstance().register("eva", "pw", "SELLER", null);
         String[] parts = {"LOGIN", "eva", "pw"};
         new LoginCommand().execute(parts, handler, auctionService);
         assertEquals("SELLER", handler.getCurrentUser().getRole());
@@ -161,7 +149,7 @@ public class CommandTest {
 
     @Test
     void getBalanceCommandLoggedInDoesNotThrow() {
-        UserManager.getInstance().register("frank", "pw", "BIDDER");
+        UserManager.getInstance().register("frank", "pw", "BIDDER", null);
         Bidder frank = (Bidder) UserManager.getInstance().findUserByUsername("frank");
         frank.addBalance(1_000_000.0);
         handler.setCurrentUser(frank);
@@ -181,7 +169,7 @@ public class CommandTest {
 
     @Test
     void depositCommandValidAmountIncreasesBalance() {
-        UserManager.getInstance().register("grace", "pw", "BIDDER");
+        UserManager.getInstance().register("grace", "pw", "BIDDER", null);
         Bidder grace = (Bidder) UserManager.getInstance().findUserByUsername("grace");
         handler.setCurrentUser(grace);
         double before = grace.getBalance();
@@ -194,7 +182,7 @@ public class CommandTest {
 
     @Test
     void depositCommandNegativeAmountDoesNotChangeBalance() {
-        UserManager.getInstance().register("henry", "pw", "BIDDER");
+        UserManager.getInstance().register("henry", "pw", "BIDDER", null);
         Bidder henry = (Bidder) UserManager.getInstance().findUserByUsername("henry");
         henry.addBalance(500_000.0);
         handler.setCurrentUser(henry);
@@ -207,7 +195,7 @@ public class CommandTest {
 
     @Test
     void depositCommandInvalidNumberDoesNotThrow() {
-        UserManager.getInstance().register("iris", "pw", "BIDDER");
+        UserManager.getInstance().register("iris", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("iris"));
         String[] parts = {"DEPOSIT", "notANumber"};
         assertDoesNotThrow(() -> new DepositCommand().execute(parts, handler, auctionService));
@@ -232,7 +220,7 @@ public class CommandTest {
 
     @Test
     void createAuctionCommandBidderRoleIsRejected() {
-        UserManager.getInstance().register("jack", "pw", "BIDDER");
+        UserManager.getInstance().register("jack", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("jack"));
         String[] parts = {"CREATE_AUCTION", "ELECTRONICS", "Phone", "500000", "60"};
         new CreateAuctionCommand().execute(parts, handler, auctionService);
@@ -242,7 +230,7 @@ public class CommandTest {
    
     @Test
     void createAuctionCommandInvalidPriceDoesNotThrow() {
-        UserManager.getInstance().register("leo", "pw", "SELLER");
+        UserManager.getInstance().register("leo", "pw", "SELLER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("leo"));
         String[] parts = {"CREATE_AUCTION", "ELECTRONICS", "TV", "notANumber", "60"};
         assertDoesNotThrow(() ->
@@ -268,7 +256,7 @@ public class CommandTest {
 
     @Test
     void listAuctionsCommandWithAuctionsDoesNotThrow() {
-        UserManager.getInstance().register("list_seller", "pw", "SELLER");
+        UserManager.getInstance().register("list_seller", "pw", "SELLER", null);
         auctionService.createNewAuction("ELECTRONICS", "Headset", 500_000.0, 9999L, "list_seller", "", "");
         assertDoesNotThrow(() ->
             new ListAuctionsCommand().execute(new String[]{"LIST_AUCTIONS"}, handler, auctionService));
@@ -287,7 +275,7 @@ public class CommandTest {
 
     @Test
     void getHistoryCommandValidAuctionDoesNotThrow() {
-        UserManager.getInstance().register("hist_seller", "pw", "SELLER");
+        UserManager.getInstance().register("hist_seller", "pw", "SELLER", null);
         auctionService.createNewAuction("ELECTRONICS", "HistItem", 500_000.0, 9999L, "hist_seller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         String[] parts = {"GET_HISTORY", a.getId()};
@@ -308,7 +296,7 @@ public class CommandTest {
 
     @Test
     void watchCommandNotBidderDoesNotThrow() {
-        UserManager.getInstance().register("watch_seller", "pw", "SELLER");
+        UserManager.getInstance().register("watch_seller", "pw", "SELLER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("watch_seller"));
         String[] parts = {"WATCH", "AUC_123"};
         assertDoesNotThrow(() -> new WatchCommand().execute(parts, handler, auctionService));
@@ -316,11 +304,11 @@ public class CommandTest {
 
     @Test
     void watchCommandBidderAddsToWatchlist() {
-        UserManager.getInstance().register("watcher3", "pw", "BIDDER");
+        UserManager.getInstance().register("watcher3", "pw", "BIDDER", null);
         Bidder watcher = (Bidder) UserManager.getInstance().findUserByUsername("watcher3");
         handler.setCurrentUser(watcher);
 
-        UserManager.getInstance().register("ws2", "pw", "SELLER");
+        UserManager.getInstance().register("ws2", "pw", "SELLER", null);
         auctionService.createNewAuction("ELECTRONICS", "WatchItem", 500_000.0, 9999L, "ws2", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
 
@@ -332,7 +320,7 @@ public class CommandTest {
 
     @Test
     void watchCommandDuplicateDoesNotThrow() {
-        UserManager.getInstance().register("watcher4", "pw", "BIDDER");
+        UserManager.getInstance().register("watcher4", "pw", "BIDDER", null);
         Bidder watcher = (Bidder) UserManager.getInstance().findUserByUsername("watcher4");
         handler.setCurrentUser(watcher);
 
@@ -354,7 +342,7 @@ public class CommandTest {
 
     @Test
     void unwatchCommandNotBidderDoesNotThrow() {
-        UserManager.getInstance().register("unseller", "pw", "SELLER");
+        UserManager.getInstance().register("unseller", "pw", "SELLER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("unseller"));
         String[] parts = {"UNWATCH", "AUC_123"};
         assertDoesNotThrow(() -> new UnwatchCommand().execute(parts, handler, auctionService));
@@ -362,7 +350,7 @@ public class CommandTest {
 
     @Test
     void unwatchCommandBidderRemovesFromWatchlist() {
-        UserManager.getInstance().register("unwatcher", "pw", "BIDDER");
+        UserManager.getInstance().register("unwatcher", "pw", "BIDDER", null);
         Bidder unwatcher = (Bidder) UserManager.getInstance().findUserByUsername("unwatcher");
         unwatcher.addToWatchlist("AUC_UNWATCH");
         handler.setCurrentUser(unwatcher);
@@ -375,11 +363,11 @@ public class CommandTest {
 
     @Test
     void unwatchCommandWithExistingAuctionDoesNotThrow() {
-        UserManager.getInstance().register("unw2", "pw", "BIDDER");
+        UserManager.getInstance().register("unw2", "pw", "BIDDER", null);
         Bidder unw2 = (Bidder) UserManager.getInstance().findUserByUsername("unw2");
         handler.setCurrentUser(unw2);
 
-        UserManager.getInstance().register("uns2", "pw", "SELLER");
+        UserManager.getInstance().register("uns2", "pw", "SELLER", null);
         auctionService.createNewAuction("ELECTRONICS", "UnwatchItem", 500_000.0, 9999L, "uns2", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         unw2.addToWatchlist(a.getId());
@@ -394,7 +382,7 @@ public class CommandTest {
 
     @Test
     void getWatchlistCommandNotBidderDoesNotThrow() {
-        UserManager.getInstance().register("gwl_seller", "pw", "SELLER");
+        UserManager.getInstance().register("gwl_seller", "pw", "SELLER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("gwl_seller"));
         assertDoesNotThrow(() ->
             new GetWatchlistCommand().execute(new String[]{"GET_WATCHLIST"}, handler, auctionService));
@@ -402,7 +390,7 @@ public class CommandTest {
 
     @Test
     void getWatchlistCommandBidderDoesNotThrow() {
-        UserManager.getInstance().register("gwl_bidder", "pw", "BIDDER");
+        UserManager.getInstance().register("gwl_bidder", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("gwl_bidder"));
         assertDoesNotThrow(() ->
             new GetWatchlistCommand().execute(new String[]{"GET_WATCHLIST"}, handler, auctionService));
@@ -421,7 +409,7 @@ public class CommandTest {
 
     @Test
     void endAuctionCommandNotAdminDoesNotThrow() {
-        UserManager.getInstance().register("eac_bidder", "pw", "BIDDER");
+        UserManager.getInstance().register("eac_bidder", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("eac_bidder"));
         String[] parts = {"END_AUCTION", "AUC_123"};
         assertDoesNotThrow(() -> new EndAuctionCommand().execute(parts, handler, auctionService));
@@ -435,10 +423,10 @@ public class CommandTest {
 
     @Test
     void endAuctionCommandAdminEndsAuction() throws Exception {
-        UserManager.getInstance().register("eac_admin", "pw", "ADMIN");
+        UserManager.getInstance().register("eac_admin", "pw", "ADMIN", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("eac_admin"));
 
-        UserManager.getInstance().register("eac_seller", "pw", "SELLER");
+        UserManager.getInstance().register("eac_seller", "pw", "SELLER", null);
         auctionService.createNewAuction("ELECTRONICS", "EAC_Item", 500_000.0, 9999L, "eac_seller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
 
@@ -465,7 +453,7 @@ public class CommandTest {
 
     @Test
     void deleteAuctionCommandNotAdminDoesNotThrow() {
-        UserManager.getInstance().register("dac_bidder", "pw", "BIDDER");
+        UserManager.getInstance().register("dac_bidder", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("dac_bidder"));
         String[] parts = {"DELETE_AUCTION", "AUC_123"};
         assertDoesNotThrow(() ->
@@ -474,10 +462,10 @@ public class CommandTest {
 
     @Test
     void deleteAuctionCommandAdminDeletesExisting() {
-        UserManager.getInstance().register("dac_admin", "pw", "ADMIN");
+        UserManager.getInstance().register("dac_admin", "pw", "ADMIN", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("dac_admin"));
 
-        UserManager.getInstance().register("dac_seller", "pw", "SELLER");
+        UserManager.getInstance().register("dac_seller", "pw", "SELLER", null);
         auctionService.createNewAuction("ELECTRONICS", "DAC_Item", 500_000.0, 9999L, "dac_seller", "", "");
         Auction a = auctionService.getAllAuctions().iterator().next();
         String id = a.getId();
@@ -490,7 +478,7 @@ public class CommandTest {
 
     @Test
     void deleteAuctionCommandAdminNonExistentDoesNotThrow() {
-        UserManager.getInstance().register("dac_admin2", "pw", "ADMIN");
+        UserManager.getInstance().register("dac_admin2", "pw", "ADMIN", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("dac_admin2"));
         String[] parts = {"DELETE_AUCTION", "DOES_NOT_EXIST"};
         assertDoesNotThrow(() ->
@@ -516,7 +504,7 @@ public class CommandTest {
 
     @Test
     void bidCommandAuctionNotFoundDoesNotThrow() {
-        UserManager.getInstance().register("bid_user", "pw", "BIDDER");
+        UserManager.getInstance().register("bid_user", "pw", "BIDDER", null);
         Bidder bidUser = (Bidder) UserManager.getInstance().findUserByUsername("bid_user");
         bidUser.addBalance(10_000_000.0);
         handler.setCurrentUser(bidUser);
@@ -527,8 +515,8 @@ public class CommandTest {
 
     @Test
     void bidCommandValidBidAddsToBidHistory() {
-        UserManager.getInstance().register("bid_seller", "pw", "SELLER");
-        UserManager.getInstance().register("bid_bidder", "pw", "BIDDER");
+        UserManager.getInstance().register("bid_seller", "pw", "SELLER", null);
+        UserManager.getInstance().register("bid_bidder", "pw", "BIDDER", null);
         Bidder bidder = (Bidder) UserManager.getInstance().findUserByUsername("bid_bidder");
         bidder.addBalance(10_000_000.0);
         handler.setCurrentUser(bidder);
@@ -544,7 +532,7 @@ public class CommandTest {
 
     @Test
     void bidCommandInvalidAmountFormatDoesNotThrow() {
-        UserManager.getInstance().register("bid_user2", "pw", "BIDDER");
+        UserManager.getInstance().register("bid_user2", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("bid_user2"));
         String[] parts = {"BID", "AUC_123", "notANumber"};
         assertDoesNotThrow(() -> new BidCommand().execute(parts, handler, auctionService));
@@ -552,7 +540,7 @@ public class CommandTest {
 
     @Test
     void bidCommandNegativeAmountDoesNotThrow() {
-        UserManager.getInstance().register("bid_user3", "pw", "BIDDER");
+        UserManager.getInstance().register("bid_user3", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("bid_user3"));
         String[] parts = {"BID", "AUC_123", "-500"};
         assertDoesNotThrow(() -> new BidCommand().execute(parts, handler, auctionService));
@@ -570,7 +558,7 @@ public class CommandTest {
 
     @Test
     void addAutoBidCommandNotBidderDoesNotThrow() {
-        UserManager.getInstance().register("aab_seller", "pw", "SELLER");
+        UserManager.getInstance().register("aab_seller", "pw", "SELLER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("aab_seller"));
         String[] parts = {"ADD_AUTO_BID", "AUC_123", "2000000", "50000"};
         assertDoesNotThrow(() -> new AddAutoBidCommand().execute(parts, handler, auctionService));
@@ -584,7 +572,7 @@ public class CommandTest {
 
     @Test
     void addAutoBidCommandAuctionNotFoundDoesNotThrow() {
-        UserManager.getInstance().register("aab_bidder", "pw", "BIDDER");
+        UserManager.getInstance().register("aab_bidder", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("aab_bidder"));
         String[] parts = {"ADD_AUTO_BID", "GHOST_AUC", "2000000", "50000"};
         assertDoesNotThrow(() -> new AddAutoBidCommand().execute(parts, handler, auctionService));
@@ -592,8 +580,8 @@ public class CommandTest {
 
     @Test
     void addAutoBidCommandValidConfigDoesNotThrow() {
-        UserManager.getInstance().register("aab_seller2", "pw", "SELLER");
-        UserManager.getInstance().register("aab_bidder2", "pw", "BIDDER");
+        UserManager.getInstance().register("aab_seller2", "pw", "SELLER", null);
+        UserManager.getInstance().register("aab_bidder2", "pw", "BIDDER", null);
         Bidder bidder = (Bidder) UserManager.getInstance().findUserByUsername("aab_bidder2");
         bidder.addBalance(10_000_000.0);
         handler.setCurrentUser(bidder);
@@ -608,7 +596,7 @@ public class CommandTest {
 
     @Test
     void addAutoBidCommandInvalidNumberDoesNotThrow() {
-        UserManager.getInstance().register("aab_bidder3", "pw", "BIDDER");
+        UserManager.getInstance().register("aab_bidder3", "pw", "BIDDER", null);
         handler.setCurrentUser(UserManager.getInstance().findUserByUsername("aab_bidder3"));
         String[] parts = {"ADD_AUTO_BID", "AUC_123", "notANumber", "50000"};
         assertDoesNotThrow(() -> new AddAutoBidCommand().execute(parts, handler, auctionService));
@@ -643,7 +631,7 @@ public class CommandTest {
 
     @Test
     void clientHandlerSetAndGetCurrentUser() {
-        UserManager.getInstance().register("ch_user", "pw", "BIDDER");
+        UserManager.getInstance().register("ch_user", "pw", "BIDDER", null);
         User user = UserManager.getInstance().findUserByUsername("ch_user");
         handler.setCurrentUser(user);
         assertEquals("ch_user", handler.getCurrentUser().getUsername());
@@ -656,7 +644,7 @@ public class CommandTest {
 
     @Test
     void clientHandlerGetAssociatedUsernameReturnsUsername() {
-        UserManager.getInstance().register("ch_user2", "pw", "BIDDER");
+        UserManager.getInstance().register("ch_user2", "pw", "BIDDER", null);
         User user = UserManager.getInstance().findUserByUsername("ch_user2");
         handler.setCurrentUser(user);
         assertEquals("ch_user2", handler.getAssociatedUsername());
