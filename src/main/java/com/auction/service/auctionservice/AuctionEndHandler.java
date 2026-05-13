@@ -1,9 +1,11 @@
 package com.auction.service.auctionservice;
 
+import java.util.List;
 
 import com.auction.model.entities.Auction;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.service.auctionservice.PaymentProcessor.WinnerInfo;
+import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.util.core.IDataStorage;
 
 /**
@@ -18,7 +20,7 @@ public class AuctionEndHandler {
   private final AuctionNotificationService notificationService;
   private final IDataStorage dataStorage;
 
-  public AuctionEndHandler(AuctionRepository auctionRepository, 
+  public AuctionEndHandler(AuctionRepository auctionRepository,
       AuctionScheduler scheduler,
       PaymentProcessor paymentProcessor,
       AuctionNotificationService notificationService,
@@ -59,6 +61,22 @@ public class AuctionEndHandler {
 
       // Gửi thông báo
       notificationService.notifyAuctionEnd(auction, winnerInfo);
+      // Lưu lịch sử cho tất cả người đặt giá
+      String winner = (winnerInfo != null && winnerInfo.hasWinner())
+          ? winnerInfo.getWinner().getUsername()
+          : null;
+      List<String> participants = auction.getBidHistory().stream()
+          .map(bid -> bid.getBidder().getUsername())
+          .distinct()
+          .collect(java.util.stream.Collectors.toList());
+      BidHistoryManager.getInstance().recordHistory(
+          auction.getId(),
+          auction.getItem().getItemName(),
+          auction.getCurrentPrice(),
+          java.time.LocalDateTime.now().format(
+              java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
+          winner,
+          participants);
 
       // Giải phóng tài nguyên
       auction.closeAuction();
@@ -75,15 +93,15 @@ public class AuctionEndHandler {
    */
   private boolean isTimeToEnd(Auction auction, String auctionId) {
     long now = System.currentTimeMillis();
-    
+
     if (now < auction.getEndTime()) {
       // Chưa hết giờ, lên lịch lại
       long remaining = auction.getEndTime() - now;
-      scheduler.scheduleAuctionEndWithDelay(auctionId, remaining, 
+      scheduler.scheduleAuctionEndWithDelay(auctionId, remaining,
           () -> endAuction(auctionId));
       return false;
     }
-    
+
     return true;
   }
 
@@ -91,7 +109,7 @@ public class AuctionEndHandler {
    * Kiểm tra auction đã kết thúc chưa.
    */
   private boolean isAlreadyFinished(Auction auction) {
-    return auction.getStatus() == AuctionStatus.FINISHED 
+    return auction.getStatus() == AuctionStatus.FINISHED
         || auction.getStatus() == AuctionStatus.PAID;
   }
 
@@ -108,7 +126,7 @@ public class AuctionEndHandler {
    * Log thông tin kết thúc auction.
    */
   private void logAuctionEnd(String auctionId, AuctionStatus status) {
-    System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId 
+    System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId
         + " hoàn tất. Trạng thái cuối: " + status);
   }
 }
