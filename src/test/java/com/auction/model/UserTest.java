@@ -19,15 +19,15 @@ public class UserTest {
  
   // Tạo user với password đã hash đúng cách như UserManager làm
   private static Bidder createBidder(String username, String rawPassword) {
-    return new Bidder(username, SecurityUtils.hashPassword(rawPassword, username, null));
+    return new Bidder(username, SecurityUtils.hashPassword(rawPassword, username), null);
   }
  
   private static Seller createSeller(String username, String rawPassword) {
-    return new Seller(username, SecurityUtils.hashPassword(rawPassword, username, null));
+    return new Seller(username, SecurityUtils.hashPassword(rawPassword, username), null);
   }
  
   private static Admin createAdmin(String username, String rawPassword) {
-    return new Admin(username, SecurityUtils.hashPassword(rawPassword, username, null));
+    return new Admin(username, SecurityUtils.hashPassword(rawPassword, username), null);
   }
  
   // --- role ---
@@ -85,6 +85,20 @@ public class UserTest {
   // --- checkPassword (phải hash đúng) ---
  
   
+ 
+  @Test
+  void checkPasswordWrongReturnsFalse() {
+    Bidder bidder = createBidder("kate", "correct");
+    assertFalse(bidder.checkPassword("wrong"));
+  }
+ 
+  @Test
+  void checkPasswordEmptyStringDoesNotThrow() {
+    Bidder bidder = createBidder("leo", "pw");
+    assertDoesNotThrow(() -> bidder.checkPassword(""));
+  }
+ 
+  // --- displayInfo ---
  
   @Test
   void bidderDisplayInfoDoesNotThrow() {
