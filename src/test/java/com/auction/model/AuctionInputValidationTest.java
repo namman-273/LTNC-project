@@ -32,8 +32,8 @@ public class AuctionInputValidationTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
-        UserManager.getInstance().register("bob", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
+        UserManager.getInstance().register("bob", "pw", "BIDDER", null);
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder2 = (Bidder) UserManager.getInstance().findUserByUsername("bob");
         bidder1.addBalance(10_000_000.0);
