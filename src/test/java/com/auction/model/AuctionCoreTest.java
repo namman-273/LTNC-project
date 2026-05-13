@@ -7,7 +7,7 @@ import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.model.observer.Observer;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.AuthenticationException;
 import com.auction.util.exception.InvalidBidException;
@@ -43,8 +43,8 @@ public class AuctionCoreTest {
         umField.setAccessible(true);
         umField.set(null, null);
 
-        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
-        UserManager.getInstance().register("bob",   "pw", "BIDDER", null);
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
+        UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
 
         alice = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bob   = (Bidder) UserManager.getInstance().findUserByUsername("bob");
