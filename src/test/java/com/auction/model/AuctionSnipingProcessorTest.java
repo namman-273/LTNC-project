@@ -6,8 +6,8 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.model.helpers.AuctionSnipingProcessor;
-import com.auction.service.UserManager;
+import com.auction.model.auctionhelpers.AuctionSnipingProcessor;
+import com.auction.service.usermanger.UserManager;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +39,7 @@ public class AuctionSnipingProcessorTest {
         umField.setAccessible(true);
         umField.set(null, null);
 
-        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder.addBalance(50_000_000.0);
 
