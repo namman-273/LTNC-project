@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.core.DataManager;
 
 import java.io.File;
@@ -32,7 +32,7 @@ public class DataManagerRoundtripTest {
     void setUp() throws Exception {
         cleanFiles();
         resetAllSingletons();
-        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
     }
 
     @AfterEach
