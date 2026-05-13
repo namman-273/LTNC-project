@@ -29,21 +29,21 @@ public class ModelMiscTest {
 
     @Test
     void addBalanceNaNIsIgnored() {
-        Bidder b = new Bidder("u1", "h");
+        Bidder b = new Bidder("u1", "h", null);
         b.addBalance(Double.NaN);
         assertEquals(0.0, b.getBalance(), 0.001);
     }
 
     @Test
     void addBalanceInfiniteIsIgnored() {
-        Bidder b = new Bidder("u2", "h");
+        Bidder b = new Bidder("u2", "h", null);
         b.addBalance(Double.POSITIVE_INFINITY);
         assertEquals(0.0, b.getBalance(), 0.001);
     }
 
     @Test
     void addBalanceZeroIsIgnored() {
-        Bidder b = new Bidder("u3", "h");
+        Bidder b = new Bidder("u3", "h", null);
         b.addBalance(1_000_000.0);
         b.addBalance(0.0);
         assertEquals(1_000_000.0, b.getBalance(), 0.001);
@@ -51,14 +51,14 @@ public class ModelMiscTest {
 
     @Test
     void addBalanceNegativeIsIgnored() {
-        Bidder b = new Bidder("u4", "h");
+        Bidder b = new Bidder("u4", "h", null);
         b.addBalance(-500.0);
         assertEquals(0.0, b.getBalance(), 0.001);
     }
 
     @Test
     void addBalanceOverflowCapsAtMaxSafe() {
-        Bidder b = new Bidder("u5", "h");
+        Bidder b = new Bidder("u5", "h", null);
         b.addBalance(Double.MAX_VALUE / 2);
         b.addBalance(Double.MAX_VALUE / 2); // would overflow
         assertTrue(b.getBalance() <= Double.MAX_VALUE / 2 + 1,
@@ -67,35 +67,35 @@ public class ModelMiscTest {
 
     @Test
     void deductBalanceNaNReturnsFalse() {
-        Bidder b = new Bidder("u6", "h");
+        Bidder b = new Bidder("u6", "h", null);
         b.addBalance(1_000_000.0);
         assertFalse(b.deductBalance(Double.NaN));
     }
 
     @Test
     void deductBalanceInfiniteReturnsFalse() {
-        Bidder b = new Bidder("u7", "h");
+        Bidder b = new Bidder("u7", "h", null);
         b.addBalance(1_000_000.0);
         assertFalse(b.deductBalance(Double.POSITIVE_INFINITY));
     }
 
     @Test
     void deductBalanceZeroReturnsFalse() {
-        Bidder b = new Bidder("u8", "h");
+        Bidder b = new Bidder("u8", "h", null);
         b.addBalance(1_000_000.0);
         assertFalse(b.deductBalance(0.0));
     }
 
     @Test
     void deductBalanceNegativeReturnsFalse() {
-        Bidder b = new Bidder("u9", "h");
+        Bidder b = new Bidder("u9", "h", null);
         b.addBalance(1_000_000.0);
         assertFalse(b.deductBalance(-100.0));
     }
 
     @Test
     void deductBalanceExactAmountSucceeds() {
-        Bidder b = new Bidder("u10", "h");
+        Bidder b = new Bidder("u10", "h", null);
         b.addBalance(500_000.0);
         assertTrue(b.deductBalance(500_000.0));
         assertEquals(0.0, b.getBalance(), 0.001);
@@ -103,7 +103,7 @@ public class ModelMiscTest {
 
     @Test
     void deductBalanceMoreThanAvailableReturnsFalse() {
-        Bidder b = new Bidder("u11", "h");
+        Bidder b = new Bidder("u11", "h", null);
         b.addBalance(100_000.0);
         assertFalse(b.deductBalance(200_000.0));
         assertEquals(100_000.0, b.getBalance(), 0.001, "Balance must not change on failed deduct");
@@ -113,7 +113,7 @@ public class ModelMiscTest {
 
     @Test
     void concurrentAddBalanceIsThreadSafe() throws InterruptedException {
-        Bidder b = new Bidder("u-thread1", "h");
+        Bidder b = new Bidder("u-thread1", "h", null);
         int threads = 50;
         CountDownLatch latch = new CountDownLatch(1);
         Thread[] ts = new Thread[threads];
@@ -134,7 +134,7 @@ public class ModelMiscTest {
 
     @Test
     void concurrentDeductBalanceNoNegativeBalance() throws InterruptedException {
-        Bidder b = new Bidder("u-thread2", "h");
+        Bidder b = new Bidder("u-thread2", "h", null);
         b.addBalance(100_000.0);
 
         int threads = 20;
@@ -162,28 +162,28 @@ public class ModelMiscTest {
 
     @Test
     void bidTransactionGetAmount() {
-        Bidder b = new Bidder("bt1", "h");
+        Bidder b = new Bidder("bt1", "h", null);
         BidTransaction tx = new BidTransaction(b, 1_000_000.0);
         assertEquals(1_000_000.0, tx.getAmount(), 0.001);
     }
 
     @Test
     void bidTransactionGetBidder() {
-        Bidder b = new Bidder("bt2", "h");
+        Bidder b = new Bidder("bt2", "h", null);
         BidTransaction tx = new BidTransaction(b, 500_000.0);
         assertSame(b, tx.getBidder());
     }
 
     @Test
     void bidTransactionTimestampIsNotNull() {
-        Bidder b = new Bidder("bt3", "h");
+        Bidder b = new Bidder("bt3", "h", null);
         BidTransaction tx = new BidTransaction(b, 500_000.0);
         assertNotNull(tx.getTimestamp());
     }
 
     @Test
     void bidTransactionSetAmount() {
-        Bidder b = new Bidder("bt4", "h");
+        Bidder b = new Bidder("bt4", "h", null);
         BidTransaction tx = new BidTransaction(b, 500_000.0);
         tx.setAmount(999_999.0);
         assertEquals(999_999.0, tx.getAmount(), 0.001);
@@ -191,8 +191,8 @@ public class ModelMiscTest {
 
     @Test
     void bidTransactionSetBidder() {
-        Bidder b1 = new Bidder("bt5a", "h");
-        Bidder b2 = new Bidder("bt5b", "h");
+        Bidder b1 = new Bidder("bt5a", "h", null);
+        Bidder b2 = new Bidder("bt5b", "h", null);
         BidTransaction tx = new BidTransaction(b1, 500_000.0);
         tx.setBidder(b2);
         assertSame(b2, tx.getBidder());
@@ -200,7 +200,7 @@ public class ModelMiscTest {
 
     @Test
     void bidTransactionSetTimestamp() {
-        Bidder b = new Bidder("bt6", "h");
+        Bidder b = new Bidder("bt6", "h", null);
         BidTransaction tx = new BidTransaction(b, 500_000.0);
         LocalDateTime custom = LocalDateTime.of(2025, 1, 1, 12, 0);
         tx.setTimestamp(custom);
@@ -209,7 +209,7 @@ public class ModelMiscTest {
 
     @Test
     void bidTransactionToStringContainsBidderAndAmount() {
-        Bidder b = new Bidder("bt7", "h");
+        Bidder b = new Bidder("bt7", "h", null);
         BidTransaction tx = new BidTransaction(b, 1_234_567.0);
         String s = tx.toString();
         assertTrue(s.contains("bt7"), "toString must contain bidder username");
