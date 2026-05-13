@@ -1,18 +1,16 @@
 package com.auction.views.java;
 
-import com.auction.controller.ui.WatchlistController;
-
+import com.auction.controller.ui.ProfileController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-public class WatchlistView {
-
-    private final Stage stage;
+public class ProfileView {
+    private final Stage  stage;
     private final String username;
 
-    public WatchlistView(Stage stage, String username) {
+    public ProfileView(Stage stage, String username) {
         this.stage    = stage;
         this.username = username;
     }
@@ -20,18 +18,15 @@ public class WatchlistView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/fxml/WatchlistView.fxml")
-            );
+                    getClass().getResource("/com/auction/views/fxml/ProfileView.fxml"));
             Parent root = loader.load();
-
-            WatchlistController controller = loader.getController();
+            ProfileController controller = loader.getController();
             controller.setUsername(username);
-
-            stage.setTitle("Watchlist - 1388AUCTION");
+            stage.setTitle("Hồ sơ cá nhân - 1388AUCTION");
             stage.setScene(new Scene(root));
             stage.show();
         } catch (Exception e) {
-            System.err.println("Lỗi load WatchlistView: " + e.getMessage());
+            System.err.println("Lỗi load ProfileView: " + e.getMessage());
             e.printStackTrace();
         }
     }

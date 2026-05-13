@@ -8,9 +8,9 @@
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.AutoBidController"
+      fx:controller="com.auction.controller.ui.AutoBidController"
       prefWidth="480" prefHeight="420" spacing="0"
-      stylesheets="@style.css"
+      stylesheets="@../style/style.css"
       style="-fx-background-color: #F8F9FA;">
 
     <!-- HEADER -->

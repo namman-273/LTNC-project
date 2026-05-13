@@ -9,8 +9,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import com.auction.network.Protocol;
-import com.auction.util.ServerConnection;
+import com.auction.network.protocol.Protocol;
+import com.auction.network.client.ServerConnection;
 import com.auction.views.java.AuctionListView;
 
 import java.net.URL;
@@ -32,7 +32,21 @@ public class CreateAuctionController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        typeComboBox.setItems(FXCollections.observableArrayList("ART", "ELECTRONICS", "VEHICLE"));
+        typeComboBox.setItems(FXCollections.observableArrayList(
+                "ART", "ELECTRONICS", "VEHICLE", "OTHER"));
+        // Đổi cách hiển thị sang tiếng Việt để tránh chọn nhầm
+        typeComboBox.setConverter(new javafx.util.StringConverter<String>() {
+            @Override public String toString(String s) {
+                if (s == null) return "";
+                return switch (s) {
+                    case "ART"         -> "🎨 Nghệ thuật";
+                    case "ELECTRONICS" -> "⚡ Điện tử";
+                    case "VEHICLE"     -> "🚗 Xe cộ";
+                    default            -> "🏷 Khác";
+                };
+            }
+            @Override public String fromString(String s) { return s; }
+        });
         typeComboBox.getSelectionModel().selectFirst();
     }
 

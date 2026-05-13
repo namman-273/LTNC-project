@@ -27,7 +27,7 @@ public class LoginView {
   public void show() {
     try {
       FXMLLoader loader = new FXMLLoader(
-          getClass().getResource("/com/auction/views/LoginView.fxml"));
+          getClass().getResource("/com/auction/views/fxml/LoginView.fxml"));
       Parent root = loader.load();
       Scene scene = new Scene(root);
       stage.setTitle("Đăng nhập - Auction System");

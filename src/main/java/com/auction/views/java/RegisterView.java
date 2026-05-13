@@ -27,7 +27,7 @@ public class RegisterView {
   public void show() {
     try {
       FXMLLoader loader = new FXMLLoader(
-          getClass().getResource("/com/auction/views/RegisterView.fxml"));
+          getClass().getResource("/com/auction/views/fxml/RegisterView.fxml"));
       Parent root = loader.load();
       Scene scene = new Scene(root);
       stage.setTitle("Đăng ký - Auction System");

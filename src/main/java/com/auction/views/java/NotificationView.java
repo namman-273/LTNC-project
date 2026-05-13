@@ -20,7 +20,7 @@ public class NotificationView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/NotificationView.fxml"));
+                    getClass().getResource("/com/auction/views/fxml/NotificationView.fxml"));
             Parent root = loader.load();
 
             NotificationController controller = loader.getController();

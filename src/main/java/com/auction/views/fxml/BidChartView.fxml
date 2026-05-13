@@ -9,7 +9,7 @@
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.BidChartController"
+      fx:controller="com.auction.controller.ui.BidChartController"
       prefWidth="700" prefHeight="500" spacing="15"
       style="-fx-background-color: #f5f5f5;">
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>

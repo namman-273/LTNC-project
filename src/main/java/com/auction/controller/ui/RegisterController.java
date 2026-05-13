@@ -9,8 +9,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import com.auction.network.Protocol;
-import com.auction.util.ServerConnection;
+import com.auction.network.protocol.Protocol;
+import com.auction.network.client.ServerConnection;
 import com.auction.views.java.LoginView;
 
 import java.net.URL;

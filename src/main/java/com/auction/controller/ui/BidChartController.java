@@ -1,7 +1,7 @@
 package com.auction.controller.ui;
 
-import com.auction.network.Protocol;
-import com.auction.util.ServerConnection;
+import com.auction.network.protocol.Protocol;
+import com.auction.network.client.ServerConnection;
 import com.auction.views.java.BidView;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -97,7 +97,7 @@ public class BidChartController implements Initializable {
 
     private void registerPushListener() {
         pushListener = message -> {
-            if (Protocol.isNotificationType(message, Protocol.NOTI_BID_UPDATE)) {
+            if (message.startsWith(Protocol.NOTI_BID_UPDATE)) {
                 String[] parts = message.split("\\" + Protocol.SEPARATOR);
                 if (parts.length >= 3 && parts[1].equals(auctionId)) {
                     try {

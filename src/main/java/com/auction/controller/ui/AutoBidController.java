@@ -1,9 +1,9 @@
 package com.auction.controller.ui;
 
-import com.auction.model.AutoBid;
-import com.auction.network.Protocol;
-import com.auction.util.ServerConnection;
-import com.auction.util.SessionManager;
+import com.auction.model.entities.AutoBid;
+import com.auction.network.protocol.Protocol;
+import com.auction.network.client.ServerConnection;
+import com.auction.util.core.SessionManager;;
 import com.auction.views.java.BidView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

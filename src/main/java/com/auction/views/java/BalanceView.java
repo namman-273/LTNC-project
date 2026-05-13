@@ -20,7 +20,7 @@ public class BalanceView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/BalanceView.fxml")
+                    getClass().getResource("/com/auction/views/fxml/BalanceView.fxml")
             );
             Parent root = loader.load();
 

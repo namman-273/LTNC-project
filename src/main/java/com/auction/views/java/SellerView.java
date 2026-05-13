@@ -20,7 +20,7 @@ public class SellerView {
     public void show() {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/views/SellerView.fxml")
+                    getClass().getResource("/com/auction/views/fxml/SellerView.fxml")
             );
             Parent root = loader.load();
 

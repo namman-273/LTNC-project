@@ -10,9 +10,9 @@
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.BalanceController"
+      fx:controller="com.auction.controller.ui.BalanceController"
       prefWidth="520" prefHeight="620" spacing="0"
-      stylesheets="@style.css"
+      stylesheets="@../style/style.css"
       style="-fx-background-color: #F0F4FF;">
 
     <!-- HEADER -->
@@ -50,17 +50,11 @@
             <HBox spacing="10" style="-fx-padding: 10 0 0 0;">
                 <Button text="💳 Nạp tiền" onAction="#handleDeposit"
                         style="-fx-background-color: white;
-                               -fx-text-fill: #1565C0;
-                               -fx-font-weight: bold;
-                               -fx-background-radius: 8;
-                               -fx-cursor: hand;
-                               -fx-padding: 8 20;"/>
-                <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                        style="-fx-background-color: rgba(255,255,255,0.2);
-                               -fx-text-fill: white;
-                               -fx-background-radius: 8;
-                               -fx-cursor: hand;
-                               -fx-padding: 8 20;"/>
+                   -fx-text-fill: #1565C0;
+                   -fx-font-weight: bold;
+                   -fx-background-radius: 8;
+                   -fx-cursor: hand;
+                   -fx-padding: 8 20;"/>
             </HBox>
         </VBox>
 

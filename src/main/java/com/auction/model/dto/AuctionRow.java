@@ -42,6 +42,7 @@ public class AuctionRow {
 
   public String getStartingPriceFormatted() {
     return String.format("%,.0f VND", startingPrice);
+
   }
 
   public String getId() {

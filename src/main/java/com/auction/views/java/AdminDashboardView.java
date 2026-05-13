@@ -20,7 +20,7 @@ public class AdminDashboardView {
   public void show() {
     try {
       FXMLLoader loader = new FXMLLoader(
-          getClass().getResource("/com/auction/views/AdminDashboardView.fxml"));
+          getClass().getResource("/com/auction/views/fxml/AdminDashboardView.fxml"));
       Parent root = loader.load();
 
       AdminDashboardController controller = loader.getController();
