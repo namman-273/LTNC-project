@@ -172,14 +172,12 @@
                     <failOnViolation>true</failOnViolation>
                     <violationSeverity>error</violationSeverity>
                     <linkXRef>false</linkXRef>
-                    <!-- Bỏ qua file generated, test và JavaFX controller/view -->
+                    <!-- Bỏ qua file generated, test, entry point và JavaFX UI -->
                     <excludes>
                         **/generated/**/*,
                         **/*Test.java,
                         **/*Tests.java,
-                        **/views/**/*,
-                        **/controllers/**/*,
-                        **/MainApp.java,
+                        **/util/ui/**/*,
                         **/Main.java
                     </excludes>
                 </configuration>
@@ -215,6 +213,18 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <excludes>
+                                <!--
+                                    Loại trừ entry point và JavaFX UI utilities
+                                    khỏi report vì chúng cần màn hình thật.
+                                    controller/command/ và controller/network/ là
+                                    Command Pattern phía Server → vẫn tính coverage.
+                                -->
+                                <exclude>Main.class</exclude>
+                                <exclude>com/auction/util/ui/**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                     <!-- Bước 3: Kiểm tra ngưỡng coverage — FAIL nếu < 60% -->
                     <execution>
@@ -237,15 +247,14 @@
                                 </rule>
                             </rules>
                             <!--
-                                Loại trừ các class JavaFX (Controller/View/MainApp)
-                                khỏi tính coverage vì chúng cần màn hình thật để test.
-                                Logic nghiệp vụ (model/service/util) vẫn bị tính.
+                                Loại trừ entry point và JavaFX UI utilities
+                                khỏi ngưỡng 60% vì chúng cần màn hình thật để test.
+                                controller/command/ và controller/network/ là
+                                Command Pattern phía Server → vẫn tính coverage.
                             -->
                             <excludes>
-                                <exclude>com/auction/MainApp.class</exclude>
-                                <exclude>com/auction/Main.class</exclude>
-                                <exclude>com/auction/views/**</exclude>
-                                <exclude>com/auction/controllers/**</exclude>
+                                <exclude>Main.class</exclude>
+                                <exclude>com/auction/util/ui/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
