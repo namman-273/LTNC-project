@@ -2,7 +2,7 @@ package com.auction.controller.command;
 
 import com.auction.controller.network.ClientHandler;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
+import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
 public class DepositCommand implements ClientCommand {

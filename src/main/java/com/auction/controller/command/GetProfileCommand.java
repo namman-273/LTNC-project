@@ -3,7 +3,7 @@ package com.auction.controller.command;
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.user.User;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
+import com.auction.service.auctionservice.AuctionService;
 
 public class GetProfileCommand implements ClientCommand {
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {

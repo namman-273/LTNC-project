@@ -2,7 +2,7 @@ package com.auction.controller.command;
 
 import com.auction.model.dto.BidHistoryEntry;
 import com.auction.model.entities.user.User;
-import com.auction.service.AuctionService;
+import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.controller.network.ClientHandler;
 import com.auction.network.protocol.Protocol;
