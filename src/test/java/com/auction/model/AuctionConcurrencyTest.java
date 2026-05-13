@@ -40,8 +40,8 @@ public class AuctionConcurrencyTest {
         umField.setAccessible(true);
         umField.set(null, null);
  
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
-        UserManager.getInstance().register("bob", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
+        UserManager.getInstance().register("bob", "pw", "BIDDER", null);
  
         Item item = new Electronics("item-c", "Laptop", STARTING_PRICE);
         auction = new Auction("auction-c", item, DURATION, null);
