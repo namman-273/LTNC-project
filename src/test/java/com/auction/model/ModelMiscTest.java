@@ -7,7 +7,7 @@ import com.auction.model.entities.item.Art;
 import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.item.Vehicle;
 import com.auction.model.entities.user.Bidder;
-import com.auction.model.helpers.AuctionHelperFactory;
+import com.auction.model.auctionhelpers.AuctionHelperFactory;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;
