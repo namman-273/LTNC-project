@@ -5,7 +5,7 @@ import com.auction.model.entities.Auction;
 public class AuctionRow {
   private final String id;
   private final String itemName;
-  private final double currentPrice;F
+  private final double currentPrice;
   private final String status;
   private final long endTime;
   private final String sellerId;
