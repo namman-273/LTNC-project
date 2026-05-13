@@ -1,6 +1,5 @@
 package com.auction.service.auctionservice;
 
-
 import com.auction.model.entities.Auction;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.PaymentProcessor.WinnerInfo;
@@ -19,21 +18,24 @@ public class AuctionNotificationService {
       return;
     }
 
-    String message = buildEndMessage(auction.getId(), winnerInfo);
+    String message = buildEndMessage(auction, winnerInfo);
     auction.notifyAllParticipants(message, null);
   }
 
   /**
    * Build message thông báo kết thúc auction.
    */
-  private String buildEndMessage(String auctionId, WinnerInfo winnerInfo) {
+  private String buildEndMessage(Auction auction, WinnerInfo winnerInfo) {
+    String auctionId = auction.getId();
+
     if (winnerInfo != null && winnerInfo.hasWinner()) {
       return Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
           + Protocol.SEPARATOR + "Winner:" + winnerInfo.getWinner().getUsername()
-          + Protocol.SEPARATOR + "Bid:" + winnerInfo.getWinningPrice() + "$";
+          + Protocol.SEPARATOR + "Bid:" + winnerInfo.getWinningPrice();
     } else {
       return Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
-          + Protocol.SEPARATOR + "No winner";
+          + Protocol.SEPARATOR + "No winner"
+          + Protocol.SEPARATOR + "Bid:" + auction.getCurrentPrice();
     }
   }
 
