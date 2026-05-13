@@ -43,8 +43,8 @@ public class AuctionCoreTest {
         umField.setAccessible(true);
         umField.set(null, null);
 
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
-        UserManager.getInstance().register("bob",   "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
+        UserManager.getInstance().register("bob",   "pw", "BIDDER", null);
 
         alice = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bob   = (Bidder) UserManager.getInstance().findUserByUsername("bob");
