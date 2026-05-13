@@ -32,7 +32,7 @@ public class DataManagerRoundtripTest {
     void setUp() throws Exception {
         cleanFiles();
         resetAllSingletons();
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
     }
 
     @AfterEach
