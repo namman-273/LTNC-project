@@ -40,6 +40,10 @@ public class AuctionRow {
     return startingPrice;
   }
 
+  public String getStartingPriceFormatted() {
+    return String.format("%,.0f VND", startingPrice);
+  }
+
   public String getId() {
     return id;
   }

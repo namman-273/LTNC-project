@@ -7,7 +7,7 @@ public class BidHistoryEntry implements Serializable {
   private String auctionId;
   private String itemName;
   private double finalPrice;
-  private String result; // 
+  private String result; //
   private String endTime;
 
   public BidHistoryEntry(String auctionId, String itemName, double finalPrice, String result, String endTime) {
@@ -17,5 +17,25 @@ public class BidHistoryEntry implements Serializable {
     this.result = result;
     this.endTime = endTime;
   }
+
   // Getters để GSON serialize
+  public String getAuctionId() {
+    return auctionId;
+  }
+
+  public String getItemName() {
+    return itemName;
+  }
+
+  public double getFinalPrice() {
+    return finalPrice;
+  }
+
+  public String getResult() {
+    return result;
+  }
+
+  public String getEndTime() {
+    return endTime;
+  }
 }
