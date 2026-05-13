@@ -10,8 +10,5 @@ public class Admin extends User {
     super(username, password, "ADMIN", email);
   }
 
-  @Override
-  public void displayInfo() {
-    System.out.println("[com.auction.model.Admin] ID: " + id + ", Name: " + username);
-  }
+ 
 }

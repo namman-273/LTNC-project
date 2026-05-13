@@ -4,7 +4,7 @@ import com.auction.controller.command.*;
 import com.auction.model.entities.user.User;
 import com.auction.model.observer.AuctionParticipant;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
+import com.auction.service.auctionservice.AuctionService;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com.auction.model.helpers;
+package com.auction.model.auctionhelpers;
 
 import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;

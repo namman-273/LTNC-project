@@ -18,10 +18,7 @@ public class Bidder extends User {
 
   }
 
-  @Override
-  public void displayInfo() {
-    System.out.println("[com.auction.model.Bidder] ID: " + id + ", Name: " + username);
-  }
+  
 
   public String getName() {
     return username;

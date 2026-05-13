@@ -2,8 +2,8 @@ package com.auction.controller.command;
 
 import com.auction.model.entities.user.User;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.usermanger.UserManager;
 import com.auction.controller.network.ClientHandler;
 
 public class ChangePasswordCommand implements ClientCommand {
