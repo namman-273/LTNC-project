@@ -11,11 +11,13 @@ public class AuctionRow {
   private final String sellerId;
   private final String description;
   private final String imageUrl;
+  private final String itemType;
+  private final double startingPrice;
 
   public AuctionRow(Auction a) {
     this.id = a.getId();
     this.endTime = a.getEndTime();
-    this.itemName = a.getItem().getItemName();
+    this.itemName = a.getItem().getItemName() != null ? a.getItem().getItemName() : "---";
     this.currentPrice = a.getCurrentPrice();
     this.status = a.getStatus().toString();
     String rawSellerId = a.getSellerId();
@@ -25,6 +27,9 @@ public class AuctionRow {
 
     this.description = a.getItem().getDescription();
     this.imageUrl = a.getItem().getImageUrl();
+    this.itemType = a.getItem().getClass().getSimpleName();
+    this.startingPrice = a.getItem().getStartingPrice();
+
   }
 
   public String getId() {
