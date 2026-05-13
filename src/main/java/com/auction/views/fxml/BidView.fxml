@@ -243,6 +243,8 @@
                                        -fx-font-size: 15px; -fx-font-weight: bold;
                                        -fx-background-radius: 10; -fx-cursor: hand;
                                        -fx-effect: dropshadow(gaussian, rgba(220,38,38,0.35), 8, 0, 0, 3);"/>
+                        <Label fx:id="messageLabel" text=""
+                               style="-fx-font-size: 12px; -fx-min-height: 18px;"/>
                     </VBox>
 
                     <!-- Tính năng nâng cao -->

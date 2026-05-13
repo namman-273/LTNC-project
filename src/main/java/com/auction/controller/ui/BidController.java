@@ -60,6 +60,7 @@ public class BidController implements Initializable {
     @FXML private ImageView  productImage;
     @FXML private VBox       imagePlaceholder;
     @FXML private VBox       descriptionBox;
+    @FXML private Label      messageLabel;
     @FXML private Label      descriptionLabel;
 
     // ── MỚI: Chi tiết sản phẩm toggle ────────────────────────────────────────
@@ -235,10 +236,20 @@ public class BidController implements Initializable {
             sellerLabel.setText(sellerId);
         }
 
-        // Ảnh
+        // Ảnh — hỗ trợ cả URL lẫn base64 data:image/...
         if (imageUrl != null && !imageUrl.isEmpty() && productImage != null) {
             try {
-                javafx.scene.image.Image img = new javafx.scene.image.Image(imageUrl, true);
+                javafx.scene.image.Image img;
+                if (imageUrl.startsWith("data:image")) {
+                    // base64 — decode thành byte array rồi load
+                    String base64 = imageUrl.substring(imageUrl.indexOf(",") + 1);
+                    byte[] bytes = java.util.Base64.getDecoder().decode(base64);
+                    img = new javafx.scene.image.Image(
+                            new java.io.ByteArrayInputStream(bytes));
+                } else {
+                    // URL thường
+                    img = new javafx.scene.image.Image(imageUrl, true);
+                }
                 productImage.setImage(img);
                 productImage.setVisible(true);
                 productImage.setManaged(true);
@@ -251,8 +262,9 @@ public class BidController implements Initializable {
             }
         }
 
-        // Mô tả
-        if (description != null && !description.isEmpty()) {
+        // Mô tả — chỉ hiện nếu không phải base64
+        if (description != null && !description.isEmpty()
+                && !description.startsWith("data:image")) {
             if (descriptionLabel != null) descriptionLabel.setText(description);
             if (descriptionBox != null) {
                 descriptionBox.setVisible(true);
@@ -601,8 +613,20 @@ public class BidController implements Initializable {
         } catch (NumberFormatException e) { return raw; }
     }
 
-    private void showError(String msg)   { ToastManager.show(ToastManager.Type.DANGER,  msg); }
-    private void showSuccess(String msg) { ToastManager.show(ToastManager.Type.SUCCESS, msg); }
+    private void showError(String msg) {
+        ToastManager.show(ToastManager.Type.DANGER, msg);
+        if (messageLabel != null) {
+            messageLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px;");
+            messageLabel.setText(msg);
+        }
+    }
+    private void showSuccess(String msg) {
+        ToastManager.show(ToastManager.Type.SUCCESS, msg);
+        if (messageLabel != null) {
+            messageLabel.setStyle("-fx-text-fill: #16A34A; -fx-font-size: 12px;");
+            messageLabel.setText(msg);
+        }
+    }
     private void showInfo(String msg)    { ToastManager.show(ToastManager.Type.INFO,    msg); }
     private void showWarning(String msg) { ToastManager.show(ToastManager.Type.WARNING, msg); }
 }
