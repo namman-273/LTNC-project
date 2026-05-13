@@ -12,8 +12,5 @@ public class Seller extends User {
 
   }
 
-  @Override
-  public void displayInfo() {
-    System.out.println("[com.auction.model.Seller] ID: " + id + ", Name: " + username);
-  }
+  
 }

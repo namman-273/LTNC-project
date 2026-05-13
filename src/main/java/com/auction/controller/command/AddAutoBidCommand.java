@@ -4,7 +4,7 @@ import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.Bidder;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.AuctionService;
+import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
 public class AddAutoBidCommand implements ClientCommand {

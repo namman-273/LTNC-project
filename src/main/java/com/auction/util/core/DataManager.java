@@ -3,8 +3,10 @@ package com.auction.util.core;
 import com.auction.model.dto.BidHistoryEntry;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.User;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.bidhistorymanager.BidHistoryManager;
+import com.auction.service.usermanger.UserManager;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
