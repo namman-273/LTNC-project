@@ -11,7 +11,7 @@
 
     <!-- ===== PROJECT INFO ===== -->
     <name>Online Auction System</name>
-    <description>Hệ thống đấu giá trực tuyến – Bài tập lớn Lập trình nâng cao 2026</description>
+    <description>Hệ thống đấu giá trực tuyến – Bài tập lớn Lập trình nâng cao </description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -61,22 +61,6 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
-        </dependency>
-
-        <!--
-            [THÊM MỚI] Logging — SLF4J + Logback.
-            Dùng Logger thay vì System.out.println giúp tắt log dễ dàng,
-            có level (DEBUG/INFO/WARN/ERROR) và không bị Checkstyle cảnh báo.
-        -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.5.6</version>
         </dependency>
 
         <!-- JUnit 5 — chỉ dùng trong phạm vi test -->
@@ -178,7 +162,7 @@
                         **/*Test.java,
                         **/*Tests.java,
                         **/views/**/*,
-                        **/controllers/**/*,
+                        **/controller/ui/**,
                         **/MainApp.java,
                         **/Main.java
                     </excludes>
@@ -245,7 +229,7 @@
                                 <exclude>com/auction/MainApp.class</exclude>
                                 <exclude>com/auction/Main.class</exclude>
                                 <exclude>com/auction/views/**</exclude>
-                                <exclude>com/auction/controllers/**</exclude>
+                                <exclude>com/auction/controller/ui/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
