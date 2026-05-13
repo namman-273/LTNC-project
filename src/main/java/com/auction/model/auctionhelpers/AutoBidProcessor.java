@@ -1,9 +1,9 @@
-package com.auction.model.helpers;
+package com.auction.model.auctionhelpers;
 
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.AutoBid;
 import com.auction.model.entities.user.User;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
 
 import java.util.PriorityQueue;

@@ -21,7 +21,7 @@ public class BidTransactionTest {
  
   @BeforeEach
   void setUp() {
-    bidder = new Bidder("alice", "pw");
+    bidder = new Bidder("alice", "pw", null);
     transaction = new BidTransaction(bidder, AMOUNT);
   }
  
@@ -49,7 +49,7 @@ public class BidTransactionTest {
  
   @Test
   void setBidderUpdatesCorrectly() {
-    Bidder newBidder = new Bidder("bob", "pw");
+    Bidder newBidder = new Bidder("bob", "pw", null);
     transaction.setBidder(newBidder);
     assertEquals(newBidder, transaction.getBidder());
   }

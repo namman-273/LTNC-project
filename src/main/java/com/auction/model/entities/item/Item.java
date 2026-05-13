@@ -3,18 +3,22 @@ package com.auction.model.entities.item;
 import com.auction.model.entities.Entity;
 
 /**
- * .
- */
+ *  * .
+ *  
+ */
 public abstract class Item extends Entity {
   protected String itemName;
   private double startingPrice;
+  private String imageUrl;
+  private String description;
   private volatile double currentPrice;
   public String highestBidder;
   private static final long serialVersionUID = 1L;
 
   /**
- * constructor.
- */
+   *  * constructor.
+   *  
+   */
   public Item(String id, String itemName, double startingPrice) {
     super(id);
     this.itemName = itemName;
@@ -45,5 +49,21 @@ public abstract class Item extends Entity {
 
   public synchronized void setHighestBidder(String highestBidder) {
     this.highestBidder = highestBidder;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public String getImageUrl() {
+    return imageUrl;
+  }
+
+  public void setImageUrl(String imageUrl) {
+    this.imageUrl = imageUrl;
   }
 }

@@ -1,7 +1,9 @@
 package com.auction.model.entities.user;
 
+import java.text.SimpleDateFormat;
 import com.auction.model.entities.Entity;
 import com.auction.util.core.SecurityUtils;
+import java.util.Date;
 
 /**
  *  * .
@@ -13,6 +15,8 @@ public abstract class User extends Entity {
   private String role; // "ADMIN", "SELLER", hoặc "BIDDER"
   private static final long serialVersionUID = 1L;
   private double balance;
+  private String email;
+  private String joinDate;
 
   // LOCK RIÊNG: Đảm bảo mọi giao dịch nạp/rút không bị xen kẽ (Atomic Swap)
   private transient Object balanceLock = new Object();
@@ -21,24 +25,44 @@ public abstract class User extends Entity {
    *  * .
    *  
    */
-  public User(String username, String password, String role) {
+  public User(String username, String password, String role, String email) {
     super(username);
     this.username = username;
-    this.password = password;
+    this.password = SecurityUtils.hashPassword(password, username);
     this.role = role;
     this.balance = 0.0;
+    this.email = email;
+    this.joinDate = getCurrentDate();
   }
 
   public String getUsername() {
     return username;
   }
 
-  public String getPassword() {
-    return password;
+  public void setPassword(String rawPassword) {
+    if (rawPassword != null && !rawPassword.isEmpty()) {
+      this.password = SecurityUtils.hashPassword(rawPassword, this.username);
+    }
+  }
+
+  private String getCurrentDate() {
+    return new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+  }
+
+  public String getJoinDate() {
+    return (joinDate != null) ? joinDate : "N/A";
   }
 
   public String getRole() {
     return role;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
   }
 
   public boolean checkPassword(String inputPassword) {

@@ -19,7 +19,7 @@ public class UserBalanceTest {
 
     @BeforeEach
     void setUp() {
-        bidder = new Bidder("testuser", "pw");
+        bidder = new Bidder("testuser", "pw", null);
     }
 
     // --- addBalance ---
@@ -134,6 +134,6 @@ public class UserBalanceTest {
 
     @Test
     void initialBalanceIsZero() {
-        assertEquals(0.0, new Bidder("fresh", "pw").getBalance(), 0.001);
+        assertEquals(0.0, new Bidder("fresh", "pw", null).getBalance(), 0.001);
     }
 }

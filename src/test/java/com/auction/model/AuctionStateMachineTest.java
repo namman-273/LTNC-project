@@ -8,7 +8,7 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuctionClosedException;
 
 import java.lang.reflect.Field;
@@ -28,7 +28,7 @@ public class AuctionStateMachineTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder1.addBalance(10_000_000.0);
     }

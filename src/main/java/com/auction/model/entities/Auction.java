@@ -1,13 +1,14 @@
 package com.auction.model.entities;
 
+import com.auction.model.auctionhelpers.AuctionFinancialProcessor;
+import com.auction.model.auctionhelpers.AuctionHelperFactory;
+import com.auction.model.auctionhelpers.AuctionNotifier;
+import com.auction.model.auctionhelpers.AuctionSnipingProcessor;
+import com.auction.model.auctionhelpers.AuctionValidator;
+import com.auction.model.auctionhelpers.AutoBidProcessor;
 import com.auction.model.entities.item.Item;
 import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.model.helpers.AuctionFinancialProcessor;
-import com.auction.model.helpers.AuctionNotifier;
-import com.auction.model.helpers.AuctionSnipingProcessor;
-import com.auction.model.helpers.AuctionValidator;
-import com.auction.model.helpers.AutoBidProcessor;
 import com.auction.model.observer.Observer;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.AuthenticationException;
@@ -29,7 +30,7 @@ public class Auction extends Entity {
 
   private static final int THREAD_POOL_SIZE = 10;
   private static final long TWO_MINUTES_MS = 120000L; // ep kieu sang long
-  private static final long ONE_MINUTE_MS = 600000L;
+  private static final long ONE_MINUTE_MS = 60000L;
   private static final int MAX_EXTENSIONS = 3;
 
   private Item item;
@@ -92,16 +93,17 @@ public class Auction extends Entity {
       this.notifyExecutor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     }
 
+    AuctionHelperFactory factory = AuctionHelperFactory.getInstance();
     if (this.validator == null)
-      this.validator = new AuctionValidator();
+      this.validator = factory.createValidator();
     if (this.notifier == null)
-      this.notifier = new AuctionNotifier();
+      this.notifier = factory.createNotifier();
     if (this.autoBidProcessor == null)
-      this.autoBidProcessor = new AutoBidProcessor();
+      this.autoBidProcessor = factory.createAutoBidProcessor();
     if (this.financialProcessor == null)
-      this.financialProcessor = new AuctionFinancialProcessor();
+      this.financialProcessor = factory.createFinancialProcessor();
     if (this.snipingProcessor == null)
-      this.snipingProcessor = new AuctionSnipingProcessor();
+      this.snipingProcessor = factory.createSnipingProcessor();
   }
 
   // --- CÁC GETTER/SETTER QUAN TRỌNG ---

@@ -1,4 +1,4 @@
-package com.auction.exception;
+package com.auction.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -7,7 +7,7 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.AuthenticationException;
 import com.auction.util.exception.InvalidBidException;
@@ -33,7 +33,7 @@ public class ExceptionTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder.addBalance(10_000_000.0);
 
@@ -68,7 +68,7 @@ public class ExceptionTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("broke", "pw", "BIDDER");
+        UserManager.getInstance().register("broke", "pw", "BIDDER", "broke@test.com");
         Bidder brokeBidder = (Bidder) UserManager.getInstance().findUserByUsername("broke");
         // balance = 0, không thể bid 51000
         assertThrows(InvalidBidException.class,
@@ -122,7 +122,7 @@ public class ExceptionTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("seller1", "pw", "BIDDER");
+        UserManager.getInstance().register("seller1", "pw", "BIDDER", "seller1@test.com");
         Bidder seller = (Bidder) UserManager.getInstance().findUserByUsername("seller1");
         seller.addBalance(10_000_000.0);
 

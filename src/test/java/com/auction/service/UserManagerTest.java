@@ -17,6 +17,7 @@ import com.auction.model.entities.user.User;
 import com.auction.util.exception.AuthenticationException;
 
 import java.lang.reflect.Field;
+import com.auction.service.usermanger.UserManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
  
@@ -65,48 +66,48 @@ public class UserManagerTest {
  
   @Test
   void registerNewUsernameReturnsTrue() {
-    assertTrue(manager.register("alice", "pw123", "BIDDER"));
+    assertTrue(manager.register("alice", "pw123", "BIDDER", "alice@test.com"));
   }
  
   @Test
   void registerDuplicateUsernameReturnsFalse() {
-    manager.register("bob", "pw", "BIDDER");
-    assertFalse(manager.register("bob", "other", "SELLER"));
+    manager.register("bob", "pw", "BIDDER", "bob@test.com");
+    assertFalse(manager.register("bob", "other", "SELLER", "bob@test.com"));
   }
  
   @Test
   void registerRoleAdminCreatesAdminInstance() {
-    manager.register("newadmin", "pw", "ADMIN");
+    manager.register("newadmin", "pw", "ADMIN", "newadmin@test.com");
     assertInstanceOf(Admin.class, manager.findUserByUsername("newadmin"));
   }
  
   @Test
   void registerRoleSellerCreatesSellerInstance() {
-    manager.register("seller1", "pw", "SELLER");
+    manager.register("seller1", "pw", "SELLER", "seller1@test.com");
     assertInstanceOf(Seller.class, manager.findUserByUsername("seller1"));
   }
  
   @Test
   void registerRoleBidderCreatesBidderInstance() {
-    manager.register("bidder1", "pw", "BIDDER");
+    manager.register("bidder1", "pw", "BIDDER", "bidder1@test.com");
     assertInstanceOf(Bidder.class, manager.findUserByUsername("bidder1"));
   }
  
   @Test
   void registerUnknownRoleCreatesBidderByDefault() {
-    manager.register("guest1", "pw", "GUEST");
+    manager.register("guest1", "pw", "GUEST", "guest1@test.com");
     assertInstanceOf(Bidder.class, manager.findUserByUsername("guest1"));
   }
  
   @Test
   void registerRoleCaseInsensitiveSellerLowercase() {
-    manager.register("seller2", "pw", "seller");
+    manager.register("seller2", "pw", "seller", "seller2@test.com");
     assertInstanceOf(Seller.class, manager.findUserByUsername("seller2"));
   }
  
   @Test
   void registerRoleCaseInsensitiveAdminLowercase() {
-    manager.register("admin2", "pw", "admin");
+    manager.register("admin2", "pw", "admin", "admin2@test.com");
     assertInstanceOf(Admin.class, manager.findUserByUsername("admin2"));
   }
  
@@ -114,13 +115,13 @@ public class UserManagerTest {
  
   @Test
   void loginCorrectPasswordReturnsUser() throws Exception {
-    manager.register("carol", "secret", "BIDDER");
+    manager.register("carol", "secret", "BIDDER", "carol@test.com");
     assertNotNull(manager.login("carol", "secret"));
   }
  
   @Test
   void loginCorrectPasswordReturnsCorrectUsername() throws Exception {
-    manager.register("dave", "pw", "SELLER");
+    manager.register("dave", "pw", "SELLER", "dave@test.com");
     User user = manager.login("dave", "pw");
     assertEquals("dave", user.getUsername());
   }
@@ -135,7 +136,7 @@ public class UserManagerTest {
  
   @Test
   void loginWrongPasswordThrowsAuthenticationException() {
-    manager.register("eve", "correct", "BIDDER");
+    manager.register("eve", "correct", "BIDDER", "eve@test.com");
     assertThrows(
         AuthenticationException.class,
         () -> manager.login("eve", "wrong"));
@@ -152,7 +153,7 @@ public class UserManagerTest {
  
   @Test
   void findUserByUsernameExistingReturnsUser() {
-    manager.register("frank", "pw", "BIDDER");
+    manager.register("frank", "pw", "BIDDER", "frank@test.com");
     assertNotNull(manager.findUserByUsername("frank"));
   }
  
@@ -170,7 +171,7 @@ public class UserManagerTest {
  
   @Test
   void getUsersContainsRegisteredUser() {
-    manager.register("grace", "pw", "BIDDER");
+    manager.register("grace", "pw", "BIDDER", "grace@test.com");
     assertTrue(manager.getUsers().containsKey("grace"));
   }
  
