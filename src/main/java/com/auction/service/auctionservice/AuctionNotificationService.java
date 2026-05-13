@@ -35,7 +35,7 @@ public class AuctionNotificationService {
     } else {
       return Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + auctionId
           + Protocol.SEPARATOR + "No winner"
-          + Protocol.SEPARATOR + "Bid:" + auction.getCurrentPrice() ;
+          + Protocol.SEPARATOR + "Bid:" + auction.getCurrentPrice();
     }
   }
 
