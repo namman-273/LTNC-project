@@ -8,8 +8,8 @@ import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.entities.user.Seller;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.model.helpers.AuctionFinancialProcessor;
-import com.auction.service.UserManager;
+import com.auction.model.auctionhelpers.AuctionFinancialProcessor;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
 
 import java.lang.reflect.Field;
@@ -41,9 +41,9 @@ public class AuctionFinancialProcessorTest {
         umField.setAccessible(true);
         umField.set(null, null);
 
-        UserManager.getInstance().register("seller", "pw", "SELLER", null);
-        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
-        UserManager.getInstance().register("bob", "pw", "BIDDER", null);
+        UserManager.getInstance().register("seller", "pw", "SELLER", "seller@test.com");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
+        UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
 
         seller = (Seller) UserManager.getInstance().findUserByUsername("seller");
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
