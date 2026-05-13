@@ -39,7 +39,7 @@ public class AuctionSnipingProcessorTest {
         umField.setAccessible(true);
         umField.set(null, null);
 
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder.addBalance(50_000_000.0);
 
