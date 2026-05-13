@@ -36,6 +36,10 @@ public class SellerController implements Initializable {
 
     @FXML private Label welcomeLabel;
     @FXML private Label statsLabel;
+    @FXML private Label statTotal;
+    @FXML private Label statOpen;
+    @FXML private Label statFinished;
+    @FXML private Label statRevenue;
     @FXML private TableView<AuctionRow> auctionTable;
     @FXML private TableColumn<AuctionRow, String> idCol;
     @FXML private TableColumn<AuctionRow, String> nameCol;
@@ -49,6 +53,7 @@ public class SellerController implements Initializable {
     private final ObservableList<String> historyData = FXCollections.observableArrayList();
     private String username;
     private Consumer<String> pushListener;
+    private Timeline autoRefreshTimeline;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -56,8 +61,7 @@ public class SellerController implements Initializable {
                             java.time.LocalDateTime.parse(json.getAsString()))
             .create();
 
-    private Timeline autoRefreshTimeline;
-
+    @Override
     public void initialize(URL url, ResourceBundle rb) {
         username = SessionManager.getInstance().getUsername();
         welcomeLabel.setText("Xin chào, " + username + "!");
@@ -94,8 +98,6 @@ public class SellerController implements Initializable {
         loadMyAuctions();
         registerPushListener();
     }
-
-    // ─── Push Listener ────────────────────────────────────────────────────────
 
     private void registerPushListener() {
         pushListener = message -> {
@@ -161,10 +163,7 @@ public class SellerController implements Initializable {
         alert.show();
     }
 
-    // ─── Load data ────────────────────────────────────────────────────────────
-
     private void loadMyAuctions() {
-        statsLabel.setText("Đang tải...");
         new Thread(() -> {
             String response = ServerConnection.getInstance()
                     .sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
@@ -181,29 +180,36 @@ public class SellerController implements Initializable {
                             data.add(row);
                         }
                     }
-                    long open     = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
-                    long finished = data.stream().filter(r ->
-                            "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
+                    long open     = data.stream()
+                            .filter(r -> "OPEN".equals(r.getStatus())).count();
+                    long finished = data.stream()
+                            .filter(r -> "FINISHED".equals(r.getStatus())
+                                    || "PAID".equals(r.getStatus())).count();
+                    double revenue = data.stream()
+                            .filter(r -> "PAID".equals(r.getStatus()))
+                            .mapToDouble(AuctionRow::getCurrentPrice)
+                            .sum();
 
                     Platform.runLater(() -> {
                         auctionData.setAll(data);
-                        statsLabel.setText("Tổng: " + data.size() + " phiên  |  Đang mở: "
-                                + open + "  |  Đã kết thúc: " + finished);
+                        if (statsLabel    != null) statsLabel.setText("(" + data.size() + " phiên)");
+                        if (statTotal     != null) statTotal.setText(String.valueOf(data.size()));
+                        if (statOpen      != null) statOpen.setText(String.valueOf(open));
+                        if (statFinished  != null) statFinished.setText(String.valueOf(finished));
+                        if (statRevenue   != null) statRevenue.setText(
+                                revenue > 0 ? String.format("%,.0f VNĐ", revenue) : "---");
                     });
                 }
             } else {
-                Platform.runLater(() -> statsLabel.setText("Lỗi tải dữ liệu"));
+                Platform.runLater(() -> {
+                    if (statsLabel != null) statsLabel.setText("Lỗi tải dữ liệu");
+                });
             }
         }).start();
     }
 
-    /**
-     * FIX: Parse thủ công bằng JsonParser thay vì gson.fromJson(BidTransaction[].class).
-     * BidTransaction chứa User object lồng nhau — Gson không đọc được bidder.username
-     * → history hiển thị "---" hoặc trống hoàn toàn.
-     */
     private void loadHistory(String auctionId, String itemName) {
-        historyTitleLabel.setText("📋 Lịch sử đặt giá - " + itemName);
+        historyTitleLabel.setText("📋 Lịch sử - " + itemName);
         historyData.clear();
         historyData.add("Đang tải...");
 
@@ -230,11 +236,8 @@ public class SellerController implements Initializable {
                         historyData.add("Chưa có lịch sử đặt giá.");
                         return;
                     }
-
                     for (int i = 0; i < array.size(); i++) {
                         JsonObject obj = array.get(i).getAsJsonObject();
-
-                        // FIX: đọc bidder.username từ nested object
                         String bidder = "---";
                         if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
                             JsonObject bidderObj = obj.get("bidder").getAsJsonObject();
@@ -242,22 +245,16 @@ public class SellerController implements Initializable {
                                 bidder = bidderObj.get("username").getAsString();
                             }
                         }
-
-                        double amount = obj.has("amount")
-                                ? obj.get("amount").getAsDouble() : 0;
-
-                        historyData.add((i + 1) + ". " + bidder + "  đặt:  "
+                        double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
+                        historyData.add((i + 1) + ". " + bidder + "  →  "
                                 + String.format("%,.0f VNĐ", amount));
                     }
                 } catch (Exception e) {
-                    System.err.println("Lỗi parse history seller: " + e.getMessage());
                     historyData.add("Lỗi tải lịch sử.");
                 }
             });
         }).start();
     }
-
-    // ─── Actions ─────────────────────────────────────────────────────────────
 
     @FXML
     public void handleRefresh() {
@@ -281,18 +278,13 @@ public class SellerController implements Initializable {
         autoRefreshTimeline.play();
     }
 
-    private void stopAutoRefresh() {
-        if (autoRefreshTimeline != null) {
-            autoRefreshTimeline.stop();
-            autoRefreshTimeline = null;
-        }
-    }
-
+    @FXML
     public void handleBack() {
         if (pushListener != null) {
             ServerConnection.getInstance().removePushListener(pushListener);
             pushListener = null;
         }
+        if (autoRefreshTimeline != null) autoRefreshTimeline.stop();
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }

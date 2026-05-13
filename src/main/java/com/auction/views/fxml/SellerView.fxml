@@ -12,31 +12,24 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.SellerController"
-      prefWidth="860" prefHeight="600" spacing="0"
+      prefWidth="980" prefHeight="660" spacing="0"
       stylesheets="@../style/style.css"
-      style="-fx-background-color: #F8F9FA;">
+      style="-fx-background-color: #F5F6FA;">
 
     <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="14"
-          style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
-                 -fx-padding: 0 24; -fx-pref-height: 64;
-                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
-
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Label text="🏛️" style="-fx-font-size: 22px;"/>
-            <VBox spacing="1">
-                <Label text="HỆ THỐNG ĐẤU GIÁ"
-                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                <Label text="1388AUCTION System - Seller Dashboard"
-                       style="-fx-font-size: 9px; -fx-text-fill: #90CAF9;"/>
-            </VBox>
-        </HBox>
-
+          style="-fx-background-color: #0D47A1;
+                 -fx-padding: 0 24; -fx-pref-height: 64;">
+        <Label text="🏛️" style="-fx-font-size: 22px;"/>
+        <VBox spacing="1">
+            <Label text="HỆ THỐNG ĐẤU GIÁ"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <Label text="1388AUCTION System - Seller Dashboard"
+                   style="-fx-font-size: 9px; -fx-text-fill: #90CAF9;"/>
+        </VBox>
         <Region HBox.hgrow="ALWAYS"/>
-
         <Label fx:id="welcomeLabel" text="Xin chào!"
                style="-fx-font-size: 13px; -fx-text-fill: #E3F2FD;"/>
-
         <Button text="← Quay lại" onAction="#handleBack"
                 style="-fx-background-color: rgba(255,255,255,0.15);
                        -fx-text-fill: white; -fx-font-size: 12px;
@@ -46,61 +39,121 @@
                        -fx-padding: 6 14;"/>
     </HBox>
 
-    <!-- TOOLBAR -->
-    <HBox alignment="CENTER_LEFT" spacing="10"
-          style="-fx-background-color: white; -fx-padding: 12 24;
-                 -fx-border-color: transparent transparent #EEEEEE transparent;
+    <!-- STATS ROW -->
+    <HBox spacing="0"
+          style="-fx-background-color: white;
+                 -fx-border-color: transparent transparent #EBEBEB transparent;
                  -fx-border-width: 1;">
-
-        <VBox spacing="2">
-            <Label text="Quản lý phiên đấu giá"
-                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
-            <Label fx:id="statsLabel" text="Đang tải..."
-                   style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
+        <VBox alignment="CENTER" spacing="4" HBox.hgrow="ALWAYS"
+              style="-fx-padding: 16 0;
+                     -fx-border-color: transparent #F0F0F0 transparent transparent;
+                     -fx-border-width: 1;">
+            <Label fx:id="statTotal" text="0"
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+            <Label text="Tổng phiên"
+                   style="-fx-font-size: 10px; -fx-text-fill: #9CA3AF;"/>
         </VBox>
-
-        <Region HBox.hgrow="ALWAYS"/>
-
-        <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"
-                prefHeight="36" prefWidth="130"
-                styleClass="btn-primary"/>
+        <VBox alignment="CENTER" spacing="4" HBox.hgrow="ALWAYS"
+              style="-fx-padding: 16 0;
+                     -fx-border-color: transparent #F0F0F0 transparent transparent;
+                     -fx-border-width: 1;">
+            <Label fx:id="statOpen" text="0"
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #22C55E;"/>
+            <Label text="Đang mở"
+                   style="-fx-font-size: 10px; -fx-text-fill: #9CA3AF;"/>
+        </VBox>
+        <VBox alignment="CENTER" spacing="4" HBox.hgrow="ALWAYS"
+              style="-fx-padding: 16 0;
+                     -fx-border-color: transparent #F0F0F0 transparent transparent;
+                     -fx-border-width: 1;">
+            <Label fx:id="statFinished" text="0"
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #EF4444;"/>
+            <Label text="Đã kết thúc"
+                   style="-fx-font-size: 10px; -fx-text-fill: #9CA3AF;"/>
+        </VBox>
+        <VBox alignment="CENTER" spacing="4" HBox.hgrow="ALWAYS"
+              style="-fx-padding: 16 0;">
+            <Label fx:id="statRevenue" text="---"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #F59E0B;"/>
+            <Label text="Tổng doanh thu"
+                   style="-fx-font-size: 10px; -fx-text-fill: #9CA3AF;"/>
+        </VBox>
     </HBox>
 
-    <!-- CONTENT: bảng + lịch sử -->
+    <!-- TOOLBAR -->
+    <HBox alignment="CENTER_LEFT" spacing="10"
+          style="-fx-background-color: white; -fx-padding: 10 24;
+                 -fx-border-color: transparent transparent #EEEEEE transparent;
+                 -fx-border-width: 1;">
+        <Label text="📦 Danh sách phiên của tôi"
+               style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1F2937;"/>
+        <Label fx:id="statsLabel" text=""
+               style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="🔄 Làm mới" onAction="#handleRefresh"
+                prefHeight="34"
+                style="-fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                       -fx-font-size: 12px; -fx-background-radius: 8;
+                       -fx-cursor: hand; -fx-padding: 6 14;
+                       -fx-border-color: #E5E7EB; -fx-border-radius: 8; -fx-border-width: 1;"/>
+        <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"
+                prefHeight="34"
+                style="-fx-background-color: #1565C0; -fx-text-fill: white;
+                       -fx-font-size: 12px; -fx-font-weight: bold;
+                       -fx-background-radius: 8; -fx-cursor: hand;
+                       -fx-padding: 6 16;"/>
+    </HBox>
+
+    <!-- CONTENT -->
     <HBox spacing="16" VBox.vgrow="ALWAYS">
         <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
 
         <!-- TRÁI: bảng phiên -->
-        <VBox spacing="8" prefWidth="480" VBox.vgrow="ALWAYS">
-            <Label text="📦 Danh sách phiên của tôi"
-                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+        <VBox spacing="8" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
             <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
                        styleClass="table-view">
                 <columns>
-                    <TableColumn fx:id="idCol" text="ID Phiên" prefWidth="160"/>
-                    <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="140"/>
-                    <TableColumn fx:id="priceCol" text="Giá hiện tại" prefWidth="110"/>
-                    <TableColumn fx:id="statusCol" text="Trạng thái" prefWidth="90"/>
+                    <TableColumn fx:id="idCol" text="ID Phiên" prefWidth="170"/>
+                    <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="160"/>
+                    <TableColumn fx:id="priceCol" text="Giá hiện tại" prefWidth="120"/>
+                    <TableColumn fx:id="statusCol" text="Trạng thái" prefWidth="100"/>
                 </columns>
                 <placeholder>
-                    <Label text="Chưa có phiên nào. Nhấn Tạo phiên mới."
-                           style="-fx-text-fill: #AAAAAA;"/>
+                    <VBox alignment="CENTER" spacing="10" style="-fx-padding: 40 0;">
+                        <Label text="📦" style="-fx-font-size: 40px; -fx-opacity: 0.3;"/>
+                        <Label text="Chưa có phiên nào"
+                               style="-fx-font-size: 13px; -fx-text-fill: #9CA3AF;"/>
+                        <Label text="Nhấn Tạo phiên mới để bắt đầu"
+                               style="-fx-font-size: 11px; -fx-text-fill: #D1D5DB;"/>
+                    </VBox>
                 </placeholder>
             </TableView>
         </VBox>
 
-        <!-- PHẢI: lịch sử đặt giá -->
-        <VBox spacing="8" prefWidth="320" VBox.vgrow="ALWAYS">
+        <!-- PHẢI: lịch sử -->
+        <VBox spacing="10" prefWidth="300" VBox.vgrow="ALWAYS"
+              style="-fx-background-color: white;
+                     -fx-background-radius: 14;
+                     -fx-border-color: #EEEEEE; -fx-border-radius: 14; -fx-border-width: 0.5;
+                     -fx-padding: 16;">
             <Label fx:id="historyTitleLabel" text="📋 Lịch sử đặt giá"
-                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
-            <Label text="← Chọn một phiên để xem lịch sử"
-                   style="-fx-font-size: 11px; -fx-text-fill: #AAAAAA;"/>
+                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937;"/>
+            <Label text="← Chọn một phiên để xem"
+                   style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
             <ListView fx:id="historyList" VBox.vgrow="ALWAYS"
-                      styleClass="list-view"/>
+                      style="-fx-background-color: transparent;
+                             -fx-border-color: transparent;
+                             -fx-padding: 0;">
+                <placeholder>
+                    <VBox alignment="CENTER" spacing="8" style="-fx-padding: 30 0;">
+                        <Label text="📋" style="-fx-font-size: 32px; -fx-opacity: 0.3;"/>
+                        <Label text="Chọn phiên để xem lịch sử"
+                               style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF;"/>
+                    </VBox>
+                </placeholder>
+            </ListView>
             <Label fx:id="messageLabel" text=""
                    style="-fx-font-size: 12px;" wrapText="true"/>
         </VBox>
-
     </HBox>
-
 </VBox>
