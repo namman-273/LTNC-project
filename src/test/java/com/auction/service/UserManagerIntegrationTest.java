@@ -27,7 +27,7 @@ public class UserManagerIntegrationTest {
  
     @Test
     void registerThenLoginWithSamePasswordSucceeds() throws Exception {
-        manager.register("alice", "secret123", "BIDDER");
+        manager.register("alice", "secret123", "BIDDER", null);
  
         User user = manager.login("alice", "secret123");
  
@@ -37,7 +37,7 @@ public class UserManagerIntegrationTest {
  
     @Test
     void registerThenLoginWithDifferentPasswordFails() {
-        manager.register("bob", "correct", "BIDDER");
+        manager.register("bob", "correct", "BIDDER", null);
  
         assertThrows(AuthenticationException.class,
             () -> manager.login("bob", "wrong"));
@@ -45,7 +45,7 @@ public class UserManagerIntegrationTest {
  
     @Test
     void registerSellerThenLoginReturnsSellerRole() throws Exception {
-        manager.register("carol", "pw123", "SELLER");
+        manager.register("carol", "pw123", "SELLER", null);
  
         User user = manager.login("carol", "pw123");
  
@@ -54,7 +54,7 @@ public class UserManagerIntegrationTest {
  
     @Test
     void registerAdminThenLoginReturnsAdminRole() throws Exception {
-        manager.register("dave", "pw123", "ADMIN");
+        manager.register("dave", "pw123", "ADMIN", null);
  
         User user = manager.login("dave", "pw123");
  
@@ -63,7 +63,7 @@ public class UserManagerIntegrationTest {
  
     @Test
     void registerThenLoginWithEmptyPasswordFails() {
-        manager.register("eve", "realpass", "BIDDER");
+        manager.register("eve", "realpass", "BIDDER", null);
  
         assertThrows(AuthenticationException.class,
             () -> manager.login("eve", ""));
@@ -71,18 +71,19 @@ public class UserManagerIntegrationTest {
  
     @Test
     void registerStoresHashedNotPlainPassword() {
-        manager.register("frank", "mypassword", "BIDDER");
+        manager.register("frank", "mypassword", "BIDDER", null);
         User user = manager.findUserByUsername("frank");
  
-        org.junit.jupiter.api.Assertions.assertNotEquals("mypassword", user.getPassword(),
+        // getPassword() không public; kiểm tra hashing qua checkPassword
+        org.junit.jupiter.api.Assertions.assertTrue(user.checkPassword("mypassword"),
             "Stored password must be hashed, not plain text");
     }
  
     @Test
     void loginAfterRegisterMultipleUsersReturnsCorrectUser() throws Exception {
-        manager.register("user1", "pw1", "BIDDER");
-        manager.register("user2", "pw2", "SELLER");
-        manager.register("user3", "pw3", "ADMIN");
+        manager.register("user1", "pw1", "BIDDER", null);
+        manager.register("user2", "pw2", "SELLER", null);
+        manager.register("user3", "pw3", "ADMIN", null);
  
         User user = manager.login("user2", "pw2");
  
@@ -91,7 +92,7 @@ public class UserManagerIntegrationTest {
  
     @Test
     void loginWithWrongUsernameAfterRegisterThrows() {
-        manager.register("grace", "pw", "BIDDER");
+        manager.register("grace", "pw", "BIDDER", null);
  
         assertThrows(AuthenticationException.class,
             () -> manager.login("notgrace", "pw"));
