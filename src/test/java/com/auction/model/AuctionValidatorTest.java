@@ -164,7 +164,7 @@ public class AuctionValidatorTest {
 
     @Test
     void validBidderDoesNotThrow() {
-        Bidder b = new Bidder("user1", "hash");
+        Bidder b = new Bidder("user1", "hash", null);
         assertDoesNotThrow(() -> validator.validateAuthentication(b));
     }
 }
