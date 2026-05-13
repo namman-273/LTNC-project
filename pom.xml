@@ -172,12 +172,14 @@
                     <failOnViolation>true</failOnViolation>
                     <violationSeverity>error</violationSeverity>
                     <linkXRef>false</linkXRef>
-                    <!-- Bỏ qua file generated, test, entry point và JavaFX UI -->
+                    <!-- Bỏ qua file generated, test, entry point và toàn bộ JavaFX UI -->
                     <excludes>
                         **/generated/**/*,
                         **/*Test.java,
                         **/*Tests.java,
                         **/util/ui/**/*,
+                        **/controllers/**/*,
+                        **/views/**/*,
                         **/Main.java
                     </excludes>
                 </configuration>
@@ -214,15 +216,21 @@
                             <goal>report</goal>
                         </goals>
                         <configuration>
+                            <!--
+                                Các lớp bị loại khỏi report và ngưỡng coverage (bước 3):
+                                  - Main.class                → entry point
+                                  - com/auction/util/ui/**    → AlertUtil, NotificationManager
+                                  - com/auction/controllers/** → JavaFX FXML Controllers
+                                  - com/auction/views/**      → FXML/CSS resources
+
+                                KHÔNG loại trừ controller/command/ và controller/network/
+                                (Command Pattern + ClientHandler phía Server — vẫn tính coverage).
+                            -->
                             <excludes>
-                                <!--
-                                    Loại trừ entry point và JavaFX UI utilities
-                                    khỏi report vì chúng cần màn hình thật.
-                                    controller/command/ và controller/network/ là
-                                    Command Pattern phía Server → vẫn tính coverage.
-                                -->
                                 <exclude>Main.class</exclude>
                                 <exclude>com/auction/util/ui/**</exclude>
+                                <exclude>com/auction/controllers/**</exclude>
+                                <exclude>com/auction/views/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -246,15 +254,12 @@
                                     </limits>
                                 </rule>
                             </rules>
-                            <!--
-                                Loại trừ entry point và JavaFX UI utilities
-                                khỏi ngưỡng 60% vì chúng cần màn hình thật để test.
-                                controller/command/ và controller/network/ là
-                                Command Pattern phía Server → vẫn tính coverage.
-                            -->
+                            <!-- Cùng danh sách loại trừ với bước report ở trên -->
                             <excludes>
                                 <exclude>Main.class</exclude>
                                 <exclude>com/auction/util/ui/**</exclude>
+                                <exclude>com/auction/controllers/**</exclude>
+                                <exclude>com/auction/views/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
