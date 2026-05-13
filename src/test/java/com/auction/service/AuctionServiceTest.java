@@ -38,7 +38,7 @@ public class AuctionServiceTest {
     void setUp() throws Exception {
         resetSingletons();
         auctionService = AuctionService.getInstance();
-        UserManager.getInstance().register("defaultSeller", "pw", "SELLER");
+        UserManager.getInstance().register("defaultSeller", "pw", "SELLER", null);
     }
 
     @AfterEach
@@ -255,14 +255,14 @@ public class AuctionServiceTest {
 
     @Test
     void getWatchlistForBidderWithEmptyWatchlistReturnsEmpty() {
-        UserManager.getInstance().register("watcher", "pw", "BIDDER");
+        UserManager.getInstance().register("watcher", "pw", "BIDDER", null);
         List<Auction> result = auctionService.getWatchlistForUser("watcher");
         assertTrue(result.isEmpty());
     }
 
     @Test
     void getWatchlistForBidderWithWatchedAuctionReturnsList() {
-        UserManager.getInstance().register("watcher2", "pw", "BIDDER");
+        UserManager.getInstance().register("watcher2", "pw", "BIDDER", null);
         Bidder watcher = (Bidder) UserManager.getInstance().findUserByUsername("watcher2");
 
         auctionService.createNewAuction("ELECTRONICS", "Watched", 500_000.0, 9999L, "defaultSeller", "", "");
