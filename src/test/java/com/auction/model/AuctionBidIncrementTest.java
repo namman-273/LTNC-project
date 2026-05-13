@@ -8,7 +8,7 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.service.UserManager;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
 
 import java.lang.reflect.Field;
