@@ -35,8 +35,8 @@ public class CreateAuctionCommand implements ClientCommand {
       String imageUrl = parts[6];
 
       // Xử lý tạo mới bằng AuctionService
-      auctionService.createNewAuction(type, name, price, duration, client.getCurrentUser().getUsername(), description,
-          imageUrl);
+      auctionService.createNewAuction(type, name, price, duration,
+          client.getCurrentUser().getUsername(), description, imageUrl);
 
       // Báo thành công
       client.sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR
@@ -44,9 +44,11 @@ public class CreateAuctionCommand implements ClientCommand {
 
     } catch (NumberFormatException e) {
       // Tách riêng lỗi NumberFormat để thông báo rõ ràng hơn
-      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền hoặc thời lượng phải là một con số hợp lệ.");
+      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Giá tiền hoặc thời lượng phải là một con số hợp lệ.");
     } catch (Exception e) {
-      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Dữ liệu tạo sản phẩm không hợp lệ: " + e.getMessage());
+      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Dữ liệu tạo sản phẩm không hợp lệ: " + e.getMessage());
     }
   }
 }
