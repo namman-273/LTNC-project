@@ -41,9 +41,9 @@ public class AuctionFinancialProcessorTest {
         umField.setAccessible(true);
         umField.set(null, null);
 
-        UserManager.getInstance().register("seller", "pw", "SELLER");
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
-        UserManager.getInstance().register("bob", "pw", "BIDDER");
+        UserManager.getInstance().register("seller", "pw", "SELLER", null);
+        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
+        UserManager.getInstance().register("bob", "pw", "BIDDER", null);
 
         seller = (Seller) UserManager.getInstance().findUserByUsername("seller");
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
