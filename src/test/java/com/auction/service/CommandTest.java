@@ -29,8 +29,8 @@ import com.auction.model.entities.user.Bidder;
 import com.auction.model.entities.user.Seller;
 import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.service.AuctionService;
-import com.auction.service.UserManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.core.DataManager;
 import com.auction.util.core.SecurityUtils;
 

@@ -15,6 +15,8 @@ import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.model.observer.Observer;
 import com.auction.util.core.DataManager;
+import com.auction.service.auctionservice.AuctionService;
+import com.auction.service.usermanger.UserManager;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -38,7 +40,7 @@ public class AuctionServiceTest {
     void setUp() throws Exception {
         resetSingletons();
         auctionService = AuctionService.getInstance();
-        UserManager.getInstance().register("defaultSeller", "pw", "SELLER", null);
+        UserManager.getInstance().register("defaultSeller", "pw", "SELLER", "defaultSeller@test.com");
     }
 
     @AfterEach
@@ -255,14 +257,14 @@ public class AuctionServiceTest {
 
     @Test
     void getWatchlistForBidderWithEmptyWatchlistReturnsEmpty() {
-        UserManager.getInstance().register("watcher", "pw", "BIDDER", null);
+        UserManager.getInstance().register("watcher", "pw", "BIDDER", "watcher@test.com");
         List<Auction> result = auctionService.getWatchlistForUser("watcher");
         assertTrue(result.isEmpty());
     }
 
     @Test
     void getWatchlistForBidderWithWatchedAuctionReturnsList() {
-        UserManager.getInstance().register("watcher2", "pw", "BIDDER", null);
+        UserManager.getInstance().register("watcher2", "pw", "BIDDER", "watcher2@test.com");
         Bidder watcher = (Bidder) UserManager.getInstance().findUserByUsername("watcher2");
 
         auctionService.createNewAuction("ELECTRONICS", "Watched", 500_000.0, 9999L, "defaultSeller", "", "");
