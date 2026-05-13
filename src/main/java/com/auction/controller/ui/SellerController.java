@@ -88,6 +88,63 @@ public class SellerController implements Initializable {
 
         auctionTable.setItems(auctionData);
         historyList.setItems(historyData);
+        historyList.setCellFactory(lv -> new javafx.scene.control.ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setGraphic(null); setText(null); return; }
+
+                if (item.equals("Đang tải...") || item.equals("Chưa có lịch sử đặt giá.") || item.equals("Lỗi tải lịch sử.")) {
+                    setText(null);
+                    javafx.scene.control.Label lbl = new javafx.scene.control.Label(item);
+                    lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-padding: 8 0;");
+                    setGraphic(lbl);
+                    setStyle("-fx-background-color: transparent;");
+                    return;
+                }
+
+                // Parse "1. Duong  →  7,000,000 VNĐ"
+                String[] parts = item.split("\\.", 2);
+                String num = parts.length > 0 ? parts[0].trim() : "";
+                String rest = parts.length > 1 ? parts[1].trim() : item;
+                String[] arrowParts = rest.split("→", 2);
+                String bidder = arrowParts.length > 0 ? arrowParts[0].trim() : rest;
+                String price  = arrowParts.length > 1 ? arrowParts[1].trim() : "";
+
+                javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(10);
+                row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                row.setStyle("-fx-background-color: white; -fx-background-radius: 10;" +
+                        "-fx-border-color: #F3F4F6; -fx-border-radius: 10; -fx-border-width: 0.5;");
+
+                // Số thứ tự
+                javafx.scene.layout.StackPane numCircle = new javafx.scene.layout.StackPane();
+                numCircle.setPrefSize(28, 28);
+                numCircle.setMinSize(28, 28);
+                numCircle.setStyle("-fx-background-color: #EEF2FF; -fx-background-radius: 14;");
+                javafx.scene.control.Label numLbl = new javafx.scene.control.Label(num);
+                numLbl.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1565C0;");
+                numCircle.getChildren().add(numLbl);
+
+                // Tên bidder
+                javafx.scene.control.Label bidderLbl = new javafx.scene.control.Label(bidder);
+                bidderLbl.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937;");
+                javafx.scene.layout.HBox.setHgrow(bidderLbl, javafx.scene.layout.Priority.ALWAYS);
+                bidderLbl.setMaxWidth(Double.MAX_VALUE);
+
+                // Giá
+                javafx.scene.control.Label priceLbl = new javafx.scene.control.Label(price);
+                priceLbl.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1565C0;");
+
+                row.getChildren().addAll(numCircle, bidderLbl, priceLbl);
+
+                javafx.scene.layout.VBox outer = new javafx.scene.layout.VBox(row);
+                outer.setPadding(new javafx.geometry.Insets(0, 0, 6, 0));
+                setGraphic(outer);
+                setText(null);
+                setStyle("-fx-background-color: transparent; -fx-padding: 0;");
+            }
+        });
 
         auctionTable.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
