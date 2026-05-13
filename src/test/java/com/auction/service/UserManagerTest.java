@@ -65,48 +65,48 @@ public class UserManagerTest {
  
   @Test
   void registerNewUsernameReturnsTrue() {
-    assertTrue(manager.register("alice", "pw123", "BIDDER"));
+    assertTrue(manager.register("alice", "pw123", "BIDDER", null));
   }
  
   @Test
   void registerDuplicateUsernameReturnsFalse() {
-    manager.register("bob", "pw", "BIDDER");
-    assertFalse(manager.register("bob", "other", "SELLER"));
+    manager.register("bob", "pw", "BIDDER", null);
+    assertFalse(manager.register("bob", "other", "SELLER", null));
   }
  
   @Test
   void registerRoleAdminCreatesAdminInstance() {
-    manager.register("newadmin", "pw", "ADMIN");
+    manager.register("newadmin", "pw", "ADMIN", null);
     assertInstanceOf(Admin.class, manager.findUserByUsername("newadmin"));
   }
  
   @Test
   void registerRoleSellerCreatesSellerInstance() {
-    manager.register("seller1", "pw", "SELLER");
+    manager.register("seller1", "pw", "SELLER", null);
     assertInstanceOf(Seller.class, manager.findUserByUsername("seller1"));
   }
  
   @Test
   void registerRoleBidderCreatesBidderInstance() {
-    manager.register("bidder1", "pw", "BIDDER");
+    manager.register("bidder1", "pw", "BIDDER", null);
     assertInstanceOf(Bidder.class, manager.findUserByUsername("bidder1"));
   }
  
   @Test
   void registerUnknownRoleCreatesBidderByDefault() {
-    manager.register("guest1", "pw", "GUEST");
+    manager.register("guest1", "pw", "GUEST", null);
     assertInstanceOf(Bidder.class, manager.findUserByUsername("guest1"));
   }
  
   @Test
   void registerRoleCaseInsensitiveSellerLowercase() {
-    manager.register("seller2", "pw", "seller");
+    manager.register("seller2", "pw", "seller", null);
     assertInstanceOf(Seller.class, manager.findUserByUsername("seller2"));
   }
  
   @Test
   void registerRoleCaseInsensitiveAdminLowercase() {
-    manager.register("admin2", "pw", "admin");
+    manager.register("admin2", "pw", "admin", null);
     assertInstanceOf(Admin.class, manager.findUserByUsername("admin2"));
   }
  
@@ -114,13 +114,13 @@ public class UserManagerTest {
  
   @Test
   void loginCorrectPasswordReturnsUser() throws Exception {
-    manager.register("carol", "secret", "BIDDER");
+    manager.register("carol", "secret", "BIDDER", null);
     assertNotNull(manager.login("carol", "secret"));
   }
  
   @Test
   void loginCorrectPasswordReturnsCorrectUsername() throws Exception {
-    manager.register("dave", "pw", "SELLER");
+    manager.register("dave", "pw", "SELLER", null);
     User user = manager.login("dave", "pw");
     assertEquals("dave", user.getUsername());
   }
@@ -135,7 +135,7 @@ public class UserManagerTest {
  
   @Test
   void loginWrongPasswordThrowsAuthenticationException() {
-    manager.register("eve", "correct", "BIDDER");
+    manager.register("eve", "correct", "BIDDER", null);
     assertThrows(
         AuthenticationException.class,
         () -> manager.login("eve", "wrong"));
@@ -152,7 +152,7 @@ public class UserManagerTest {
  
   @Test
   void findUserByUsernameExistingReturnsUser() {
-    manager.register("frank", "pw", "BIDDER");
+    manager.register("frank", "pw", "BIDDER", null);
     assertNotNull(manager.findUserByUsername("frank"));
   }
  
@@ -170,7 +170,7 @@ public class UserManagerTest {
  
   @Test
   void getUsersContainsRegisteredUser() {
-    manager.register("grace", "pw", "BIDDER");
+    manager.register("grace", "pw", "BIDDER", null);
     assertTrue(manager.getUsers().containsKey("grace"));
   }
  
