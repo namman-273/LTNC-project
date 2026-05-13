@@ -1,9 +1,17 @@
 package com.auction.controller.ui;
 
+import com.auction.network.client.ServerConnection;
+import com.auction.network.protocol.Protocol;
 import com.auction.util.core.BidHistoryManager;
 import com.auction.util.core.BidHistoryManager.HistoryRecord;
+import com.auction.util.core.BidHistoryManager.Result;
 import com.auction.views.java.AuctionListView;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -47,15 +55,57 @@ public class BidHistoryController implements Initializable {
                     "-fx-background-radius: 20; -fx-padding: 7 18; " +
                     "-fx-cursor: hand; -fx-font-size: 12px;";
 
-    public void setUsername(String u) { this.username = u; }
+    public void setUsername(String u) {
+        this.username = u;
+    }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         historyList.setCellFactory(lv -> new HistoryCell());
-        updateStats();
-        applyTab("all");
+        loadFromServer();
     }
 
+    // ── Gọi server lấy lịch sử thật ─────────────────────────────────────────
+    private void loadFromServer() {
+        new Thread(() -> {
+            try {
+                String res = ServerConnection.getInstance()
+                        .sendAndReceive(Protocol.CMD_GET_BID_HISTORY);
+
+                if (res != null && res.startsWith(Protocol.RES_BID_HISTORY)) {
+                    String json = res.substring(
+                            Protocol.RES_BID_HISTORY.length() + Protocol.SEPARATOR.length());
+
+                    // Parse JSON từ BE: [{auctionId, itemName, finalPrice, result, endTime}]
+                    JsonArray arr = JsonParser.parseString(json).getAsJsonArray();
+                    BidHistoryManager mgr = BidHistoryManager.getInstance();
+
+                    for (int i = 0; i < arr.size(); i++) {
+                        JsonObject obj = arr.get(i).getAsJsonObject();
+                        String auctionId  = obj.has("auctionId")  ? obj.get("auctionId").getAsString()  : "—";
+                        String itemName   = obj.has("itemName")   ? obj.get("itemName").getAsString()   : "—";
+                        double finalPrice = obj.has("finalPrice") ? obj.get("finalPrice").getAsDouble() : 0;
+                        String result     = obj.has("result")     ? obj.get("result").getAsString()     : "LOSE";
+                        String endTime    = obj.has("endTime")    ? obj.get("endTime").getAsString()    : "—";
+
+                        String priceStr = String.format("%,.0f VNĐ", finalPrice);
+                        Result r = "WIN".equalsIgnoreCase(result) ? Result.WIN : Result.LOSE;
+
+                        mgr.addRecord(auctionId, itemName, "", priceStr, r);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi load bid history: " + e.getMessage());
+            }
+
+            Platform.runLater(() -> {
+                updateStats();
+                applyTab(activeTab);
+            });
+        }, "bid-history-load").start();
+    }
+
+    // ── Tab filter ────────────────────────────────────────────────────────────
     @FXML private void handleTabAll()  { applyTab("all");  }
     @FXML private void handleTabWin()  { applyTab("win");  }
     @FXML private void handleTabLose() { applyTab("lose"); }
@@ -99,17 +149,17 @@ public class BidHistoryController implements Initializable {
 
     // ── Cell ──────────────────────────────────────────────────────────────────
     private class HistoryCell extends ListCell<HistoryRecord> {
-        private final HBox  card      = new HBox(14);
+        private final HBox     card     = new HBox(14);
         private final StackPane iconWrap = new StackPane();
-        private final Label iconLabel = new Label();
-        private final VBox  content   = new VBox(3);
-        private final HBox  titleRow  = new HBox(8);
-        private final Label itemName  = new Label();
-        private final Label badge     = new Label();
-        private final Label detail    = new Label();
-        private final HBox  bottomRow = new HBox(12);
-        private final Label dateLabel = new Label();
-        private final Label priceLabel= new Label();
+        private final Label    iconLabel = new Label();
+        private final VBox     content  = new VBox(3);
+        private final HBox     titleRow = new HBox(8);
+        private final Label    itemName = new Label();
+        private final Label    badge    = new Label();
+        private final Label    detail   = new Label();
+        private final HBox     bottomRow = new HBox(12);
+        private final Label    dateLabel  = new Label();
+        private final Label    priceLabel = new Label();
 
         HistoryCell() {
             iconWrap.setPrefSize(44, 44);
@@ -121,21 +171,15 @@ public class BidHistoryController implements Initializable {
 
             itemName.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #111827;");
             itemName.setMaxWidth(280);
-
-            badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" +
-                    "-fx-background-radius: 12; -fx-padding: 2 8;");
-
+            badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 2 8;");
             detail.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
-
             dateLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
             priceLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1565C0;");
 
             titleRow.setAlignment(Pos.CENTER_LEFT);
             titleRow.getChildren().addAll(itemName, badge);
-
             bottomRow.setAlignment(Pos.CENTER_LEFT);
             bottomRow.getChildren().addAll(dateLabel, priceLabel);
-
             content.getChildren().addAll(titleRow, detail, bottomRow);
             HBox.setHgrow(content, Priority.ALWAYS);
 
@@ -161,15 +205,10 @@ public class BidHistoryController implements Initializable {
             // Icon theo itemType
             String type = rec.getItemType();
             String iconTxt, iconBg;
-            if ("Art".equals(type)) {
-                iconTxt = "🎨"; iconBg = "#FEE2E2";
-            } else if ("Electronics".equals(type)) {
-                iconTxt = "💻"; iconBg = "#DBEAFE";
-            } else if ("Vehicle".equals(type)) {
-                iconTxt = "🚗"; iconBg = "#D1FAE5";
-            } else {
-                iconTxt = "📦"; iconBg = "#F3F4F6";
-            }
+            if ("Art".equals(type))         { iconTxt = "🎨"; iconBg = "#FEE2E2"; }
+            else if ("Electronics".equals(type)) { iconTxt = "💻"; iconBg = "#DBEAFE"; }
+            else if ("Vehicle".equals(type)) { iconTxt = "🚗"; iconBg = "#D1FAE5"; }
+            else                             { iconTxt = "📦"; iconBg = "#F3F4F6"; }
 
             iconLabel.setText(iconTxt);
             iconWrap.setStyle("-fx-background-color: " + iconBg + "; -fx-background-radius: 22;");
@@ -184,21 +223,19 @@ public class BidHistoryController implements Initializable {
                 badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" +
                         "-fx-background-radius: 12; -fx-padding: 2 8;" +
                         "-fx-background-color: #D1FAE5; -fx-text-fill: #15803D;");
-                card.setStyle(
-                        "-fx-background-color: white; -fx-background-radius: 14;" +
-                                "-fx-border-color: transparent transparent transparent #22C55E;" +
-                                "-fx-border-width: 0 0 0 4; -fx-border-radius: 0 14 14 0;" +
-                                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);");
+                card.setStyle("-fx-background-color: white; -fx-background-radius: 14;" +
+                        "-fx-border-color: transparent transparent transparent #22C55E;" +
+                        "-fx-border-width: 0 0 0 4; -fx-border-radius: 0 14 14 0;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);");
             } else {
                 badge.setText("Thua");
                 badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" +
                         "-fx-background-radius: 12; -fx-padding: 2 8;" +
                         "-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;");
-                card.setStyle(
-                        "-fx-background-color: white; -fx-background-radius: 14;" +
-                                "-fx-border-color: transparent transparent transparent #EF4444;" +
-                                "-fx-border-width: 0 0 0 4; -fx-border-radius: 0 14 14 0;" +
-                                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);");
+                card.setStyle("-fx-background-color: white; -fx-background-radius: 14;" +
+                        "-fx-border-color: transparent transparent transparent #EF4444;" +
+                        "-fx-border-width: 0 0 0 4; -fx-border-radius: 0 14 14 0;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);");
             }
 
             VBox outer = new VBox(card);

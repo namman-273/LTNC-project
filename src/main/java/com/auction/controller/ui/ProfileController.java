@@ -143,7 +143,7 @@ public class ProfileController implements Initializable {
             String res = ServerConnection.getInstance()
                     .sendAndReceive(Protocol.CMD_UPDATE_EMAIL + Protocol.SEPARATOR + newEmail);
             Platform.runLater(() -> {
-                if (res != null && res.startsWith(Protocol.RES_UPDATE_SUCCESS)) {
+                if (res != null && res.startsWith("SUCCESS")) {
                     showMessage("Cập nhật email thành công!", true);
                 } else {
                     showMessage("Lỗi: " + (res != null ? res : "Không kết nối được server"), false);
