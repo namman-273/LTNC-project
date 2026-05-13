@@ -13,14 +13,15 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.ProfileController"
-      prefWidth="520" prefHeight="680" spacing="0"
+      prefWidth="520" prefHeight="700" spacing="0"
       stylesheets="@../style/style.css"
       style="-fx-background-color: #F5F6FA;">
 
     <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="12"
           style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
-                 -fx-padding: 0 20; -fx-pref-height: 64;">
+                 -fx-padding: 0 20; -fx-pref-height: 64;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
         <Button text="←" onAction="#handleBack"
                 style="-fx-background-color: rgba(255,255,255,0.15);
                        -fx-text-fill: white; -fx-font-size: 16px;
@@ -34,12 +35,11 @@
                        -fx-border-color: transparent;">
         <VBox spacing="14" style="-fx-padding: 16;">
 
-            <!-- AVATAR CARD -->
+            <!-- ── AVATAR CARD ── -->
             <VBox alignment="CENTER" spacing="10"
                   style="-fx-background-color: white; -fx-background-radius: 16;
                          -fx-padding: 24 20;
                          -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);">
-                <!-- Avatar circle -->
                 <StackPane style="-fx-background-color: #1565C0; -fx-background-radius: 40;
                                   -fx-min-width: 80; -fx-min-height: 80;
                                   -fx-max-width: 80; -fx-max-height: 80;">
@@ -53,21 +53,22 @@
                            style="-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;
                                   -fx-font-size: 11px; -fx-font-weight: bold;
                                   -fx-background-radius: 12; -fx-padding: 3 10;"/>
-                    <Label fx:id="balanceLabel" text="0 VNĐ"
+                    <Label fx:id="balanceLabel" text="Số dư: 0 VNĐ"
                            style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
                 </HBox>
             </VBox>
 
-            <!-- THÔNG TIN CÁ NHÂN -->
+            <!-- ── THÔNG TIN CÁ NHÂN ── -->
             <VBox spacing="0"
                   style="-fx-background-color: white; -fx-background-radius: 16;
                          -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);">
+
                 <HBox alignment="CENTER_LEFT" style="-fx-padding: 14 16 10 16;">
                     <Label text="Thông tin cá nhân"
                            style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #374151;"/>
                 </HBox>
 
-                <!-- Username -->
+                <!-- Tên đăng nhập -->
                 <HBox alignment="CENTER_LEFT" spacing="12"
                       style="-fx-padding: 12 16; -fx-border-color: #F3F4F6 transparent transparent transparent; -fx-border-width: 1;">
                     <VBox spacing="2" HBox.hgrow="ALWAYS">
@@ -88,13 +89,11 @@
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
                         <Label text="Email"
                                style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
-                        <HBox spacing="8" alignment="CENTER_LEFT">
-                            <TextField fx:id="emailField" promptText="Nhập email..."
-                                       prefHeight="34" HBox.hgrow="ALWAYS"
-                                       style="-fx-font-size: 13px; -fx-background-color: #F9FAFB;
-                                              -fx-border-color: #E5E7EB; -fx-border-radius: 8;
-                                              -fx-background-radius: 8; -fx-padding: 6 10;"/>
-                        </HBox>
+                        <TextField fx:id="emailField" promptText="Nhập email..."
+                                   prefHeight="34"
+                                   style="-fx-font-size: 13px; -fx-background-color: #F9FAFB;
+                                          -fx-border-color: #E5E7EB; -fx-border-radius: 8;
+                                          -fx-background-radius: 8; -fx-padding: 6 10;"/>
                     </VBox>
                     <Button text="Sửa" onAction="#handleUpdateEmail"
                             style="-fx-background-color: #EFF6FF; -fx-text-fill: #1565C0;
@@ -104,24 +103,54 @@
                                    -fx-border-radius: 8; -fx-border-width: 1;"/>
                 </HBox>
 
-                <!-- Password -->
-                <HBox alignment="CENTER_LEFT" spacing="12"
-                      style="-fx-padding: 12 16; -fx-border-color: #F3F4F6 transparent transparent transparent; -fx-border-width: 1;">
-                    <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Mật khẩu"
-                               style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
-                        <Label text="••••••••"
-                               style="-fx-font-size: 14px; -fx-text-fill: #374151;"/>
-                    </VBox>
-                    <Button text="Đổi" onAction="#handleChangePassword"
-                            style="-fx-background-color: #EFF6FF; -fx-text-fill: #1565C0;
-                                   -fx-font-size: 12px; -fx-font-weight: bold;
-                                   -fx-background-radius: 8; -fx-cursor: hand;
-                                   -fx-padding: 6 16; -fx-border-color: #BFDBFE;
-                                   -fx-border-radius: 8; -fx-border-width: 1;"/>
-                </HBox>
+                <!-- Mật khẩu -->
+                <VBox style="-fx-border-color: #F3F4F6 transparent transparent transparent; -fx-border-width: 1;">
+                    <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 12 16 12 16;">
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Mật khẩu"
+                                   style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
+                            <Label text="••••••••"
+                                   style="-fx-font-size: 14px; -fx-text-fill: #374151;"/>
+                        </VBox>
+                        <Button text="Đổi" onAction="#handleChangePassword"
+                                style="-fx-background-color: #EFF6FF; -fx-text-fill: #1565C0;
+                                       -fx-font-size: 12px; -fx-font-weight: bold;
+                                       -fx-background-radius: 8; -fx-cursor: hand;
+                                       -fx-padding: 6 16; -fx-border-color: #BFDBFE;
+                                       -fx-border-radius: 8; -fx-border-width: 1;"/>
+                    </HBox>
 
-                <!-- Role -->
+                    <!-- Panel đổi mật khẩu — ẩn mặc định -->
+                    <VBox fx:id="passwordPanel" spacing="10" visible="false" managed="false"
+                          style="-fx-background-color: #F8FAFF; -fx-padding: 14 16;
+                                 -fx-border-color: #E0E7FF transparent transparent transparent;
+                                 -fx-border-width: 1;">
+                        <Label text="Đổi mật khẩu"
+                               style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #374151;"/>
+                        <PasswordField fx:id="oldPasswordField" promptText="Mật khẩu hiện tại"
+                                       prefHeight="36"
+                                       style="-fx-font-size: 13px; -fx-background-color: white;
+                                              -fx-border-color: #E5E7EB; -fx-border-radius: 8;
+                                              -fx-background-radius: 8; -fx-padding: 6 10;"/>
+                        <PasswordField fx:id="newPasswordField" promptText="Mật khẩu mới (ít nhất 6 ký tự)"
+                                       prefHeight="36"
+                                       style="-fx-font-size: 13px; -fx-background-color: white;
+                                              -fx-border-color: #E5E7EB; -fx-border-radius: 8;
+                                              -fx-background-radius: 8; -fx-padding: 6 10;"/>
+                        <PasswordField fx:id="confirmPasswordField" promptText="Xác nhận mật khẩu mới"
+                                       prefHeight="36"
+                                       style="-fx-font-size: 13px; -fx-background-color: white;
+                                              -fx-border-color: #E5E7EB; -fx-border-radius: 8;
+                                              -fx-background-radius: 8; -fx-padding: 6 10;"/>
+                        <Button text="Xác nhận đổi mật khẩu" onAction="#handleConfirmChangePassword"
+                                maxWidth="Infinity" prefHeight="38"
+                                style="-fx-background-color: #1565C0; -fx-text-fill: white;
+                                       -fx-font-size: 12px; -fx-font-weight: bold;
+                                       -fx-background-radius: 8; -fx-cursor: hand;"/>
+                    </VBox>
+                </VBox>
+
+                <!-- Vai trò -->
                 <HBox alignment="CENTER_LEFT" spacing="12"
                       style="-fx-padding: 12 16; -fx-border-color: #F3F4F6 transparent transparent transparent; -fx-border-width: 1;">
                     <VBox spacing="2" HBox.hgrow="ALWAYS">
@@ -131,9 +160,21 @@
                                style="-fx-font-size: 13px; -fx-text-fill: #374151;"/>
                     </VBox>
                 </HBox>
+
+                <!-- Ngày tham gia (MỚI) -->
+                <HBox alignment="CENTER_LEFT" spacing="12"
+                      style="-fx-padding: 12 16; -fx-border-color: #F3F4F6 transparent transparent transparent; -fx-border-width: 1;">
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Ngày tham gia"
+                               style="-fx-font-size: 11px; -fx-text-fill: #9CA3AF;"/>
+                        <Label fx:id="joinDateLabel" text="—"
+                               style="-fx-font-size: 13px; -fx-text-fill: #374151;"/>
+                    </VBox>
+                </HBox>
+
             </VBox>
 
-            <!-- THỐNG KÊ -->
+            <!-- ── THỐNG KÊ ── -->
             <VBox spacing="0"
                   style="-fx-background-color: white; -fx-background-radius: 16;
                          -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);">
@@ -173,8 +214,8 @@
                 </HBox>
             </VBox>
 
-            <!-- NÚT XEM LỊCH SỬ -->
-            <Button text="Xem lịch sử đấu giá" onAction="#handleViewHistory"
+            <!-- ── NÚT XEM LỊCH SỬ ── -->
+            <Button text="📋 Xem lịch sử đấu giá" onAction="#handleViewHistory"
                     maxWidth="Infinity"
                     style="-fx-background-color: white; -fx-text-fill: #1565C0;
                            -fx-font-size: 13px; -fx-font-weight: bold;
@@ -182,7 +223,7 @@
                            -fx-padding: 14 0; -fx-border-color: #DBEAFE;
                            -fx-border-radius: 12; -fx-border-width: 1.5;"/>
 
-            <!-- MESSAGE -->
+            <!-- ── THÔNG BÁO ── -->
             <Label fx:id="messageLabel" text=""
                    style="-fx-font-size: 12px; -fx-text-fill: #22C55E;"
                    wrapText="true"/>
