@@ -5,11 +5,10 @@ import com.auction.model.entities.user.Bidder;
 import com.auction.model.entities.user.Seller;
 import com.auction.model.entities.user.User;
 import com.auction.util.core.DataManager;
-import com.auction.util.core.SecurityUtils;
 import com.auction.util.exception.AuthenticationException;
-
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * .
@@ -20,11 +19,14 @@ public class UserManager {
   private static UserManager instance;
 
   // Yêu cầu: lưu Map<String, User>
-  private Map<String, User> users = new HashMap<>();
+  private Map<String, User> users = new ConcurrentHashMap<>();
+  // Key là Email (đã viết thường), Value là Username
+  private Map<String, String> emailToIndex = new ConcurrentHashMap<>();
 
   private static final String DEFAULT_ADMIN_USER = "admin";
   private static final String DEFAULT_ADMIN_PASS = "admin123";
   private static final String ROLE_ADMIN = "ADMIN";
+  private static final String ADMIN_EMAIl = "admin123321@gmail.com";
 
   private UserManager() {
   }
@@ -49,36 +51,48 @@ public class UserManager {
   /**
    * Cập nhật lại Map users sau khi DataManager load từ file lên.
    */
-  public void setUsers(Map<String, User> users) {
-    if (users != null) {
-      this.users = users;
+  public void setUsers(Map<String, User> loadedUsers) {
+    if (loadedUsers != null) {
+      this.users = new ConcurrentHashMap<>(loadedUsers);
+      // Quan trọng: Dựng lại Index ngay khi load dữ liệu từ file
+      rebuildEmailIndex();
+    }
+  }
+
+  private void rebuildEmailIndex() {
+    emailToIndex.clear();
+    for (User u : users.values()) {
+      if (u.getEmail() != null) {
+        emailToIndex.put(u.getEmail().toLowerCase(), u.getUsername());
+      }
     }
   }
 
   /**
    * Hỗ trợ đăng ký người dùng mới.
    */
-  public boolean register(String username, String password, String role) {
-    if (users.containsKey(username)) {
+  public boolean register(String username, String password, String role, String email) {
+    if (users.containsKey(username) || isEmailExists(email)) {
       return false;
     }
-    String hashedPassword = SecurityUtils.hashPassword(password, username);
+
     User newUser;
     // Phân quyền tạo đúng Object tương ứng
     switch (role.toUpperCase()) {
       case "ADMIN":
-        newUser = new Admin(username, hashedPassword);
+        newUser = new Admin(username, password, email);
         break;
       case "SELLER":
-        newUser = new Seller(username, hashedPassword);
+        newUser = new Seller(username, password, email);
         break;
       default:
-        newUser = new Bidder(username, hashedPassword);
+        newUser = new Bidder(username, password, email);
         break;
     }
 
     users.put(username, newUser);
-
+    if (email != null)
+      emailToIndex.put(email.toLowerCase(), username);
     // lưu file sau khi register thành công
     DataManager.getInstance().saveData();
     return true;
@@ -93,14 +107,55 @@ public class UserManager {
       throw new AuthenticationException("Người dùng không tồn tại");
     }
 
-    // PHẢI dùng username của user đó làm Salt để băm lại mật khẩu nhập vào
-    String hashedInput = SecurityUtils.hashPassword(password, username);
-
-    if (!user.getPassword().equals(hashedInput)) {
+    if (!user.checkPassword(password)) {
       throw new AuthenticationException("Sai mật khẩu");
     }
 
     return user;
+  }
+
+  /**
+   * Kiểm tra xem email đã được sử dụng bởi Seller hoặc Bidder nào khác chưa.
+   * 
+   * @param email Email cần kiểm tra'.
+   * @return true nếu đã tồn tại, false nếu chưa
+   */
+
+  private boolean isEmailExists(String email) {
+    if (email == null || email.isEmpty())
+      return false;
+    // Kiểm tra trực tiếp trong Map phụ (dùng toLowerCase để không phân biệt hoa
+    // thường)
+    return emailToIndex.containsKey(email.toLowerCase());
+  }
+
+  public boolean updateEmail(String username, String newEmail) {
+    if (isEmailExists(newEmail)) {
+      return false;
+    }
+    User user = users.get(username);
+    if (user.getEmail() != null)
+      emailToIndex.remove(user.getEmail().toLowerCase());
+
+    // Cập nhật email và index mới
+    user.setEmail(newEmail);
+    emailToIndex.put(newEmail.toLowerCase(), username);
+
+    DataManager.getInstance().saveData(); // Lưu xuống file .dat ngay
+    return true;
+
+  }
+
+  // 3 Cập nhật Password
+  public boolean updatePassword(String username, String oldPass, String newPass) {
+    User user = users.get(username);
+    if (!user.checkPassword(oldPass) || oldPass.equals(newPass)) {
+      return false;
+    }
+    user.setPassword(newPass);
+    DataManager.getInstance().saveData();
+    return true;
+
   }
 
   // Tìm user theo username
@@ -113,7 +168,7 @@ public class UserManager {
    */
   public void initDefaultData() {
     if (users.isEmpty()) {
-      register(DEFAULT_ADMIN_USER, DEFAULT_ADMIN_PASS, ROLE_ADMIN);
+      register(DEFAULT_ADMIN_USER, DEFAULT_ADMIN_PASS, ROLE_ADMIN, ADMIN_EMAIl);
       System.out.println("Hệ thống trống. Đã tạo tài khoản admin mặc định.");
     }
   }

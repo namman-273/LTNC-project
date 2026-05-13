@@ -44,7 +44,8 @@ public class AuctionFinancialProcessor {
     updater.applyState(amount, new BidTransaction(bidder, amount));
 
     String bidUpdateMessage = Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR + auction.getId()
-        + "|" + amount + "|" + bidder.getUsername();
+        + "|" + amount + "|" + bidder.getUsername() + "|"
+        + auction.getItem().getClass().getSimpleName();
     auction.notifyAllParticipants(bidUpdateMessage, bidder);
   }
 }
