@@ -32,6 +32,14 @@ public class AuctionRow {
 
   }
 
+  public String getItemType() {
+    return itemType;
+  }
+
+  public double getStartingPrice() {
+    return startingPrice;
+  }
+
   public String getId() {
     return id;
   }
