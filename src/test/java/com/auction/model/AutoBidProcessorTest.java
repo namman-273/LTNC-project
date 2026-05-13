@@ -7,8 +7,8 @@ import com.auction.model.entities.AutoBid;
 import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.model.helpers.AutoBidProcessor;
-import com.auction.service.UserManager;
+import com.auction.model.auctionhelpers.AutoBidProcessor;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
 
 import java.lang.reflect.Field;
@@ -34,8 +34,8 @@ public class AutoBidProcessorTest {
         umField.setAccessible(true);
         umField.set(null, null);
 
-        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
-        UserManager.getInstance().register("bob", "pw", "BIDDER", null);
+        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
+        UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
 
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder2 = (Bidder) UserManager.getInstance().findUserByUsername("bob");
