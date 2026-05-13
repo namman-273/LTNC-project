@@ -32,7 +32,21 @@ public class CreateAuctionController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        typeComboBox.setItems(FXCollections.observableArrayList("ART", "ELECTRONICS", "VEHICLE"));
+        typeComboBox.setItems(FXCollections.observableArrayList(
+                "ART", "ELECTRONICS", "VEHICLE", "OTHER"));
+        // Đổi cách hiển thị sang tiếng Việt để tránh chọn nhầm
+        typeComboBox.setConverter(new javafx.util.StringConverter<String>() {
+            @Override public String toString(String s) {
+                if (s == null) return "";
+                return switch (s) {
+                    case "ART"         -> "🎨 Nghệ thuật";
+                    case "ELECTRONICS" -> "⚡ Điện tử";
+                    case "VEHICLE"     -> "🚗 Xe cộ";
+                    default            -> "🏷 Khác";
+                };
+            }
+            @Override public String fromString(String s) { return s; }
+        });
         typeComboBox.getSelectionModel().selectFirst();
     }
 
@@ -60,8 +74,8 @@ public class CreateAuctionController implements Initializable {
                             + name        + Protocol.SEPARATOR
                             + price       + Protocol.SEPARATOR
                             + duration    + Protocol.SEPARATOR
-                            + description + Protocol.SEPARATOR
-                            + imageUrl
+                            + imageUrl    + Protocol.SEPARATOR
+                            + description
             );
             System.out.println("Create auction response: " + response);
 
