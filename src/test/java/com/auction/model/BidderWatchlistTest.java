@@ -35,7 +35,7 @@ public class BidderWatchlistTest {
         asField.setAccessible(true);
         asField.set(null, null);
 
-        UserManager.getInstance().register("alice", "pw", "BIDDER");
+        UserManager.getInstance().register("alice", "pw", "BIDDER", null);
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         service = AuctionService.getInstance();
     }
@@ -110,7 +110,7 @@ public class BidderWatchlistTest {
         Field umField = UserManager.class.getDeclaredField("instance");
         umField.setAccessible(true);
         umField.set(null, null);
-        UserManager.getInstance().register("bob", "pw", "SELLER");
+        UserManager.getInstance().register("bob", "pw", "SELLER", null);
 
         List<Auction> result = service.getWatchlistForUser("bob");
         assertTrue(result.isEmpty());
