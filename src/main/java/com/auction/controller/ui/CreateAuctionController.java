@@ -60,8 +60,8 @@ public class CreateAuctionController implements Initializable {
                             + name        + Protocol.SEPARATOR
                             + price       + Protocol.SEPARATOR
                             + duration    + Protocol.SEPARATOR
-                            + imageUrl    + Protocol.SEPARATOR
-                            + description
+                            + description + Protocol.SEPARATOR
+                            + imageUrl
             );
             System.out.println("Create auction response: " + response);
 
