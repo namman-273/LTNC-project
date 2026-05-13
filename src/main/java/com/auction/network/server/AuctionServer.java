@@ -1,4 +1,4 @@
-package com.auction.network.sever;
+package com.auction.network.server;
 
 import com.auction.controller.network.ClientHandler;
 import com.auction.service.auctionservice.AuctionService;
