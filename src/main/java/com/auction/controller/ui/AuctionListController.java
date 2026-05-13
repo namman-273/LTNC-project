@@ -307,17 +307,64 @@ public class AuctionListController implements Initializable {
                         "-fx-font-size: 10px; -fx-font-weight: bold;" +
                         "-fx-background-radius: 6; -fx-padding: 3 8;");
 
-        // Icon theo loại (MỚI)
+        // Icon theo loại — dùng ảnh thật nếu có imageUrl, fallback về emoji
         String typeIcon = switch (row.getItemType() != null ? row.getItemType() : "") {
             case "Art"         -> "🎨";
             case "Electronics" -> "⚡";
             case "Vehicle"     -> "🚗";
             default            -> "🏷";
         };
-        Label icon = new Label(typeIcon);
-        icon.setStyle("-fx-font-size: 46px; -fx-padding: 8 0;");
-        icon.setMinWidth(200);
-        icon.setAlignment(Pos.CENTER);
+
+        javafx.scene.Node iconNode;
+        String imgUrl = row.getImageUrl();
+        if (imgUrl != null && !imgUrl.isEmpty()) {
+            javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView();
+            imgView.setFitWidth(187);
+            imgView.setFitHeight(120);
+            imgView.setPreserveRatio(true);
+            imgView.setSmooth(true);
+            // clip bo góc
+            javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(187, 120);
+            clip.setArcWidth(10); clip.setArcHeight(10);
+            imgView.setClip(clip);
+            // load ảnh background thread
+            final String finalUrl = imgUrl;
+            new Thread(() -> {
+                try {
+                    java.net.HttpURLConnection conn =
+                            (java.net.HttpURLConnection) new java.net.URL(finalUrl).openConnection();
+                    conn.setRequestProperty("User-Agent",
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                    conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
+                    conn.setRequestProperty("Referer",
+                            new java.net.URL(finalUrl).getProtocol() + "://" + new java.net.URL(finalUrl).getHost());
+                    conn.setConnectTimeout(6000);
+                    conn.setReadTimeout(6000);
+                    conn.setInstanceFollowRedirects(true);
+                    conn.connect();
+                    try (java.io.InputStream is = conn.getInputStream()) {
+                        byte[] bytes = is.readAllBytes();
+                        javafx.scene.image.Image img = new javafx.scene.image.Image(
+                                new java.io.ByteArrayInputStream(bytes));
+                        if (!img.isError()) {
+                            javafx.application.Platform.runLater(() -> imgView.setImage(img));
+                        }
+                    } finally { conn.disconnect(); }
+                } catch (Exception ex) {
+                    System.err.println("Card image error: " + ex.getMessage());
+                }
+            }).start();
+            javafx.scene.layout.StackPane imgContainer = new javafx.scene.layout.StackPane(imgView);
+            imgContainer.setPrefHeight(120);
+            imgContainer.setStyle("-fx-background-color: #EEF2FF; -fx-background-radius: 8;");
+            iconNode = imgContainer;
+        } else {
+            Label icon = new Label(typeIcon);
+            icon.setStyle("-fx-font-size: 46px; -fx-padding: 8 0;");
+            icon.setMinWidth(187);
+            icon.setAlignment(javafx.geometry.Pos.CENTER);
+            iconNode = icon;
+        }
 
         Label name = new Label(row.getItemName());
         name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937; -fx-wrap-text: true;");
@@ -340,7 +387,7 @@ public class AuctionListController implements Initializable {
         btnDetail.setOnMouseExited(e -> btnDetail.setStyle(btnDetail.getStyle()
                 .replace("#0D47A1; -fx-text-fill", "#1565C0; -fx-text-fill")));
 
-        VBox card = new VBox(8, badge, icon, name, priceLabel, price, btnDetail);
+        VBox card = new VBox(8, badge, iconNode, name, priceLabel, price, btnDetail);
         card.setPrefWidth(215);
         card.setMinHeight(265);
         card.setStyle(

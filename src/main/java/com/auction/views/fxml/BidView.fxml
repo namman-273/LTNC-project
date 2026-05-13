@@ -53,8 +53,9 @@
                                    style="-fx-font-size: 12px; -fx-text-fill: #AAAAAA;"/>
                         </VBox>
                         <ImageView fx:id="productImage"
-                                   fitWidth="400" fitHeight="260"
-                                   preserveRatio="true"
+                                   fitWidth="460" fitHeight="260"
+                                   preserveRatio="false"
+                                   smooth="true"
                                    visible="false" managed="false"/>
                         <Label fx:id="itemTypeLabel" text="Sản phẩm"
                                style="-fx-background-color: #1565C0; -fx-text-fill: white;

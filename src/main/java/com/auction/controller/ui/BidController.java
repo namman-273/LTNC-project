@@ -259,11 +259,20 @@ public class BidController implements Initializable {
                                 new java.io.ByteArrayInputStream(bytes));
                     } else {
                         // URL — fetch bytes thủ công để tránh giới hạn SSL/redirect của JavaFX Image
+                        java.net.URL url = new java.net.URL(finalImageUrl);
                         java.net.HttpURLConnection conn =
-                                (java.net.HttpURLConnection) new java.net.URL(finalImageUrl).openConnection();
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                                (java.net.HttpURLConnection) url.openConnection();
+                        conn.setRequestProperty("User-Agent",
+                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                        conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
+                        conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+                        conn.setRequestProperty("Referer", url.getProtocol() + "://" + url.getHost());
                         conn.setInstanceFollowRedirects(true);
+                        conn.setConnectTimeout(8000);
+                        conn.setReadTimeout(8000);
                         conn.connect();
+                        int code = conn.getResponseCode();
+                        System.out.println("[BidView] HTTP " + code + " for image");
                         try (java.io.InputStream is = conn.getInputStream()) {
                             byte[] bytes = is.readAllBytes();
                             img = new javafx.scene.image.Image(
