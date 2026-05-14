@@ -102,18 +102,18 @@
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
             <!-- Icon buttons for Ví tiền and Thông báo -->
-            <Button text="&#x1F4B0;" onAction="#handleBalance"
-                    prefHeight="32" prefWidth="36"
-                    style="-fx-background-color: rgba(30,58,95,0.6); -fx-text-fill: #60A5FA;
-                           -fx-font-size: 16px; -fx-background-radius: 8; -fx-cursor: hand;
-                           -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"
-                    accessibleText="Ví tiền"/>
-            <Button text="&#x1F514;" onAction="#handleNotification"
-                    prefHeight="32" prefWidth="36"
-                    style="-fx-background-color: rgba(30,58,95,0.6); -fx-text-fill: #FBBF24;
-                           -fx-font-size: 16px; -fx-background-radius: 8; -fx-cursor: hand;
-                           -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"
-                    accessibleText="Thông báo"/>
+            <Button text="Vi tien" onAction="#handleBack"
+                    prefHeight="30"
+                    style="-fx-background-color: rgba(30,58,95,0.8); -fx-text-fill: #60A5FA;
+                           -fx-font-size: 11px; -fx-font-weight: bold;
+                           -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;
+                           -fx-border-color: #2563EB; -fx-border-radius: 8; -fx-border-width: 1;"/>
+            <Button text="Thong bao" onAction="#handleBack"
+                    prefHeight="30"
+                    style="-fx-background-color: rgba(30,58,95,0.8); -fx-text-fill: #FBBF24;
+                           -fx-font-size: 11px; -fx-font-weight: bold;
+                           -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;
+                           -fx-border-color: #92400E; -fx-border-radius: 8; -fx-border-width: 1;"/>
             <Button text="🔄 Làm mới" onAction="#handleRefresh"
                     styleClass="btn-ghost" style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
         </HBox>
