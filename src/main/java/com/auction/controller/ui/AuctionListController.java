@@ -377,9 +377,9 @@ public class AuctionListController implements Initializable {
     card.setPrefWidth(215);
     card.setMinHeight(265);
     card.setStyle(
-            "-fx-background-color: white;" +
+            "-fx-background-color: #0B1120;" +
                     "-fx-background-radius: 14;" +
-                    "-fx-border-color: #EEF2FF; -fx-border-radius: 14; -fx-border-width: 1;" +
+                    "-fx-border-color: #1E3A5F; -fx-border-radius: 14; -fx-border-width: 1;" +
                     "-fx-padding: 14;" +
                     "-fx-cursor: hand;");
 
@@ -387,11 +387,11 @@ public class AuctionListController implements Initializable {
       auctionGrid.getChildren().forEach(n -> {
         if (n instanceof VBox v) {
           v.setStyle(v.getStyle()
-                  .replace("-fx-background-color: #162236;", "-fx-background-color: #1E2D45;"));
+                  .replace("-fx-background-color: #1E2D45;", "-fx-background-color: #0B1120;"));
         }
       });
       card.setStyle(card.getStyle()
-              .replace("-fx-background-color: #1E2D45;", "-fx-background-color: #162236;"));
+              .replace("-fx-background-color: #0B1120;", "-fx-background-color: #162236;"));
       selectedRow = row;
     });
 

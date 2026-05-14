@@ -37,20 +37,15 @@
               style="-fx-background-color: #0B1120; -fx-background-radius: 16;
                      -fx-border-color: #1E3A5F; -fx-border-radius: 16; -fx-border-width: 1;
                      -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.15), 16, 0, 0, 4);">
-
-            <!-- Top gradient band -->
             <HBox alignment="CENTER_LEFT" spacing="0"
                   style="-fx-background-color: linear-gradient(to right, #1E3A5F, #2563EB);
                          -fx-background-radius: 16 16 0 0; -fx-padding: 14 20;">
-                <Label text="💳"
-                       style="-fx-font-size: 20px;"/>
+                <Label text="💳" style="-fx-font-size: 20px;"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="1388AUCTION WALLET"
                        style="-fx-font-size: 10px; -fx-text-fill: rgba(255,255,255,0.6);
                               -fx-font-weight: bold;"/>
             </HBox>
-
-            <!-- Balance body -->
             <VBox spacing="8" style="-fx-padding: 20 24 24 24;">
                 <Label fx:id="usernameLabel" text="Tài khoản: ---"
                        style="-fx-font-size: 12px; -fx-text-fill: #64748B;"/>
@@ -59,10 +54,7 @@
                 <Label fx:id="balanceLabel" text="Đang tải..."
                        style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"
                        wrapText="true" maxWidth="460"/>
-
                 <Region prefHeight="4"/>
-
-                <!-- Nạp tiền button -->
                 <HBox spacing="10">
                     <Button text="💳 Nạp tiền" onAction="#handleDeposit"
                             prefHeight="38"
@@ -84,27 +76,27 @@
             <Label text="Nhập số tiền muốn nạp (VNĐ)"
                    style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
 
-            <!-- Quick amounts -->
+            <!-- FIX: mỗi nút gọi handler riêng, chỉ fill vào field -->
             <HBox spacing="8">
-                <Button text="100K" onAction="#handleDeposit"
+                <Button text="100K" onAction="#handleQuick100K"
                         HBox.hgrow="ALWAYS" prefHeight="34"
                         style="-fx-background-color: #162236; -fx-text-fill: #64748B;
                                -fx-font-size: 11px; -fx-font-weight: bold;
                                -fx-background-radius: 8; -fx-cursor: hand;
                                -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"/>
-                <Button text="500K" onAction="#handleDeposit"
+                <Button text="500K" onAction="#handleQuick500K"
                         HBox.hgrow="ALWAYS" prefHeight="34"
                         style="-fx-background-color: #162236; -fx-text-fill: #64748B;
                                -fx-font-size: 11px; -fx-font-weight: bold;
                                -fx-background-radius: 8; -fx-cursor: hand;
                                -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"/>
-                <Button text="1M" onAction="#handleDeposit"
+                <Button text="1M" onAction="#handleQuick1M"
                         HBox.hgrow="ALWAYS" prefHeight="34"
                         style="-fx-background-color: #162236; -fx-text-fill: #64748B;
                                -fx-font-size: 11px; -fx-font-weight: bold;
                                -fx-background-radius: 8; -fx-cursor: hand;
                                -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"/>
-                <Button text="5M" onAction="#handleDeposit"
+                <Button text="5M" onAction="#handleQuick5M"
                         HBox.hgrow="ALWAYS" prefHeight="34"
                         style="-fx-background-color: #162236; -fx-text-fill: #64748B;
                                -fx-font-size: 11px; -fx-font-weight: bold;
@@ -137,14 +129,13 @@
                 <Region HBox.hgrow="ALWAYS"/>
             </HBox>
             <ListView fx:id="transactionList" VBox.vgrow="ALWAYS"
-                      prefHeight="180"
+                      prefHeight="200"
                       style="-fx-background-color: transparent;
-                             -fx-border-color: #1E3A5F;
-                             -fx-border-radius: 8;">
+                             -fx-border-color: transparent;
+                             -fx-background-insets: 0; -fx-padding: 0;">
                 <placeholder>
                     <VBox alignment="CENTER" spacing="8" style="-fx-padding: 24 0;">
-                        <Label text="💸"
-                               style="-fx-font-size: 32px; -fx-opacity: 0.2;"/>
+                        <Label text="💸" style="-fx-font-size: 32px; -fx-opacity: 0.2;"/>
                         <Label text="Chưa có giao dịch nào."
                                style="-fx-text-fill: #334155; -fx-font-size: 12px;"/>
                     </VBox>
