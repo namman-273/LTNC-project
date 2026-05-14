@@ -5,7 +5,6 @@ import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.AlertUtil;
 import com.auction.util.ui.NotificationManager;
 import com.auction.network.client.ServerConnection;
-import com.auction.util.core.BidHistoryManager;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AdminDashboardView;
 import com.auction.views.java.BalanceView;
@@ -34,7 +33,6 @@ import javafx.event.ActionEvent;
 import javafx.util.Duration;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
@@ -43,40 +41,24 @@ import javafx.stage.Stage;
 
 public class AuctionListController implements Initializable {
 
-  @FXML
-  private Label welcomeLabel;
-  @FXML
-  private FlowPane auctionGrid;
-  @FXML
-  private Button adminButton;
-  @FXML
-  private Button sellerButton;
-  @FXML
-  private Label statusBarLabel;
+  @FXML private Label welcomeLabel;
+  @FXML private FlowPane auctionGrid;
+  @FXML private Button adminButton;
+  @FXML private Button sellerButton;
+  @FXML private Label statusBarLabel;
 
-  // ── Filter buttons (MỚI) ─────────────────────────────────────────────────
-  @FXML
-  private Button btnFilterAll;
-  @FXML
-  private Button btnFilterArt;
-  @FXML
-  private Button btnFilterElec;
-  @FXML
-  private Button btnFilterVehicle;
-  @FXML
-  private Button btnFilterOther;
-  @FXML
-  private Button btnPriceAll;
-  @FXML
-  private Button btnPriceUnder5;
-  @FXML
-  private Button btnPriceMid;
-  @FXML
-  private Button btnPriceOver50;
+  @FXML private Button btnFilterAll;
+  @FXML private Button btnFilterArt;
+  @FXML private Button btnFilterElec;
+  @FXML private Button btnFilterVehicle;
+  @FXML private Button btnFilterOther;
+  @FXML private Button btnPriceAll;
+  @FXML private Button btnPriceUnder5;
+  @FXML private Button btnPriceMid;
+  @FXML private Button btnPriceOver50;
 
-  private String activeTypeFilter = "ALL";
+  private String activeTypeFilter  = "ALL";
   private String activePriceFilter = "ALL";
-  // ─────────────────────────────────────────────────────────────────────────
 
   private String username;
   private AuctionRow selectedRow = null;
@@ -85,10 +67,10 @@ public class AuctionListController implements Initializable {
   private Timeline autoRefreshTimeline;
 
   private final Gson gson = new GsonBuilder()
-      .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type,
-              ctx) -> java.time.LocalDateTime.parse(json.getAsString()))
-      .create();
+          .registerTypeAdapter(java.time.LocalDateTime.class,
+                  (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) ->
+                          java.time.LocalDateTime.parse(json.getAsString()))
+          .create();
 
   public void setUsername(String username) {
     this.username = username;
@@ -111,7 +93,7 @@ public class AuctionListController implements Initializable {
     startAutoRefresh();
   }
 
-  // ── Push Listener — FIX: bắt AutoBid win + outbid khi user không ở BidView ──
+  // ── Push Listener ─────────────────────────────────────────────────────────
   private void registerPushListener() {
     pushListener = message -> {
       String[] parts = message.split("\\|");
@@ -125,48 +107,31 @@ public class AuctionListController implements Initializable {
           });
           break;
 
-        // FIX: bắt kết quả phiên từ AutoBid khi user không mở BidView
         case Protocol.RES_END_SUCCESS: {
           String auctionId = parts.length >= 2 ? parts[1] : "";
-          String detail = parts.length >= 3 ? parts[2] : "";
-          boolean isWin = detail.contains("Winner:" + username);
-          // Lấy tên phiên từ danh sách hiện tại nếu có
-          String itemNameForHistory = auctionId;
-          String bidStr = "";
-          if (detail.contains("Bid:")) {
-            bidStr = detail.substring(detail.indexOf("Bid:") + 4).replace("$", "").trim();
-          }
-          final String finalItemName = itemNameForHistory;
-          final String finalBid = bidStr;
-          final boolean finalIsWin = isWin;
-          final String finalId = auctionId;
+          String detail    = parts.length >= 3 ? parts[2] : "";
+          boolean isWin    = detail.contains("Winner:" + username);
           if (isWin) {
             NotificationManager.getInstance().add(
-                "Bạn đã thắng phiên đấu giá: " + auctionId,
-                "auction", auctionId);
+                    "Bạn đã thắng phiên đấu giá: " + auctionId,
+                    "auction", auctionId);
           } else if (!auctionId.isEmpty()) {
             NotificationManager.getInstance().add(
-                "Phiên " + auctionId + " đã kết thúc. Bạn không thắng.",
-                "auction", auctionId);
+                    "Phiên " + auctionId + " đã kết thúc. Bạn không thắng.",
+                    "auction", auctionId);
           }
-          // FIX BUG AUTOBID: ghi lịch sử khi user không mở BidView
-          BidHistoryManager.getInstance().addRecord(
-              finalId, finalItemName, "",
-              finalBid.isEmpty() ? "—" : finalBid + " VNĐ",
-              finalIsWin ? BidHistoryManager.Result.WIN : BidHistoryManager.Result.LOSE);
           Platform.runLater(this::loadFromServer);
           break;
         }
 
-        // FIX: bắt outbid khi user không đang xem BidView
         case Protocol.NOTI_OUTBID: {
           if (parts.length >= 4) {
             String auctionId = parts[1];
-            String newAmt = parts[3];
+            String newAmt    = parts[3];
             NotificationManager.getInstance().add(
-                "⚠️ Bị vượt giá trong phiên " + auctionId
-                    + " — Giá mới: " + newAmt + " VNĐ",
-                "auction", auctionId);
+                    "⚠️ Bị vượt giá trong phiên " + auctionId
+                            + " — Giá mới: " + newAmt + " VNĐ",
+                    "auction", auctionId);
           }
           break;
         }
@@ -176,8 +141,8 @@ public class AuctionListController implements Initializable {
             String refundAmt = parts[2];
             String auctionId = parts.length >= 2 ? parts[1] : "";
             NotificationManager.getInstance().add(
-                "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví",
-                "balance", auctionId);
+                    "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví",
+                    "balance", auctionId);
           }
           break;
         }
@@ -212,7 +177,7 @@ public class AuctionListController implements Initializable {
         List<AuctionRow> data = new ArrayList<>();
         if (response.startsWith(Protocol.RES_LIST_SUCCESS)) {
           String json = response.substring(
-              Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
+                  Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
           AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
           if (rows != null) {
             for (AuctionRow row : rows) {
@@ -228,8 +193,8 @@ public class AuctionListController implements Initializable {
           currentRows.addAll(finalData);
           applyFilter();
           setStatusBar(finalData.isEmpty()
-              ? "ℹ️ Chưa có phiên nào đang diễn ra."
-              : "✅ Tải xong " + finalData.size() + " phiên.");
+                  ? "ℹ️ Chưa có phiên nào đang diễn ra."
+                  : "✅ Tải xong " + finalData.size() + " phiên.");
         });
       } catch (Exception e) {
         Platform.runLater(() -> setStatusBar("❌ Lỗi tải danh sách!"));
@@ -237,12 +202,12 @@ public class AuctionListController implements Initializable {
     }).start();
   }
 
-  // ── Filter logic (MỚI) ───────────────────────────────────────────────────
+  // ── Filter ────────────────────────────────────────────────────────────────
   @FXML
   private void handleFilterType(ActionEvent e) {
     Button clicked = (Button) e.getSource();
     List<Button> typeButtons = List.of(btnFilterAll, btnFilterArt,
-        btnFilterElec, btnFilterVehicle, btnFilterOther);
+            btnFilterElec, btnFilterVehicle, btnFilterOther);
     typeButtons.forEach(b -> {
       b.getStyleClass().remove("filter-active");
       b.getStyleClass().add("filter-btn");
@@ -250,16 +215,11 @@ public class AuctionListController implements Initializable {
     clicked.getStyleClass().remove("filter-btn");
     clicked.getStyleClass().add("filter-active");
 
-    if (clicked == btnFilterArt)
-      activeTypeFilter = "Art";
-    else if (clicked == btnFilterElec)
-      activeTypeFilter = "Electronics";
-    else if (clicked == btnFilterVehicle)
-      activeTypeFilter = "Vehicle";
-    else if (clicked == btnFilterOther)
-      activeTypeFilter = "OTHER";
-    else
-      activeTypeFilter = "ALL";
+    if (clicked == btnFilterArt)         activeTypeFilter = "Art";
+    else if (clicked == btnFilterElec)   activeTypeFilter = "Electronics";
+    else if (clicked == btnFilterVehicle) activeTypeFilter = "Vehicle";
+    else if (clicked == btnFilterOther)  activeTypeFilter = "OTHER";
+    else                                 activeTypeFilter = "ALL";
     applyFilter();
   }
 
@@ -274,36 +234,32 @@ public class AuctionListController implements Initializable {
     clicked.getStyleClass().remove("filter-btn");
     clicked.getStyleClass().add("filter-active");
 
-    if (clicked == btnPriceUnder5)
-      activePriceFilter = "UNDER5";
-    else if (clicked == btnPriceMid)
-      activePriceFilter = "MID";
-    else if (clicked == btnPriceOver50)
-      activePriceFilter = "OVER50";
-    else
-      activePriceFilter = "ALL";
+    if (clicked == btnPriceUnder5)      activePriceFilter = "UNDER5";
+    else if (clicked == btnPriceMid)    activePriceFilter = "MID";
+    else if (clicked == btnPriceOver50) activePriceFilter = "OVER50";
+    else                                activePriceFilter = "ALL";
     applyFilter();
   }
 
   private void applyFilter() {
     List<AuctionRow> filtered = currentRows.stream()
-        .filter(r -> {
-          String type = r.getItemType() != null ? r.getItemType() : "";
-          return switch (activeTypeFilter) {
-            case "Art" -> "Art".equals(type);
-            case "Electronics" -> "Electronics".equals(type);
-            case "Vehicle" -> "Vehicle".equals(type);
-            case "OTHER" -> !List.of("Art", "Electronics", "Vehicle").contains(type);
-            default -> true;
-          };
-        })
-        .filter(r -> switch (activePriceFilter) {
-          case "UNDER5" -> r.getCurrentPrice() < 5_000_000;
-          case "MID" -> r.getCurrentPrice() >= 5_000_000 && r.getCurrentPrice() <= 50_000_000;
-          case "OVER50" -> r.getCurrentPrice() > 50_000_000;
-          default -> true;
-        })
-        .collect(Collectors.toList());
+            .filter(r -> {
+              String type = r.getItemType() != null ? r.getItemType() : "";
+              return switch (activeTypeFilter) {
+                case "Art"         -> "Art".equals(type);
+                case "Electronics" -> "Electronics".equals(type);
+                case "Vehicle"     -> "Vehicle".equals(type);
+                case "OTHER"       -> !List.of("Art", "Electronics", "Vehicle").contains(type);
+                default            -> true;
+              };
+            })
+            .filter(r -> switch (activePriceFilter) {
+              case "UNDER5"  -> r.getCurrentPrice() < 5_000_000;
+              case "MID"     -> r.getCurrentPrice() >= 5_000_000 && r.getCurrentPrice() <= 50_000_000;
+              case "OVER50"  -> r.getCurrentPrice() > 50_000_000;
+              default        -> true;
+            })
+            .collect(Collectors.toList());
     renderCards(filtered);
   }
 
@@ -325,22 +281,21 @@ public class AuctionListController implements Initializable {
   private VBox buildCard(AuctionRow row) {
     String statusColor = switch (row.getStatus()) {
       case "RUNNING" -> "#E65100";
-      case "OPEN" -> "#2E7D32";
-      default -> "#888888";
+      case "OPEN"    -> "#2E7D32";
+      default        -> "#888888";
     };
     Label badge = new Label("RUNNING".equals(row.getStatus()) ? "🔴 LIVE" : "⬤ " + row.getStatus());
     badge.setStyle(
-        "-fx-background-color: " + statusColor + "22;" +
-            "-fx-text-fill: " + statusColor + ";" +
-            "-fx-font-size: 10px; -fx-font-weight: bold;" +
-            "-fx-background-radius: 6; -fx-padding: 3 8;");
+            "-fx-background-color: " + statusColor + "22;" +
+                    "-fx-text-fill: " + statusColor + ";" +
+                    "-fx-font-size: 10px; -fx-font-weight: bold;" +
+                    "-fx-background-radius: 6; -fx-padding: 3 8;");
 
-    // Icon theo loại — dùng ảnh thật nếu có imageUrl, fallback về emoji
     String typeIcon = switch (row.getItemType() != null ? row.getItemType() : "") {
-      case "Art" -> "🎨";
+      case "Art"         -> "🎨";
       case "Electronics" -> "⚡";
-      case "Vehicle" -> "🚗";
-      default -> "🏷";
+      case "Vehicle"     -> "🚗";
+      default            -> "🏷";
     };
 
     javafx.scene.Node iconNode;
@@ -351,30 +306,29 @@ public class AuctionListController implements Initializable {
       imgView.setFitHeight(120);
       imgView.setPreserveRatio(true);
       imgView.setSmooth(true);
-      // clip bo góc
       javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(187, 120);
       clip.setArcWidth(10);
       clip.setArcHeight(10);
       imgView.setClip(clip);
-      // load ảnh background thread
       final String finalUrl = imgUrl;
       new Thread(() -> {
         try {
-          java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(finalUrl)
-              .openConnection();
+          java.net.HttpURLConnection conn =
+                  (java.net.HttpURLConnection) new java.net.URL(finalUrl).openConnection();
           conn.setRequestProperty("User-Agent",
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
           conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
           conn.setRequestProperty("Referer",
-              new java.net.URL(finalUrl).getProtocol() + "://" + new java.net.URL(finalUrl).getHost());
+                  new java.net.URL(finalUrl).getProtocol() + "://"
+                          + new java.net.URL(finalUrl).getHost());
           conn.setConnectTimeout(6000);
           conn.setReadTimeout(6000);
           conn.setInstanceFollowRedirects(true);
           conn.connect();
           try (java.io.InputStream is = conn.getInputStream()) {
             byte[] bytes = is.readAllBytes();
-            javafx.scene.image.Image img = new javafx.scene.image.Image(
-                new java.io.ByteArrayInputStream(bytes));
+            javafx.scene.image.Image img =
+                    new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
             if (!img.isError()) {
               javafx.application.Platform.runLater(() -> imgView.setImage(img));
             }
@@ -385,7 +339,8 @@ public class AuctionListController implements Initializable {
           System.err.println("Card image error: " + ex.getMessage());
         }
       }).start();
-      javafx.scene.layout.StackPane imgContainer = new javafx.scene.layout.StackPane(imgView);
+      javafx.scene.layout.StackPane imgContainer =
+              new javafx.scene.layout.StackPane(imgView);
       imgContainer.setPrefHeight(120);
       imgContainer.setStyle("-fx-background-color: #EEF2FF; -fx-background-radius: 8;");
       iconNode = imgContainer;
@@ -409,35 +364,34 @@ public class AuctionListController implements Initializable {
     Button btnDetail = new Button("👁 Xem chi tiết");
     btnDetail.setPrefWidth(185);
     btnDetail.setStyle(
-        "-fx-background-color: #1565C0; -fx-text-fill: white;" +
-            "-fx-font-size: 11px; -fx-font-weight: bold;" +
-            "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 0;");
+            "-fx-background-color: #1565C0; -fx-text-fill: white;" +
+                    "-fx-font-size: 11px; -fx-font-weight: bold;" +
+                    "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 0;");
     btnDetail.setOnAction(e -> openBidView(row));
-    btnDetail.setOnMouseEntered(e -> btnDetail.setStyle(btnDetail.getStyle()
-        .replace("#1565C0; -fx-text-fill", "#0D47A1; -fx-text-fill")));
-    btnDetail.setOnMouseExited(e -> btnDetail.setStyle(btnDetail.getStyle()
-        .replace("#0D47A1; -fx-text-fill", "#1565C0; -fx-text-fill")));
+    btnDetail.setOnMouseEntered(e -> btnDetail.setStyle(
+            btnDetail.getStyle().replace("#1565C0; -fx-text-fill", "#0D47A1; -fx-text-fill")));
+    btnDetail.setOnMouseExited(e -> btnDetail.setStyle(
+            btnDetail.getStyle().replace("#0D47A1; -fx-text-fill", "#1565C0; -fx-text-fill")));
 
     VBox card = new VBox(8, badge, iconNode, name, priceLabel, price, btnDetail);
     card.setPrefWidth(215);
     card.setMinHeight(265);
     card.setStyle(
-        "-fx-background-color: white;" +
-            "-fx-background-radius: 14;" +
-            "-fx-border-color: #EEF2FF; -fx-border-radius: 14; -fx-border-width: 1;" +
-            "-fx-padding: 14;" +
-            "-fx-effect: dropshadow(gaussian, rgba(21,101,192,0.08), 10, 0, 0, 3);" +
-            "-fx-cursor: hand;");
+            "-fx-background-color: white;" +
+                    "-fx-background-radius: 14;" +
+                    "-fx-border-color: #EEF2FF; -fx-border-radius: 14; -fx-border-width: 1;" +
+                    "-fx-padding: 14;" +
+                    "-fx-cursor: hand;");
 
     card.setOnMouseClicked(e -> {
       auctionGrid.getChildren().forEach(n -> {
         if (n instanceof VBox v) {
           v.setStyle(v.getStyle()
-              .replace("-fx-background-color: #EEF5FF;", "-fx-background-color: white;"));
+                  .replace("-fx-background-color: #EEF5FF;", "-fx-background-color: white;"));
         }
       });
       card.setStyle(card.getStyle()
-          .replace("-fx-background-color: white;", "-fx-background-color: #EEF5FF;"));
+              .replace("-fx-background-color: white;", "-fx-background-color: #EEF5FF;"));
       selectedRow = row;
     });
 
@@ -447,10 +401,10 @@ public class AuctionListController implements Initializable {
   private void openBidView(AuctionRow row) {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new BidView(stage, row.getId(), row.getItemName(),
-        String.valueOf(row.getCurrentPrice()), row.getStatus(),
-        username, row.getEndTime(),
-        row.getImageUrl(), row.getDescription(),
-        row.getItemType(), row.getStartingPrice(), row.getSellerId()).show();
+            String.valueOf(row.getCurrentPrice()), row.getStatus(),
+            username, row.getEndTime(),
+            row.getImageUrl(), row.getDescription(),
+            row.getItemType(), row.getStartingPrice(), row.getSellerId()).show();
   }
 
   // ── Watchlist ─────────────────────────────────────────────────────────────
@@ -462,11 +416,12 @@ public class AuctionListController implements Initializable {
     }
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
-          Protocol.CMD_WATCH + Protocol.SEPARATOR + selectedRow.getId());
+              Protocol.CMD_WATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
           setStatusBar("✅ Đã theo dõi phiên!");
-          AlertUtil.showSuccess("Theo dõi thành công", "✅ Đang theo dõi: " + selectedRow.getItemName());
+          AlertUtil.showSuccess("Theo dõi thành công",
+                  "✅ Đang theo dõi: " + selectedRow.getItemName());
         } else {
           setStatusBar("❌ Theo dõi thất bại!");
         }
@@ -482,7 +437,7 @@ public class AuctionListController implements Initializable {
     }
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
-          Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selectedRow.getId());
+              Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
           setStatusBar("✅ Đã bỏ theo dõi!");
@@ -501,23 +456,18 @@ public class AuctionListController implements Initializable {
 
   // ── Navigation ────────────────────────────────────────────────────────────
   private void setStatusBar(String msg) {
-    if (statusBarLabel != null)
-      statusBarLabel.setText(msg);
+    if (statusBarLabel != null) statusBarLabel.setText(msg);
   }
 
   @FXML
-  public void handleRefresh() {
-    loadFromServer();
-  }
+  public void handleRefresh() { loadFromServer(); }
 
-  public void refreshList() {
-    loadFromServer();
-  }
+  public void refreshList() { loadFromServer(); }
 
   @FXML
   private void startAutoRefresh() {
     autoRefreshTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(8), e -> loadFromServer()));
+            new KeyFrame(Duration.seconds(8), e -> loadFromServer()));
     autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
     autoRefreshTimeline.play();
   }
@@ -571,14 +521,12 @@ public class AuctionListController implements Initializable {
     new NotificationView(stage, username).show();
   }
 
-  // MỚI: mở màn hình lịch sử phiên đấu giá
   @FXML
   public void handleBidHistory() {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new BidHistoryView(stage, username).show();
   }
 
-  // MỚI: mở trang cá nhân
   @FXML
   public void handleProfile() {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
