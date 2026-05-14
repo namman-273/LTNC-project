@@ -127,30 +127,24 @@
                                    -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 9 20;"/>
                 </HBox>
             </VBox>
-            <!-- Trophy + Ví tiền / Thông báo icons top-right -->
-            <VBox alignment="TOP_RIGHT" spacing="8" HBox.hgrow="NEVER" style="-fx-padding: 0 0 0 20;">
+            <!-- Wallet + Bell icon buttons + Trophy (old style) -->
+            <VBox alignment="TOP_RIGHT" spacing="6" HBox.hgrow="NEVER" style="-fx-padding: 0 0 0 20;">
                 <HBox spacing="6" alignment="CENTER_RIGHT">
-                    <Button onAction="#handleBalance" prefHeight="34" prefWidth="34"
-                            style="-fx-background-color: rgba(30,58,95,0.85);
-                                   -fx-background-radius: 8; -fx-cursor: hand;
-                                   -fx-border-color: #2563EB; -fx-border-radius: 8; -fx-border-width: 1;">
-                        <graphic>
-                            <Label text="&#x1F4B0;"
-                                   style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                        </graphic>
-                    </Button>
-                    <Button onAction="#handleNotification" prefHeight="34" prefWidth="34"
-                            style="-fx-background-color: rgba(30,58,95,0.85);
-                                   -fx-background-radius: 8; -fx-cursor: hand;
-                                   -fx-border-color: #92400E; -fx-border-radius: 8; -fx-border-width: 1;">
-                        <graphic>
-                            <Label text="&#x1F514;"
-                                   style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                        </graphic>
-                    </Button>
+                    <Button text="$" onAction="#handleBalance"
+                            prefHeight="34" prefWidth="34"
+                            style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #60A5FA;
+                                   -fx-font-size: 16px; -fx-font-weight: bold;
+                                   -fx-background-radius: 17; -fx-cursor: hand;
+                                   -fx-border-color: #2563EB; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
+                    <Button text="!" onAction="#handleNotification"
+                            prefHeight="34" prefWidth="34"
+                            style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #FBBF24;
+                                   -fx-font-size: 18px; -fx-font-weight: bold;
+                                   -fx-background-radius: 17; -fx-cursor: hand;
+                                   -fx-border-color: #92400E; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
                 </HBox>
-                <Label text="&#x1F3C6;"
-                       style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 80px; -fx-opacity: 0.85;"/>
+                <Label text="&#x1F3DB;&#xFE0F;"
+                       style="-fx-font-size: 72px; -fx-opacity: 0.15;"/>
             </VBox>
         </HBox>
 

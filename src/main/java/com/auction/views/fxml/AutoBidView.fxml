@@ -11,76 +11,75 @@
       fx:controller="com.auction.controller.ui.AutoBidController"
       prefWidth="480" prefHeight="420" spacing="0"
       stylesheets="@../style/style.css"
-      style="-fx-background-color: #F8F9FA;">
+      style="-fx-background-color: #0F172A;">
 
     <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="14"
-          style="-fx-background-color: linear-gradient(to right, #1565C0, #2196F3);
+          style="-fx-background-color: #0B1120;
                  -fx-padding: 0 24; -fx-pref-height: 60;
-                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);">
+                 -fx-border-color: transparent transparent #1E3A5F transparent;
+                 -fx-border-width: 1;">
         <Button text="← Quay lại" onAction="#handleBack"
-                style="-fx-background-color: rgba(255,255,255,0.15);
-                       -fx-text-fill: white; -fx-font-size: 12px;
-                       -fx-background-radius: 8; -fx-cursor: hand;
-                       -fx-border-color: rgba(255,255,255,0.4);
-                       -fx-border-radius: 8; -fx-border-width: 1;
-                       -fx-padding: 6 14;"/>
-        <Label fx:id="titleLabel" text="🤖 Auto-Bid"
-               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                styleClass="btn-ghost"
+                style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
+        <Label fx:id="titleLabel" text="&#x1F916; Auto-Bid"
+               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
     </HBox>
 
     <!-- CONTENT -->
-    <VBox spacing="20" VBox.vgrow="ALWAYS">
-        <padding><Insets top="24" right="40" bottom="20" left="40"/></padding>
+    <VBox spacing="16" VBox.vgrow="ALWAYS"
+          style="-fx-background-color: #0F172A;">
+        <padding><Insets top="24" right="32" bottom="24" left="32"/></padding>
 
         <!-- Current AutoBid Info -->
         <VBox spacing="8"
-              style="-fx-background-color: #E3F2FD;
+              style="-fx-background-color: rgba(59,130,246,0.08);
                      -fx-background-radius: 10;
                      -fx-padding: 16;
-                     -fx-border-color: #90CAF9;
+                     -fx-border-color: #1E3A5F;
                      -fx-border-radius: 10;
                      -fx-border-width: 1;">
-            <Label text="📋 Auto-Bid hiện tại"
-                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+            <Label text="&#x1F4CB; Auto-Bid hiện tại"
+                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
             <Label fx:id="currentAutoBidLabel" text="Chưa đặt auto-bid cho phiên này"
-                   style="-fx-font-size: 12px; -fx-text-fill: #555;" wrapText="true"/>
+                   style="-fx-font-size: 12px; -fx-text-fill: #94A3B8;" wrapText="true"/>
         </VBox>
 
         <!-- Set AutoBid Card -->
         <VBox spacing="14"
-              style="-fx-background-color: white;
+              style="-fx-background-color: #0B1120;
                      -fx-background-radius: 12;
-                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+                     -fx-border-color: #1E3A5F;
+                     -fx-border-radius: 12;
+                     -fx-border-width: 1;
                      -fx-padding: 20;">
-            <Label text="🤖 Cài đặt Auto-Bid"
-                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+            <Label text="&#x1F916; Cài đặt Auto-Bid"
+                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
 
             <VBox spacing="6">
                 <Label text="Giá tối đa sẵn sàng trả (VNĐ):"
-                       style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                       style="-fx-font-size: 12px; -fx-text-fill: #94A3B8;"/>
                 <TextField fx:id="maxBidField"
                            promptText="Nhập giá tối đa..."
-                           prefHeight="40"
+                           prefHeight="42"
                            styleClass="text-field-modern"/>
             </VBox>
 
             <VBox spacing="6">
                 <Label text="Bước tăng mỗi lần (VNĐ):"
-                       style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                       style="-fx-font-size: 12px; -fx-text-fill: #94A3B8;"/>
                 <TextField fx:id="incrementField"
                            promptText="Nhập bước tăng..."
-                           prefHeight="40"
+                           prefHeight="42"
                            styleClass="text-field-modern"/>
             </VBox>
 
-            <Label text="💡 Hệ thống sẽ tự động đặt giá thay bạn khi có người đặt cao hơn,
-cho đến khi đạt giá tối đa."
-                   style="-fx-font-size: 11px; -fx-text-fill: #888;"
+            <Label text="&#x1F4A1; Hệ thống sẽ tự động đặt giá thay bạn khi có người đặt cao hơn, cho đến khi đạt giá tối đa."
+                   style="-fx-font-size: 11px; -fx-text-fill: #475569;"
                    wrapText="true"/>
 
-            <Button text="🤖 BẬT AUTO-BID" onAction="#handleSetAutoBid"
-                    prefWidth="400" prefHeight="42"
+            <Button text="&#x1F916; BẬT AUTO-BID" onAction="#handleSetAutoBid"
+                    prefWidth="416" prefHeight="42"
                     styleClass="btn-primary"
                     style="-fx-font-size: 13px; -fx-font-weight: bold;"/>
 

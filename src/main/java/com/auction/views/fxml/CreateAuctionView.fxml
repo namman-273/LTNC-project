@@ -29,7 +29,7 @@
             <Button text="← Quay lại" onAction="#handleBack"
                     styleClass="btn-ghost"
                     style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
-            <Label text="➕ Tạo Phiên Đấu Giá Mới"
+            <Label text="&#x2795; Tạo Phiên Đấu Giá Mới"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
         </HBox>
 
@@ -100,7 +100,7 @@
 
             <Region VBox.vgrow="ALWAYS"/>
 
-            <Button text="🚀 TẠO PHIÊN ĐẤU GIÁ" onAction="#handleCreate"
+            <Button text="&#x1F680; TẠO PHIÊN ĐẤU GIÁ" onAction="#handleCreate"
                     prefWidth="452" prefHeight="46"
                     style="-fx-background-color: linear-gradient(to right,#2563EB,#3B82F6);
                            -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;
@@ -116,7 +116,7 @@
                  -fx-border-width: 0 0 0 1;">
         <padding><Insets top="24" right="20" bottom="24" left="20"/></padding>
 
-        <Label text="👁 Preview Card"
+        <Label text="&#x1F441; Preview Card"
                style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;
                       -fx-padding: 0 0 12 0;"/>
 
@@ -128,13 +128,13 @@
                      -fx-border-width: 1; -fx-padding: 14;
                      -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 3);">
 
-            <Label text="⬤ OPEN"
+            <Label text="&#x2B24; OPEN"
                    style="-fx-background-color: rgba(52,211,153,0.15);
                           -fx-text-fill: #34D399;
                           -fx-font-size: 10px; -fx-font-weight: bold;
                           -fx-background-radius: 6; -fx-padding: 3 8;"/>
 
-            <Label text="🏷"
+            <Label text="&#x26A1;"
                    style="-fx-font-size: 52px; -fx-padding: 8 0;
                           -fx-alignment: center;" prefWidth="270"/>
 
@@ -149,7 +149,7 @@
                    style="-fx-font-size: 16px; -fx-font-weight: bold;
                           -fx-text-fill: #60A5FA;"/>
 
-            <Button text="👁 Xem chi tiết" prefWidth="270"
+            <Button text="&#x1F441; Xem chi tiết" prefWidth="270"
                     style="-fx-background-color: linear-gradient(to right,#2563EB,#3B82F6);
                            -fx-text-fill: white;
                            -fx-font-size: 11px; -fx-font-weight: bold;
@@ -165,7 +165,7 @@
                      -fx-border-color: #1E3A5F;
                      -fx-border-radius: 10; -fx-border-width: 1;
                      -fx-padding: 14;">
-            <Label text="💡 Lưu ý"
+            <Label text="&#x1F4A1; Lưu ý"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
             <Label text="• Giá khởi điểm phải lớn hơn 0"
                    style="-fx-font-size: 11px; -fx-text-fill: #64748B;" wrapText="true"/>

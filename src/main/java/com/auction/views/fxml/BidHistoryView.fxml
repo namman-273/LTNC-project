@@ -112,24 +112,18 @@
             </VBox>
             <Region HBox.hgrow="ALWAYS"/>
             <!-- Icon buttons for Ví tiền and Thông báo -->
-            <Button onAction="#handleBack" prefHeight="34" prefWidth="34"
-                    style="-fx-background-color: rgba(30,58,95,0.85);
-                           -fx-background-radius: 8; -fx-cursor: hand;
-                           -fx-border-color: #2563EB; -fx-border-radius: 8; -fx-border-width: 1;">
-                <graphic>
-                    <Label text="&#x1F4B0;"
-                           style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                </graphic>
-            </Button>
-            <Button onAction="#handleBack" prefHeight="34" prefWidth="34"
-                    style="-fx-background-color: rgba(30,58,95,0.85);
-                           -fx-background-radius: 8; -fx-cursor: hand;
-                           -fx-border-color: #92400E; -fx-border-radius: 8; -fx-border-width: 1;">
-                <graphic>
-                    <Label text="&#x1F514;"
-                           style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                </graphic>
-            </Button>
+            <Button text="$" onAction="#handleBack"
+                    prefHeight="34" prefWidth="34"
+                    style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #60A5FA;
+                           -fx-font-size: 16px; -fx-font-weight: bold;
+                           -fx-background-radius: 17; -fx-cursor: hand;
+                           -fx-border-color: #2563EB; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
+            <Button text="!" onAction="#handleBack"
+                    prefHeight="34" prefWidth="34"
+                    style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #FBBF24;
+                           -fx-font-size: 18px; -fx-font-weight: bold;
+                           -fx-background-radius: 17; -fx-cursor: hand;
+                           -fx-border-color: #92400E; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
         </HBox>
 
         <!-- STATS ROW -->
