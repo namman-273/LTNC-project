@@ -128,39 +128,38 @@
                                    -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 9 20;"/>
                 </HBox>
             </VBox>
-            <!-- Wallet + Bell icon buttons + Trophy (old style) -->
-            <VBox alignment="TOP_RIGHT" spacing="6" HBox.hgrow="NEVER" style="-fx-padding: 0 0 0 20;">
-                <HBox spacing="6" alignment="CENTER_RIGHT">
-                    <StackPane onMouseClicked="#handleBalance" style="-fx-cursor: hand;">
-                        <Button text="&#x1F4B0;" onAction="#handleBalance"
-                                prefHeight="36" prefWidth="36"
-                                style="-fx-background-color: linear-gradient(to bottom, #1E3A5F, #162236);
-                                       -fx-text-fill: #60A5FA; -fx-font-size: 18px; -fx-font-weight: bold;
-                                       -fx-font-family: 'Segoe UI Emoji';
-                                       -fx-background-radius: 18; -fx-cursor: hand;
-                                       -fx-border-color: #2563EB; -fx-border-radius: 18; -fx-border-width: 2;
-                                       -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.5), 8, 0, 0, 2);"/>
-                    </StackPane>
-                    <StackPane onMouseClicked="#handleNotification" style="-fx-cursor: hand;">
-                        <Button text="&#x1F514;" onAction="#handleNotification"
-                                prefHeight="36" prefWidth="36"
-                                style="-fx-background-color: linear-gradient(to bottom, #2D1B00, #1C1400);
-                                       -fx-text-fill: #FBBF24; -fx-font-size: 18px;
-                                       -fx-font-family: 'Segoe UI Emoji';
-                                       -fx-background-radius: 18; -fx-cursor: hand;
-                                       -fx-border-color: #92400E; -fx-border-radius: 18; -fx-border-width: 2;
-                                       -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.45), 8, 0, 0, 2);"/>
-                        <Label fx:id="notifBadge" text="3"
-                               style="-fx-background-color: #EF4444; -fx-text-fill: white;
-                                      -fx-font-size: 9px; -fx-font-weight: bold;
-                                      -fx-background-radius: 8; -fx-padding: 1 4;
-                                      -fx-min-width: 16; -fx-min-height: 16;"
-                               StackPane.alignment="TOP_RIGHT"
-                               translateX="2" translateY="-2"/>
-                    </StackPane>
+            <!-- Wallet + Bell + Trophy -->
+            <VBox alignment="TOP_RIGHT" spacing="8" HBox.hgrow="NEVER" style="-fx-padding: 0 0 0 20;">
+                <HBox spacing="8" alignment="CENTER_RIGHT">
+                    <!-- Ví tiền: dùng HBox chứa emoji Label + text Label làm button -->
+                    <HBox onMouseClicked="#handleBalance" alignment="CENTER" spacing="5"
+                          prefHeight="32" prefWidth="90"
+                          style="-fx-background-color: rgba(37,99,235,0.18);
+                                 -fx-background-radius: 10; -fx-cursor: hand;
+                                 -fx-border-color: #2563EB; -fx-border-radius: 10; -fx-border-width: 1;
+                                 -fx-padding: 0 8;">
+                        <Label text="&#x1F4B0;"
+                               style="-fx-font-size: 15px; -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;"/>
+                        <Label text="Ví tiền"
+                               style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
+                    </HBox>
+                    <!-- Thông báo -->
+                    <HBox onMouseClicked="#handleNotification" alignment="CENTER" spacing="5"
+                          prefHeight="32" prefWidth="104"
+                          style="-fx-background-color: rgba(180,130,0,0.15);
+                                 -fx-background-radius: 10; -fx-cursor: hand;
+                                 -fx-border-color: #92400E; -fx-border-radius: 10; -fx-border-width: 1;
+                                 -fx-padding: 0 8;">
+                        <Label text="&#x1F514;"
+                               style="-fx-font-size: 15px; -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;"/>
+                        <Label text="Thông báo"
+                               style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #FBBF24;"/>
+                    </HBox>
                 </HBox>
-                <Label text="&#x1F3DB;&#xFE0F;"
-                       style="-fx-font-size: 72px; -fx-opacity: 0.15;"/>
+                <!-- Trophy: dùng Label với font emoji riêng -->
+                <Label text="&#x1F3C6;"
+                       style="-fx-font-size: 64px; -fx-opacity: 0.30;
+                              -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;"/>
             </VBox>
         </HBox>
 
@@ -262,7 +261,7 @@
                      -fx-background-color: #0B1120;
                      -fx-border-color: #1E3A5F transparent transparent transparent;
                      -fx-border-width: 1;">
-            <Label fx:id="statusBarLabel" text="Dang tai danh sach phien..."
+            <Label fx:id="statusBarLabel" text="Đang tải danh sách phiên..."
                    style="-fx-font-size: 11px; -fx-text-fill: #475569;"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="&#169; 2026 Hệ Thống Đấu Giá 1388AUCTION"
