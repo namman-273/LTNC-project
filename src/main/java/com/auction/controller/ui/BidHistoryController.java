@@ -1,16 +1,16 @@
 package com.auction.controller.ui;
 
+import com.auction.model.dto.BidHistoryEntry;
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
-import com.auction.util.core.BidHistoryManager;
-import com.auction.util.core.BidHistoryManager.HistoryRecord;
-import com.auction.util.core.BidHistoryManager.Result;
+import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.views.java.AuctionListView;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -24,13 +24,15 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import java.lang.reflect.Type;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
 public class BidHistoryController implements Initializable {
 
-    @FXML private ListView<HistoryRecord> historyList;
+    @FXML private ListView<BidHistoryEntry> historyList;
     @FXML private Label totalLabel;
     @FXML private Label winLabel;
     @FXML private Label loseLabel;
@@ -42,6 +44,7 @@ public class BidHistoryController implements Initializable {
 
     private String username;
     private String activeTab = "all";
+    private List<BidHistoryEntry> allEntries = new ArrayList<>();
 
     private static final String TAB_ACTIVE =
             "-fx-background-color: #111827; -fx-text-fill: white; " +
@@ -53,6 +56,8 @@ public class BidHistoryController implements Initializable {
                     "-fx-background-radius: 20; -fx-padding: 6 18; " +
                     "-fx-cursor: hand; -fx-font-size: 12px; " +
                     "-fx-border-color: #E5E7EB; -fx-border-radius: 20; -fx-border-width: 1;";
+
+    private final Gson gson = new GsonBuilder().create();
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -73,28 +78,13 @@ public class BidHistoryController implements Initializable {
                 if (res != null && res.startsWith(Protocol.RES_BID_HISTORY)) {
                     String json = res.substring(
                             Protocol.RES_BID_HISTORY.length() + Protocol.SEPARATOR.length());
-
-                    JsonArray arr = JsonParser.parseString(json).getAsJsonArray();
-                    BidHistoryManager mgr = BidHistoryManager.getInstance();
-
-                    for (int i = 0; i < arr.size(); i++) {
-                        JsonObject obj = arr.get(i).getAsJsonObject();
-                        String auctionId  = obj.has("auctionId")  ? obj.get("auctionId").getAsString()  : "—";
-                        String itemName   = obj.has("itemName")   ? obj.get("itemName").getAsString()   : "—";
-                        String itemType   = obj.has("itemType")   ? obj.get("itemType").getAsString()   : "";
-                        double finalPrice = obj.has("finalPrice") ? obj.get("finalPrice").getAsDouble() : 0;
-                        String result     = obj.has("result")     ? obj.get("result").getAsString()     : "LOSE";
-
-                        String priceStr = String.format("%,.0f VNĐ", finalPrice);
-                        Result r = "WIN".equalsIgnoreCase(result) ? Result.WIN : Result.LOSE;
-
-                        mgr.addRecord(auctionId, itemName, itemType, priceStr, r);
-                    }
+                    Type listType = new TypeToken<List<BidHistoryEntry>>(){}.getType();
+                    List<BidHistoryEntry> entries = gson.fromJson(json, listType);
+                    if (entries != null) allEntries = entries;
                 }
             } catch (Exception e) {
                 System.err.println("[BidHistoryController] Lỗi load: " + e.getMessage());
             }
-
             Platform.runLater(() -> {
                 updateStats();
                 applyTab(activeTab);
@@ -112,21 +102,38 @@ public class BidHistoryController implements Initializable {
         tabWin.setStyle(TAB_INACTIVE);
         tabLose.setStyle(TAB_INACTIVE);
 
-        List<HistoryRecord> source = switch (tab) {
-            case "win"  -> { tabWin.setStyle(TAB_ACTIVE);  yield BidHistoryManager.getInstance().getWins();  }
-            case "lose" -> { tabLose.setStyle(TAB_ACTIVE); yield BidHistoryManager.getInstance().getLoses(); }
-            default     -> { tabAll.setStyle(TAB_ACTIVE);  yield BidHistoryManager.getInstance().getAll();   }
-        };
+        List<BidHistoryEntry> source;
+        switch (tab) {
+            case "win":
+                tabWin.setStyle(TAB_ACTIVE);
+                source = allEntries.stream()
+                        .filter(e -> "WIN".equalsIgnoreCase(e.getResult()))
+                        .collect(java.util.stream.Collectors.toList());
+                break;
+            case "lose":
+                tabLose.setStyle(TAB_ACTIVE);
+                source = allEntries.stream()
+                        .filter(e -> "LOSE".equalsIgnoreCase(e.getResult()))
+                        .collect(java.util.stream.Collectors.toList());
+                break;
+            default:
+                tabAll.setStyle(TAB_ACTIVE);
+                source = new ArrayList<>(allEntries);
+        }
         historyList.setItems(FXCollections.observableArrayList(source));
     }
 
     private void updateStats() {
-        BidHistoryManager m = BidHistoryManager.getInstance();
-        if (totalLabel    != null) totalLabel.setText(String.valueOf(m.totalCount()));
-        if (winLabel      != null) winLabel.setText(String.valueOf(m.winCount()));
-        if (loseLabel     != null) loseLabel.setText(String.valueOf(m.loseCount()));
-        if (rateLabel     != null) rateLabel.setText(m.winRate());
-        if (subtitleLabel != null) subtitleLabel.setText(m.totalCount() + " phiên đã tham gia");
+        long total = allEntries.size();
+        long wins  = allEntries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
+        long loses = total - wins;
+        String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
+
+        if (totalLabel    != null) totalLabel.setText(String.valueOf(total));
+        if (winLabel      != null) winLabel.setText(String.valueOf(wins));
+        if (loseLabel     != null) loseLabel.setText(String.valueOf(loses));
+        if (rateLabel     != null) rateLabel.setText(rate);
+        if (subtitleLabel != null) subtitleLabel.setText(total + " phiên đã tham gia");
     }
 
     @FXML
@@ -135,7 +142,7 @@ public class BidHistoryController implements Initializable {
         new AuctionListView(stage, username).show();
     }
 
-    private class HistoryCell extends ListCell<HistoryRecord> {
+    private static class HistoryCell extends ListCell<BidHistoryEntry> {
         private final HBox      card       = new HBox(14);
         private final StackPane iconWrap   = new StackPane();
         private final Label     iconLabel  = new Label();
@@ -145,7 +152,7 @@ public class BidHistoryController implements Initializable {
         private final Label     badge      = new Label();
         private final Label     detail     = new Label();
         private final HBox      bottomRow  = new HBox(12);
-        private final Label     dateLabel  = new Label();
+        private final Label     timeLabel  = new Label();
         private final Label     priceLabel = new Label();
 
         HistoryCell() {
@@ -160,14 +167,14 @@ public class BidHistoryController implements Initializable {
             itemName.setMaxWidth(280);
             badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 2 8;");
             detail.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
-            dateLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+            timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
             priceLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
 
             titleRow.setAlignment(Pos.CENTER_LEFT);
             titleRow.getChildren().addAll(itemName, badge);
 
             bottomRow.setAlignment(Pos.CENTER_LEFT);
-            bottomRow.getChildren().addAll(dateLabel, priceLabel);
+            bottomRow.getChildren().addAll(timeLabel, priceLabel);
 
             content.getChildren().addAll(titleRow, detail, bottomRow);
             HBox.setHgrow(content, Priority.ALWAYS);
@@ -181,27 +188,21 @@ public class BidHistoryController implements Initializable {
         }
 
         @Override
-        protected void updateItem(HistoryRecord rec, boolean empty) {
-            super.updateItem(rec, empty);
+        protected void updateItem(BidHistoryEntry entry, boolean empty) {
+            super.updateItem(entry, empty);
             setStyle("-fx-background-color: transparent; -fx-padding: 0;");
-            if (empty || rec == null) { setGraphic(null); return; }
+            if (empty || entry == null) { setGraphic(null); return; }
 
-            boolean win  = rec.isWin();
-            String  type = rec.getItemType();
+            boolean win = "WIN".equalsIgnoreCase(entry.getResult());
 
-            String iconTxt, iconBg;
-            if      ("Art".equals(type))         { iconTxt = "🎨"; iconBg = "#FEE2E2"; }
-            else if ("Electronics".equals(type)) { iconTxt = "💻"; iconBg = "#DBEAFE"; }
-            else if ("Vehicle".equals(type))     { iconTxt = "🚗"; iconBg = "#D1FAE5"; }
-            else                                 { iconTxt = "📦"; iconBg = "#F3F4F6"; }
+            // Icon mặc định vì BidHistoryEntry không có itemType
+            iconLabel.setText("📦");
+            iconWrap.setStyle("-fx-background-color: #F3F4F6; -fx-background-radius: 22;");
 
-            iconLabel.setText(iconTxt);
-            iconWrap.setStyle("-fx-background-color: " + iconBg + "; -fx-background-radius: 22;");
-
-            itemName.setText(rec.getItemName());
-            detail.setText("ID: " + rec.getAuctionId());
-            dateLabel.setText(rec.getDate() != null ? rec.getDate() : "");
-            priceLabel.setText(rec.getFinalPrice());
+            itemName.setText(entry.getItemName());
+            detail.setText("ID: " + entry.getAuctionId());
+            timeLabel.setText(entry.getEndTime() != null ? entry.getEndTime() : "");
+            priceLabel.setText(String.format("%,.0f VNĐ", entry.getFinalPrice()));
 
             if (win) {
                 badge.setText("Thắng");
