@@ -2,7 +2,8 @@ package com.auction.controller.ui;
 
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
-import com.auction.util.core.BidHistoryManager;
+import com.auction.service.bidhistorymanager.BidHistoryManager;
+import com.auction.model.dto.BidHistoryEntry;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.BidHistoryView;
@@ -161,10 +162,16 @@ public class ProfileController implements Initializable {
 
     // ── Refresh thống kê local ────────────────────────────────────────────────
     private void refreshStats() {
-        BidHistoryManager m = BidHistoryManager.getInstance();
-        if (statTotal != null) statTotal.setText(String.valueOf(m.totalCount()));
-        if (statWin   != null) statWin.setText(String.valueOf(m.winCount()));
-        if (statRate  != null) statRate.setText(m.winRate());
+        java.util.List<BidHistoryEntry> entries =
+                BidHistoryManager.getInstance().getHistoryForUser(username);
+        long total = entries.size();
+        long wins  = entries.stream()
+                .filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
+        String rate = total > 0
+                ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
+        if (statTotal != null) statTotal.setText(String.valueOf(total));
+        if (statWin   != null) statWin.setText(String.valueOf(wins));
+        if (statRate  != null) statRate.setText(rate);
     }
 
     // ── Cập nhật email ────────────────────────────────────────────────────────

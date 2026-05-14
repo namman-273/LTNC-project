@@ -1,8 +1,6 @@
 package com.auction.controller.ui;
 
 import com.auction.network.protocol.Protocol;
-import com.auction.util.core.BidHistoryManager;
-import com.auction.util.core.BidHistoryManager.Result;
 import com.auction.util.ui.NotificationManager;
 import com.auction.util.ui.ToastManager;
 import com.auction.network.client.ServerConnection;
@@ -438,14 +436,8 @@ public class BidController implements Initializable {
                     String detail  = parts.length >= 3 ? parts[2] : "";
                     boolean isWin  = detail.contains("Winner:" + username);
 
-                    // MỚI: ghi vào BidHistoryManager
-                    BidHistoryManager.getInstance().addRecord(
-                            auctionId,
-                            itemNameLabel.getText(),
-                            itemTypeCached,
-                            currentPriceLabel.getText(),
-                            isWin ? Result.WIN : Result.LOSE
-                    );
+
+
 
                     if (isWin) {
                         showSuccess("Bạn đã thắng phiên đấu giá!");
