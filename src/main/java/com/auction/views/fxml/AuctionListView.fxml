@@ -130,18 +130,29 @@
             <!-- Wallet + Bell icon buttons + Trophy (old style) -->
             <VBox alignment="TOP_RIGHT" spacing="6" HBox.hgrow="NEVER" style="-fx-padding: 0 0 0 20;">
                 <HBox spacing="6" alignment="CENTER_RIGHT">
-                    <Button text="$" onAction="#handleBalance"
-                            prefHeight="34" prefWidth="34"
-                            style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #60A5FA;
-                                   -fx-font-size: 16px; -fx-font-weight: bold;
-                                   -fx-background-radius: 17; -fx-cursor: hand;
-                                   -fx-border-color: #2563EB; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
-                    <Button text="!" onAction="#handleNotification"
-                            prefHeight="34" prefWidth="34"
-                            style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #FBBF24;
-                                   -fx-font-size: 18px; -fx-font-weight: bold;
-                                   -fx-background-radius: 17; -fx-cursor: hand;
-                                   -fx-border-color: #92400E; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
+                    <StackPane onMouseClicked="#handleBalance" style="-fx-cursor: hand;">
+                        <Button text="&#x1F4B0;" onAction="#handleBalance"
+                                prefHeight="34" prefWidth="34"
+                                style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #60A5FA;
+                                       -fx-font-size: 16px;
+                                       -fx-background-radius: 17; -fx-cursor: hand;
+                                       -fx-border-color: #2563EB; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
+                    </StackPane>
+                    <StackPane onMouseClicked="#handleNotification" style="-fx-cursor: hand;">
+                        <Button text="&#x1F514;" onAction="#handleNotification"
+                                prefHeight="34" prefWidth="34"
+                                style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #FBBF24;
+                                       -fx-font-size: 16px;
+                                       -fx-background-radius: 17; -fx-cursor: hand;
+                                       -fx-border-color: #92400E; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
+                        <Label fx:id="notifBadge" text="3"
+                               style="-fx-background-color: #EF4444; -fx-text-fill: white;
+                                      -fx-font-size: 9px; -fx-font-weight: bold;
+                                      -fx-background-radius: 8; -fx-padding: 1 4;
+                                      -fx-min-width: 16; -fx-min-height: 16;"
+                               StackPane.alignment="TOP_RIGHT"
+                               translateX="2" translateY="-2"/>
+                    </StackPane>
                 </HBox>
                 <Label text="&#x1F3DB;&#xFE0F;"
                        style="-fx-font-size: 72px; -fx-opacity: 0.15;"/>
