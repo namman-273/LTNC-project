@@ -268,7 +268,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>AuctionSystem-Server</finalName>
+                            <finalName>server</finalName>
                             <transformers>
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -290,7 +290,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>Auction-Client</finalName>
+                            <finalName>client</finalName>
                             <transformers>
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">

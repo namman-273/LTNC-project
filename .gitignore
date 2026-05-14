@@ -19,3 +19,5 @@ Thumbs.db
 *.dat
 *.bin
 database/
+
+dependency-reduced-pom.xml
