@@ -19,13 +19,13 @@
       style="-fx-background-color: #0F172A;">
 
     <!-- ══ SIDEBAR ════════════════════════════════════════════════════════════ -->
-    <VBox fx:id="sidebarBox" prefWidth="220" spacing="0"
+    <VBox fx:id="sidebarBox" prefWidth="220" minWidth="60" spacing="0"
           style="-fx-background-color: #0B1120;
                  -fx-border-color: transparent #1E3A5F transparent transparent;
                  -fx-border-width: 1;">
 
-        <!-- Logo + hamburger -->
-        <HBox alignment="CENTER_LEFT" spacing="10"
+        <!-- Logo row + hamburger -->
+        <HBox fx:id="logoRow" alignment="CENTER_LEFT" spacing="10"
               style="-fx-padding: 18 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
@@ -46,7 +46,7 @@
             </VBox>
         </HBox>
 
-        <!-- Avatar -->
+        <!-- Avatar — full mode -->
         <VBox fx:id="avatarBox" alignment="CENTER" spacing="6"
               style="-fx-padding: 14 16 12 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
@@ -59,7 +59,18 @@
                           -fx-wrap-text: true;" maxWidth="188"/>
         </VBox>
 
-        <!-- Nav menu -->
+        <!-- Avatar — icon mode (chỉ hiện khi thu) -->
+        <VBox fx:id="avatarIconBox" alignment="CENTER" spacing="0"
+              visible="false" managed="false"
+              style="-fx-padding: 12 0;
+                     -fx-border-color: transparent transparent #1E3A5F transparent;
+                     -fx-border-width: 1; -fx-background-color: rgba(30,45,69,0.5);">
+            <Label text="&#x1F464;"
+                   style="-fx-font-size: 22px; -fx-background-color: #1E3A5F;
+                          -fx-background-radius: 20; -fx-padding: 5 8;"/>
+        </VBox>
+
+        <!-- Nav menu — FULL text mode -->
         <VBox fx:id="navBox" spacing="2" style="-fx-padding: 12 10;" VBox.vgrow="ALWAYS">
 
             <Button text="&#x1F3E0;  Trang chủ"
@@ -114,24 +125,76 @@
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
         </VBox>
+
+        <!-- Nav menu — ICON only mode (hiện khi sidebar thu) -->
+        <VBox fx:id="iconNavBox" spacing="4" alignment="CENTER"
+              style="-fx-padding: 10 0;" VBox.vgrow="ALWAYS"
+              visible="false" managed="false">
+
+            <!-- Trang chủ -->
+            <Button text="&#x1F3E0;" prefWidth="44" prefHeight="44"
+                    style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
+                           -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-border-color: transparent transparent transparent #3B82F6;
+                           -fx-border-width: 0 0 0 3; -fx-padding: 0;"/>
+
+            <!-- Lịch sử -->
+            <Button text="&#x1F4DC;" prefWidth="44" prefHeight="44" onAction="#handleBidHistory"
+                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
+                           -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-padding: 0;"/>
+
+            <!-- Watchlist -->
+            <Button text="&#x2B50;" prefWidth="44" prefHeight="44" onAction="#handleGetWatchlist"
+                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
+                           -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-padding: 0;"/>
+
+            <!-- Hồ sơ -->
+            <Button text="&#x1F464;" prefWidth="44" prefHeight="44" onAction="#handleProfile"
+                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
+                           -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-padding: 0;"/>
+
+            <!-- Seller icon -->
+            <Button fx:id="sellerIconButton" text="&#x1F3EA;" prefWidth="44" prefHeight="44"
+                    onAction="#handleSellerDashboard"
+                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
+                           -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-padding: 0;"
+                    visible="false" managed="false"/>
+
+            <!-- Admin icon -->
+            <Button fx:id="adminIconButton" text="&#x1F6E1;" prefWidth="44" prefHeight="44"
+                    onAction="#handleAdminDashboard"
+                    style="-fx-background-color: transparent; -fx-text-fill: #F59E0B;
+                           -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-padding: 0;"
+                    visible="false" managed="false"/>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
+                          -fx-min-height: 1; -fx-max-height: 1; -fx-min-width: 44;"/>
+
+            <!-- Đăng xuất icon -->
+            <Button text="&#x1F6AA;" prefWidth="44" prefHeight="44" onAction="#handleLogout"
+                    style="-fx-background-color: transparent; -fx-text-fill: #F87171;
+                           -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-padding: 0;"/>
+        </VBox>
+
     </VBox>
 
     <!-- ══ MAIN CONTENT ═══════════════════════════════════════════════════════ -->
     <VBox HBox.hgrow="ALWAYS" spacing="0" style="-fx-background-color: #0F172A;">
 
-        <!-- TOP BAR: hamburger (khi sidebar thu) + search + icons -->
+        <!-- TOP BAR -->
         <HBox fx:id="topBar" alignment="CENTER_LEFT" spacing="10"
               style="-fx-background-color: #0B1120;
                      -fx-padding: 0 20; -fx-pref-height: 52;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
-
-            <Button fx:id="topHamburgerBtn" text="☰" onAction="#handleToggleSidebar"
-                    style="-fx-background-color: rgba(59,130,246,0.12); -fx-text-fill: #60A5FA;
-                           -fx-font-size: 18px; -fx-cursor: hand;
-                           -fx-background-radius: 8; -fx-border-color: #1E3A5F;
-                           -fx-border-radius: 8; -fx-border-width: 1; -fx-padding: 4 10;"
-                    visible="false" managed="false"/>
 
             <!-- Search bar -->
             <HBox alignment="CENTER_LEFT" spacing="0" HBox.hgrow="ALWAYS"
@@ -197,7 +260,6 @@
                                    -fx-effect: dropshadow(gaussian,rgba(37,99,235,0.5),8,0,0,2);"/>
                 </HBox>
             </VBox>
-            <!-- Trophy rõ nét, đặt ở đây -->
             <VBox alignment="CENTER" HBox.hgrow="NEVER" style="-fx-padding: 0 0 0 24;">
                 <Label text="&#x1F3C6;"
                        style="-fx-font-size: 80px;

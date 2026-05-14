@@ -63,7 +63,11 @@ public class AuctionListController implements Initializable {
   @FXML private Button    topHamburgerBtn;
   @FXML private VBox      logoText;
   @FXML private VBox      avatarBox;
+  @FXML private VBox      avatarIconBox;
   @FXML private VBox      navBox;
+  @FXML private VBox      iconNavBox;
+  @FXML private Button    adminIconButton;
+  @FXML private Button    sellerIconButton;
   @FXML private javafx.scene.control.TextField searchField;
 
   private boolean sidebarExpanded = true;
@@ -94,6 +98,14 @@ public class AuctionListController implements Initializable {
     if (sellerButton != null) {
       sellerButton.setVisible("SELLER".equalsIgnoreCase(role));
       sellerButton.setManaged("SELLER".equalsIgnoreCase(role));
+    }
+    if (sellerIconButton != null) {
+      sellerIconButton.setVisible("SELLER".equalsIgnoreCase(role));
+      sellerIconButton.setManaged("SELLER".equalsIgnoreCase(role));
+    }
+    if (adminIconButton != null) {
+      adminIconButton.setVisible("ADMIN".equalsIgnoreCase(role));
+      adminIconButton.setManaged("ADMIN".equalsIgnoreCase(role));
     }
   }
 
@@ -548,20 +560,25 @@ public class AuctionListController implements Initializable {
   public void handleToggleSidebar() {
     sidebarExpanded = !sidebarExpanded;
     if (sidebarExpanded) {
-      // Mở rộng
+      // ── Mở rộng: 220px, hiện text, ẩn icon-only ──
       sidebarBox.setPrefWidth(220);
-      if (logoText  != null) { logoText.setVisible(true);  logoText.setManaged(true); }
-      if (avatarBox != null) { avatarBox.setVisible(true); avatarBox.setManaged(true); }
-      if (navBox    != null) { navBox.setVisible(true);    navBox.setManaged(true); }
+      sidebarBox.setMinWidth(220);
+      if (logoText     != null) { logoText.setVisible(true);      logoText.setManaged(true); }
+      if (avatarBox    != null) { avatarBox.setVisible(true);     avatarBox.setManaged(true); }
+      if (avatarIconBox!= null) { avatarIconBox.setVisible(false);avatarIconBox.setManaged(false); }
+      if (navBox       != null) { navBox.setVisible(true);        navBox.setManaged(true); }
+      if (iconNavBox   != null) { iconNavBox.setVisible(false);   iconNavBox.setManaged(false); }
       if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
     } else {
-      // Thu hẹp — chỉ để icon hamburger
-      sidebarBox.setPrefWidth(0);
-      sidebarBox.setMinWidth(0);
-      if (logoText  != null) { logoText.setVisible(false);  logoText.setManaged(false); }
-      if (avatarBox != null) { avatarBox.setVisible(false); avatarBox.setManaged(false); }
-      if (navBox    != null) { navBox.setVisible(false);    navBox.setManaged(false); }
-      if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(true); topHamburgerBtn.setManaged(true); }
+      // ── Thu hẹp: 60px, icon-only, ẩn text ──
+      sidebarBox.setPrefWidth(60);
+      sidebarBox.setMinWidth(60);
+      if (logoText     != null) { logoText.setVisible(false);     logoText.setManaged(false); }
+      if (avatarBox    != null) { avatarBox.setVisible(false);    avatarBox.setManaged(false); }
+      if (avatarIconBox!= null) { avatarIconBox.setVisible(true); avatarIconBox.setManaged(true); }
+      if (navBox       != null) { navBox.setVisible(false);       navBox.setManaged(false); }
+      if (iconNavBox   != null) { iconNavBox.setVisible(true);    iconNavBox.setManaged(true); }
+      if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
     }
   }
 
