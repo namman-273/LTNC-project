@@ -226,7 +226,7 @@
                             -->
                             <excludes>
                                 <exclude>com/auction/MainApp.class</exclude>
-                                <exclude>com/auction/Main.class</exclude>
+                                <exclude>Main.class</exclude>
                                 <exclude>com/auction/views/**</exclude>
                                 <exclude>com/auction/controller/ui/**</exclude>
                             </excludes>
@@ -268,7 +268,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>AuctionSystem-server</finalName>
+                            <finalName>AuctionSystem-Server</finalName>
                             <transformers>
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
