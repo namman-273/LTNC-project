@@ -58,12 +58,6 @@
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
 
-            <Button text="💰  Ví tiền" onAction="#handleBack"
-                    prefWidth="200" prefHeight="40"
-                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
-                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
-                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
             <Button text="⭐  Watchlist"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
@@ -72,12 +66,6 @@
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
                            -fx-border-color: transparent transparent transparent #3B82F6;
                            -fx-border-width: 0 0 0 3;"/>
-
-            <Button text="🔔  Thông báo" onAction="#handleBack"
-                    prefWidth="200" prefHeight="40"
-                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
-                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
-                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
 
             <Button text="👤  Hồ sơ cá nhân" onAction="#handleBack"
                     prefWidth="200" prefHeight="40"
@@ -113,6 +101,19 @@
             <Label text="⭐ Watchlist của tôi"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <!-- Icon buttons for Ví tiền and Thông báo -->
+            <Button text="&#x1F4B0;" onAction="#handleBalance"
+                    prefHeight="32" prefWidth="36"
+                    style="-fx-background-color: rgba(30,58,95,0.6); -fx-text-fill: #60A5FA;
+                           -fx-font-size: 16px; -fx-background-radius: 8; -fx-cursor: hand;
+                           -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"
+                    accessibleText="Ví tiền"/>
+            <Button text="&#x1F514;" onAction="#handleNotification"
+                    prefHeight="32" prefWidth="36"
+                    style="-fx-background-color: rgba(30,58,95,0.6); -fx-text-fill: #FBBF24;
+                           -fx-font-size: 16px; -fx-background-radius: 8; -fx-cursor: hand;
+                           -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"
+                    accessibleText="Thông báo"/>
             <Button text="🔄 Làm mới" onAction="#handleRefresh"
                     styleClass="btn-ghost" style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
         </HBox>
