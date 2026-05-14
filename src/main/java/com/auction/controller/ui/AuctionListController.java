@@ -342,7 +342,7 @@ public class AuctionListController implements Initializable {
       javafx.scene.layout.StackPane imgContainer =
               new javafx.scene.layout.StackPane(imgView);
       imgContainer.setPrefHeight(120);
-      imgContainer.setStyle("-fx-background-color: #EEF2FF; -fx-background-radius: 8;");
+      imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");
       iconNode = imgContainer;
     } else {
       Label icon = new Label(typeIcon);
@@ -353,13 +353,13 @@ public class AuctionListController implements Initializable {
     }
 
     Label name = new Label(row.getItemName());
-    name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1F2937; -fx-wrap-text: true;");
+    name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0; -fx-wrap-text: true;");
     name.setMaxWidth(185);
 
     Label priceLabel = new Label("Giá hiện tại");
-    priceLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: #9CA3AF;");
+    priceLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: #475569;");
     Label price = new Label(row.getCurrentPriceFormatted());
-    price.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1565C0;");
+    price.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
 
     Button btnDetail = new Button("👁 Xem chi tiết");
     btnDetail.setPrefWidth(185);
@@ -369,9 +369,9 @@ public class AuctionListController implements Initializable {
                     "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 0;");
     btnDetail.setOnAction(e -> openBidView(row));
     btnDetail.setOnMouseEntered(e -> btnDetail.setStyle(
-            btnDetail.getStyle().replace("#1565C0; -fx-text-fill", "#0D47A1; -fx-text-fill")));
+            btnDetail.getStyle().replace("linear-gradient(to right,#2563EB,#3B82F6)", "linear-gradient(to right,#1D4ED8,#2563EB)")));
     btnDetail.setOnMouseExited(e -> btnDetail.setStyle(
-            btnDetail.getStyle().replace("#0D47A1; -fx-text-fill", "#1565C0; -fx-text-fill")));
+            btnDetail.getStyle().replace("linear-gradient(to right,#1D4ED8,#2563EB)", "linear-gradient(to right,#2563EB,#3B82F6)")));
 
     VBox card = new VBox(8, badge, iconNode, name, priceLabel, price, btnDetail);
     card.setPrefWidth(215);
@@ -387,11 +387,11 @@ public class AuctionListController implements Initializable {
       auctionGrid.getChildren().forEach(n -> {
         if (n instanceof VBox v) {
           v.setStyle(v.getStyle()
-                  .replace("-fx-background-color: #EEF5FF;", "-fx-background-color: white;"));
+                  .replace("-fx-background-color: #162236;", "-fx-background-color: #1E2D45;"));
         }
       });
       card.setStyle(card.getStyle()
-              .replace("-fx-background-color: white;", "-fx-background-color: #EEF5FF;"));
+              .replace("-fx-background-color: #1E2D45;", "-fx-background-color: #162236;"));
       selectedRow = row;
     });
 

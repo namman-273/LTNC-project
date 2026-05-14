@@ -25,11 +25,11 @@
         <!-- Logo -->
         <VBox alignment="CENTER" spacing="8">
             <Label text="🏛️"
-                   style="-fx-font-size: 54px;
-                          -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.6), 20, 0, 0, 0);"/>
+                   style="-fx-font-size: 58px;
+                          -fx-effect: dropshadow(gaussian, rgba(96,165,250,0.9), 28, 0, 0, 0);"/>
             <Label text="1388AUCTION"
-                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;
-                          -fx-letter-spacing: 2px;"/>
+                   style="-fx-font-size: 21px; -fx-font-weight: bold; -fx-text-fill: #93C5FD;
+                          -fx-letter-spacing: 2px; -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.5),4,0,0,0);"/>
             <Label text="Hệ thống đấu giá trực tuyến"
                    style="-fx-font-size: 11px; -fx-text-fill: #475569;"/>
         </VBox>
@@ -114,8 +114,10 @@
         <Button fx:id="loginButton" text="ĐĂNG NHẬP"
                 prefWidth="336" prefHeight="46"
                 onAction="#handleLogin"
-                styleClass="btn-primary"
-                style="-fx-font-size: 14px; -fx-background-radius: 12;"/>
+                style="-fx-background-color: linear-gradient(to right,#1D4ED8,#3B82F6);
+                       -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;
+                       -fx-background-radius: 12; -fx-cursor: hand;
+                       -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.7),14,0,0,4);"/>
 
         <!-- Register link -->
         <Button text="Chưa có tài khoản? Đăng ký ngay →"

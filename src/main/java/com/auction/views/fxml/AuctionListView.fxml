@@ -29,7 +29,7 @@
             <Label text="🏛" style="-fx-font-size: 22px;"/>
             <VBox spacing="1">
                 <Label text="1388AUCTION"
-                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #93C5FD; -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.6),6,0,0,0);"/>
                 <Label text="Hệ thống đấu giá"
                        style="-fx-font-size: 9px; -fx-text-fill: #334155;"/>
             </VBox>
@@ -66,19 +66,7 @@
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
 
-            <Button text="💰  Ví tiền" onAction="#handleBalance"
-                    prefWidth="200" prefHeight="40"
-                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
-                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
-                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
             <Button text="⭐  Watchlist" onAction="#handleGetWatchlist"
-                    prefWidth="200" prefHeight="40"
-                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
-                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
-                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
-            <Button text="🔔  Thông báo" onAction="#handleNotification"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;

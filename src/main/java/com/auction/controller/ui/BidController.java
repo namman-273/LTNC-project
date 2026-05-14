@@ -67,10 +67,9 @@ public class BidController implements Initializable {
     @FXML private Label  detailItemType;
     @FXML private Label  detailStartPrice;
     @FXML private Label  detailSeller;
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // ── Số dư ví của bidder ──────────────────────────────────────────────────
+    // ── Số dư ví ──────────────────────────────────────────────────────────────
     @FXML private Label balanceLabel;
+    // ─────────────────────────────────────────────────────────────────────────
 
     private String auctionId;
     private String username;
@@ -220,7 +219,6 @@ public class BidController implements Initializable {
         } catch (NumberFormatException ignored) {}
 
         updateBidSuggestion(currentPriceValue);
-        loadBalance();
 
         // itemTypeLabel (badge trên ảnh)
         if (itemTypeLabel != null && !itemTypeCached.isEmpty()) {
@@ -404,6 +402,7 @@ public class BidController implements Initializable {
                         catch (Exception ignored) {}
                         currentPriceLabel.setText(formatPrice(newPrice));
                         loadHistory();
+                        loadBalance(); // refresh số dư ngay sau khi đặt giá thành công
                         updateBidSuggestion(currentPriceValue);
                         if (!bidder.equals(username)) {
                             showWarning(bidder + " vừa đặt " + formatPrice(newPrice));
@@ -624,6 +623,7 @@ public class BidController implements Initializable {
                         } catch (NumberFormatException ignored) {}
                     }
                     loadHistory();
+                    loadBalance(); // refresh số dư ngay sau khi đặt giá thành công
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }

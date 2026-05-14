@@ -122,8 +122,10 @@
         <Button text="TẠO TÀI KHOẢN"
                 onAction="#handleRegister"
                 prefWidth="356" prefHeight="44"
-                styleClass="btn-primary"
-                style="-fx-font-size: 14px; -fx-background-radius: 12;"/>
+                style="-fx-background-color: linear-gradient(to right,#1D4ED8,#3B82F6);
+                       -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;
+                       -fx-background-radius: 12; -fx-cursor: hand;
+                       -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.7),14,0,0,4);"/>
 
         <!-- Back to login -->
         <Button text="Đã có tài khoản? Đăng nhập →"

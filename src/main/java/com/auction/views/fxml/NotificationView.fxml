@@ -7,31 +7,29 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.NotificationController"
       prefWidth="560" prefHeight="640" spacing="0"
       stylesheets="@../style/style.css"
-      style="-fx-background-color: #F5F6FA;">
+      style="-fx-background-color: #0F172A;">
 
-    <!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+    <!-- HEADER -->
     <HBox alignment="CENTER_LEFT" spacing="10"
-          style="-fx-background-color: white;
+          style="-fx-background-color: #0B1120;
                  -fx-padding: 14 20 14 16;
-                 -fx-border-color: transparent transparent #EBEBEB transparent;
+                 -fx-border-color: transparent transparent #1E3A5F transparent;
                  -fx-border-width: 1;">
 
-        <!-- Back -->
         <Button text="←" onAction="#handleBack"
-                style="-fx-background-color: #F5F6FA;
-                       -fx-text-fill: #374151; -fx-font-size: 16px;
+                style="-fx-background-color: rgba(255,255,255,0.06);
+                       -fx-text-fill: #CBD5E1; -fx-font-size: 16px;
                        -fx-background-radius: 8; -fx-cursor: hand;
-                       -fx-padding: 4 12; -fx-min-width: 36;"/>
+                       -fx-padding: 4 12; -fx-min-width: 36;
+                       -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"/>
 
-        <!-- Bell icon circle -->
-        <StackPane style="-fx-background-color: #FFF3E0;
+        <StackPane style="-fx-background-color: rgba(59,130,246,0.18);
                           -fx-background-radius: 22;
                           -fx-min-width: 44; -fx-min-height: 44;
                           -fx-max-width: 44; -fx-max-height: 44;">
@@ -40,77 +38,79 @@
 
         <VBox spacing="1">
             <Label text="Thông báo"
-                   style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #111827;"/>
-            <Label fx:id="unreadCountLabel" text="3 thông báo mới"
-                   style="-fx-font-size: 12px; -fx-text-fill: #6B7280;"/>
+                   style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+            <Label fx:id="unreadCountLabel" text="0 thông báo mới"
+                   style="-fx-font-size: 12px; -fx-text-fill: #475569;"/>
         </VBox>
 
         <Region HBox.hgrow="ALWAYS"/>
 
-        <!-- Mark all -->
         <Button text="✓ Đánh dấu đã đọc tất cả" onAction="#handleMarkAll"
-                style="-fx-background-color: transparent;
-                       -fx-text-fill: #1565C0; -fx-font-size: 11px;
+                style="-fx-background-color: rgba(59,130,246,0.1);
+                       -fx-text-fill: #60A5FA; -fx-font-size: 11px;
                        -fx-cursor: hand; -fx-padding: 5 10;
-                       -fx-border-color: #DBEAFE; -fx-border-radius: 6;
+                       -fx-border-color: #1E3A5F; -fx-border-radius: 6;
                        -fx-background-radius: 6;"/>
 
-        <!-- Clear read -->
         <Button text="🗑 Xóa đã đọc" onAction="#handleClearRead"
-                style="-fx-background-color: transparent;
-                       -fx-text-fill: #EF4444; -fx-font-size: 11px;
+                style="-fx-background-color: rgba(220,38,38,0.1);
+                       -fx-text-fill: #F87171; -fx-font-size: 11px;
                        -fx-cursor: hand; -fx-padding: 5 10;
-                       -fx-border-color: #FEE2E2; -fx-border-radius: 6;
+                       -fx-border-color: rgba(220,38,38,0.3); -fx-border-radius: 6;
                        -fx-background-radius: 6;"/>
     </HBox>
 
-    <!-- ═══ TAB BAR ══════════════════════════════════════════════════════════ -->
+    <!-- TAB BAR -->
     <HBox spacing="4" alignment="CENTER_LEFT"
-          style="-fx-background-color: white;
-                 -fx-padding: 0 16 0 16;
-                 -fx-border-color: transparent transparent #EBEBEB transparent;
+          style="-fx-background-color: #0B1120;
+                 -fx-padding: 8 16;
+                 -fx-border-color: transparent transparent #1E3A5F transparent;
                  -fx-border-width: 1;">
 
         <Button fx:id="tabAll" text="Tất cả" onAction="#handleTabAll"
-                style="-fx-background-color: #111827; -fx-text-fill: white;
-                       -fx-font-weight: bold; -fx-background-radius: 20;
-                       -fx-padding: 7 18; -fx-cursor: hand; -fx-font-size: 12px;"/>
+                style="-fx-background-color: linear-gradient(to right,#2563EB,#3B82F6);
+                       -fx-text-fill: white; -fx-font-weight: bold;
+                       -fx-background-radius: 20; -fx-padding: 7 18;
+                       -fx-cursor: hand; -fx-font-size: 12px;"/>
 
         <Button fx:id="tabUnread" text="Chưa đọc" onAction="#handleTabUnread"
-                style="-fx-background-color: transparent; -fx-text-fill: #6B7280;
+                style="-fx-background-color: transparent; -fx-text-fill: #475569;
                        -fx-background-radius: 20; -fx-padding: 7 18;
-                       -fx-cursor: hand; -fx-font-size: 12px;"/>
+                       -fx-cursor: hand; -fx-font-size: 12px;
+                       -fx-border-color: #1E3A5F; -fx-border-radius: 20; -fx-border-width: 1;"/>
 
         <Button fx:id="tabAuction" text="Đấu giá" onAction="#handleTabAuction"
-                style="-fx-background-color: transparent; -fx-text-fill: #6B7280;
+                style="-fx-background-color: transparent; -fx-text-fill: #475569;
                        -fx-background-radius: 20; -fx-padding: 7 18;
-                       -fx-cursor: hand; -fx-font-size: 12px;"/>
+                       -fx-cursor: hand; -fx-font-size: 12px;
+                       -fx-border-color: #1E3A5F; -fx-border-radius: 20; -fx-border-width: 1;"/>
 
         <Button fx:id="tabSystem" text="Hệ thống" onAction="#handleTabSystem"
-                style="-fx-background-color: transparent; -fx-text-fill: #6B7280;
+                style="-fx-background-color: transparent; -fx-text-fill: #475569;
                        -fx-background-radius: 20; -fx-padding: 7 18;
-                       -fx-cursor: hand; -fx-font-size: 12px;"/>
+                       -fx-cursor: hand; -fx-font-size: 12px;
+                       -fx-border-color: #1E3A5F; -fx-border-radius: 20; -fx-border-width: 1;"/>
     </HBox>
 
-    <!-- ═══ LIST ══════════════════════════════════════════════════════════════ -->
+    <!-- LIST -->
     <ListView fx:id="notificationList" VBox.vgrow="ALWAYS"
-              style="-fx-background-color: #F5F6FA;
+              style="-fx-background-color: #0F172A;
                      -fx-border-color: transparent;
                      -fx-background-insets: 0;
                      -fx-padding: 12 14 12 14;">
         <placeholder>
             <VBox alignment="CENTER" spacing="16" style="-fx-padding: 80 0;">
-                <StackPane style="-fx-background-color: #F3F4F6;
+                <StackPane style="-fx-background-color: rgba(30,58,95,0.5);
                                   -fx-background-radius: 40;
                                   -fx-min-width: 80; -fx-min-height: 80;
                                   -fx-max-width: 80; -fx-max-height: 80;">
                     <Label text="🔔" style="-fx-font-size: 32px; -fx-opacity: 0.4;"/>
                 </StackPane>
                 <Label text="Chưa có thông báo nào"
-                       style="-fx-font-size: 15px; -fx-text-fill: #374151;
+                       style="-fx-font-size: 15px; -fx-text-fill: #334155;
                               -fx-font-weight: bold;"/>
                 <Label text="Thông báo sẽ hiện khi có cập nhật giá,&#10;kết quả đấu giá hoặc giao dịch mới."
-                       style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF;
+                       style="-fx-font-size: 12px; -fx-text-fill: #334155;
                               -fx-text-alignment: center;"
                        wrapText="true"/>
             </VBox>
