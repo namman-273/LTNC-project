@@ -1,5 +1,6 @@
 package com.auction.network.client;
 
+import com.auction.network.protocol.Protocol;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -11,7 +12,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import com.auction.network.protocol.Protocol;
 
 /**
  * .
