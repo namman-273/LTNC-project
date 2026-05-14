@@ -56,11 +56,11 @@ public class CreateAuctionController implements Initializable {
         String name        = nameField.getText().trim();
         String price       = priceField.getText().trim();
         String duration    = durationField.getText().trim();
-        String imageUrl    = imageUrlField != null ? imageUrlField.getText().trim() : "";
         String description = descriptionArea != null ? descriptionArea.getText().trim() : "";
+        String imageUrl    = imageUrlField != null ? imageUrlField.getText().trim() : "";
 
         // Không tự validate — gửi thẳng lên BE
-        // BE expect: CREATE_AUCTION|type|name|price|duration|imageUrl|description
+        // BE expect: CREATE_AUCTION|type|name|price|duration|description|imageUrl
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             if (!conn.isConnected()) {
@@ -74,8 +74,8 @@ public class CreateAuctionController implements Initializable {
                             + name        + Protocol.SEPARATOR
                             + price       + Protocol.SEPARATOR
                             + duration    + Protocol.SEPARATOR
-                            + imageUrl    + Protocol.SEPARATOR
-                            + description
+                            + description + Protocol.SEPARATOR
+                            + imageUrl
             );
             System.out.println("Create auction response: " + response);
 
