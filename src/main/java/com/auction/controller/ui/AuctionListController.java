@@ -571,7 +571,7 @@ public class AuctionListController implements Initializable {
     if (searchField == null) return;
     String query = searchField.getText().toLowerCase().trim();
     if (query.isEmpty()) {
-      applyFilters();
+      applyFilter();
       return;
     }
     List<AuctionRow> filtered = currentRows.stream()
@@ -580,7 +580,7 @@ public class AuctionListController implements Initializable {
                     || (r.getItemType() != null && r.getItemType().toLowerCase().contains(query)))
             .collect(Collectors.toList());
     Platform.runLater(() -> renderCards(filtered));
-    setStatusBar("&#x1F50D; Tìm thấy " + filtered.size() + " phiên cho "" + query + """);
+    setStatusBar("🔍 Tìm thấy " + filtered.size() + " phiên cho \"" + query + "\"");
   }
 
 
