@@ -125,36 +125,32 @@
                             style="-fx-background-color: #2563EB; -fx-text-fill: white;
                                    -fx-font-size: 13px; -fx-font-weight: bold;
                                    -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 9 20;"/>
-                    <Button text="+ Tạo phiên mới" onAction="#handleCreateAuction"
-                            style="-fx-background-color: rgba(37,99,235,0.25); -fx-text-fill: #93C5FD;
-                                   -fx-font-size: 13px; -fx-font-weight: bold;
-                                   -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 9 20;
-                                   -fx-border-color: #3B82F6; -fx-border-radius: 10; -fx-border-width: 1;"/>
-                    <Button text="* Theo doi" onAction="#handleWatch"
-                            style="-fx-background-color: rgba(5,150,105,0.15); -fx-text-fill: #34D399;
-                                   -fx-font-size: 13px; -fx-font-weight: bold;
-                                   -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 9 20;
-                                   -fx-border-color: #065F46; -fx-border-radius: 10; -fx-border-width: 1;"/>
                 </HBox>
             </VBox>
-            <!-- Trophy + icon buttons top-right -->
+            <!-- Trophy + Ví tiền / Thông báo icons top-right -->
             <VBox alignment="TOP_RIGHT" spacing="8" HBox.hgrow="NEVER" style="-fx-padding: 0 0 0 20;">
                 <HBox spacing="6" alignment="CENTER_RIGHT">
-                    <Button text="Vi tien" onAction="#handleBalance"
-                            prefHeight="30"
-                            style="-fx-background-color: rgba(30,58,95,0.8); -fx-text-fill: #60A5FA;
-                                   -fx-font-size: 11px; -fx-font-weight: bold;
-                                   -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;
-                                   -fx-border-color: #2563EB; -fx-border-radius: 8; -fx-border-width: 1;"/>
-                    <Button text="Thong bao" onAction="#handleNotification"
-                            prefHeight="30"
-                            style="-fx-background-color: rgba(30,58,95,0.8); -fx-text-fill: #FBBF24;
-                                   -fx-font-size: 11px; -fx-font-weight: bold;
-                                   -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;
-                                   -fx-border-color: #92400E; -fx-border-radius: 8; -fx-border-width: 1;"/>
+                    <Button onAction="#handleBalance" prefHeight="34" prefWidth="34"
+                            style="-fx-background-color: rgba(30,58,95,0.85);
+                                   -fx-background-radius: 8; -fx-cursor: hand;
+                                   -fx-border-color: #2563EB; -fx-border-radius: 8; -fx-border-width: 1;">
+                        <graphic>
+                            <Label text="&#x1F4B0;"
+                                   style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
+                        </graphic>
+                    </Button>
+                    <Button onAction="#handleNotification" prefHeight="34" prefWidth="34"
+                            style="-fx-background-color: rgba(30,58,95,0.85);
+                                   -fx-background-radius: 8; -fx-cursor: hand;
+                                   -fx-border-color: #92400E; -fx-border-radius: 8; -fx-border-width: 1;">
+                        <graphic>
+                            <Label text="&#x1F514;"
+                                   style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
+                        </graphic>
+                    </Button>
                 </HBox>
                 <Label text="&#x1F3C6;"
-                       style="-fx-font-size: 80px; -fx-opacity: 0.80;"/>
+                       style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 80px; -fx-opacity: 0.85;"/>
             </VBox>
         </HBox>
 
@@ -194,6 +190,19 @@
                                -fx-font-size: 11px; -fx-background-radius: 8; -fx-cursor: hand;
                                -fx-padding: 0 12; -fx-border-color: #1E3A5F;
                                -fx-border-radius: 8; -fx-border-width: 1;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="+ Tạo phiên mới" onAction="#handleCreateAuction"
+                        prefHeight="28"
+                        style="-fx-background-color: rgba(37,99,235,0.85); -fx-text-fill: white;
+                               -fx-font-size: 11px; -fx-font-weight: bold;
+                               -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 14;
+                               -fx-border-color: #3B82F6; -fx-border-radius: 8; -fx-border-width: 1;"/>
+                <Button text="★ Theo dõi" onAction="#handleWatch"
+                        prefHeight="28"
+                        style="-fx-background-color: rgba(5,150,105,0.15); -fx-text-fill: #34D399;
+                               -fx-font-size: 11px; -fx-font-weight: bold;
+                               -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 14;
+                               -fx-border-color: #065F46; -fx-border-radius: 8; -fx-border-width: 1;"/>
             </HBox>
             <!-- Price filter row -->
             <HBox spacing="6" alignment="CENTER_LEFT"
