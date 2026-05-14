@@ -12,12 +12,12 @@
 
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.RegisterController"
-      prefWidth="760" prefHeight="560"
+      prefWidth="760" prefHeight="620"
       stylesheets="@../style/style.css"
       style="-fx-background-color: #0F172A;">
 
     <!-- ══ CỘT TRÁI — branding ══════════════════════════════════════════════ -->
-    <VBox prefWidth="300" prefHeight="560" alignment="CENTER" spacing="20"
+    <VBox prefWidth="300" prefHeight="620" alignment="CENTER" spacing="20"
           style="-fx-background-color: linear-gradient(to bottom, #0B1120, #1E2D45);
                  -fx-border-color: transparent #1E3A5F transparent transparent;
                  -fx-border-width: 1;">
@@ -60,7 +60,7 @@
     </VBox>
 
     <!-- ══ CỘT PHẢI — form ══════════════════════════════════════════════════ -->
-    <VBox prefWidth="460" prefHeight="560" alignment="CENTER" spacing="14"
+    <VBox prefWidth="460" prefHeight="620" alignment="CENTER" spacing="14"
           style="-fx-background-color: #0F172A;">
         <padding><Insets top="48" right="52" bottom="48" left="52"/></padding>
 
@@ -77,6 +77,14 @@
             <Label text="Tên đăng nhập"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
             <TextField fx:id="usernameField" promptText="Tên đăng nhập (không dấu)"
+                       prefHeight="42" prefWidth="356"
+                       styleClass="text-field-modern"/>
+        </VBox>
+
+        <VBox spacing="6">
+            <Label text="Email"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
+            <TextField fx:id="emailField" promptText="email@example.com"
                        prefHeight="42" prefWidth="356"
                        styleClass="text-field-modern"/>
         </VBox>

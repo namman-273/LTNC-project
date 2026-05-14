@@ -19,6 +19,7 @@ import java.util.ResourceBundle;
 public class RegisterController implements Initializable {
 
     @FXML private TextField usernameField;
+    @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmPasswordField;
     @FXML private ComboBox<String> roleComboBox;
@@ -33,11 +34,11 @@ public class RegisterController implements Initializable {
     @FXML
     private void handleRegister() {
         String username        = usernameField.getText().trim();
+        String email           = emailField != null ? emailField.getText().trim() : "";
         String password        = passwordField.getText().trim();
         String confirmPassword = confirmPasswordField.getText().trim();
         String role            = roleComboBox.getValue();
 
-        // Check confirm password ở FE — BE không có field này
         if (!password.equals(confirmPassword)) {
             showError("Mật khẩu xác nhận không khớp!");
             return;
@@ -52,12 +53,13 @@ public class RegisterController implements Initializable {
                 return;
             }
 
-            // Dùng Protocol constants — đúng format BE expect: REGISTER|user|pass|role
+            // BE expect: REGISTER|username|password|role|email (5 parts)
             String response = conn.sendAndReceive(
                     Protocol.CMD_REGISTER + Protocol.SEPARATOR
                             + username + Protocol.SEPARATOR
                             + password + Protocol.SEPARATOR
-                            + role
+                            + role     + Protocol.SEPARATOR
+                            + email
             );
             System.out.println("Server trả về: " + response);
 
@@ -70,7 +72,6 @@ public class RegisterController implements Initializable {
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
 
                 if (response.startsWith(Protocol.RES_REGISTER_SUCCESS)) {
-                    // Lấy message từ BE: REGISTER_SUCCESS|Đăng ký thành công.
                     String msg = parts.length > 1 ? parts[1] : "Đăng ký thành công!";
                     showSuccess(msg + " Đang chuyển về đăng nhập...");
                     new Thread(() -> {
@@ -85,7 +86,6 @@ public class RegisterController implements Initializable {
                         }
                     }).start();
                 } else {
-                    // Lấy message lỗi từ BE: REGISTER_FAILED|message hoặc ERROR|message
                     String errorMsg = parts.length > 1 ? parts[1] : "Đăng ký thất bại!";
                     showError(errorMsg);
                 }
@@ -100,12 +100,12 @@ public class RegisterController implements Initializable {
     }
 
     private void showError(String msg) {
-        messageLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        messageLabel.setStyle("-fx-text-fill: #F87171; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
 
     private void showSuccess(String msg) {
-        messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
+        messageLabel.setStyle("-fx-text-fill: #34D399; -fx-font-size: 12px;");
         messageLabel.setText(msg);
     }
 }
