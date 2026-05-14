@@ -134,10 +134,10 @@
                     <!-- Icon ví tiền - chỉ icon -->
                     <HBox onMouseClicked="#handleBalance" alignment="CENTER"
                           prefHeight="38" prefWidth="38"
-                          style="-fx-background-color: rgba(37,99,235,0.18);
+                          style="-fx-background-color: rgba(96,165,250,0.22);
                                  -fx-background-radius: 19; -fx-cursor: hand;
-                                 -fx-border-color: #2563EB; -fx-border-radius: 19; -fx-border-width: 1.5;
-                                 -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.4), 8, 0, 0, 2);">
+                                 -fx-border-color: #60A5FA; -fx-border-radius: 19; -fx-border-width: 2;
+                                 -fx-effect: dropshadow(gaussian, rgba(96,165,250,0.6), 10, 0, 0, 0);">
                         <Label text="&#x1F4B0;"
                                style="-fx-font-size: 18px;
                                       -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;"/>
@@ -145,10 +145,10 @@
                     <!-- Icon thông báo - chỉ icon -->
                     <HBox onMouseClicked="#handleNotification" alignment="CENTER"
                           prefHeight="38" prefWidth="38"
-                          style="-fx-background-color: rgba(180,130,0,0.18);
+                          style="-fx-background-color: rgba(251,191,36,0.18);
                                  -fx-background-radius: 19; -fx-cursor: hand;
-                                 -fx-border-color: #92400E; -fx-border-radius: 19; -fx-border-width: 1.5;
-                                 -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.35), 8, 0, 0, 2);">
+                                 -fx-border-color: #FBBF24; -fx-border-radius: 19; -fx-border-width: 2;
+                                 -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.6), 10, 0, 0, 0);">
                         <Label text="&#x1F514;"
                                style="-fx-font-size: 18px;
                                       -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;"/>
@@ -156,9 +156,9 @@
                 </HBox>
                 <!-- Trophy nổi hơn -->
                 <Label text="&#x1F3C6;"
-                       style="-fx-font-size: 72px; -fx-opacity: 0.55;
+                       style="-fx-font-size: 72px; -fx-opacity: 0.75;
                               -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
-                              -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.5), 16, 0, 0, 4);"/>
+                              -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.8), 20, 0, 0, 0);"/>
             </VBox>
         </HBox>
 
