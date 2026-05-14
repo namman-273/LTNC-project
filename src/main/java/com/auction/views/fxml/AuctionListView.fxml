@@ -125,7 +125,7 @@
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
             <VBox spacing="10" HBox.hgrow="ALWAYS">
-                <Label text="CHÀO MỪNG ĐẾN VỚI AUCTIVA"
+                <Label text="CHÀO MỪNG ĐẾN VỚI 1388AUCTION"
                        style="-fx-font-size: 12px; -fx-text-fill: #60A5FA; -fx-font-weight: bold;"/>
                 <Label text="Đấu giá trực tuyến minh bạch"
                        style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0; -fx-wrap-text: true;"
