@@ -3,7 +3,7 @@ package com.auction.controller.ui;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.AlertUtil;
 import com.auction.network.client.ServerConnection;
-import com.auction.util.core.SessionManager;;
+import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.RegisterView;
 
