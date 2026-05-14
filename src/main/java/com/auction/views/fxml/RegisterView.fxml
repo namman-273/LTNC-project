@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.Button?>
@@ -11,56 +12,119 @@
 
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.RegisterController"
-      prefWidth="700" prefHeight="500"
-      stylesheets="@../style/style.css">
+      prefWidth="760" prefHeight="560"
+      stylesheets="@../style/style.css"
+      style="-fx-background-color: #0F172A;">
 
-    <!-- CỘT TRÁI: xanh -->
-    <VBox prefWidth="320" prefHeight="500" alignment="CENTER" spacing="15"
-          style="-fx-background-color: linear-gradient(to bottom, #1565C0, #2196F3);">
-        <padding><Insets top="40" right="30" bottom="40" left="30"/></padding>
+    <!-- ══ CỘT TRÁI — branding ══════════════════════════════════════════════ -->
+    <VBox prefWidth="300" prefHeight="560" alignment="CENTER" spacing="20"
+          style="-fx-background-color: linear-gradient(to bottom, #0B1120, #1E2D45);
+                 -fx-border-color: transparent #1E3A5F transparent transparent;
+                 -fx-border-width: 1;">
+        <padding><Insets top="48" right="32" bottom="48" left="32"/></padding>
 
-        <Label text="🏛️ HỆ THỐNG ĐẤU GIÁ"
-               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-        <Label text="Tạo tài khoản mới"
-               style="-fx-font-size: 13px; -fx-text-fill: #e0f0ff;"/>
-        <Label text="1388AUCTION System"
-               style="-fx-font-size: 12px; -fx-text-fill: #e0f0ff;"/>
+        <VBox alignment="CENTER" spacing="8">
+            <Label text="🏛️"
+                   style="-fx-font-size: 48px;
+                          -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.6), 18, 0, 0, 0);"/>
+            <Label text="1388AUCTION"
+                   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+            <Label text="Tạo tài khoản mới"
+                   style="-fx-font-size: 12px; -fx-text-fill: #475569;"/>
+        </VBox>
+
+        <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
+                      -fx-min-height: 1; -fx-max-height: 1;" prefWidth="220"/>
+
+        <VBox spacing="12" alignment="CENTER_LEFT">
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label text="✦" style="-fx-text-fill: #3B82F6; -fx-font-size: 12px;"/>
+                <Label text="Miễn phí đăng ký"
+                       style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+            </HBox>
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label text="✦" style="-fx-text-fill: #3B82F6; -fx-font-size: 12px;"/>
+                <Label text="Đấu giá ngay sau khi tạo xong"
+                       style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+            </HBox>
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label text="✦" style="-fx-text-fill: #3B82F6; -fx-font-size: 12px;"/>
+                <Label text="Seller có thể đăng bán ngay"
+                       style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+            </HBox>
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS"/>
+        <Label text="© 2026 1388AUCTION"
+               style="-fx-font-size: 10px; -fx-text-fill: #334155;"/>
     </VBox>
 
-    <!-- CỘT PHẢI: trắng -->
-    <VBox prefWidth="380" prefHeight="500" alignment="CENTER" spacing="12"
-          style="-fx-background-color: white;">
-        <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
+    <!-- ══ CỘT PHẢI — form ══════════════════════════════════════════════════ -->
+    <VBox prefWidth="460" prefHeight="560" alignment="CENTER" spacing="14"
+          style="-fx-background-color: #0F172A;">
+        <padding><Insets top="48" right="52" bottom="48" left="52"/></padding>
 
-        <Label text="👤 Đăng Ký"
-               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+        <VBox alignment="CENTER_LEFT" spacing="4">
+            <Label text="Tạo tài khoản mới 🚀"
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+            <Label text="Điền thông tin để bắt đầu đấu giá"
+                   style="-fx-font-size: 12px; -fx-text-fill: #475569;"/>
+        </VBox>
 
-        <TextField fx:id="usernameField" promptText="Tên đăng nhập"
-                   prefHeight="42" prefWidth="300"
-                   styleClass="text-field-modern"/>
+        <Region prefHeight="2"/>
 
-        <PasswordField fx:id="passwordField" promptText="Mật khẩu"
-                       prefHeight="42" prefWidth="300"
+        <VBox spacing="6">
+            <Label text="Tên đăng nhập"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
+            <TextField fx:id="usernameField" promptText="Tên đăng nhập (không dấu)"
+                       prefHeight="42" prefWidth="356"
                        styleClass="text-field-modern"/>
+        </VBox>
 
-        <PasswordField fx:id="confirmPasswordField" promptText="Xác nhận mật khẩu"
-                       prefHeight="42" prefWidth="300"
-                       styleClass="text-field-modern"/>
+        <VBox spacing="6">
+            <Label text="Mật khẩu"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
+            <PasswordField fx:id="passwordField" promptText="Ít nhất 6 ký tự"
+                           prefHeight="42" prefWidth="356"
+                           styleClass="text-field-modern"/>
+        </VBox>
 
-        <ComboBox fx:id="roleComboBox" promptText="Chọn vai trò"
-                  prefWidth="300" prefHeight="40"/>
+        <VBox spacing="6">
+            <Label text="Xác nhận mật khẩu"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
+            <PasswordField fx:id="confirmPasswordField" promptText="Nhập lại mật khẩu"
+                           prefHeight="42" prefWidth="356"
+                           styleClass="text-field-modern"/>
+        </VBox>
 
+        <VBox spacing="6">
+            <Label text="Vai trò"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
+            <ComboBox fx:id="roleComboBox" promptText="Chọn vai trò của bạn"
+                      prefWidth="356" prefHeight="42"
+                      styleClass="combo-box"/>
+        </VBox>
+
+        <!-- Message -->
         <Label fx:id="messageLabel" text=""
-               style="-fx-font-size: 12px;"/>
+               style="-fx-font-size: 12px; -fx-text-fill: #F87171;"
+               wrapText="true" maxWidth="356"/>
 
-        <Button text="ĐĂNG KÝ" onAction="#handleRegister"
-                prefWidth="300" prefHeight="43"
-                styleClass="btn-primary"/>
+        <!-- Register button -->
+        <Button text="TẠO TÀI KHOẢN"
+                onAction="#handleRegister"
+                prefWidth="356" prefHeight="44"
+                styleClass="btn-primary"
+                style="-fx-font-size: 14px; -fx-background-radius: 12;"/>
 
-        <Button text="Đã có tài khoản? Đăng nhập" onAction="#handleBackToLogin"
-                prefWidth="300" prefHeight="35"
-                style="-fx-background-color: transparent; -fx-text-fill: #2196F3; -fx-font-size: 12px; -fx-cursor: hand;"/>
-
+        <!-- Back to login -->
+        <Button text="Đã có tài khoản? Đăng nhập →"
+                onAction="#handleBackToLogin"
+                prefWidth="356" prefHeight="36"
+                style="-fx-background-color: rgba(59,130,246,0.1);
+                       -fx-text-fill: #60A5FA; -fx-font-size: 12px;
+                       -fx-cursor: hand; -fx-background-radius: 10;
+                       -fx-border-color: #1E3A5F; -fx-border-radius: 10;
+                       -fx-border-width: 1;"/>
     </VBox>
-
 </HBox>

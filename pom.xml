@@ -1,7 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.auction.app</groupId>
@@ -239,7 +238,7 @@
                             -->
                             <excludes>
                                 <exclude>com/auction/MainApp.class</exclude>
-                                <exclude>com/auction/Main.class</exclude>
+                                <exclude>Main.class</exclude>
                                 <exclude>com/auction/views/**</exclude>
                                 <exclude>com/auction/controller/ui/**</exclude>
                             </excludes>
@@ -281,26 +280,39 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>AuctionSystem-server</finalName>
+                            <finalName>server</finalName>
                             <transformers>
-                                <transformer implementation=
-                                    "org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.auction.server.ServerMain</mainClass>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.auction.network.server.AuctionServer</mainClass>
                                 </transformer>
-                                <!-- Gộp META-INF/services từ nhiều jar (cần cho SLF4J) -->
-                                <transformer implementation=
-                                    "org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
-                            <!-- Loại bỏ JavaFX khỏi server JAR để giảm kích thước -->
                             <artifactSet>
                                 <excludes>
                                     <exclude>org.openjfx:*</exclude>
                                 </excludes>
                             </artifactSet>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>build-client</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>client</finalName>
+                            <transformers>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.auction.MainApp</mainClass>
+                                </transformer>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
+
             </plugin>
 
         </plugins>

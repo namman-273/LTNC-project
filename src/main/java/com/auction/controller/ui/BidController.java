@@ -69,6 +69,9 @@ public class BidController implements Initializable {
     @FXML private Label  detailSeller;
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ── Số dư ví của bidder ──────────────────────────────────────────────────
+    @FXML private Label balanceLabel;
+
     private String auctionId;
     private String username;
     private long   endTime;
@@ -217,6 +220,7 @@ public class BidController implements Initializable {
         } catch (NumberFormatException ignored) {}
 
         updateBidSuggestion(currentPriceValue);
+        loadBalance();
 
         // itemTypeLabel (badge trên ảnh)
         if (itemTypeLabel != null && !itemTypeCached.isEmpty()) {
@@ -340,6 +344,29 @@ public class BidController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {}
+
+    // ── Load số dư ví ────────────────────────────────────────────────────────
+    private void loadBalance() {
+        if (balanceLabel == null) return;
+        new Thread(() -> {
+            String res = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_GET_BALANCE);
+            Platform.runLater(() -> {
+                if (res != null && res.startsWith(Protocol.RES_BALANCE_INFO)) {
+                    String[] p = res.split("\\|", -1);
+                    String amt = p.length >= 2 ? p[1] : "---";
+                    try {
+                        double v = Double.parseDouble(amt);
+                        balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                    } catch (NumberFormatException e) {
+                        balanceLabel.setText(amt + " VNĐ");
+                    }
+                } else {
+                    balanceLabel.setText("---");
+                }
+            });
+        }, "bid-balance-thread").start();
+    }
 
     // ── Toggle chi tiết SP (MỚI) ─────────────────────────────────────────────
     @FXML
