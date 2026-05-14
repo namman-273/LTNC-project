@@ -9,32 +9,43 @@
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.BidChartController"
-      prefWidth="700" prefHeight="500" spacing="15"
-      style="-fx-background-color: #f5f5f5;">
-    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+      fx:controller="com.auction.controller.ui.BidChartController"
+      prefWidth="700" prefHeight="500" spacing="0"
+      stylesheets="@../style/style.css"
+      style="-fx-background-color: #0F172A;">
 
     <!-- HEADER -->
-    <HBox alignment="CENTER_LEFT" spacing="10"
-          style="-fx-background-color: #2196F3; -fx-background-radius: 8;"
-          prefHeight="55">
-        <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
+    <HBox alignment="CENTER_LEFT" spacing="12"
+          style="-fx-background-color: #0B1120;
+                 -fx-padding: 0 24; -fx-pref-height: 56;
+                 -fx-border-color: transparent transparent #1E3A5F transparent;
+                 -fx-border-width: 1;">
         <Button text="← Quay lại" onAction="#handleBack"
-                style="-fx-background-color: white; -fx-text-fill: #2196F3; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                styleClass="btn-ghost"
+                style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
         <Label fx:id="titleLabel" text="Biểu đồ giá đấu giá"
-               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
     </HBox>
 
     <!-- CHART -->
-    <LineChart fx:id="bidChart" VBox.vgrow="ALWAYS"
-               animated="true"
-               style="-fx-background-color: white; -fx-background-radius: 8;">
-        <xAxis>
-            <NumberAxis fx:id="xAxis" label="Lần đặt giá" autoRanging="true"/>
-        </xAxis>
-        <yAxis>
-            <NumberAxis fx:id="yAxis" label="Giá (VND)" autoRanging="true"/>
-        </yAxis>
-    </LineChart>
+    <VBox VBox.vgrow="ALWAYS" style="-fx-padding: 20; -fx-background-color: #0F172A;">
+        <LineChart fx:id="bidChart" VBox.vgrow="ALWAYS"
+                   animated="true"
+                   style="-fx-background-color: #0B1120;
+                          -fx-background-radius: 12;
+                          -fx-border-color: #1E3A5F;
+                          -fx-border-radius: 12;
+                          -fx-border-width: 1;
+                          -fx-padding: 10;">
+            <xAxis>
+                <NumberAxis fx:id="xAxis" label="Lần đặt giá" autoRanging="true"
+                            style="-fx-tick-label-fill: #64748B; -fx-minor-tick-visible: false;"/>
+            </xAxis>
+            <yAxis>
+                <NumberAxis fx:id="yAxis" label="Giá (VND)" autoRanging="true"
+                            style="-fx-tick-label-fill: #64748B; -fx-minor-tick-visible: false;"/>
+            </yAxis>
+        </LineChart>
+    </VBox>
 
 </VBox>
