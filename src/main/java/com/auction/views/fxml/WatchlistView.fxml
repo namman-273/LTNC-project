@@ -20,38 +20,41 @@
                  -fx-border-color: transparent #1E3A5F transparent transparent;
                  -fx-border-width: 1;">
         <HBox alignment="CENTER_LEFT" spacing="10"
-              style="-fx-padding: 20 16;
+              style="-fx-padding: 18 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
-            <Label text="🏛" style="-fx-font-size: 22px;
-                                    -fx-font-family: 'Segoe UI Emoji', sans-serif;"/>
+            <Label text="&#x1F3DB;"
+                   style="-fx-font-size: 20px;
+                          -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;
+                          -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.7),8,0,0,0);"/>
             <VBox spacing="1">
                 <Label text="1388AUCTION"
-                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #93C5FD;
+                              -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.5),4,0,0,0);"/>
                 <Label text="Hệ thống đấu giá"
-                       style="-fx-font-size: 9px; -fx-text-fill: #334155;"/>
+                       style="-fx-font-size: 9px; -fx-text-fill: #475569;"/>
             </VBox>
         </HBox>
         <VBox alignment="CENTER" spacing="6"
               style="-fx-padding: 14 16 12 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1; -fx-background-color: rgba(30,45,69,0.5);">
-            <Label text="👤" style="-fx-font-size: 28px; -fx-background-color: #1E3A5F;
-                                    -fx-background-radius: 26; -fx-padding: 7 11;
-                                    -fx-font-family: 'Segoe UI Emoji', sans-serif;"/>
+            <Label text="&#x1F464;"
+                   style="-fx-font-size: 28px; -fx-background-color: #1E3A5F;
+                          -fx-background-radius: 26; -fx-padding: 7 11;"/>
         </VBox>
         <VBox spacing="2" style="-fx-padding: 12 10;" VBox.vgrow="ALWAYS">
-            <Button text="🏠  Trang chủ" onAction="#handleHome"
+            <Button text="&#x1F3E0;  Trang chủ" onAction="#handleHome"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-            <Button text="📋  Lịch sử đấu giá" onAction="#handleBidHistory"
+            <Button text="&#x1F4DC;  Lịch sử đấu giá" onAction="#handleBidHistory"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-            <Button text="⭐  Watchlist"
+            <Button text="&#x2B50;  Watchlist"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
                            -fx-font-size: 13px; -fx-font-weight: bold;
@@ -59,7 +62,7 @@
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
                            -fx-border-color: transparent transparent transparent #3B82F6;
                            -fx-border-width: 0 0 0 3;"/>
-            <Button text="👤  Hồ sơ cá nhân" onAction="#handleProfile"
+            <Button text="&#x1F464;  Hồ sơ cá nhân" onAction="#handleProfile"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
@@ -67,7 +70,7 @@
             <Region VBox.vgrow="ALWAYS"/>
             <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
                           -fx-min-height: 1; -fx-max-height: 1;" prefWidth="200"/>
-            <Button text="🚪  Đăng xuất" onAction="#handleBack"
+            <Button text="&#x1F6AA;  Đăng xuất" onAction="#handleBack"
                     prefWidth="200" prefHeight="38"
                     style="-fx-background-color: transparent; -fx-text-fill: #F87171;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
@@ -78,7 +81,7 @@
     <!-- MAIN CONTENT -->
     <VBox HBox.hgrow="ALWAYS" spacing="0" style="-fx-background-color: #0F172A;">
 
-        <!-- HEADER -->
+        <!-- HEADER — không có icon ví/chuông -->
         <HBox alignment="CENTER_LEFT" spacing="12"
               style="-fx-background-color: #0B1120;
                      -fx-padding: 0 24; -fx-pref-height: 56;
@@ -86,31 +89,14 @@
                      -fx-border-width: 1;">
             <Button text="← Quay lại" onAction="#handleBack"
                     styleClass="btn-ghost" style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
-            <Label text="⭐ Watchlist của tôi"
+            <Label text="&#x2B50; Watchlist của tôi"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <!-- Icon ví tiền - chỉ icon -->
-            <HBox onMouseClicked="#handleBalance" alignment="CENTER"
-                  prefHeight="38" prefWidth="38"
-                  style="-fx-background-color: rgba(96,165,250,0.22);
-                                 -fx-background-radius: 19; -fx-cursor: hand;
-                                 -fx-border-color: #60A5FA; -fx-border-radius: 19; -fx-border-width: 2;
-                                 -fx-effect: dropshadow(gaussian, rgba(96,165,250,0.6), 10, 0, 0, 0);">
-                <Label text="&#x1F4B0;"
-                       style="-fx-font-size: 18px;
-                                      -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;"/>
-            </HBox>
-            <!-- Icon thông báo - chỉ icon -->
-            <HBox onMouseClicked="#handleNotification" alignment="CENTER"
-                  prefHeight="38" prefWidth="38"
-                  style="-fx-background-color: rgba(251,191,36,0.18);
-                                 -fx-background-radius: 19; -fx-cursor: hand;
-                                 -fx-border-color: #FBBF24; -fx-border-radius: 19; -fx-border-width: 2;
-                                 -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.6), 10, 0, 0, 0);">
-                <Label text="&#x1F514;"
-                       style="-fx-font-size: 18px;
-                                      -fx-font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;"/>
-            </HBox>
+            <Button text="&#x1F504; Làm mới" onAction="#handleRefresh"
+                    style="-fx-background-color: rgba(59,130,246,0.12); -fx-text-fill: #60A5FA;
+                           -fx-font-size: 12px; -fx-cursor: hand; -fx-background-radius: 8;
+                           -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;
+                           -fx-padding: 6 14;"/>
         </HBox>
 
         <!-- STATS BAR -->
@@ -166,13 +152,12 @@
 
         <!-- BOTTOM BUTTONS -->
         <HBox spacing="10" alignment="CENTER_RIGHT"
-              style="-fx-padding: 12 20;
-                     -fx-background-color: #0B1120;
+              style="-fx-padding: 12 20; -fx-background-color: #0B1120;
                      -fx-border-color: #1E3A5F transparent transparent transparent;
                      -fx-border-width: 1;">
             <Button text="✕ Bỏ theo dõi" onAction="#handleUnwatch"
                     prefHeight="36" prefWidth="140" styleClass="btn-danger"/>
-            <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
+            <Button text="&#x1F441; Xem chi tiết" onAction="#handleViewDetail"
                     prefHeight="36" prefWidth="140" styleClass="btn-success"/>
         </HBox>
 

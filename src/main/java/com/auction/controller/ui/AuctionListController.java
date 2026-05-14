@@ -57,6 +57,17 @@ public class AuctionListController implements Initializable {
   @FXML private Button btnPriceMid;
   @FXML private Button btnPriceOver50;
 
+  // Sidebar toggle + search
+  @FXML private VBox      sidebarBox;
+  @FXML private Button    hamburgerBtn;
+  @FXML private Button    topHamburgerBtn;
+  @FXML private VBox      logoText;
+  @FXML private VBox      avatarBox;
+  @FXML private VBox      navBox;
+  @FXML private javafx.scene.control.TextField searchField;
+
+  private boolean sidebarExpanded = true;
+
   private String activeTypeFilter  = "ALL";
   private String activePriceFilter = "ALL";
 
@@ -532,4 +543,45 @@ public class AuctionListController implements Initializable {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new ProfileView(stage, username).show();
   }
+  // ── Sidebar toggle ───────────────────────────────────────────────────────
+  @FXML
+  public void handleToggleSidebar() {
+    sidebarExpanded = !sidebarExpanded;
+    if (sidebarExpanded) {
+      // Mở rộng
+      sidebarBox.setPrefWidth(220);
+      if (logoText  != null) { logoText.setVisible(true);  logoText.setManaged(true); }
+      if (avatarBox != null) { avatarBox.setVisible(true); avatarBox.setManaged(true); }
+      if (navBox    != null) { navBox.setVisible(true);    navBox.setManaged(true); }
+      if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
+    } else {
+      // Thu hẹp — chỉ để icon hamburger
+      sidebarBox.setPrefWidth(0);
+      sidebarBox.setMinWidth(0);
+      if (logoText  != null) { logoText.setVisible(false);  logoText.setManaged(false); }
+      if (avatarBox != null) { avatarBox.setVisible(false); avatarBox.setManaged(false); }
+      if (navBox    != null) { navBox.setVisible(false);    navBox.setManaged(false); }
+      if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(true); topHamburgerBtn.setManaged(true); }
+    }
+  }
+
+  // ── Search ────────────────────────────────────────────────────────────────
+  @FXML
+  public void handleSearch(javafx.scene.input.KeyEvent e) {
+    if (searchField == null) return;
+    String query = searchField.getText().toLowerCase().trim();
+    if (query.isEmpty()) {
+      applyFilters();
+      return;
+    }
+    List<AuctionRow> filtered = currentRows.stream()
+            .filter(r -> r.getItemName().toLowerCase().contains(query)
+                    || r.getStatus().toLowerCase().contains(query)
+                    || (r.getItemType() != null && r.getItemType().toLowerCase().contains(query)))
+            .collect(Collectors.toList());
+    Platform.runLater(() -> renderCards(filtered));
+    setStatusBar("&#x1F50D; Tìm thấy " + filtered.size() + " phiên cho "" + query + """);
+  }
+
+
 }
