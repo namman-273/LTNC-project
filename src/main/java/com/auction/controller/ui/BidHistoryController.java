@@ -5,6 +5,10 @@ import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.views.java.AuctionListView;
+import com.auction.views.java.ProfileView;
+import com.auction.views.java.WatchlistView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.NotificationView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -134,6 +138,32 @@ public class BidHistoryController implements Initializable {
         if (loseLabel     != null) loseLabel.setText(String.valueOf(loses));
         if (rateLabel     != null) rateLabel.setText(rate);
         if (subtitleLabel != null) subtitleLabel.setText(total + " phiên đã tham gia");
+    }
+
+
+    @FXML public void handleProfile() {
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new ProfileView(stage, username).show();
+    }
+
+    @FXML public void handleWatchlist() {
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new WatchlistView(stage, username).show();
+    }
+
+    @FXML public void handleBalance() {
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new BalanceView(stage, username).show();
+    }
+
+    @FXML public void handleNotification() {
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
+
+    @FXML public void handleHome() {
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new AuctionListView(stage, username).show();
     }
 
     @FXML

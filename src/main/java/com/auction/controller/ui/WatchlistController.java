@@ -4,6 +4,10 @@ import com.auction.model.dto.AuctionRow;
 import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
 import com.auction.views.java.AuctionListView;
+import com.auction.views.java.ProfileView;
+import com.auction.views.java.BidHistoryView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.NotificationView;
 import com.auction.views.java.BidView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -272,6 +276,32 @@ public class WatchlistController implements Initializable {
             autoRefreshTimeline.stop();
             autoRefreshTimeline = null;
         }
+    }
+
+
+    @FXML public void handleProfile() {
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new ProfileView(stage, username).show();
+    }
+
+    @FXML public void handleBidHistory() {
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new BidHistoryView(stage, username).show();
+    }
+
+    @FXML public void handleBalance() {
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new BalanceView(stage, username).show();
+    }
+
+    @FXML public void handleNotification() {
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
+
+    @FXML public void handleHome() {
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new AuctionListView(stage, username).show();
     }
 
     @FXML

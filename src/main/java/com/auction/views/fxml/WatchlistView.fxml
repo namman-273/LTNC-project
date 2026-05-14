@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
-<?import javafx.geometry.Insets?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.WatchlistController"
@@ -17,17 +14,17 @@
       stylesheets="@../style/style.css"
       style="-fx-background-color: #0F172A;">
 
-    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════════ -->
+    <!-- SIDEBAR -->
     <VBox prefWidth="220" spacing="0"
           style="-fx-background-color: #0B1120;
                  -fx-border-color: transparent #1E3A5F transparent transparent;
                  -fx-border-width: 1;">
-
         <HBox alignment="CENTER_LEFT" spacing="10"
               style="-fx-padding: 20 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
-            <Label text="🏛" style="-fx-font-size: 22px;"/>
+            <Label text="🏛" style="-fx-font-size: 22px;
+                                    -fx-font-family: 'Segoe UI Emoji', sans-serif;"/>
             <VBox spacing="1">
                 <Label text="1388AUCTION"
                        style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
@@ -35,30 +32,25 @@
                        style="-fx-font-size: 9px; -fx-text-fill: #334155;"/>
             </VBox>
         </HBox>
-
         <VBox alignment="CENTER" spacing="6"
               style="-fx-padding: 14 16 12 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1; -fx-background-color: rgba(30,45,69,0.5);">
-            <Label text="👤"
-                   style="-fx-font-size: 28px; -fx-background-color: #1E3A5F;
-                          -fx-background-radius: 26; -fx-padding: 7 11;"/>
+            <Label text="👤" style="-fx-font-size: 28px; -fx-background-color: #1E3A5F;
+                                    -fx-background-radius: 26; -fx-padding: 7 11;
+                                    -fx-font-family: 'Segoe UI Emoji', sans-serif;"/>
         </VBox>
-
         <VBox spacing="2" style="-fx-padding: 12 10;" VBox.vgrow="ALWAYS">
-
-            <Button text="🏠  Trang chủ" onAction="#handleBack"
+            <Button text="🏠  Trang chủ" onAction="#handleHome"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
-            <Button text="📜  Lịch sử đấu giá" onAction="#handleBack"
+            <Button text="📋  Lịch sử đấu giá" onAction="#handleBidHistory"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
             <Button text="⭐  Watchlist"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
@@ -67,18 +59,14 @@
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
                            -fx-border-color: transparent transparent transparent #3B82F6;
                            -fx-border-width: 0 0 0 3;"/>
-
-            <Button text="👤  Hồ sơ cá nhân" onAction="#handleBack"
+            <Button text="👤  Hồ sơ cá nhân" onAction="#handleProfile"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
             <Region VBox.vgrow="ALWAYS"/>
-
             <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
                           -fx-min-height: 1; -fx-max-height: 1;" prefWidth="200"/>
-
             <Button text="🚪  Đăng xuất" onAction="#handleBack"
                     prefWidth="200" prefHeight="38"
                     style="-fx-background-color: transparent; -fx-text-fill: #F87171;
@@ -87,9 +75,8 @@
         </VBox>
     </VBox>
 
-    <!-- ══ MAIN CONTENT ═══════════════════════════════════════════════════════ -->
-    <VBox HBox.hgrow="ALWAYS" spacing="0"
-          style="-fx-background-color: #0F172A;">
+    <!-- MAIN CONTENT -->
+    <VBox HBox.hgrow="ALWAYS" spacing="0" style="-fx-background-color: #0F172A;">
 
         <!-- HEADER -->
         <HBox alignment="CENTER_LEFT" spacing="12"
@@ -102,36 +89,24 @@
             <Label text="⭐ Watchlist của tôi"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <!-- Icon buttons for Ví tiền and Thông báo -->
-            <StackPane onMouseClicked="#handleBack" style="-fx-cursor: hand;">
-                <Button text="&#x1F4B0;" onAction="#handleBack"
-                        prefHeight="36" prefWidth="36"
-                        style="-fx-background-color: linear-gradient(to bottom, #1E3A5F, #162236);
-                               -fx-text-fill: #60A5FA; -fx-font-size: 18px; -fx-font-weight: bold;
-                               -fx-font-family: 'Segoe UI Emoji';
-                               -fx-background-radius: 18; -fx-cursor: hand;
-                               -fx-border-color: #2563EB; -fx-border-radius: 18; -fx-border-width: 2;
-                               -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.5), 8, 0, 0, 2);"/>
-            </StackPane>
-            <StackPane onMouseClicked="#handleBack" style="-fx-cursor: hand;">
-                <Button text="&#x1F514;" onAction="#handleBack"
-                        prefHeight="36" prefWidth="36"
-                        style="-fx-background-color: linear-gradient(to bottom, #2D1B00, #1C1400);
-                               -fx-text-fill: #FBBF24; -fx-font-size: 18px;
-                               -fx-font-family: 'Segoe UI Emoji';
-                               -fx-background-radius: 18; -fx-cursor: hand;
-                               -fx-border-color: #92400E; -fx-border-radius: 18; -fx-border-width: 2;
-                               -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.45), 8, 0, 0, 2);"/>
-                <Label fx:id="notifBadge" text="3"
-                       style="-fx-background-color: #EF4444; -fx-text-fill: white;
-                              -fx-font-size: 9px; -fx-font-weight: bold;
-                              -fx-background-radius: 8; -fx-padding: 1 4;
-                              -fx-min-width: 16; -fx-min-height: 16;"
-                       StackPane.alignment="TOP_RIGHT"
-                       translateX="2" translateY="-2"/>
-            </StackPane>
-            <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                    styleClass="btn-ghost" style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
+            <!-- Icon ví tiền -->
+            <HBox onMouseClicked="#handleBalance" alignment="CENTER"
+                  prefHeight="34" prefWidth="34"
+                  style="-fx-background-color: rgba(37,99,235,0.18);
+                         -fx-background-radius: 17; -fx-cursor: hand;
+                         -fx-border-color: #2563EB; -fx-border-radius: 17; -fx-border-width: 1.5;">
+                <Label text="💰" style="-fx-font-size: 16px;
+                                        -fx-font-family: 'Segoe UI Emoji', sans-serif;"/>
+            </HBox>
+            <!-- Icon thông báo -->
+            <HBox onMouseClicked="#handleNotification" alignment="CENTER"
+                  prefHeight="34" prefWidth="34"
+                  style="-fx-background-color: rgba(180,130,0,0.15);
+                         -fx-background-radius: 17; -fx-cursor: hand;
+                         -fx-border-color: #92400E; -fx-border-radius: 17; -fx-border-width: 1.5;">
+                <Label text="🔔" style="-fx-font-size: 16px;
+                                        -fx-font-family: 'Segoe UI Emoji', sans-serif;"/>
+            </HBox>
         </HBox>
 
         <!-- STATS BAR -->
@@ -191,12 +166,11 @@
                      -fx-background-color: #0B1120;
                      -fx-border-color: #1E3A5F transparent transparent transparent;
                      -fx-border-width: 1;">
-            <Button text="❌ Bỏ theo dõi" onAction="#handleUnwatch"
+            <Button text="✕ Bỏ theo dõi" onAction="#handleUnwatch"
                     prefHeight="36" prefWidth="140" styleClass="btn-danger"/>
             <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
                     prefHeight="36" prefWidth="140" styleClass="btn-success"/>
         </HBox>
 
     </VBox>
-
 </HBox>

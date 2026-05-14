@@ -290,3 +290,16 @@
 .alert .header-panel { -fx-background-color: #162236; }
 .alert .button-bar .button { -fx-background-color: #2563EB; -fx-text-fill: white; -fx-background-radius: 8; }
 .alert .button-bar .button:hover { -fx-background-color: #1D4ED8; }
+/* Ẩn thanh ngang separator trong ListView */
+.list-view .list-cell {
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+.list-view .list-cell:filled {
+    -fx-border-color: transparent;
+}
+.list-view:focused .list-cell:focused {
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+}
