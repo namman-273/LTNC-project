@@ -23,9 +23,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -75,20 +72,6 @@ public class AuctionListController implements Initializable {
 
   private boolean sidebarExpanded = true;
 
-  /** Dedup: tránh add thông báo kết thúc trùng khi cả AuctionList lẫn BidController cùng nhận */
-  private final java.util.Set<String> notifiedEndAuctions =
-          java.util.Collections.synchronizedSet(new java.util.HashSet<>());
-  private static final ConcurrentHashMap<String, javafx.scene.image.Image> IMAGE_CACHE
-          = new ConcurrentHashMap<>();
-
-  /** Thread pool 4 luồng — tránh tạo vô số thread khi có nhiều card */
-  private static final ExecutorService IMAGE_EXECUTOR
-          = Executors.newFixedThreadPool(4, r -> {
-    Thread t = new Thread(r, "img-loader");
-    t.setDaemon(true);
-    return t;
-  });
-
   private String activeTypeFilter  = "ALL";
   private String activePriceFilter = "ALL";
 
@@ -97,6 +80,12 @@ public class AuctionListController implements Initializable {
   private final List<AuctionRow> currentRows = new ArrayList<>();
   private Consumer<String> pushListener;
   private Timeline autoRefreshTimeline;
+
+  // ── Image cache & executor ────────────────────────────────────────────────
+  private static final java.util.Map<String, javafx.scene.image.Image> IMAGE_CACHE =
+          new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.util.concurrent.ExecutorService IMAGE_EXECUTOR =
+          java.util.concurrent.Executors.newFixedThreadPool(4);
 
   private final Gson gson = new GsonBuilder()
           .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -151,26 +140,14 @@ public class AuctionListController implements Initializable {
           String auctionId = parts.length >= 2 ? parts[1] : "";
           String detail    = parts.length >= 3 ? parts[2] : "";
           boolean isWin    = detail.contains("Winner:" + username);
-          if (!auctionId.isEmpty() && notifiedEndAuctions.add(auctionId)) {
-            if (isWin) {
-              NotificationManager.getInstance().add(
-                      "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
-                      "auction", auctionId);
-            } else if (detail.contains("No winner")) {
-              NotificationManager.getInstance().add(
-                      "ℹ️ Phiên " + auctionId + " kết thúc — Không có người thắng.",
-                      "auction", auctionId);
-            } else {
-              String winner = "";
-              if (detail.contains("Winner:")) {
-                int idx = detail.indexOf("Winner:") + 7;
-                winner = detail.substring(idx).split("[|\\s]")[0].trim();
-              }
-              String msg = winner.isEmpty()
-                      ? "😔 Phiên " + auctionId + " đã kết thúc. Bạn không thắng lần này."
-                      : "😔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winner + ".";
-              NotificationManager.getInstance().add(msg, "auction", auctionId);
-            }
+          if (isWin) {
+            NotificationManager.getInstance().add(
+                    "Bạn đã thắng phiên đấu giá: " + auctionId,
+                    "auction", auctionId);
+          } else if (!auctionId.isEmpty()) {
+            NotificationManager.getInstance().add(
+                    "Phiên " + auctionId + " đã kết thúc. Bạn không thắng.",
+                    "auction", auctionId);
           }
           Platform.runLater(this::loadFromServer);
           break;
@@ -352,83 +329,84 @@ public class AuctionListController implements Initializable {
 
     javafx.scene.Node iconNode;
     String imgUrl = row.getImageUrl();
+    if (imgUrl == null || imgUrl.isEmpty()) {
+      String desc = row.getDescription();
+      if (desc != null && (desc.startsWith("http") || desc.startsWith("data:image"))) {
+        imgUrl = desc;
+      }
+    }
     if (imgUrl != null && !imgUrl.isEmpty()) {
-
-      // ── Placeholder: spinner label hiện trong lúc chờ ──
-      javafx.scene.layout.StackPane imgContainer = new javafx.scene.layout.StackPane();
-      imgContainer.setPrefHeight(120);
-      imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");
-
       javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView();
       imgView.setFitWidth(187);
       imgView.setFitHeight(120);
       imgView.setPreserveRatio(true);
       imgView.setSmooth(true);
       javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(187, 120);
-      clip.setArcWidth(10); clip.setArcHeight(10);
+      clip.setArcWidth(10);
+      clip.setArcHeight(10);
       imgView.setClip(clip);
 
       Label spinner = new Label("⟳");
       spinner.setStyle("-fx-font-size: 22px; -fx-text-fill: #334155;");
-      // Quay spinner
       javafx.animation.RotateTransition rot = new javafx.animation.RotateTransition(
               javafx.util.Duration.seconds(1.2), spinner);
-      rot.setByAngle(360); rot.setCycleCount(javafx.animation.Animation.INDEFINITE);
+      rot.setByAngle(360);
+      rot.setCycleCount(javafx.animation.Animation.INDEFINITE);
       rot.play();
 
+      javafx.scene.layout.StackPane imgContainer = new javafx.scene.layout.StackPane();
+      imgContainer.setPrefHeight(120);
+      imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");
       imgContainer.getChildren().addAll(spinner, imgView);
       iconNode = imgContainer;
 
       final String finalUrl = imgUrl;
 
-      // ── Kiểm tra cache trước ──
       javafx.scene.image.Image cached = IMAGE_CACHE.get(finalUrl);
       if (cached != null) {
         imgView.setImage(cached);
         spinner.setVisible(false);
         rot.stop();
       } else {
-        // ── Load async qua thread pool ──
         IMAGE_EXECUTOR.submit(() -> {
           try {
-            java.net.HttpURLConnection conn =
-                    (java.net.HttpURLConnection) new java.net.URL(finalUrl).openConnection();
-            conn.setRequestProperty("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-            conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
-            conn.setRequestProperty("Referer",
-                    new java.net.URL(finalUrl).getProtocol() + "://"
-                            + new java.net.URL(finalUrl).getHost());
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(8000);
-            conn.setInstanceFollowRedirects(true);
-            conn.connect();
-            try (java.io.InputStream is = conn.getInputStream()) {
-              byte[] bytes = is.readAllBytes();
-              javafx.scene.image.Image img =
-                      new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
-              if (!img.isError()) {
-                IMAGE_CACHE.put(finalUrl, img);
-                Platform.runLater(() -> {
-                  imgView.setImage(img);
-                  spinner.setVisible(false);
-                  rot.stop();
-                });
-              } else {
-                // Ảnh lỗi → ẩn spinner, hiện icon type
-                Platform.runLater(() -> {
-                  spinner.setText(typeIcon);
-                  spinner.setStyle("-fx-font-size: 46px;");
-                  rot.stop();
-                });
-              }
-            } finally { conn.disconnect(); }
+            javafx.scene.image.Image img;
+            if (finalUrl.startsWith("data:image")) {
+              String base64 = finalUrl.substring(finalUrl.indexOf(",") + 1);
+              byte[] bytes = java.util.Base64.getDecoder().decode(base64);
+              img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
+            } else {
+              java.net.HttpURLConnection conn =
+                      (java.net.HttpURLConnection) new java.net.URL(finalUrl).openConnection();
+              conn.setRequestProperty("User-Agent",
+                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+              conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
+              conn.setRequestProperty("Referer",
+                      new java.net.URL(finalUrl).getProtocol() + "://"
+                              + new java.net.URL(finalUrl).getHost());
+              conn.setConnectTimeout(8000);
+              conn.setReadTimeout(8000);
+              conn.setInstanceFollowRedirects(true);
+              conn.connect();
+              try (java.io.InputStream is = conn.getInputStream()) {
+                byte[] bytes = is.readAllBytes();
+                img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
+              } finally { conn.disconnect(); }
+            }
+            if (!img.isError()) {
+              IMAGE_CACHE.put(finalUrl, img);
+              Platform.runLater(() -> {
+                imgView.setImage(img);
+                spinner.setVisible(false);
+                rot.stop();
+              });
+            } else {
+              Platform.runLater(() -> { spinner.setText(typeIcon);
+                spinner.setStyle("-fx-font-size: 46px;"); rot.stop(); });
+            }
           } catch (Exception ex) {
-            Platform.runLater(() -> {
-              spinner.setText(typeIcon);
-              spinner.setStyle("-fx-font-size: 46px;");
-              rot.stop();
-            });
+            Platform.runLater(() -> { spinner.setText(typeIcon);
+              spinner.setStyle("-fx-font-size: 46px;"); rot.stop(); });
           }
         });
       }
@@ -621,29 +599,28 @@ public class AuctionListController implements Initializable {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new ProfileView(stage, username).show();
   }
+
   // ── Sidebar toggle ───────────────────────────────────────────────────────
   @FXML
   public void handleToggleSidebar() {
     sidebarExpanded = !sidebarExpanded;
     if (sidebarExpanded) {
-      // ── Mở rộng: 220px ──
       sidebarBox.setPrefWidth(220);
       sidebarBox.setMinWidth(220);
-      if (logoText     != null) { logoText.setVisible(true);       logoText.setManaged(true); }
-      // avatarBox KHÔNG đổi — luôn visible
-      if (avatarIconBox!= null) { avatarIconBox.setVisible(false);  avatarIconBox.setManaged(false); }
-      if (navBox       != null) { navBox.setVisible(true);          navBox.setManaged(true); }
-      if (iconNavBox   != null) { iconNavBox.setVisible(false);     iconNavBox.setManaged(false); }
+      if (logoText     != null) { logoText.setVisible(true);      logoText.setManaged(true); }
+      if (avatarBox    != null) { avatarBox.setVisible(true);     avatarBox.setManaged(true); }
+      if (avatarIconBox!= null) { avatarIconBox.setVisible(false);avatarIconBox.setManaged(false); }
+      if (navBox       != null) { navBox.setVisible(true);        navBox.setManaged(true); }
+      if (iconNavBox   != null) { iconNavBox.setVisible(false);   iconNavBox.setManaged(false); }
       if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
     } else {
-      // ── Thu hẹp: 60px — logoText ẩn, avatarBox GIỮ NGUYÊN (minWidth=220 trong FXML) ──
       sidebarBox.setPrefWidth(60);
       sidebarBox.setMinWidth(60);
-      if (logoText     != null) { logoText.setVisible(false);       logoText.setManaged(false); }
-      // avatarBox: KHÔNG TOUCH — giữ nguyên visible + size
-      if (avatarIconBox!= null) { avatarIconBox.setVisible(false);  avatarIconBox.setManaged(false); }
-      if (navBox       != null) { navBox.setVisible(false);         navBox.setManaged(false); }
-      if (iconNavBox   != null) { iconNavBox.setVisible(true);      iconNavBox.setManaged(true); }
+      if (logoText     != null) { logoText.setVisible(false);     logoText.setManaged(false); }
+      if (avatarBox    != null) { avatarBox.setVisible(false);    avatarBox.setManaged(false); }
+      if (avatarIconBox!= null) { avatarIconBox.setVisible(true); avatarIconBox.setManaged(true); }
+      if (navBox       != null) { navBox.setVisible(false);       navBox.setManaged(false); }
+      if (iconNavBox   != null) { iconNavBox.setVisible(true);    iconNavBox.setManaged(true); }
       if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
     }
   }
@@ -665,6 +642,4 @@ public class AuctionListController implements Initializable {
     Platform.runLater(() -> renderCards(filtered));
     setStatusBar("🔍 Tìm thấy " + filtered.size() + " phiên cho \"" + query + "\"");
   }
-
-
 }
