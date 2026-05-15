@@ -540,4 +540,8 @@ public class AuctionListController implements Initializable {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new ProfileView(stage, username).show();
   }
+  @FXML
+  public void handleToggleSidebar() {
+    // Sidebar toggle — có thể mở rộng sau
+  }
 }
