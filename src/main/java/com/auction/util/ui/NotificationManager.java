@@ -93,6 +93,13 @@ public class NotificationManager {
     }
 
     public void add(String message, String category, String auctionId) {
+        // Dedup: không add nếu đã có cùng auctionId + cùng loại thắng/thua trong 10s gần nhất
+        String dedupeKey = (auctionId != null ? auctionId : "") + "|" + (message != null ? message.substring(0, Math.min(20, message.length())) : "");
+        for (NotificationItem existing : items) {
+            String existKey = (existing.getAuctionId() != null ? existing.getAuctionId() : "") + "|"
+                    + (existing.getMessage() != null ? existing.getMessage().substring(0, Math.min(20, existing.getMessage().length())) : "");
+            if (dedupeKey.equals(existKey)) return; // bỏ qua nếu trùng
+        }
         NotificationItem item = new NotificationItem(message, category, auctionId);
         items.add(0, item);
         observableItems.add(0, item);

@@ -418,7 +418,9 @@ public class BidController implements Initializable {
                         long newEndTime = Long.parseLong(parts[2]);
                         this.endTime = newEndTime;
                         Platform.runLater(() -> showSnipingAlert(count));
-                        // Notification sniping được add bởi AuctionListController
+                        NotificationManager.getInstance().add(
+                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count,
+                                "auction", auctionId);
                     } catch (NumberFormatException ignored) {}
                 }
                 break;
@@ -429,7 +431,9 @@ public class BidController implements Initializable {
                     String newAmt    = parts[3];
                     Platform.runLater(() ->
                             showWarning("Bị vượt giá bởi " + newBidder + "! Giá mới: " + formatPrice(newAmt)));
-                    // Notification outbid được add bởi AuctionListController
+                    NotificationManager.getInstance().add(
+                            "⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt),
+                            "auction", auctionId);
                 }
                 break;
 
@@ -439,7 +443,9 @@ public class BidController implements Initializable {
                     String newBal    = parts[3];
                     Platform.runLater(() ->
                             showInfo("Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal)));
-                    // Notification refund được add bởi AuctionListController
+                    NotificationManager.getInstance().add(
+                            "Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal),
+                            "balance", auctionId);
                 }
                 break;
 
@@ -453,22 +459,17 @@ public class BidController implements Initializable {
                         countdownLabel.setStyle(
                                 "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
                     }
-                    String detail = parts.length >= 3 ? parts[2].trim() : "";
-                    String me = (username != null) ? username.trim() : "";
-                    boolean noWinner = detail.equalsIgnoreCase("No winner");
-                    // So sánh chính xác — tránh false-positive khi username là substring của tên khác
-                    boolean isWin = !noWinner && detail.startsWith("Winner:")
-                            && detail.substring("Winner:".length()).trim().equals(me);
-                    // Chỉ update UI — KHÔNG add NotificationManager ở đây
-                    // (đã xử lý tập trung ở AuctionListController để tránh trùng lặp)
-                    if (noWinner) {
-                        showInfo("Phiên kết thúc — không có người thắng.");
-                    } else if (isWin) {
-                        showSuccess("🎉 Chúc mừng! Bạn đã THẮNG phiên đấu giá!");
+                    String detail  = parts.length >= 3 ? parts[2] : "";
+                    boolean isWin = detail.contains("Winner:" + username)
+                            || detail.contains("Winner: " + username);
+                    if (isWin) {
+                        showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+                        NotificationManager.getInstance().add(
+                                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+                    } else if (detail.contains("No winner")) {
+                        showInfo("Phiên kết thúc - không có người thắng.");
                     } else {
-                        String winnerName = detail.startsWith("Winner:")
-                                ? detail.substring("Winner:".length()).trim() : "người khác";
-                        showInfo("Phiên kết thúc. Người thắng: " + winnerName + ". Bạn không thắng lần này.");
+                        showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
                     }
                 });
                 removePushListener();

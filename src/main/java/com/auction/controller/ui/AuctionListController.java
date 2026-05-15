@@ -57,21 +57,6 @@ public class AuctionListController implements Initializable {
   @FXML private Button btnPriceMid;
   @FXML private Button btnPriceOver50;
 
-  // Sidebar toggle + search
-  @FXML private VBox      sidebarBox;
-  @FXML private Button    hamburgerBtn;
-  @FXML private Button    topHamburgerBtn;
-  @FXML private VBox      logoText;
-  @FXML private VBox      avatarBox;
-  @FXML private VBox      avatarIconBox;
-  @FXML private VBox      navBox;
-  @FXML private VBox      iconNavBox;
-  @FXML private Button    adminIconButton;
-  @FXML private Button    sellerIconButton;
-  @FXML private javafx.scene.control.TextField searchField;
-
-  private boolean sidebarExpanded = true;
-
   private String activeTypeFilter  = "ALL";
   private String activePriceFilter = "ALL";
 
@@ -99,14 +84,6 @@ public class AuctionListController implements Initializable {
       sellerButton.setVisible("SELLER".equalsIgnoreCase(role));
       sellerButton.setManaged("SELLER".equalsIgnoreCase(role));
     }
-    if (sellerIconButton != null) {
-      sellerIconButton.setVisible("SELLER".equalsIgnoreCase(role));
-      sellerIconButton.setManaged("SELLER".equalsIgnoreCase(role));
-    }
-    if (adminIconButton != null) {
-      adminIconButton.setVisible("ADMIN".equalsIgnoreCase(role));
-      adminIconButton.setManaged("ADMIN".equalsIgnoreCase(role));
-    }
   }
 
   @Override
@@ -131,31 +108,19 @@ public class AuctionListController implements Initializable {
           break;
 
         case Protocol.RES_END_SUCCESS: {
-          String auctionId = parts.length >= 2 ? parts[1].trim() : "";
-          String detail    = parts.length >= 3 ? parts[2].trim() : "";
-          String me        = (username != null) ? username.trim() : "";
-          boolean noWinner = detail.equalsIgnoreCase("No winner");
-          // So sánh chính xác tên winner, tránh false-positive
-          boolean isWin    = !noWinner && detail.startsWith("Winner:")
-                  && detail.substring("Winner:".length()).trim().equals(me);
-          // Notification tập trung TẠI ĐÂY — BidController sẽ KHÔNG add nữa
-          if (!auctionId.isEmpty()) {
-            if (noWinner) {
-              NotificationManager.getInstance().add(
-                      "🏁 Phiên " + auctionId + " kết thúc — không có người thắng.",
-                      "auction", auctionId);
-            } else if (isWin) {
-              NotificationManager.getInstance().add(
-                      "🎉 Bạn đã THẮNG phiên đấu giá: " + auctionId,
-                      "auction", auctionId);
-            } else {
-              String winnerName = detail.startsWith("Winner:")
-                      ? detail.substring("Winner:".length()).trim() : "người khác";
-              NotificationManager.getInstance().add(
-                      "🏁 Phiên " + auctionId + " kết thúc. Người thắng: "
-                              + winnerName + ". Bạn không thắng lần này.",
-                      "auction", auctionId);
-            }
+          String auctionId = parts.length >= 2 ? parts[1] : "";
+          String detail    = parts.length >= 3 ? parts[2] : "";
+          // Fix: trim để tránh lỗi space trong "Winner: username"
+          boolean isWin = detail.contains("Winner:" + username)
+                  || detail.contains("Winner: " + username);
+          if (isWin) {
+            NotificationManager.getInstance().add(
+                    "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
+                    "auction", auctionId);
+          } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
+            NotificationManager.getInstance().add(
+                    "Phiên " + auctionId + " kết thúc. Người thắng: " + extractWinner(detail) + ". Bạn không thắng.",
+                    "auction", auctionId);
           }
           Platform.runLater(this::loadFromServer);
           break;
@@ -189,6 +154,17 @@ public class AuctionListController implements Initializable {
       }
     };
     ServerConnection.getInstance().addPushListener(pushListener);
+  }
+
+
+  private String extractWinner(String detail) {
+    if (detail == null) return "N/A";
+    int idx = detail.indexOf("Winner:");
+    if (idx < 0) idx = detail.indexOf("Winner: ");
+    if (idx < 0) return "N/A";
+    String rest = detail.substring(idx + 7).trim();
+    int end = rest.indexOf("|");
+    return end > 0 ? rest.substring(0, end).trim() : rest.trim();
   }
 
   // ── Load data ─────────────────────────────────────────────────────────────
@@ -338,44 +314,17 @@ public class AuctionListController implements Initializable {
     javafx.scene.Node iconNode;
     String imgUrl = row.getImageUrl();
     if (imgUrl != null && !imgUrl.isEmpty()) {
-      javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView();
+      // Dùng JavaFX Image load async built-in (backgroundLoading=true)
+      javafx.scene.image.Image img = new javafx.scene.image.Image(
+              imgUrl, 187, 120, true, true, true); // backgroundLoading=true
+      javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView(img);
       imgView.setFitWidth(187);
       imgView.setFitHeight(120);
       imgView.setPreserveRatio(true);
       imgView.setSmooth(true);
       javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(187, 120);
-      clip.setArcWidth(10);
-      clip.setArcHeight(10);
+      clip.setArcWidth(10); clip.setArcHeight(10);
       imgView.setClip(clip);
-      final String finalUrl = imgUrl;
-      new Thread(() -> {
-        try {
-          java.net.HttpURLConnection conn =
-                  (java.net.HttpURLConnection) new java.net.URL(finalUrl).openConnection();
-          conn.setRequestProperty("User-Agent",
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-          conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
-          conn.setRequestProperty("Referer",
-                  new java.net.URL(finalUrl).getProtocol() + "://"
-                          + new java.net.URL(finalUrl).getHost());
-          conn.setConnectTimeout(6000);
-          conn.setReadTimeout(6000);
-          conn.setInstanceFollowRedirects(true);
-          conn.connect();
-          try (java.io.InputStream is = conn.getInputStream()) {
-            byte[] bytes = is.readAllBytes();
-            javafx.scene.image.Image img =
-                    new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
-            if (!img.isError()) {
-              javafx.application.Platform.runLater(() -> imgView.setImage(img));
-            }
-          } finally {
-            conn.disconnect();
-          }
-        } catch (Exception ex) {
-          System.err.println("Card image error: " + ex.getMessage());
-        }
-      }).start();
       javafx.scene.layout.StackPane imgContainer =
               new javafx.scene.layout.StackPane(imgView);
       imgContainer.setPrefHeight(120);
@@ -569,50 +518,4 @@ public class AuctionListController implements Initializable {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new ProfileView(stage, username).show();
   }
-  // ── Sidebar toggle ───────────────────────────────────────────────────────
-  @FXML
-  public void handleToggleSidebar() {
-    sidebarExpanded = !sidebarExpanded;
-    if (sidebarExpanded) {
-      // ── Mở rộng: 220px, hiện text, ẩn icon-only ──
-      sidebarBox.setPrefWidth(220);
-      sidebarBox.setMinWidth(220);
-      if (logoText     != null) { logoText.setVisible(true);      logoText.setManaged(true); }
-      if (avatarBox    != null) { avatarBox.setVisible(true);     avatarBox.setManaged(true); }
-      if (avatarIconBox!= null) { avatarIconBox.setVisible(false);avatarIconBox.setManaged(false); }
-      if (navBox       != null) { navBox.setVisible(true);        navBox.setManaged(true); }
-      if (iconNavBox   != null) { iconNavBox.setVisible(false);   iconNavBox.setManaged(false); }
-      if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
-    } else {
-      // ── Thu hẹp: 60px, icon-only, ẩn text ──
-      sidebarBox.setPrefWidth(60);
-      sidebarBox.setMinWidth(60);
-      if (logoText     != null) { logoText.setVisible(false);     logoText.setManaged(false); }
-      if (avatarBox    != null) { avatarBox.setVisible(false);    avatarBox.setManaged(false); }
-      if (avatarIconBox!= null) { avatarIconBox.setVisible(true); avatarIconBox.setManaged(true); }
-      if (navBox       != null) { navBox.setVisible(false);       navBox.setManaged(false); }
-      if (iconNavBox   != null) { iconNavBox.setVisible(true);    iconNavBox.setManaged(true); }
-      if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
-    }
-  }
-
-  // ── Search ────────────────────────────────────────────────────────────────
-  @FXML
-  public void handleSearch(javafx.scene.input.KeyEvent e) {
-    if (searchField == null) return;
-    String query = searchField.getText().toLowerCase().trim();
-    if (query.isEmpty()) {
-      applyFilter();
-      return;
-    }
-    List<AuctionRow> filtered = currentRows.stream()
-            .filter(r -> r.getItemName().toLowerCase().contains(query)
-                    || r.getStatus().toLowerCase().contains(query)
-                    || (r.getItemType() != null && r.getItemType().toLowerCase().contains(query)))
-            .collect(Collectors.toList());
-    Platform.runLater(() -> renderCards(filtered));
-    setStatusBar("🔍 Tìm thấy " + filtered.size() + " phiên cho \"" + query + "\"");
-  }
-
-
 }
