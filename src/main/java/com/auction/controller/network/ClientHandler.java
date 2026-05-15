@@ -169,7 +169,8 @@ public class ClientHandler implements Runnable, AuctionParticipant {
 
   public boolean validatePayload(String[] parts, int expectedLength) {
     if (parts == null || parts.length < expectedLength) {
-      sendMessage("ERROR|Thiếu tham số yêu cầu. Cần ít nhất " + expectedLength + " phần.");
+      sendMessage(
+          Protocol.ERROR + Protocol.SEPARATOR + "Thiếu thông tin yêu cầu. Cần ít nhất " + expectedLength + " phần.");
       return false;
     }
     return true;
