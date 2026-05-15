@@ -82,9 +82,6 @@ public class BidController implements Initializable {
 
     private Consumer<String> pushListener;
 
-    /** Guard: chỉ add thông báo kết quả thắng/thua đúng 1 lần mỗi phiên */
-    private volatile boolean endNotifSent = false;
-
     private static final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache
             = new ConcurrentHashMap<>();
 
@@ -462,41 +459,23 @@ public class BidController implements Initializable {
                         countdownLabel.setStyle(
                                 "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
                     }
-                    String detail = parts.length >= 3 ? parts[2] : "";
-                    boolean isWin = detail.contains("Winner:" + username);
+                    String detail = parts.length >= 3 ? parts[2].trim() : "";
+                    String me = (username != null) ? username.trim() : "";
+                    // Parse chính xác: "Winner:tên" hoặc "No winner"
+                    boolean noWinner = detail.equalsIgnoreCase("No winner");
+                    boolean isWin = !noWinner && detail.startsWith("Winner:")
+                            && detail.substring("Winner:".length()).trim().equals(me);
 
-                    // Guard: chỉ thêm notification kết quả 1 lần duy nhất
-                    if (!endNotifSent) {
-                        endNotifSent = true;
-                        if (isWin) {
-                            showSuccess("Chúc mừng! Bạn đã thắng phiên đấu giá!");
-                            NotificationManager.getInstance().add(
-                                    "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
-                                    "auction", auctionId);
-                        } else if (detail.contains("No winner")) {
-                            showInfo("Phiên kết thúc — Không có người thắng.");
-                            NotificationManager.getInstance().add(
-                                    "ℹ️ Phiên " + auctionId + " đã kết thúc — Không có người thắng.",
-                                    "auction", auctionId);
-                        } else {
-                            // Trích tên người thắng để hiển thị rõ
-                            String winner = "";
-                            if (detail.contains("Winner:")) {
-                                int idx = detail.indexOf("Winner:") + 7;
-                                winner = detail.substring(idx).split("[|\\s]")[0].trim();
-                            }
-                            if (winner.isEmpty()) {
-                                showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
-                                NotificationManager.getInstance().add(
-                                        "😔 Phiên " + auctionId + " đã kết thúc. Bạn không thắng lần này.",
-                                        "auction", auctionId);
-                            } else {
-                                showInfo("Phiên kết thúc. Người thắng: " + winner + ".");
-                                NotificationManager.getInstance().add(
-                                        "😔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winner + ".",
-                                        "auction", auctionId);
-                            }
-                        }
+                    // Chỉ cập nhật UI — KHÔNG add NotificationManager ở đây
+                    // Notification đã được xử lý tập trung tại AuctionListController
+                    if (noWinner) {
+                        showInfo("Phiên kết thúc — không có người thắng.");
+                    } else if (isWin) {
+                        showSuccess("🎉 Chúc mừng! Bạn đã THẮNG phiên đấu giá!");
+                    } else {
+                        String winnerName = detail.startsWith("Winner:")
+                                ? detail.substring("Winner:".length()).trim() : "người khác";
+                        showInfo("Phiên đã kết thúc. Người thắng: " + winnerName + ". Bạn không thắng lần này.");
                     }
                 });
                 removePushListener();
