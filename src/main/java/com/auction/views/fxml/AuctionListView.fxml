@@ -24,7 +24,7 @@
                  -fx-border-color: transparent #1E3A5F transparent transparent;
                  -fx-border-width: 1;">
 
-        <!-- Logo row + hamburger — LUÔN HIỆN, không bị ẩn khi thu sidebar -->
+        <!-- Logo row + hamburger -->
         <HBox fx:id="logoRow" alignment="CENTER_LEFT" spacing="10"
               style="-fx-padding: 14 12;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
@@ -39,12 +39,11 @@
                            -fx-border-color: rgba(59,130,246,0.35);
                            -fx-border-radius: 8; -fx-border-width: 1.5;
                            -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.4),6,0,0,0);"/>
-            <!-- Logo icon — luôn hiện -->
-            <Label text="&#x1F3DB;"
+            <!-- FIX: thêm fx:id để controller ẩn/hiện khi toggle -->
+            <Label fx:id="logoIconLabel" text="&#x1F3DB;"
                    style="-fx-font-size: 20px;
                           -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;
                           -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.7),8,0,0,0);"/>
-            <!-- Logo text — ẩn khi thu -->
             <VBox fx:id="logoText" spacing="1">
                 <Label text="1388AUCTION"
                        style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #93C5FD;
@@ -139,32 +138,27 @@
               style="-fx-padding: 10 0;" VBox.vgrow="ALWAYS"
               visible="false" managed="false">
 
-            <!-- Trang chủ -->
             <Button text="&#x1F3E0;" prefWidth="44" prefHeight="44"
                     style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-border-color: transparent transparent transparent #3B82F6;
                            -fx-border-width: 0 0 0 3; -fx-padding: 0;"/>
 
-            <!-- Lịch sử -->
             <Button text="&#x1F4DC;" prefWidth="44" prefHeight="44" onAction="#handleBidHistory"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-padding: 0;"/>
 
-            <!-- Watchlist -->
             <Button text="&#x2B50;" prefWidth="44" prefHeight="44" onAction="#handleGetWatchlist"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-padding: 0;"/>
 
-            <!-- Hồ sơ -->
             <Button text="&#x1F464;" prefWidth="44" prefHeight="44" onAction="#handleProfile"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-padding: 0;"/>
 
-            <!-- Seller icon -->
             <Button fx:id="sellerIconButton" text="&#x1F3EA;" prefWidth="44" prefHeight="44"
                     onAction="#handleSellerDashboard"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
@@ -172,7 +166,6 @@
                            -fx-padding: 0;"
                     visible="false" managed="false"/>
 
-            <!-- Admin icon -->
             <Button fx:id="adminIconButton" text="&#x1F6E1;" prefWidth="44" prefHeight="44"
                     onAction="#handleAdminDashboard"
                     style="-fx-background-color: transparent; -fx-text-fill: #F59E0B;
@@ -185,7 +178,6 @@
             <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
                           -fx-min-height: 1; -fx-max-height: 1; -fx-min-width: 44;"/>
 
-            <!-- Đăng xuất icon -->
             <Button text="&#x1F6AA;" prefWidth="44" prefHeight="44" onAction="#handleLogout"
                     style="-fx-background-color: transparent; -fx-text-fill: #F87171;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
@@ -204,7 +196,6 @@
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
 
-            <!-- Search bar -->
             <HBox alignment="CENTER_LEFT" spacing="0" HBox.hgrow="ALWAYS"
                   style="-fx-background-color: #162236; -fx-background-radius: 10;
                          -fx-border-color: #1E3A5F; -fx-border-radius: 10; -fx-border-width: 1;

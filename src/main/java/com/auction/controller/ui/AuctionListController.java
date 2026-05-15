@@ -61,6 +61,7 @@ public class AuctionListController implements Initializable {
   @FXML private VBox      sidebarBox;
   @FXML private Button    hamburgerBtn;
   @FXML private Button    topHamburgerBtn;
+  @FXML private Label     logoIconLabel;
   @FXML private VBox      logoText;
   @FXML private VBox      avatarBox;
   @FXML private VBox      avatarIconBox;
@@ -561,22 +562,20 @@ public class AuctionListController implements Initializable {
     sidebarExpanded = !sidebarExpanded;
     if (sidebarExpanded) {
       // ── Mở rộng: 220px ──
-      // logoRow (chứa hamburger + logo icon) LUÔN giữ nguyên, không thay đổi
       sidebarBox.setPrefWidth(220);
       sidebarBox.setMinWidth(220);
-      // Chỉ hiện/ẩn logoText (text bên cạnh logo), avatarBox, navBox
+      if (logoIconLabel != null) { logoIconLabel.setVisible(true);  logoIconLabel.setManaged(true); }
       if (logoText      != null) { logoText.setVisible(true);       logoText.setManaged(true); }
       if (avatarBox     != null) { avatarBox.setVisible(true);      avatarBox.setManaged(true); }
-      if (avatarIconBox != null) { avatarIconBox.setVisible(false);  avatarIconBox.setManaged(false); }
+      if (avatarIconBox != null) { avatarIconBox.setVisible(false); avatarIconBox.setManaged(false); }
       if (navBox        != null) { navBox.setVisible(true);         navBox.setManaged(true); }
       if (iconNavBox    != null) { iconNavBox.setVisible(false);    iconNavBox.setManaged(false); }
       if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
     } else {
-      // ── Thu hẹp: 60px ──
-      // logoRow KHÔNG bị ẩn — hamburger + logo icon icon vẫn hiện
+      // ── Thu hẹp: 60px — ẩn logo icon + text, chỉ giữ hamburger ──
       sidebarBox.setPrefWidth(60);
       sidebarBox.setMinWidth(60);
-      // Ẩn text logo, avatar full, nav full — chỉ giữ icon-only
+      if (logoIconLabel != null) { logoIconLabel.setVisible(false); logoIconLabel.setManaged(false); }
       if (logoText      != null) { logoText.setVisible(false);      logoText.setManaged(false); }
       if (avatarBox     != null) { avatarBox.setVisible(false);     avatarBox.setManaged(false); }
       if (avatarIconBox != null) { avatarIconBox.setVisible(true);  avatarIconBox.setManaged(true); }
