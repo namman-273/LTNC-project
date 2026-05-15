@@ -42,6 +42,7 @@ import javafx.stage.Stage;
 public class AuctionListController implements Initializable {
 
   @FXML private Label welcomeLabel;
+  @FXML private javafx.scene.layout.VBox sidebarPane;
   @FXML private FlowPane auctionGrid;
   @FXML private Button adminButton;
   @FXML private Button sellerButton;
@@ -443,6 +444,15 @@ public class AuctionListController implements Initializable {
   // ── Navigation ────────────────────────────────────────────────────────────
   private void setStatusBar(String msg) {
     if (statusBarLabel != null) statusBarLabel.setText(msg);
+  }
+
+  @FXML
+  public void handleToggleSidebar() {
+    if (sidebarPane != null) {
+      boolean show = !sidebarPane.isVisible();
+      sidebarPane.setVisible(show);
+      sidebarPane.setManaged(show);
+    }
   }
 
   @FXML
