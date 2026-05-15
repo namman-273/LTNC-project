@@ -67,8 +67,9 @@ public class ClientHandler implements Runnable, AuctionParticipant {
       String request;
       while ((request = in.readLine()) != null) {
         String[] parts = request.trim().split("\\|");
-        if (parts.length == 0)
+        if (parts.length == 0) {
           continue;
+        }
 
         ClientCommand command = commandMap.get(parts[0]);
         if (command != null) {
