@@ -30,23 +30,25 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
-import javafx.util.Duration;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class AuctionListController implements Initializable {
 
   @FXML private Label welcomeLabel;
-  @FXML private javafx.scene.layout.VBox sidebarPane;
   @FXML private FlowPane auctionGrid;
   @FXML private Button adminButton;
   @FXML private Button sellerButton;
   @FXML private Label statusBarLabel;
+  @FXML private TextField searchField;
 
   @FXML private Button btnFilterAll;
   @FXML private Button btnFilterArt;
@@ -75,7 +77,7 @@ public class AuctionListController implements Initializable {
 
   public void setUsername(String username) {
     this.username = username;
-    welcomeLabel.setText("Xin chào, " + username + "!");
+    if (welcomeLabel != null) welcomeLabel.setText("Xin chào, " + username + "!");
     String role = SessionManager.getInstance().getRole();
     if (adminButton != null) {
       adminButton.setVisible("ADMIN".equalsIgnoreCase(role));
@@ -91,7 +93,7 @@ public class AuctionListController implements Initializable {
   public void initialize(URL url, ResourceBundle rb) {
     loadFromServer();
     registerPushListener();
-    startAutoRefresh();
+    startAutoRefreshTimeline();
   }
 
   // ── Push Listener ─────────────────────────────────────────────────────────
@@ -99,7 +101,6 @@ public class AuctionListController implements Initializable {
     pushListener = message -> {
       String[] parts = message.split("\\|");
       String header = parts[0];
-
       switch (header) {
         case Protocol.NOTI_NEW_AUCTION:
           Platform.runLater(() -> {
@@ -111,7 +112,6 @@ public class AuctionListController implements Initializable {
         case Protocol.RES_END_SUCCESS: {
           String auctionId = parts.length >= 2 ? parts[1] : "";
           String detail    = parts.length >= 3 ? parts[2] : "";
-          // Fix: trim để tránh lỗi space trong "Winner: username"
           boolean isWin = detail.contains("Winner:" + username)
                   || detail.contains("Winner: " + username);
           if (isWin) {
@@ -120,7 +120,7 @@ public class AuctionListController implements Initializable {
                     "auction", auctionId);
           } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
             NotificationManager.getInstance().add(
-                    "Phiên " + auctionId + " kết thúc. Người thắng: " + extractWinner(detail) + ". Bạn không thắng.",
+                    "Phiên " + auctionId + " kết thúc. Bạn không thắng.",
                     "auction", auctionId);
           }
           Platform.runLater(this::loadFromServer);
@@ -157,6 +157,12 @@ public class AuctionListController implements Initializable {
     ServerConnection.getInstance().addPushListener(pushListener);
   }
 
+  private void removePushListener() {
+    if (pushListener != null) {
+      ServerConnection.getInstance().removePushListener(pushListener);
+      pushListener = null;
+    }
+  }
 
   private String extractWinner(String detail) {
     if (detail == null) return "N/A";
@@ -216,6 +222,22 @@ public class AuctionListController implements Initializable {
     }).start();
   }
 
+  // ── Search ────────────────────────────────────────────────────────────────
+  @FXML
+  private void handleSearch(KeyEvent e) {
+    if (searchField == null) return;
+    String keyword = searchField.getText().trim().toLowerCase();
+    if (keyword.isEmpty()) {
+      applyFilter();
+      return;
+    }
+    List<AuctionRow> filtered = currentRows.stream()
+            .filter(r -> r.getItemName().toLowerCase().contains(keyword)
+                    || r.getId().toLowerCase().contains(keyword))
+            .collect(Collectors.toList());
+    renderCards(filtered);
+  }
+
   // ── Filter ────────────────────────────────────────────────────────────────
   @FXML
   private void handleFilterType(ActionEvent e) {
@@ -224,16 +246,16 @@ public class AuctionListController implements Initializable {
             btnFilterElec, btnFilterVehicle, btnFilterOther);
     typeButtons.forEach(b -> {
       b.getStyleClass().remove("filter-active");
-      b.getStyleClass().add("filter-btn");
+      if (!b.getStyleClass().contains("filter-btn")) b.getStyleClass().add("filter-btn");
     });
     clicked.getStyleClass().remove("filter-btn");
-    clicked.getStyleClass().add("filter-active");
+    if (!clicked.getStyleClass().contains("filter-active")) clicked.getStyleClass().add("filter-active");
 
-    if (clicked == btnFilterArt)         activeTypeFilter = "Art";
-    else if (clicked == btnFilterElec)   activeTypeFilter = "Electronics";
+    if (clicked == btnFilterArt)          activeTypeFilter = "Art";
+    else if (clicked == btnFilterElec)    activeTypeFilter = "Electronics";
     else if (clicked == btnFilterVehicle) activeTypeFilter = "Vehicle";
-    else if (clicked == btnFilterOther)  activeTypeFilter = "OTHER";
-    else                                 activeTypeFilter = "ALL";
+    else if (clicked == btnFilterOther)   activeTypeFilter = "OTHER";
+    else                                  activeTypeFilter = "ALL";
     applyFilter();
   }
 
@@ -243,10 +265,10 @@ public class AuctionListController implements Initializable {
     List<Button> priceButtons = List.of(btnPriceAll, btnPriceUnder5, btnPriceMid, btnPriceOver50);
     priceButtons.forEach(b -> {
       b.getStyleClass().remove("filter-active");
-      b.getStyleClass().add("filter-btn");
+      if (!b.getStyleClass().contains("filter-btn")) b.getStyleClass().add("filter-btn");
     });
     clicked.getStyleClass().remove("filter-btn");
-    clicked.getStyleClass().add("filter-active");
+    if (!clicked.getStyleClass().contains("filter-active")) clicked.getStyleClass().add("filter-active");
 
     if (clicked == btnPriceUnder5)      activePriceFilter = "UNDER5";
     else if (clicked == btnPriceMid)    activePriceFilter = "MID";
@@ -256,7 +278,13 @@ public class AuctionListController implements Initializable {
   }
 
   private void applyFilter() {
+    String keyword = (searchField != null && searchField.getText() != null)
+            ? searchField.getText().trim().toLowerCase() : "";
+
     List<AuctionRow> filtered = currentRows.stream()
+            .filter(r -> keyword.isEmpty()
+                    || r.getItemName().toLowerCase().contains(keyword)
+                    || r.getId().toLowerCase().contains(keyword))
             .filter(r -> {
               String type = r.getItemType() != null ? r.getItemType() : "";
               return switch (activeTypeFilter) {
@@ -315,16 +343,16 @@ public class AuctionListController implements Initializable {
     javafx.scene.Node iconNode;
     String imgUrl = row.getImageUrl();
     if (imgUrl != null && !imgUrl.isEmpty()) {
-      // Dùng JavaFX Image load async built-in (backgroundLoading=true)
       javafx.scene.image.Image img = new javafx.scene.image.Image(
-              imgUrl, 187, 120, true, true, true); // backgroundLoading=true
+              imgUrl, 187, 120, true, true, true);
       javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView(img);
       imgView.setFitWidth(187);
       imgView.setFitHeight(120);
       imgView.setPreserveRatio(true);
       imgView.setSmooth(true);
       javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(187, 120);
-      clip.setArcWidth(10); clip.setArcHeight(10);
+      clip.setArcWidth(10);
+      clip.setArcHeight(10);
       imgView.setClip(clip);
       javafx.scene.layout.StackPane imgContainer =
               new javafx.scene.layout.StackPane(imgView);
@@ -355,10 +383,6 @@ public class AuctionListController implements Initializable {
                     "-fx-font-size: 11px; -fx-font-weight: bold;" +
                     "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 0;");
     btnDetail.setOnAction(e -> openBidView(row));
-    btnDetail.setOnMouseEntered(e -> btnDetail.setStyle(
-            btnDetail.getStyle().replace("linear-gradient(to right,#2563EB,#3B82F6)", "linear-gradient(to right,#1D4ED8,#2563EB)")));
-    btnDetail.setOnMouseExited(e -> btnDetail.setStyle(
-            btnDetail.getStyle().replace("linear-gradient(to right,#1D4ED8,#2563EB)", "linear-gradient(to right,#2563EB,#3B82F6)")));
 
     VBox card = new VBox(8, badge, iconNode, name, priceLabel, price, btnDetail);
     card.setPrefWidth(215);
@@ -374,7 +398,7 @@ public class AuctionListController implements Initializable {
       auctionGrid.getChildren().forEach(n -> {
         if (n instanceof VBox v) {
           v.setStyle(v.getStyle()
-                  .replace("-fx-background-color: #1E2D45;", "-fx-background-color: #0B1120;"));
+                  .replace("-fx-background-color: #162236;", "-fx-background-color: #0B1120;"));
         }
       });
       card.setStyle(card.getStyle()
@@ -447,21 +471,11 @@ public class AuctionListController implements Initializable {
   }
 
   @FXML
-  public void handleToggleSidebar() {
-    if (sidebarPane != null) {
-      boolean show = !sidebarPane.isVisible();
-      sidebarPane.setVisible(show);
-      sidebarPane.setManaged(show);
-    }
-  }
-
-  @FXML
   public void handleRefresh() { loadFromServer(); }
 
   public void refreshList() { loadFromServer(); }
 
-  @FXML
-  private void startAutoRefresh() {
+  private void startAutoRefreshTimeline() {
     autoRefreshTimeline = new Timeline(
             new KeyFrame(Duration.seconds(8), e -> loadFromServer()));
     autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
@@ -475,12 +489,10 @@ public class AuctionListController implements Initializable {
     }
   }
 
+  @FXML
   public void handleLogout() {
     stopAutoRefresh();
-    if (pushListener != null) {
-      ServerConnection.getInstance().removePushListener(pushListener);
-      pushListener = null;
-    }
+    removePushListener();
     ServerConnection.getInstance().disconnect();
     SessionManager.getInstance().clear();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
