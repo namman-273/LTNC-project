@@ -97,6 +97,27 @@
                            -fx-font-size: 12px; -fx-cursor: hand; -fx-background-radius: 8;
                            -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;
                            -fx-padding: 6 14;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <HBox onMouseClicked="#handleGoBalance" alignment="CENTER"
+                  prefHeight="36" prefWidth="36"
+                  style="-fx-background-color: rgba(96,165,250,0.12); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: rgba(59,130,246,0.3); -fx-border-radius: 18;
+                         -fx-border-width: 1;
+                         -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.2),6,0,0,0);">
+                <Label text="&#x1F4B0;"
+                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                              -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
+            </HBox>
+            <HBox onMouseClicked="#handleGoNotification" alignment="CENTER"
+                  prefHeight="36" prefWidth="36"
+                  style="-fx-background-color: rgba(251,191,36,0.12); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: rgba(251,191,36,0.3); -fx-border-radius: 18;
+                         -fx-border-width: 1;
+                         -fx-effect: dropshadow(gaussian,rgba(251,191,36,0.2),6,0,0,0);">
+                <Label text="&#x1F514;"
+                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                              -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
+            </HBox>
         </HBox>
 
         <!-- STATS BAR -->

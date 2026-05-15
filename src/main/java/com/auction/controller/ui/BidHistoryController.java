@@ -173,17 +173,17 @@ public class BidHistoryController implements Initializable {
     }
 
     private static class HistoryCell extends ListCell<BidHistoryEntry> {
-        private final HBox      card       = new HBox(14);
-        private final StackPane iconWrap   = new StackPane();
-        private final Label     iconLabel  = new Label();
-        private final VBox      content    = new VBox(3);
-        private final HBox      titleRow   = new HBox(8);
-        private final Label     itemName   = new Label();
-        private final Label     badge      = new Label();
-        private final Label     detail     = new Label();
-        private final HBox      bottomRow  = new HBox(12);
-        private final Label     timeLabel  = new Label();
-        private final Label     priceLabel = new Label();
+        private final HBox card = new HBox(14);
+        private final StackPane iconWrap = new StackPane();
+        private final Label iconLabel = new Label();
+        private final VBox content = new VBox(3);
+        private final HBox titleRow = new HBox(8);
+        private final Label itemName = new Label();
+        private final Label badge = new Label();
+        private final Label detail = new Label();
+        private final HBox bottomRow = new HBox(12);
+        private final Label timeLabel = new Label();
+        private final Label priceLabel = new Label();
 
         HistoryCell() {
             iconWrap.setPrefSize(44, 44);
@@ -221,7 +221,10 @@ public class BidHistoryController implements Initializable {
         protected void updateItem(BidHistoryEntry entry, boolean empty) {
             super.updateItem(entry, empty);
             setStyle("-fx-background-color: transparent; -fx-padding: 0;");
-            if (empty || entry == null) { setGraphic(null); return; }
+            if (empty || entry == null) {
+                setGraphic(null);
+                return;
+            }
 
             boolean win = "WIN".equalsIgnoreCase(entry.getResult());
 
@@ -259,5 +262,20 @@ public class BidHistoryController implements Initializable {
             setGraphic(outer);
             setText(null);
         }
+    }
+    @FXML
+    public void handleGoBalance() {
+        Stage s = getStage();
+        if (s != null) new BalanceView(s, username).show();
+    }
+
+    @FXML
+    public void handleGoNotification() {
+        Stage s = getStage();
+        if (s != null) new NotificationView(s, username).show();
+    }
+    private Stage getStage() {
+        try { return (Stage) historyList.getScene().getWindow(); }
+        catch (Exception e) { return null; }
     }
 }

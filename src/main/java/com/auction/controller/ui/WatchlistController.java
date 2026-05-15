@@ -319,4 +319,22 @@ public class WatchlistController implements Initializable {
             messageLabel.setText(msg);
         }
     }
+    @FXML
+    public void handleGoBalance() {
+        Stage s = getStage();
+        if (s != null) new BalanceView(s, username).show();
+    }
+
+    @FXML
+    public void handleGoNotification() {
+        Stage s = getStage();
+        if (s != null) new NotificationView(s, username).show();
+    }
+    private Stage getStage() {
+        try {
+            if (watchlistCards != null) return (Stage) watchlistCards.getScene().getWindow();
+            if (watchlistTable != null) return (Stage) watchlistTable.getScene().getWindow();
+        } catch (Exception ignored) {}
+        return null;
+    }
 }
