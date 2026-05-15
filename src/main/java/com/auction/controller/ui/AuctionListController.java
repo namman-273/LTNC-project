@@ -133,14 +133,12 @@ public class AuctionListController implements Initializable {
         case Protocol.RES_END_SUCCESS: {
           String auctionId = parts.length >= 2 ? parts[1].trim() : "";
           String detail    = parts.length >= 3 ? parts[2].trim() : "";
-          // Trim username để tránh lỗi so sánh khoảng trắng
-          String me = (username != null) ? username.trim() : "";
-          // Parse winner name từ "Winner:tên" hoặc "No winner"
+          String me        = (username != null) ? username.trim() : "";
           boolean noWinner = detail.equalsIgnoreCase("No winner");
+          // So sánh chính xác tên winner, tránh false-positive
           boolean isWin    = !noWinner && detail.startsWith("Winner:")
                   && detail.substring("Winner:".length()).trim().equals(me);
-          // Chỉ add notification ở đây — BidController KHÔNG add notification nữa
-          // để tránh thông báo hiện 2 lần khi đang xem BidView
+          // Notification tập trung TẠI ĐÂY — BidController sẽ KHÔNG add nữa
           if (!auctionId.isEmpty()) {
             if (noWinner) {
               NotificationManager.getInstance().add(
@@ -151,11 +149,11 @@ public class AuctionListController implements Initializable {
                       "🎉 Bạn đã THẮNG phiên đấu giá: " + auctionId,
                       "auction", auctionId);
             } else {
-              // Lấy tên người thắng để hiển thị
               String winnerName = detail.startsWith("Winner:")
                       ? detail.substring("Winner:".length()).trim() : "người khác";
               NotificationManager.getInstance().add(
-                      "🏁 Phiên " + auctionId + " kết thúc. Người thắng: " + winnerName + ". Bạn không thắng lần này.",
+                      "🏁 Phiên " + auctionId + " kết thúc. Người thắng: "
+                              + winnerName + ". Bạn không thắng lần này.",
                       "auction", auctionId);
             }
           }
