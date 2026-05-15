@@ -25,22 +25,15 @@
                  -fx-border-width: 1;">
 
         <!-- Logo row + hamburger -->
-        <HBox fx:id="logoRow" alignment="CENTER_LEFT" spacing="10"
-              style="-fx-padding: 14 12;
+        <HBox fx:id="logoRow" alignment="CENTER_LEFT" spacing="10" minHeight="62" prefHeight="62"
+              style="-fx-padding: 18 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
-                     -fx-border-width: 1; -fx-min-height: 58; -fx-pref-height: 58;">
+                     -fx-border-width: 1;">
             <Button fx:id="hamburgerBtn" text="☰" onAction="#handleToggleSidebar"
-                    prefWidth="34" prefHeight="34"
-                    style="-fx-background-color: rgba(59,130,246,0.18);
-                           -fx-text-fill: #93C5FD;
-                           -fx-font-size: 16px; -fx-font-weight: bold;
-                           -fx-cursor: hand; -fx-padding: 0;
-                           -fx-background-radius: 8;
-                           -fx-border-color: rgba(59,130,246,0.35);
-                           -fx-border-radius: 8; -fx-border-width: 1.5;
-                           -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.4),6,0,0,0);"/>
-            <!-- FIX: thêm fx:id để controller ẩn/hiện khi toggle -->
-            <Label fx:id="logoIconLabel" text="&#x1F3DB;"
+                    style="-fx-background-color: transparent; -fx-text-fill: #60A5FA;
+                           -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 0 6 0 0;
+                           -fx-border-color: transparent;"/>
+            <Label text="&#x1F3DB;"
                    style="-fx-font-size: 20px;
                           -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;
                           -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.7),8,0,0,0);"/>
@@ -53,8 +46,8 @@
             </VBox>
         </HBox>
 
-        <!-- Avatar + tên — ẩn khi thu sidebar -->
-        <VBox fx:id="avatarBox" alignment="CENTER" spacing="6"
+        <!-- Avatar — full mode -->
+        <VBox fx:id="avatarBox" alignment="CENTER" spacing="6" minHeight="90"
               style="-fx-padding: 14 16 12 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1; -fx-background-color: rgba(30,45,69,0.5);">
@@ -66,14 +59,14 @@
                           -fx-wrap-text: true;" maxWidth="188"/>
         </VBox>
 
-        <!-- Avatar icon nhỏ — chỉ hiện khi thu sidebar -->
+        <!-- Avatar — icon mode (chỉ hiện khi thu) -->
         <VBox fx:id="avatarIconBox" alignment="CENTER" spacing="0"
               visible="false" managed="false"
-              style="-fx-padding: 10 0;
+              style="-fx-padding: 12 0;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1; -fx-background-color: rgba(30,45,69,0.5);">
             <Label text="&#x1F464;"
-                   style="-fx-font-size: 20px; -fx-background-color: #1E3A5F;
+                   style="-fx-font-size: 22px; -fx-background-color: #1E3A5F;
                           -fx-background-radius: 20; -fx-padding: 5 8;"/>
         </VBox>
 
@@ -138,27 +131,32 @@
               style="-fx-padding: 10 0;" VBox.vgrow="ALWAYS"
               visible="false" managed="false">
 
+            <!-- Trang chủ -->
             <Button text="&#x1F3E0;" prefWidth="44" prefHeight="44"
                     style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-border-color: transparent transparent transparent #3B82F6;
                            -fx-border-width: 0 0 0 3; -fx-padding: 0;"/>
 
+            <!-- Lịch sử -->
             <Button text="&#x1F4DC;" prefWidth="44" prefHeight="44" onAction="#handleBidHistory"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-padding: 0;"/>
 
+            <!-- Watchlist -->
             <Button text="&#x2B50;" prefWidth="44" prefHeight="44" onAction="#handleGetWatchlist"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-padding: 0;"/>
 
+            <!-- Hồ sơ -->
             <Button text="&#x1F464;" prefWidth="44" prefHeight="44" onAction="#handleProfile"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-padding: 0;"/>
 
+            <!-- Seller icon -->
             <Button fx:id="sellerIconButton" text="&#x1F3EA;" prefWidth="44" prefHeight="44"
                     onAction="#handleSellerDashboard"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
@@ -166,6 +164,7 @@
                            -fx-padding: 0;"
                     visible="false" managed="false"/>
 
+            <!-- Admin icon -->
             <Button fx:id="adminIconButton" text="&#x1F6E1;" prefWidth="44" prefHeight="44"
                     onAction="#handleAdminDashboard"
                     style="-fx-background-color: transparent; -fx-text-fill: #F59E0B;
@@ -178,6 +177,7 @@
             <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
                           -fx-min-height: 1; -fx-max-height: 1; -fx-min-width: 44;"/>
 
+            <!-- Đăng xuất icon -->
             <Button text="&#x1F6AA;" prefWidth="44" prefHeight="44" onAction="#handleLogout"
                     style="-fx-background-color: transparent; -fx-text-fill: #F87171;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
@@ -196,6 +196,7 @@
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
 
+            <!-- Search bar -->
             <HBox alignment="CENTER_LEFT" spacing="0" HBox.hgrow="ALWAYS"
                   style="-fx-background-color: #162236; -fx-background-radius: 10;
                          -fx-border-color: #1E3A5F; -fx-border-radius: 10; -fx-border-width: 1;
@@ -216,23 +217,23 @@
             <!-- Icon ví -->
             <HBox onMouseClicked="#handleBalance" alignment="CENTER"
                   prefHeight="36" prefWidth="36"
-                  style="-fx-background-color: rgba(96,165,250,0.12); -fx-background-radius: 18;
-                         -fx-cursor: hand; -fx-border-color: rgba(59,130,246,0.3); -fx-border-radius: 18;
-                         -fx-border-width: 1;
-                         -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.2),6,0,0,0);">
+                  style="-fx-background-color: rgba(96,165,250,0.15); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: #3B82F6; -fx-border-radius: 18;
+                         -fx-border-width: 1.5;
+                         -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.5),8,0,0,0);">
                 <Label text="&#x1F4B0;"
-                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                       style="-fx-font-size: 16px;
                               -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
             </HBox>
             <!-- Icon chuông -->
             <HBox onMouseClicked="#handleNotification" alignment="CENTER"
                   prefHeight="36" prefWidth="36"
-                  style="-fx-background-color: rgba(251,191,36,0.12); -fx-background-radius: 18;
-                         -fx-cursor: hand; -fx-border-color: rgba(251,191,36,0.3); -fx-border-radius: 18;
-                         -fx-border-width: 1;
-                         -fx-effect: dropshadow(gaussian,rgba(251,191,36,0.2),6,0,0,0);">
+                  style="-fx-background-color: rgba(251,191,36,0.15); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: #FBBF24; -fx-border-radius: 18;
+                         -fx-border-width: 1.5;
+                         -fx-effect: dropshadow(gaussian,rgba(251,191,36,0.5),8,0,0,0);">
                 <Label text="&#x1F514;"
-                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                       style="-fx-font-size: 16px;
                               -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
             </HBox>
         </HBox>
@@ -263,9 +264,8 @@
                 <Label text="&#x1F3C6;"
                        style="-fx-font-size: 80px;
                               -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;
-                              -fx-effect: dropshadow(gaussian,rgba(255,255,255,0.5),20,0,0,0);
-                              -fx-text-fill: white;
-                              -fx-opacity: 0.92;"/>
+                              -fx-effect: dropshadow(gaussian,rgba(251,191,36,0.95),26,0,0,0);
+                              -fx-opacity: 0.95;"/>
             </VBox>
         </HBox>
 

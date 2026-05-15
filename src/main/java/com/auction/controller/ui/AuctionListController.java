@@ -61,7 +61,6 @@ public class AuctionListController implements Initializable {
   @FXML private VBox      sidebarBox;
   @FXML private Button    hamburgerBtn;
   @FXML private Button    topHamburgerBtn;
-  @FXML private Label     logoIconLabel;
   @FXML private VBox      logoText;
   @FXML private VBox      avatarBox;
   @FXML private VBox      avatarIconBox;
@@ -72,6 +71,10 @@ public class AuctionListController implements Initializable {
   @FXML private javafx.scene.control.TextField searchField;
 
   private boolean sidebarExpanded = true;
+
+  /** Tránh add notification trùng khi cả AuctionList lẫn BidController cùng nhận RES_END_SUCCESS */
+  private final java.util.Set<String> notifiedEndAuctions =
+          java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
   private String activeTypeFilter  = "ALL";
   private String activePriceFilter = "ALL";
@@ -135,14 +138,28 @@ public class AuctionListController implements Initializable {
           String auctionId = parts.length >= 2 ? parts[1] : "";
           String detail    = parts.length >= 3 ? parts[2] : "";
           boolean isWin    = detail.contains("Winner:" + username);
-          if (isWin) {
-            NotificationManager.getInstance().add(
-                    "Bạn đã thắng phiên đấu giá: " + auctionId,
-                    "auction", auctionId);
-          } else if (!auctionId.isEmpty()) {
-            NotificationManager.getInstance().add(
-                    "Phiên " + auctionId + " đã kết thúc. Bạn không thắng.",
-                    "auction", auctionId);
+          // Dedup: chỉ add 1 lần, tránh trùng với BidController
+          if (!auctionId.isEmpty() && notifiedEndAuctions.add(auctionId)) {
+            if (isWin) {
+              NotificationManager.getInstance().add(
+                      "🎉 Chúc mừng! Bạn đã thắng phiên đấu giá: " + auctionId,
+                      "auction", auctionId);
+            } else if (detail.contains("No winner")) {
+              NotificationManager.getInstance().add(
+                      "ℹ️ Phiên " + auctionId + " đã kết thúc — Không có người thắng.",
+                      "auction", auctionId);
+            } else {
+              // Trích tên người thắng để thông báo thua rõ ràng hơn
+              String winner = "";
+              if (detail.contains("Winner:")) {
+                int idx = detail.indexOf("Winner:") + 7;
+                winner = detail.substring(idx).split("[|\\s]")[0].trim();
+              }
+              String lossMsg = winner.isEmpty()
+                      ? "😔 Phiên " + auctionId + " đã kết thúc. Bạn không thắng lần này."
+                      : "😔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winner + ".";
+              NotificationManager.getInstance().add(lossMsg, "auction", auctionId);
+            }
           }
           Platform.runLater(this::loadFromServer);
           break;
@@ -564,23 +581,23 @@ public class AuctionListController implements Initializable {
       // ── Mở rộng: 220px ──
       sidebarBox.setPrefWidth(220);
       sidebarBox.setMinWidth(220);
-      if (logoIconLabel != null) { logoIconLabel.setVisible(true);  logoIconLabel.setManaged(true); }
-      if (logoText      != null) { logoText.setVisible(true);       logoText.setManaged(true); }
-      if (avatarBox     != null) { avatarBox.setVisible(true);      avatarBox.setManaged(true); }
-      if (avatarIconBox != null) { avatarIconBox.setVisible(false); avatarIconBox.setManaged(false); }
-      if (navBox        != null) { navBox.setVisible(true);         navBox.setManaged(true); }
-      if (iconNavBox    != null) { iconNavBox.setVisible(false);    iconNavBox.setManaged(false); }
+      if (logoText     != null) { logoText.setVisible(true);       logoText.setManaged(true); }
+      // avatarBox luôn hiển thị — chỉ chuyển giữa full/icon
+      if (avatarBox    != null) { avatarBox.setVisible(true);      avatarBox.setManaged(true); }
+      if (avatarIconBox!= null) { avatarIconBox.setVisible(false); avatarIconBox.setManaged(false); }
+      if (navBox       != null) { navBox.setVisible(true);         navBox.setManaged(true); }
+      if (iconNavBox   != null) { iconNavBox.setVisible(false);    iconNavBox.setManaged(false); }
       if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
     } else {
-      // ── Thu hẹp: 60px — ẩn logo icon + text, chỉ giữ hamburger ──
+      // ── Thu hẹp: 60px — logoText ẩn, avatarBox GIỮ NGUYÊN size không đổi ──
       sidebarBox.setPrefWidth(60);
       sidebarBox.setMinWidth(60);
-      if (logoIconLabel != null) { logoIconLabel.setVisible(false); logoIconLabel.setManaged(false); }
-      if (logoText      != null) { logoText.setVisible(false);      logoText.setManaged(false); }
-      if (avatarBox     != null) { avatarBox.setVisible(false);     avatarBox.setManaged(false); }
-      if (avatarIconBox != null) { avatarIconBox.setVisible(true);  avatarIconBox.setManaged(true); }
-      if (navBox        != null) { navBox.setVisible(false);        navBox.setManaged(false); }
-      if (iconNavBox    != null) { iconNavBox.setVisible(true);     iconNavBox.setManaged(true); }
+      if (logoText     != null) { logoText.setVisible(false);      logoText.setManaged(false); }
+      // avatarBox vẫn hiển thị nguyên (avatar + "Xin chào"), KHÔNG ẩn
+      if (avatarBox    != null) { avatarBox.setVisible(true);      avatarBox.setManaged(true); }
+      if (avatarIconBox!= null) { avatarIconBox.setVisible(false); avatarIconBox.setManaged(false); }
+      if (navBox       != null) { navBox.setVisible(false);        navBox.setManaged(false); }
+      if (iconNavBox   != null) { iconNavBox.setVisible(true);     iconNavBox.setManaged(true); }
       if (topHamburgerBtn != null) { topHamburgerBtn.setVisible(false); topHamburgerBtn.setManaged(false); }
     }
   }
