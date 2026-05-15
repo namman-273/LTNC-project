@@ -25,7 +25,7 @@
                  -fx-border-width: 1;">
 
         <!-- Logo row + hamburger -->
-        <HBox fx:id="logoRow" alignment="CENTER_LEFT" spacing="10" minHeight="62" prefHeight="62"
+        <HBox fx:id="logoRow" alignment="CENTER_LEFT" spacing="10" minWidth="220" prefWidth="220"
               style="-fx-padding: 18 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
@@ -47,7 +47,7 @@
         </HBox>
 
         <!-- Avatar — full mode -->
-        <VBox fx:id="avatarBox" alignment="CENTER" spacing="6" minHeight="90"
+        <VBox fx:id="avatarBox" alignment="CENTER" spacing="6" minWidth="220" prefWidth="220"
               style="-fx-padding: 14 16 12 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1; -fx-background-color: rgba(30,45,69,0.5);">
