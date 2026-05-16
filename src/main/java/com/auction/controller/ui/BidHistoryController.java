@@ -105,7 +105,7 @@ public class BidHistoryController implements Initializable {
                 }
                 // Delay nhỏ để server kịp cập nhật DB rồi mới reload
                 new Thread(() -> {
-                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                    try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
                     loadFromServer();
                 }).start();
             }
