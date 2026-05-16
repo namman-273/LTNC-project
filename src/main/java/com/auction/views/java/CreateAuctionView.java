@@ -27,12 +27,11 @@ public class CreateAuctionView {
             CreateAuctionController controller = loader.getController();
             controller.setUsername(username);
 
-            Scene scene = new Scene(root);
             boolean wasMaximized = stage.isMaximized();
             double prevW = stage.getScene() != null ? stage.getScene().getWidth() : 0;
             double prevH = stage.getScene() != null ? stage.getScene().getHeight() : 0;
             stage.setTitle("Tạo phiên đấu giá");
-            stage.setScene(prevW > 100 ? new Scene(root, prevW, prevH) : scene);
+            stage.setScene(prevW > 100 ? new Scene(root, prevW, prevH) : new Scene(root));
             stage.show();
             if (wasMaximized) {
                 stage.setMaximized(true);
