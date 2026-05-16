@@ -125,10 +125,17 @@ public class AuctionService implements Serializable {
   }
 
   /**
-   * Kết thúc auction và xác định Winner.
+   * Kết thúc auction tự động (hết thời gian).
    */
   public void endAuction(String auctionId) {
     endHandler.endAuction(auctionId);
+  }
+
+  /**
+   * Kết thúc auction bởi Admin (đóng sớm, hoàn tiền).
+   */
+  public void endAuctionByAdmin(String auctionId) {
+    endHandler.endAuctionByAdmin(auctionId);
   }
 
   /**
