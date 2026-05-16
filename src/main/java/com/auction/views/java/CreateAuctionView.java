@@ -29,16 +29,11 @@ public class CreateAuctionView {
 
             Scene scene = new Scene(root);
             boolean wasMaximized = stage.isMaximized();
-            double w = stage.getWidth();
-            double h = stage.getHeight();
             stage.setTitle("Tạo phiên đấu giá");
             stage.setScene(scene);
             stage.show();
             if (wasMaximized) {
                 stage.setMaximized(true);
-            } else {
-                if (!Double.isNaN(w) && w > 100) stage.setWidth(w);
-                if (!Double.isNaN(h) && h > 100) stage.setHeight(h);
             }
         } catch (Exception e) {
             System.err.println("Lỗi load FXML: " + e.getMessage());

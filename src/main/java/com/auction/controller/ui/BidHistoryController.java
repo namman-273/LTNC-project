@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import java.util.function.Consumer;
+
 public class BidHistoryController implements Initializable {
 
     @FXML private ListView<BidHistoryEntry> historyList;
@@ -52,6 +54,7 @@ public class BidHistoryController implements Initializable {
     private String username;
     private String activeTab = "all";
     private List<BidHistoryEntry> allEntries = new ArrayList<>();
+    private Consumer<String> pushListener;
 
     private static final String TAB_ACTIVE =
             "-fx-background-color: #111827; -fx-text-fill: white; " +
@@ -81,6 +84,40 @@ public class BidHistoryController implements Initializable {
             sellerBtnHistory.setManaged(isSeller);
         }
         loadFromServer();
+        registerPushListener();
+    }
+
+    private void registerPushListener() {
+        pushListener = message -> {
+            String[] parts = message.split("\\|");
+            String header = parts[0];
+            if (Protocol.RES_END_SUCCESS.equals(header)) {
+                // Phiên kết thúc → reload lịch sử
+                String auctionId = parts.length >= 2 ? parts[1] : "";
+                String detail    = parts.length >= 3 ? parts[2] : "";
+                boolean isWin = detail.contains("Winner:" + username)
+                        || detail.contains("Winner: " + username);
+                // Thêm thông báo cho người thua
+                if (!isWin && !detail.contains("No winner") && !auctionId.isEmpty()) {
+                    com.auction.util.ui.NotificationManager.getInstance().add(
+                            "⚠️ Phiên " + auctionId + " đã kết thúc. Bạn không thắng lần này.",
+                            "auction", auctionId);
+                }
+                // Delay nhỏ để server kịp cập nhật DB rồi mới reload
+                new Thread(() -> {
+                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                    loadFromServer();
+                }).start();
+            }
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
+    }
+
+    private void removePushListener() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
     }
 
     private void loadFromServer() {
@@ -152,32 +189,38 @@ public class BidHistoryController implements Initializable {
 
 
     @FXML public void handleProfile() {
+        removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new ProfileView(stage, username).show();
     }
 
     @FXML public void handleWatchlist() {
+        removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new WatchlistView(stage, username).show();
     }
 
     @FXML public void handleBalance() {
+        removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new BalanceView(stage, username).show();
     }
 
     @FXML public void handleNotification() {
+        removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new NotificationView(stage, username).show();
     }
 
     @FXML public void handleHome() {
+        removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
 
     @FXML
     private void handleBack() {
+        removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
@@ -275,18 +318,21 @@ public class BidHistoryController implements Initializable {
     }
     @FXML
     public void handleGoBalance() {
+        removePushListener();
         Stage s = getStage();
         if (s != null) new BalanceView(s, username).show();
     }
 
     @FXML
     public void handleSellerDashboard() {
+        removePushListener();
         Stage s = getStage();
         if (s != null) new SellerView(s, username).show();
     }
 
     @FXML
     public void handleGoNotification() {
+        removePushListener();
         Stage s = getStage();
         if (s != null) new NotificationView(s, username).show();
     }

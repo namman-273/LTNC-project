@@ -23,16 +23,11 @@ public class BidHistoryView {
             BidHistoryController controller = loader.getController();
             controller.setUsername(username);
             boolean wasMaximized = stage.isMaximized();
-            double w = stage.getWidth();
-            double h = stage.getHeight();
             stage.setTitle("Lịch sử đấu giá - 1388AUCTION");
             stage.setScene(new Scene(root));
             stage.show();
             if (wasMaximized) {
                 stage.setMaximized(true);
-            } else {
-                if (!Double.isNaN(w) && w > 100) stage.setWidth(w);
-                if (!Double.isNaN(h) && h > 100) stage.setHeight(h);
             }
         } catch (Exception e) {
             System.err.println("Lỗi load BidHistoryView: " + e.getMessage());

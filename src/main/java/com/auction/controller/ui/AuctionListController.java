@@ -356,9 +356,8 @@ public class AuctionListController implements Initializable {
     javafx.scene.Node iconNode;
     String imgUrl = row.getImageUrl();
     if (imgUrl != null && !imgUrl.isEmpty()) {
-      javafx.scene.image.Image img = new javafx.scene.image.Image(
-              imgUrl, 187, 120, true, true, true);
-      javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView(img);
+      // Tạo placeholder trước, load ảnh nền sau
+      javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView();
       imgView.setFitWidth(187);
       imgView.setFitHeight(120);
       imgView.setPreserveRatio(true);
@@ -367,11 +366,50 @@ public class AuctionListController implements Initializable {
       clip.setArcWidth(10);
       clip.setArcHeight(10);
       imgView.setClip(clip);
+      Label placeholderIcon = new Label(typeIcon);
+      placeholderIcon.setStyle("-fx-font-size: 40px;");
       javafx.scene.layout.StackPane imgContainer =
-              new javafx.scene.layout.StackPane(imgView);
+              new javafx.scene.layout.StackPane(placeholderIcon, imgView);
+      imgContainer.setPrefWidth(187);
       imgContainer.setPrefHeight(120);
       imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");
       iconNode = imgContainer;
+      // Load ảnh bằng background thread, dùng HTTP thủ công tránh lỗi SSL/redirect JavaFX
+      final String finalImgUrl = imgUrl;
+      new Thread(() -> {
+        try {
+          javafx.scene.image.Image img;
+          if (finalImgUrl.startsWith("data:image")) {
+            String base64 = finalImgUrl.substring(finalImgUrl.indexOf(",") + 1);
+            byte[] bytes = java.util.Base64.getDecoder().decode(base64);
+            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
+          } else {
+            java.net.URL url = new java.net.URL(finalImgUrl);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setRequestProperty("Accept", "image/*,*/*");
+            conn.setInstanceFollowRedirects(true);
+            conn.setConnectTimeout(6000);
+            conn.setReadTimeout(6000);
+            conn.connect();
+            try (java.io.InputStream is = conn.getInputStream()) {
+              byte[] bytes = is.readAllBytes();
+              img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
+            } finally {
+              conn.disconnect();
+            }
+          }
+          if (!img.isError()) {
+            final javafx.scene.image.Image finalImg = img;
+            javafx.application.Platform.runLater(() -> {
+              imgView.setImage(finalImg);
+              placeholderIcon.setVisible(false);
+            });
+          }
+        } catch (Exception e) {
+          System.err.println("[AuctionList] Không load được ảnh: " + e.getMessage());
+        }
+      }, "card-img-load").start();
     } else {
       Label icon = new Label(typeIcon);
       icon.setStyle("-fx-font-size: 46px; -fx-padding: 8 0;");
