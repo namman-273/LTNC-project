@@ -47,6 +47,8 @@ public class AuctionListController implements Initializable {
   @FXML private FlowPane auctionGrid;
   @FXML private Button adminButton;
   @FXML private Button sellerButton;
+  @FXML private Button watchlistButton;
+  @FXML private Button watchlistIconButton;
   @FXML private Label statusBarLabel;
   @FXML private TextField searchField;
 
@@ -87,6 +89,16 @@ public class AuctionListController implements Initializable {
       sellerButton.setVisible("SELLER".equalsIgnoreCase(role));
       sellerButton.setManaged("SELLER".equalsIgnoreCase(role));
     }
+    // Watchlist chỉ dành cho Bidder
+    boolean isBidder = !"SELLER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role);
+    if (watchlistButton != null) {
+      watchlistButton.setVisible(isBidder);
+      watchlistButton.setManaged(isBidder);
+    }
+    if (watchlistIconButton != null) {
+      watchlistIconButton.setVisible(isBidder);
+      watchlistIconButton.setManaged(isBidder);
+    }
   }
 
   @Override
@@ -114,13 +126,14 @@ public class AuctionListController implements Initializable {
           String detail    = parts.length >= 3 ? parts[2] : "";
           boolean isWin = detail.contains("Winner:" + username)
                   || detail.contains("Winner: " + username);
+          // Only add notification here — toast is shown in BidController (if user is in BidView)
           if (isWin) {
             NotificationManager.getInstance().add(
                     "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
                     "auction", auctionId);
           } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
             NotificationManager.getInstance().add(
-                    "Phiên " + auctionId + " kết thúc. Bạn không thắng.",
+                    "⚠️ Phiên " + auctionId + " kết thúc. Bạn không thắng.",
                     "auction", auctionId);
           }
           Platform.runLater(this::loadFromServer);
@@ -410,6 +423,8 @@ public class AuctionListController implements Initializable {
   }
 
   private void openBidView(AuctionRow row) {
+    stopAutoRefresh();
+    removePushListener();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new BidView(stage, row.getId(), row.getItemName(),
             String.valueOf(row.getCurrentPrice()), row.getStatus(),

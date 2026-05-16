@@ -37,8 +37,8 @@ public class BalanceController implements Initializable {
     @FXML private ListView<TransactionItem> transactionList;
 
     private String username;
-    // FIX: không dùng static — mỗi lần mở BalanceView là list mới
-    private final ObservableList<TransactionItem> transactions = FXCollections.observableArrayList();
+    // Dùng static để giữ lịch sử giao dịch khi quay lại màn hình
+    private static final ObservableList<TransactionItem> transactions = FXCollections.observableArrayList();
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private Timeline autoRefreshTimeline;
 

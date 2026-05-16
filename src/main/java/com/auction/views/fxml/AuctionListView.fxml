@@ -88,7 +88,7 @@
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
 
-            <Button text="&#x2B50;  Watchlist" onAction="#handleGetWatchlist"
+            <Button fx:id="watchlistButton" text="&#x2B50;  Danh sách theo dõi" onAction="#handleGetWatchlist"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
@@ -145,7 +145,7 @@
                            -fx-padding: 0;"/>
 
             <!-- Watchlist -->
-            <Button text="&#x2B50;" prefWidth="44" prefHeight="44" onAction="#handleGetWatchlist"
+            <Button fx:id="watchlistIconButton" text="&#x2B50;" prefWidth="44" prefHeight="44" onAction="#handleGetWatchlist"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 16px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-padding: 0;"/>
@@ -214,34 +214,28 @@
 
             <Region HBox.hgrow="ALWAYS"/>
 
-            <!-- Icon ví — Segoe MDL2 Assets, đơn sắc trắng -->
-            <StackPane onMouseClicked="#handleBalance"
-                       prefHeight="38" prefWidth="38"
-                       style="-fx-background-color: #152030;
-                              -fx-background-radius: 19;
-                              -fx-cursor: hand;
-                              -fx-border-color: #253A52;
-                              -fx-border-radius: 19;
-                              -fx-border-width: 1.5;">
-                <Label text="&#xE71E;"
-                       style="-fx-font-family: 'Segoe MDL2 Assets';
-                              -fx-font-size: 16px;
-                              -fx-text-fill: white;"/>
-            </StackPane>
-            <!-- Icon chuông — Segoe MDL2 Assets, đơn sắc trắng -->
-            <StackPane onMouseClicked="#handleNotification"
-                       prefHeight="38" prefWidth="38"
-                       style="-fx-background-color: #152030;
-                              -fx-background-radius: 19;
-                              -fx-cursor: hand;
-                              -fx-border-color: #253A52;
-                              -fx-border-radius: 19;
-                              -fx-border-width: 1.5;">
-                <Label text="&#xEA8F;"
-                       style="-fx-font-family: 'Segoe MDL2 Assets';
-                              -fx-font-size: 16px;
-                              -fx-text-fill: white;"/>
-            </StackPane>
+            <!-- Icon ví -->
+            <HBox onMouseClicked="#handleBalance" alignment="CENTER"
+                  prefHeight="36" prefWidth="36"
+                  style="-fx-background-color: rgba(96,165,250,0.12); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: rgba(59,130,246,0.3); -fx-border-radius: 18;
+                         -fx-border-width: 1;
+                         -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.2),6,0,0,0);">
+                <Label text="&#x1F4B0;"
+                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                              -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
+            </HBox>
+            <!-- Icon chuông -->
+            <HBox onMouseClicked="#handleNotification" alignment="CENTER"
+                  prefHeight="36" prefWidth="36"
+                  style="-fx-background-color: rgba(251,191,36,0.12); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: rgba(251,191,36,0.3); -fx-border-radius: 18;
+                         -fx-border-width: 1;
+                         -fx-effect: dropshadow(gaussian,rgba(251,191,36,0.2),6,0,0,0);">
+                <Label text="&#x1F514;"
+                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                              -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
+            </HBox>
         </HBox>
 
         <!-- HERO BANNER -->
@@ -270,8 +264,8 @@
                 <Label text="&#x1F3C6;"
                        style="-fx-font-size: 80px;
                               -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;
-                              -fx-effect: dropshadow(gaussian,rgba(251,191,36,0.95),26,0,0,0);
-                              -fx-opacity: 0.95;"/>
+                              -fx-effect: dropshadow(gaussian,rgba(255,255,255,0.85),26,0,0,0);
+                              -fx-opacity: 0.95; -fx-text-fill: white;"/>
             </VBox>
         </HBox>
 

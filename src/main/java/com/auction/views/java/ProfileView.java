@@ -22,9 +22,18 @@ public class ProfileView {
             Parent root = loader.load();
             ProfileController controller = loader.getController();
             controller.setUsername(username);
+            boolean wasMaximized = stage.isMaximized();
+            double w = stage.getWidth();
+            double h = stage.getHeight();
             stage.setTitle("Hồ sơ cá nhân - 1388AUCTION");
             stage.setScene(new Scene(root));
             stage.show();
+            if (wasMaximized) {
+                stage.setMaximized(true);
+            } else {
+                if (!Double.isNaN(w) && w > 100) stage.setWidth(w);
+                if (!Double.isNaN(h) && h > 100) stage.setHeight(h);
+            }
         } catch (Exception e) {
             System.err.println("Lỗi load ProfileView: " + e.getMessage());
             e.printStackTrace();

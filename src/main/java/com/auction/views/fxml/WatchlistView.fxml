@@ -54,7 +54,7 @@
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-            <Button text="&#x2B50;  Watchlist"
+            <Button text="&#x2B50;  Danh sách theo dõi"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
                            -fx-font-size: 13px; -fx-font-weight: bold;
@@ -89,7 +89,7 @@
                      -fx-border-width: 1;">
             <Button text="← Quay lại" onAction="#handleBack"
                     styleClass="btn-ghost" style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
-            <Label text="&#x2B50; Watchlist của tôi"
+            <Label text="&#x2B50; Danh sách theo dõi của tôi"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Button text="&#x1F504; Làm mới" onAction="#handleRefresh"

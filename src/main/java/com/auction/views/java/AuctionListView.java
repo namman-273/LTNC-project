@@ -28,9 +28,18 @@ public class AuctionListView {
             controller.setUsername(username);
 
             Scene scene = new Scene(root);
+            boolean wasMaximized = stage.isMaximized();
+            double w = stage.getWidth();
+            double h = stage.getHeight();
             stage.setTitle("Danh sách phiên - Auction System");
             stage.setScene(scene);
             stage.show();
+            if (wasMaximized) {
+                stage.setMaximized(true);
+            } else {
+                if (!Double.isNaN(w) && w > 100) stage.setWidth(w);
+                if (!Double.isNaN(h) && h > 100) stage.setHeight(h);
+            }
 
             // Load lại sau 500ms để đảm bảo socket sẵn sàng
             new Thread(() -> {

@@ -68,9 +68,18 @@ public class BidView {
       controller.setData(auctionId, itemName, currentPrice, status, username, endTime,
               imageUrl, description, itemType, startingPrice, sellerId);
 
+      boolean wasMaximized = stage.isMaximized();
+      double w = stage.getWidth();
+      double h = stage.getHeight();
       stage.setTitle("Đấu giá - " + itemName);
       stage.setScene(new Scene(root));
       stage.show();
+      if (wasMaximized) {
+        stage.setMaximized(true);
+      } else {
+        if (!Double.isNaN(w) && w > 100) stage.setWidth(w);
+        if (!Double.isNaN(h) && h > 100) stage.setHeight(h);
+      }
 
     } catch (Exception e) {
       System.err.println("Lỗi load BidView: " + e.getMessage());

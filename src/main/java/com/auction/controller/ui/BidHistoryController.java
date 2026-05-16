@@ -9,6 +9,8 @@ import com.auction.views.java.ProfileView;
 import com.auction.views.java.WatchlistView;
 import com.auction.views.java.BalanceView;
 import com.auction.views.java.NotificationView;
+import com.auction.views.java.SellerView;
+import com.auction.util.core.SessionManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -45,6 +47,7 @@ public class BidHistoryController implements Initializable {
     @FXML private Button tabAll;
     @FXML private Button tabWin;
     @FXML private Button tabLose;
+    @FXML private Button sellerBtnHistory;
 
     private String username;
     private String activeTab = "all";
@@ -70,6 +73,13 @@ public class BidHistoryController implements Initializable {
 
     public void setUsername(String u) {
         this.username = u;
+        // Show seller button only for SELLER role
+        String role = SessionManager.getInstance().getRole();
+        if (sellerBtnHistory != null) {
+            boolean isSeller = "SELLER".equalsIgnoreCase(role);
+            sellerBtnHistory.setVisible(isSeller);
+            sellerBtnHistory.setManaged(isSeller);
+        }
         loadFromServer();
     }
 
@@ -267,6 +277,12 @@ public class BidHistoryController implements Initializable {
     public void handleGoBalance() {
         Stage s = getStage();
         if (s != null) new BalanceView(s, username).show();
+    }
+
+    @FXML
+    public void handleSellerDashboard() {
+        Stage s = getStage();
+        if (s != null) new SellerView(s, username).show();
     }
 
     @FXML

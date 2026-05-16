@@ -27,9 +27,18 @@ public class WatchlistView {
             WatchlistController controller = loader.getController();
             controller.setUsername(username);
 
-            stage.setTitle("Watchlist - 1388AUCTION");
+            boolean wasMaximized = stage.isMaximized();
+            double w = stage.getWidth();
+            double h = stage.getHeight();
+            stage.setTitle("Danh sách theo dõi - 1388AUCTION");
             stage.setScene(new Scene(root));
             stage.show();
+            if (wasMaximized) {
+                stage.setMaximized(true);
+            } else {
+                if (!Double.isNaN(w) && w > 100) stage.setWidth(w);
+                if (!Double.isNaN(h) && h > 100) stage.setHeight(h);
+            }
         } catch (Exception e) {
             System.err.println("Lỗi load WatchlistView: " + e.getMessage());
             e.printStackTrace();
