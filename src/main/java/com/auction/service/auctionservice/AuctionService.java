@@ -91,13 +91,11 @@ public class AuctionService implements Serializable {
 
   /**
    * Khôi phục lại toàn bộ scheduler khi hệ thống khởi động lại.
+   * FIX: Truyền đúng endAuction handler thay vì lambda rỗng.
    */
   private void recoverScheduledTasks() {
     scheduler.recoverScheduledTasks(auctionRepository, 
-        () -> {
-          // Lambda này sẽ được gọi cho từng auction cần recover
-          // Logic được handle bởi scheduler
-        });
+        auctionId -> endAuction(auctionId));
   }
 
   /**
