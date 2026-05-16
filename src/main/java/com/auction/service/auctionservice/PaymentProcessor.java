@@ -60,6 +60,44 @@ public class PaymentProcessor {
   }
 
   /**
+   * Hoàn tiền cho người dẫn đầu khi auction bị hủy sớm.
+   * 
+   * @return WinnerInfo chứa thông tin người được hoàn tiền
+   */
+  public WinnerInfo processRefund(Auction auction) {
+    if (auction == null) {
+      return null;
+    }
+
+    // Xác định người dẫn đầu từ BidHistory
+    List<BidTransaction> history = auction.getBidHistory();
+    User leadingBidder = null;
+    double refundAmount = 0;
+
+    if (!history.isEmpty()) {
+      BidTransaction lastBid = history.get(history.size() - 1);
+      leadingBidder = lastBid.getBidder();
+      refundAmount = lastBid.getAmount();
+
+      // Hoàn tiền cho người dẫn đầu
+      leadingBidder.addBalance(refundAmount);
+
+      // Gửi thông báo hoàn tiền
+      String refundMsg = Protocol.NOTI_REFUND + Protocol.SEPARATOR
+          + auction.getId() + Protocol.SEPARATOR
+          + refundAmount + Protocol.SEPARATOR
+          + "Phiên đấu giá đã bị đóng bởi Admin";
+
+      auction.notifySpecificUser(leadingBidder.getUsername(), refundMsg);
+
+      System.out.println("[REFUND] Đã hoàn " + refundAmount + "$ cho user: "
+          + leadingBidder.getUsername());
+    }
+
+    return new WinnerInfo(leadingBidder, refundAmount);
+  }
+
+  /**
    * Thông báo cho seller về việc balance thay đổi.
    */
   private void notifySellerBalanceChanged(Auction auction, User seller, double amount) {

@@ -4,6 +4,10 @@ import com.auction.controller.network.ClientHandler;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
+/**
+ * Command xử lý việc Admin đóng phiên đấu giá sớm.
+ * Khi đóng sớm (còn thời gian), người dẫn đầu sẽ được hoàn tiền.
+ */
 public class EndAuctionCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
@@ -18,7 +22,13 @@ public class EndAuctionCommand implements ClientCommand {
     }
 
     String auctionId = parts[1];
-    auctionService.endAuction(auctionId);
-    client.sendMessage(Protocol.RES_END_SUCCESS + Protocol.SEPARATOR + "Đã đóng phiên " + auctionId);
+
+    
+    // Method này sẽ tự động hoàn tiền nếu phiên còn thời gian
+    auctionService.endAuctionByAdmin(auctionId);
+
+    client.sendMessage(Protocol.RES_END_SUCCESS + Protocol.SEPARATOR
+        + "Đã đóng phiên " + auctionId
+        + ". Người dẫn đầu đã được hoàn tiền nếu phiên còn thời gian.");
   }
 }

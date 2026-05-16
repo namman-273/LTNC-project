@@ -47,14 +47,15 @@ public class Protocol {
 
   // --- THÔNG BÁO BIẾN ĐỘNG (PUSH NOTIFICATIONS) ---
   public static final String NOTI_BALANCE_CHANGED = "BALANCE_CHANGED";
+
   // Thông báo chung cho mọi người: Giá đã tăng
   public static final String NOTI_BID_UPDATE = "BID_UPDATE";
+
   /**
    * NOTI_OUTBID: Thông báo riêng cho người bị vượt giá
    * Format: OUTBID|auctionId|newBidder|newAmount
    * NEW: Notification đặc biệt chỉ gửi cho người đang giữ giá cao nhất
    * khi họ bị vượt giá bởi người khác.
-   * 
    */
   public static final String NOTI_OUTBID = "OUTBID";
 
@@ -69,6 +70,13 @@ public class Protocol {
    */
   public static final String NOTI_REFUND = "REFUND";
 
+  /**
+   * NOTI_AUCTION_CANCELLED: Thông báo phiên đấu giá bị hủy bởi Admin
+   * Format: AUCTION_CANCELLED|auctionId|reason
+   * NEW: Gửi cho TẤT CẢ participants khi Admin đóng phiên sớm
+   */
+  public static final String NOTI_AUCTION_CANCELLED = "AUCTION_CANCELLED";
+
   // FIX: Thêm thông báo gia hạn thời gian (Anti-Sniping)
   public static final String NOTI_SNIPING_UPDATE = "SNIPING_UPDATE";
 
@@ -78,5 +86,4 @@ public class Protocol {
 
   // Delimiter (Ký tự phân tách)
   public static final String SEPARATOR = "|";
-
 }
