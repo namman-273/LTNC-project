@@ -16,8 +16,8 @@
       stylesheets="@../style/style.css"
       style="-fx-background-color: #0F172A;">
 
-    <!-- CỘT TRÁI: Form -->
-    <VBox prefWidth="500" VBox.vgrow="ALWAYS" spacing="0"
+    <!-- CỘT TRÁI: Form — stretch theo cửa sổ -->
+    <VBox HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" spacing="0"
           style="-fx-background-color: #0F172A;">
 
         <!-- HEADER -->
@@ -44,7 +44,7 @@
             <VBox spacing="5">
                 <Label text="Loại sản phẩm *"
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #64748B;"/>
-                <ComboBox fx:id="typeComboBox" prefWidth="452" prefHeight="42"
+                <ComboBox fx:id="typeComboBox" maxWidth="Infinity" prefHeight="42"
                           styleClass="combo-box"/>
             </VBox>
 
@@ -52,7 +52,7 @@
                 <Label text="Tên sản phẩm *"
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #64748B;"/>
                 <TextField fx:id="nameField" promptText="Nhập tên sản phẩm..."
-                           prefHeight="42" prefWidth="452"
+                           prefHeight="42" maxWidth="Infinity"
                            styleClass="text-field-modern"/>
             </VBox>
 
@@ -61,7 +61,7 @@
                     <Label text="Giá khởi điểm (VND) *"
                            style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #64748B;"/>
                     <TextField fx:id="priceField" promptText="Ví dụ: 5000000"
-                               prefHeight="42"
+                               prefHeight="42" maxWidth="Infinity"
                                styleClass="text-field-modern"/>
                 </VBox>
                 <VBox spacing="5" prefWidth="150">
@@ -78,7 +78,7 @@
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #64748B;"/>
                 <TextField fx:id="imageUrlField"
                            promptText="https://example.com/image.jpg"
-                           prefHeight="42" prefWidth="452"
+                           prefHeight="42" maxWidth="Infinity"
                            styleClass="text-field-modern"/>
             </VBox>
 
@@ -87,7 +87,7 @@
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #64748B;"/>
                 <TextArea fx:id="descriptionArea"
                           promptText="Mô tả chi tiết về sản phẩm..."
-                          prefHeight="80" prefWidth="452" wrapText="true"
+                          prefHeight="80" maxWidth="Infinity" wrapText="true"
                           style="-fx-background-color: #162236;
                                  -fx-border-color: #1E3A5F;
                                  -fx-border-radius: 10; -fx-background-radius: 10;
@@ -96,12 +96,12 @@
             </VBox>
 
             <Label fx:id="messageLabel" text=""
-                   style="-fx-font-size: 12px;" wrapText="true" maxWidth="452"/>
+                   style="-fx-font-size: 12px;" wrapText="true" maxWidth="Infinity"/>
 
             <Region VBox.vgrow="ALWAYS"/>
 
             <Button text="&#x1F680; TẠO PHIÊN ĐẤU GIÁ" onAction="#handleCreate"
-                    prefWidth="452" prefHeight="46"
+                    maxWidth="Infinity" prefHeight="46"
                     style="-fx-background-color: linear-gradient(to right,#2563EB,#3B82F6);
                            -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;
                            -fx-background-radius: 10; -fx-cursor: hand;
@@ -109,8 +109,8 @@
         </VBox>
     </VBox>
 
-    <!-- CỘT PHẢI: Preview + Tips -->
-    <VBox prefWidth="320" VBox.vgrow="ALWAYS" spacing="0"
+    <!-- CỘT PHẢI: Preview + Tips — cố định 320px -->
+    <VBox prefWidth="320" minWidth="300" VBox.vgrow="ALWAYS" spacing="0"
           style="-fx-background-color: #0B1120;
                  -fx-border-color: #1E3A5F;
                  -fx-border-width: 0 0 0 1;">
@@ -120,7 +120,7 @@
                style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;
                       -fx-padding: 0 0 12 0;"/>
 
-        <!-- Card preview — dark -->
+        <!-- Card preview -->
         <VBox spacing="8" alignment="TOP_CENTER"
               style="-fx-background-color: #1E2D45;
                      -fx-background-radius: 14;

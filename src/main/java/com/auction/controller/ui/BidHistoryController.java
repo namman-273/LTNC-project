@@ -131,7 +131,10 @@ public class BidHistoryController implements Initializable {
                             Protocol.RES_BID_HISTORY.length() + Protocol.SEPARATOR.length());
                     Type listType = new TypeToken<List<BidHistoryEntry>>(){}.getType();
                     List<BidHistoryEntry> entries = gson.fromJson(json, listType);
-                    if (entries != null) allEntries = entries;
+                    if (entries != null) {
+                        java.util.Collections.reverse(entries);
+                        allEntries = entries;
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("[BidHistoryController] Lỗi load: " + e.getMessage());

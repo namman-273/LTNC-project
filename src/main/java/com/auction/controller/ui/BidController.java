@@ -335,9 +335,51 @@ public class BidController implements Initializable {
         bidHistoryList.setItems(historyItems);
         bidHistoryList.setCellFactory(lv -> new HistoryCell());
 
+        // FIX: đăng ký pushListener TRƯỚC loadHistory để không bỏ sót RES_END_SUCCESS
+        // khi auto bid chạy nhanh và phiên kết thúc ngay lúc màn đang load
+        registerPushListener();
         startCountdown();
         loadHistory();
-        registerPushListener();
+
+        // Nếu phiên đã FINISHED/PAID khi mở màn (ví dụ user mở lại sau khi auto bid xong),
+        // hiện kết quả ngay dựa trên bid history — không cần đợi push
+        if ("FINISHED".equalsIgnoreCase(status) || "PAID".equalsIgnoreCase(status)) {
+            Platform.runLater(() -> {
+                statusLabel.setText("FINISHED");
+                if (countdownTimeline != null) countdownTimeline.stop();
+                if (countdownLabel != null) {
+                    countdownLabel.setText("⏰ Hết giờ!");
+                    countdownLabel.setStyle(
+                            "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+                }
+                // Kiểm tra xem mình có phải bidder cuối (winner) không dựa vào history đã load
+                checkWinnerFromHistory();
+            });
+        }
+    }
+
+    /**
+     * Kiểm tra winner từ bid history đã có sẵn trên UI.
+     * Dùng khi mở màn mà phiên đã kết thúc rồi.
+     */
+    private void checkWinnerFromHistory() {
+        if (historyItems == null || historyItems.isEmpty()) {
+            // History chưa load xong, thử lại sau 1s
+            new Thread(() -> {
+                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                Platform.runLater(this::checkWinnerFromHistory);
+            }).start();
+            return;
+        }
+        // Bidder đứng đầu list (index 0) là người thắng (do loadHistory đảo ngược)
+        HistoryEntry leading = historyItems.get(0);
+        if (leading.isMe) {
+            showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+            NotificationManager.getInstance().add(
+                    "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+        } else {
+            showInfo("Phiên đã kết thúc. Người thắng: " + leading.bidder);
+        }
     }
 
     @Override
@@ -402,7 +444,7 @@ public class BidController implements Initializable {
                         catch (Exception ignored) {}
                         currentPriceLabel.setText(formatPrice(newPrice));
                         loadHistory();
-                        loadBalance(); // refresh số dư ngay sau khi đặt giá thành công
+                        loadBalance();
                         updateBidSuggestion(currentPriceValue);
                         if (!bidder.equals(username)) {
                             showWarning(bidder + " vừa đặt " + formatPrice(newPrice));
@@ -450,6 +492,9 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.RES_END_SUCCESS:
+                // Chỉ xử lý nếu đúng phiên này
+                if (parts.length >= 2 && !parts[1].equals(auctionId)) break;
+
                 Platform.runLater(() -> {
                     statusLabel.setText("FINISHED");
                     stopSnipingCountdown();
@@ -459,7 +504,7 @@ public class BidController implements Initializable {
                         countdownLabel.setStyle(
                                 "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
                     }
-                    String detail  = parts.length >= 3 ? parts[2] : "";
+                    String detail = parts.length >= 3 ? parts[2] : "";
                     boolean isWin = detail.contains("Winner:" + username)
                             || detail.contains("Winner: " + username);
                     if (isWin) {
@@ -620,7 +665,7 @@ public class BidController implements Initializable {
                         } catch (NumberFormatException ignored) {}
                     }
                     loadHistory();
-                    loadBalance(); // refresh số dư ngay sau khi đặt giá thành công
+                    loadBalance();
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
