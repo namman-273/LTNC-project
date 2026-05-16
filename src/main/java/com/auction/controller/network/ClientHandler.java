@@ -67,8 +67,9 @@ public class ClientHandler implements Runnable, AuctionParticipant {
       String request;
       while ((request = in.readLine()) != null) {
         String[] parts = request.trim().split("\\|");
-        if (parts.length == 0)
+        if (parts.length == 0) {
           continue;
+        }
 
         ClientCommand command = commandMap.get(parts[0]);
         if (command != null) {
@@ -169,7 +170,8 @@ public class ClientHandler implements Runnable, AuctionParticipant {
 
   public boolean validatePayload(String[] parts, int expectedLength) {
     if (parts == null || parts.length < expectedLength) {
-      sendMessage("ERROR|Thiếu tham số yêu cầu. Cần ít nhất " + expectedLength + " phần.");
+      sendMessage(
+          Protocol.ERROR + Protocol.SEPARATOR + "Thiếu thông tin yêu cầu. Cần ít nhất " + expectedLength + " phần.");
       return false;
     }
     return true;
