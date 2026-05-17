@@ -5,6 +5,7 @@ import com.auction.model.enums.AuctionStatus;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Service quản lý scheduling cho việc tự động đóng auctions.
@@ -31,27 +32,38 @@ public class AuctionScheduler {
 
   /**
    * Khôi phục lịch trình cho các auction đang mở sau khi system restart.
+   * FIX: Truyền auctionId cụ thể cho mỗi task thay vì dùng Runnable chung.
    */
-  public void recoverScheduledTasks(AuctionRepository repository, Runnable endAuctionTask) {
+  public void recoverScheduledTasks(AuctionRepository repository,
+      Consumer<String> endAuctionHandler) {
     if (scheduler == null || scheduler.isShutdown()) {
       scheduler = Executors.newScheduledThreadPool(5);
     }
 
     long now = System.currentTimeMillis();
+    int recoveredCount = 0;
+    int closedCount = 0;
+
     for (Auction auction : repository.getAllAuctions()) {
       if (auction.getStatus() == AuctionStatus.OPEN) {
         long delay = auction.getEndTime() - now;
+        String auctionId = auction.getId();
 
         if (delay > 0) {
-          // Nếu vẫn còn thời gian -> Lên lịch lại
-          scheduler.schedule(endAuctionTask, delay, TimeUnit.MILLISECONDS);
+          // Nếu vẫn còn thời gian -> Lên lịch lại với auctionId cụ thể
+          scheduler.schedule(() -> endAuctionHandler.accept(auctionId),
+              delay, TimeUnit.MILLISECONDS);
+          recoveredCount++;
         } else {
-          // Nếu đã hết giờ -> Đóng luôn
-          endAuctionTask.run();
+          // Nếu đã hết giờ -> Đóng luôn với auctionId cụ thể
+          endAuctionHandler.accept(auctionId);
+          closedCount++;
         }
       }
     }
-    System.out.println("[SCHEDULER] Đã khôi phục lịch trình đóng phiên cho các đấu giá đang mở.");
+    System.out.println("[SCHEDULER] Đã khôi phục lịch trình: "
+        + recoveredCount + " phiên còn thời gian, "
+        + closedCount + " phiên đã hết hạn được đóng ngay.");
   }
 
   /**
