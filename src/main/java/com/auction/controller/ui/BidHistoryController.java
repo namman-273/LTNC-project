@@ -46,6 +46,7 @@ public class BidHistoryController implements Initializable {
     @FXML private Label loseLabel;
     @FXML private Label rateLabel;
     @FXML private Label subtitleLabel;
+    @FXML private Label balanceLabel;
     @FXML private Button tabAll;
     @FXML private Button tabWin;
     @FXML private Button tabLose;
@@ -91,7 +92,22 @@ public class BidHistoryController implements Initializable {
         pushListener = message -> {
             String[] parts = message.split("\\|");
             String header = parts[0];
-            if (Protocol.RES_END_SUCCESS.equals(header)) {
+            if (Protocol.NOTI_BALANCE_CHANGED.equals(header)) {
+                // Cập nhật số dư sidebar realtime
+                if (parts.length >= 2) {
+                    String newBal = parts[1];
+                    Platform.runLater(() -> {
+                        if (balanceLabel != null) {
+                            try {
+                                double v = Double.parseDouble(newBal);
+                                balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                            } catch (NumberFormatException e) {
+                                balanceLabel.setText(newBal + " VNĐ");
+                            }
+                        }
+                    });
+                }
+            } else if (Protocol.RES_END_SUCCESS.equals(header)) {
                 // Phiên kết thúc → reload lịch sử
                 String auctionId = parts.length >= 2 ? parts[1] : "";
                 String detail    = parts.length >= 3 ? parts[2] : "";
@@ -111,6 +127,7 @@ public class BidHistoryController implements Initializable {
             }
         };
         ServerConnection.getInstance().addPushListener(pushListener);
+        loadBalance();
     }
 
     private void removePushListener() {
@@ -201,6 +218,28 @@ public class BidHistoryController implements Initializable {
         removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new WatchlistView(stage, username).show();
+    }
+
+    private void loadBalance() {
+        if (balanceLabel == null) return;
+        new Thread(() -> {
+            String res = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_GET_BALANCE);
+            Platform.runLater(() -> {
+                if (res != null && res.startsWith(Protocol.RES_BALANCE_INFO)) {
+                    String[] p = res.split("\\|", -1);
+                    String amt = p.length >= 2 ? p[1] : "---";
+                    try {
+                        double v = Double.parseDouble(amt);
+                        if (balanceLabel != null) balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                    } catch (NumberFormatException e) {
+                        if (balanceLabel != null) balanceLabel.setText(amt + " VNĐ");
+                    }
+                } else {
+                    if (balanceLabel != null) balanceLabel.setText("---");
+                }
+            });
+        }, "bidhistory-balance-thread").start();
     }
 
     @FXML public void handleBalance() {

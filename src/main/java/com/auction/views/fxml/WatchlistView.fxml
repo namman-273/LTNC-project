@@ -42,6 +42,21 @@
             <Label text="&#x1F464;"
                    style="-fx-font-size: 28px; -fx-background-color: #1E3A5F;
                           -fx-background-radius: 26; -fx-padding: 7 11;"/>
+            <!-- Số dư ví -->
+            <HBox alignment="CENTER" spacing="6"
+                  style="-fx-background-color: rgba(5,150,105,0.12); -fx-background-radius: 10;
+                         -fx-border-color: #1E3A5F; -fx-border-radius: 10; -fx-border-width: 1;
+                         -fx-padding: 7 10; -fx-cursor: hand;"
+                  onMouseClicked="#handleGoBalance">
+                <Label text="💰" style="-fx-font-size: 13px;"/>
+                <VBox spacing="1" alignment="CENTER_LEFT">
+                    <Label text="Số dư ví"
+                           style="-fx-font-size: 9px; -fx-text-fill: #475569;"/>
+                    <Label fx:id="balanceLabel" text="---"
+                           style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #34D399;
+                                  -fx-wrap-text: true;" maxWidth="170"/>
+                </VBox>
+            </HBox>
         </VBox>
         <VBox spacing="2" style="-fx-padding: 12 10;" VBox.vgrow="ALWAYS">
             <Button text="&#x1F3E0;  Trang chủ" onAction="#handleHome"

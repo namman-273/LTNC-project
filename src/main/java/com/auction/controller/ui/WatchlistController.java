@@ -47,7 +47,9 @@ public class WatchlistController implements Initializable {
     @FXML private Label openCountLabel;
     @FXML private Label finishedCountLabel;
 
+    @FXML private Label balanceLabel;
     private String username;
+    private java.util.function.Consumer<String> balancePushListener;
     private ObservableList<AuctionRow> currentData = FXCollections.observableArrayList();
     private Timeline autoRefreshTimeline;
 
@@ -60,11 +62,13 @@ public class WatchlistController implements Initializable {
     public void setUsername(String username) {
         this.username = username;
         loadWatchlist();
+        loadBalance();
         startAutoRefresh();
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        registerBalancePushListener();
         // Giữ columns để controller không crash khi table ẩn
         if (idCol != null)     idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         if (nameCol != null)   nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
@@ -320,6 +324,48 @@ public class WatchlistController implements Initializable {
         }
     }
     @FXML
+    private void registerBalancePushListener() {
+        balancePushListener = message -> {
+            String[] parts = message.split("\\|");
+            if (parts.length >= 2 && com.auction.network.protocol.Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
+                String newBal = parts[1];
+                javafx.application.Platform.runLater(() -> {
+                    if (balanceLabel != null) {
+                        try {
+                            double v = Double.parseDouble(newBal);
+                            balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                        } catch (NumberFormatException e) {
+                            balanceLabel.setText(newBal + " VNĐ");
+                        }
+                    }
+                });
+            }
+        };
+        com.auction.network.client.ServerConnection.getInstance().addPushListener(balancePushListener);
+    }
+
+    private void loadBalance() {
+        if (balanceLabel == null) return;
+        new Thread(() -> {
+            String res = com.auction.network.client.ServerConnection.getInstance()
+                    .sendAndReceive(com.auction.network.protocol.Protocol.CMD_GET_BALANCE);
+            javafx.application.Platform.runLater(() -> {
+                if (res != null && res.startsWith(com.auction.network.protocol.Protocol.RES_BALANCE_INFO)) {
+                    String[] p = res.split("\\|", -1);
+                    String amt = p.length >= 2 ? p[1] : "---";
+                    try {
+                        double v = Double.parseDouble(amt);
+                        if (balanceLabel != null) balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                    } catch (NumberFormatException e) {
+                        if (balanceLabel != null) balanceLabel.setText(amt + " VNĐ");
+                    }
+                } else {
+                    if (balanceLabel != null) balanceLabel.setText("---");
+                }
+            });
+        }, "watchlist-balance-thread").start();
+    }
+
     public void handleGoBalance() {
         Stage s = getStage();
         if (s != null) new BalanceView(s, username).show();

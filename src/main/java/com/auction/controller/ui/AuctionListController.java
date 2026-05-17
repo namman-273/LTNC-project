@@ -44,6 +44,7 @@ import javafx.util.Duration;
 public class AuctionListController implements Initializable {
 
   @FXML private Label welcomeLabel;
+  @FXML private Label balanceLabel;
   @FXML private FlowPane auctionGrid;
   @FXML private Button adminButton;
   @FXML private Button sellerButton;
@@ -107,6 +108,7 @@ public class AuctionListController implements Initializable {
   public void initialize(URL url, ResourceBundle rb) {
     loadFromServer();
     registerPushListener();
+    loadBalance();
     startAutoRefreshTimeline();
   }
 
@@ -116,6 +118,23 @@ public class AuctionListController implements Initializable {
       String[] parts = message.split("\\|");
       String header = parts[0];
       switch (header) {
+        case Protocol.NOTI_BALANCE_CHANGED:
+          // Cập nhật số dư sidebar realtime
+          if (parts.length >= 2) {
+            String newBal = parts[1];
+            Platform.runLater(() -> {
+              if (balanceLabel != null) {
+                try {
+                  double v = Double.parseDouble(newBal);
+                  balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                } catch (NumberFormatException e) {
+                  balanceLabel.setText(newBal + " VNĐ");
+                }
+              }
+            });
+          }
+          break;
+
         case Protocol.NOTI_NEW_AUCTION:
           Platform.runLater(() -> {
             setStatusBar("🆕 Có phiên đấu giá mới! Đang tải lại...");
@@ -585,6 +604,28 @@ public class AuctionListController implements Initializable {
   }
 
   @FXML
+  private void loadBalance() {
+    if (balanceLabel == null) return;
+    new Thread(() -> {
+      String res = com.auction.network.client.ServerConnection.getInstance()
+              .sendAndReceive(com.auction.network.protocol.Protocol.CMD_GET_BALANCE);
+      Platform.runLater(() -> {
+        if (res != null && res.startsWith(com.auction.network.protocol.Protocol.RES_BALANCE_INFO)) {
+          String[] p = res.split("\\|", -1);
+          String amt = p.length >= 2 ? p[1] : "---";
+          try {
+            double v = Double.parseDouble(amt);
+            if (balanceLabel != null) balanceLabel.setText(String.format("%,.0f VNĐ", v));
+          } catch (NumberFormatException e) {
+            if (balanceLabel != null) balanceLabel.setText(amt + " VNĐ");
+          }
+        } else {
+          if (balanceLabel != null) balanceLabel.setText("---");
+        }
+      });
+    }, "auctionlist-balance-thread").start();
+  }
+
   public void handleBalance() {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new BalanceView(stage, username).show();
