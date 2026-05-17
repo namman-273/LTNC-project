@@ -38,9 +38,21 @@ public class AutoBidView {
             AutoBidController controller = loader.getController();
             controller.setData(auctionId, itemName, currentPrice, status, username, endTime);
 
+            // Giữ nguyên kích thước màn khi chuyển sang AutoBid
+            boolean wasMaximized = stage.isMaximized();
+            double prevW = stage.getScene() != null ? stage.getScene().getWidth() : 0;
+            double prevH = stage.getScene() != null ? stage.getScene().getHeight() : 0;
             stage.setTitle("Auto-Bid - " + itemName);
-            stage.setScene(new Scene(root));
+            stage.setScene(prevW > 100 ? new Scene(root, prevW, prevH) : new Scene(root));
             stage.show();
+            if (wasMaximized) {
+                stage.setMaximized(true);
+            }
+            if (root instanceof javafx.scene.layout.Region) {
+                javafx.scene.layout.Region regionRoot = (javafx.scene.layout.Region) root;
+                regionRoot.prefWidthProperty().bind(stage.getScene().widthProperty());
+                regionRoot.prefHeightProperty().bind(stage.getScene().heightProperty());
+            }
         } catch (Exception e) {
             System.err.println("Lỗi load AutoBidView: " + e.getMessage());
             e.printStackTrace();

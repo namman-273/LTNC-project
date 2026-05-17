@@ -55,8 +55,7 @@ public class BidChartController implements Initializable {
 
     /**
      * FIX: Parse thủ công bằng JsonParser thay vì gson.fromJson(BidTransaction[].class).
-     * BidTransaction chứa User object lồng nhau — Gson không deserialize được đúng
-     * → amount bị 0 → chart trống. Giờ chỉ lấy đúng field "amount".
+     * Chỉ lấy 20 lần bid gần nhất để tránh chart bị cram.
      */
     private void loadChartData() {
         new Thread(() -> {
@@ -73,13 +72,18 @@ public class BidChartController implements Initializable {
                 JsonArray array = JsonParser.parseString(parts[2].trim()).getAsJsonArray();
                 if (array.size() == 0) return;
 
-                XYChart.Series<Number, Number> series = new XYChart.Series<>();
-                series.setName("Giá đặt");
+                // Giới hạn 20 lần bid gần nhất
+                final int MAX_POINTS = 20;
+                int startIdx = Math.max(0, array.size() - MAX_POINTS);
 
-                for (int i = 0; i < array.size(); i++) {
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                series.setName("Giá đặt (20 lần gần nhất)");
+
+                int displayIdx = 1;
+                for (int i = startIdx; i < array.size(); i++) {
                     JsonObject obj = array.get(i).getAsJsonObject();
                     double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
-                    final int idx = i + 1;
+                    final int idx = displayIdx++;
                     series.getData().add(new XYChart.Data<>(idx, amount));
                 }
 
@@ -123,7 +127,8 @@ public class BidChartController implements Initializable {
             ServerConnection.getInstance().removePushListener(pushListener);
             pushListener = null;
         }
+        // Chart mở dưới dạng popup → chỉ cần đóng stage này
         Stage stage = (Stage) bidChart.getScene().getWindow();
-        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
+        stage.close();
     }
 }

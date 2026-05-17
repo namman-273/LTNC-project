@@ -12,6 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javafx.stage.Modality;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -79,6 +80,9 @@ public class BidController implements Initializable {
     // MỚI: lưu thêm để ghi BidHistory
     private String itemTypeCached     = "";
     private double startingPriceCached = 0;
+    private String imageUrlCached     = "";
+    private String descriptionCached  = "";
+    private String sellerIdCached     = "";
 
     private Consumer<String> pushListener;
 
@@ -205,6 +209,9 @@ public class BidController implements Initializable {
         this.endTime            = endTime;
         this.itemTypeCached     = itemType  != null ? itemType  : "";
         this.startingPriceCached = startingPrice;
+        this.imageUrlCached     = imageUrl  != null ? imageUrl  : "";
+        this.descriptionCached  = description != null ? description : "";
+        this.sellerIdCached     = sellerId  != null ? sellerId  : "";
 
         ToastManager.init(rootPane);
 
@@ -692,10 +699,26 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleViewChart() {
-        stopAll();
-        Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        new BidChartView(stage, auctionId, itemNameLabel.getText(),
-                currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
+        // Mở chart dưới dạng popup dialog riêng, KHÔNG thay thế màn BidView
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/auction/views/fxml/BidChartView.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            com.auction.controller.ui.BidChartController chartCtrl = loader.getController();
+            chartCtrl.setData(auctionId, itemNameLabel.getText(),
+                    currentPriceLabel.getText(), statusLabel.getText(), username, endTime);
+
+            javafx.stage.Stage chartStage = new javafx.stage.Stage();
+            chartStage.setTitle("Biểu đồ giá - " + itemNameLabel.getText());
+            chartStage.setScene(new javafx.scene.Scene(root, 700, 450));
+            chartStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            chartStage.initOwner((Stage) bidAmountField.getScene().getWindow());
+            chartStage.setResizable(true);
+            chartStage.show();
+        } catch (Exception e) {
+            System.err.println("Lỗi mở chart: " + e.getMessage());
+        }
     }
 
     private void stopAll() {

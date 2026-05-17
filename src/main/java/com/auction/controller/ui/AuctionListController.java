@@ -374,15 +374,21 @@ public class AuctionListController implements Initializable {
       imgContainer.setPrefHeight(120);
       imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");
       iconNode = imgContainer;
-      // Load ảnh bằng background thread, dùng HTTP thủ công tránh lỗi SSL/redirect JavaFX
+      // Load ảnh bằng background thread — dùng requestedWidth/Height để JavaFX scale ngay
+      // lúc decode, tránh OOM khi ảnh base64 gốc quá lớn
       final String finalImgUrl = imgUrl;
       new Thread(() -> {
         try {
           javafx.scene.image.Image img;
+          // Kích thước tối đa để render — scale khi decode, không giữ toàn bộ buffer
+          final double REQ_W = 187, REQ_H = 120;
           if (finalImgUrl.startsWith("data:image")) {
             String base64 = finalImgUrl.substring(finalImgUrl.indexOf(",") + 1);
             byte[] bytes = java.util.Base64.getDecoder().decode(base64);
-            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
+            img = new javafx.scene.image.Image(
+                    new java.io.ByteArrayInputStream(bytes),
+                    REQ_W, REQ_H, true, true);
+            bytes = null; // GC sớm
           } else {
             java.net.URL url = new java.net.URL(finalImgUrl);
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
@@ -394,7 +400,9 @@ public class AuctionListController implements Initializable {
             conn.connect();
             try (java.io.InputStream is = conn.getInputStream()) {
               byte[] bytes = is.readAllBytes();
-              img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
+              img = new javafx.scene.image.Image(
+                      new java.io.ByteArrayInputStream(bytes),
+                      REQ_W, REQ_H, true, true);
             } finally {
               conn.disconnect();
             }
