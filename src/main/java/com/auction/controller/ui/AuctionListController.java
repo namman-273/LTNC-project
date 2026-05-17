@@ -70,6 +70,8 @@ public class AuctionListController implements Initializable {
   private final List<AuctionRow> currentRows = new ArrayList<>();
   private Consumer<String> pushListener;
   private Timeline autoRefreshTimeline;
+  // FIX: Track các auctionId mà user đã đặt bid để tránh nhầm "không thắng"
+  private final java.util.Set<String> biddedAuctions = new java.util.HashSet<>();
 
   private final Gson gson = new GsonBuilder()
           .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -126,12 +128,14 @@ public class AuctionListController implements Initializable {
           String detail    = parts.length >= 3 ? parts[2] : "";
           boolean isWin = detail.contains("Winner:" + username)
                   || detail.contains("Winner: " + username);
-          // Only add notification here — toast is shown in BidController (if user is in BidView)
+          // FIX: Chỉ add notification "không thắng" nếu user thực sự đã đặt bid
+          // trong phiên này (được track qua NOTI_OUTBID hoặc BID_SUCCESS).
+          boolean userParticipated = biddedAuctions.contains(auctionId);
           if (isWin) {
             NotificationManager.getInstance().add(
                     "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
                     "auction", auctionId);
-          } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
+          } else if (!detail.contains("No winner") && !auctionId.isEmpty() && userParticipated) {
             NotificationManager.getInstance().add(
                     "⚠️ Phiên " + auctionId + " kết thúc. Bạn không thắng.",
                     "auction", auctionId);
@@ -144,6 +148,8 @@ public class AuctionListController implements Initializable {
           if (parts.length >= 4) {
             String auctionId = parts[1];
             String newAmt    = parts[3];
+            // FIX: Đánh dấu user đã tham gia bid trong phiên này
+            biddedAuctions.add(auctionId);
             NotificationManager.getInstance().add(
                     "⚠️ Bị vượt giá trong phiên " + auctionId
                             + " — Giá mới: " + newAmt + " VNĐ",

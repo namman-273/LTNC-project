@@ -366,19 +366,90 @@ public class BidController implements Initializable {
     }
 
     /**
-     * Kiểm tra winner từ bid history đã có sẵn trên UI.
-     * Dùng khi mở màn mà phiên đã kết thúc rồi.
+     * Kiểm tra winner từ server (fresh data) khi phiên đã FINISHED.
+     * FIX: Không dùng cache cũ vì auto-bid có thể đã thay đổi người thắng
+     * sau lần load cuối cùng. Luôn fetch lại từ server để đảm bảo chính xác.
      */
     private void checkWinnerFromHistory() {
+        new Thread(() -> {
+            String response = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+            if (response == null || response.startsWith("ERROR")) {
+                // Nếu không lấy được, fallback về cache cũ (nếu có)
+                Platform.runLater(this::checkWinnerFromHistoryCache);
+                return;
+            }
+            if (!response.startsWith(Protocol.RES_HISTORY)) {
+                Platform.runLater(this::checkWinnerFromHistoryCache);
+                return;
+            }
+
+            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+            if (parts.length < 3 || parts[2].trim().isEmpty() || parts[2].trim().equals("[]")) {
+                Platform.runLater(() -> showInfo("Phiên kết thúc - không có người đặt giá."));
+                return;
+            }
+
+            try {
+                com.google.gson.JsonArray array =
+                        com.google.gson.JsonParser.parseString(parts[2].trim()).getAsJsonArray();
+                if (array.size() == 0) {
+                    Platform.runLater(() -> showInfo("Phiên kết thúc - không có người đặt giá."));
+                    return;
+                }
+                // Phần tử cuối cùng trong array là bid mới nhất (winner)
+                com.google.gson.JsonObject lastBid =
+                        array.get(array.size() - 1).getAsJsonObject();
+                String winnerName = "---";
+                if (lastBid.has("bidder") && lastBid.get("bidder").isJsonObject()) {
+                    com.google.gson.JsonObject bidderObj =
+                            lastBid.get("bidder").getAsJsonObject();
+                    if (bidderObj.has("username")) {
+                        winnerName = bidderObj.get("username").getAsString();
+                    }
+                }
+                final String finalWinner = winnerName;
+                Platform.runLater(() -> {
+                    // Cập nhật lại historyItems với dữ liệu mới nhất
+                    historyItems.clear();
+                    for (int i = array.size() - 1; i >= 0; i--) {
+                        com.google.gson.JsonObject obj = array.get(i).getAsJsonObject();
+                        String bidder = "---";
+                        if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
+                            com.google.gson.JsonObject bo =
+                                    obj.get("bidder").getAsJsonObject();
+                            if (bo.has("username")) bidder = bo.get("username").getAsString();
+                        }
+                        double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
+                        boolean isMe = bidder.equals(username);
+                        boolean isLeading = (i == array.size() - 1);
+                        historyItems.add(new HistoryEntry(bidder, amount, isMe, isLeading));
+                    }
+
+                    if (finalWinner.equals(username)) {
+                        showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+                        NotificationManager.getInstance().add(
+                                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
+                                "auction", auctionId);
+                    } else {
+                        showInfo("Phiên đã kết thúc. Người thắng: " + finalWinner);
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Lỗi parse history khi check winner: " + e.getMessage());
+                Platform.runLater(this::checkWinnerFromHistoryCache);
+            }
+        }, "check-winner-thread").start();
+    }
+
+    /**
+     * Fallback: kiểm tra winner từ cache local (chỉ dùng khi không lấy được server data).
+     */
+    private void checkWinnerFromHistoryCache() {
         if (historyItems == null || historyItems.isEmpty()) {
-            // History chưa load xong, thử lại sau 1s
-            new Thread(() -> {
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-                Platform.runLater(this::checkWinnerFromHistory);
-            }).start();
+            showInfo("Phiên đã kết thúc.");
             return;
         }
-        // Bidder đứng đầu list (index 0) là người thắng (do loadHistory đảo ngược)
         HistoryEntry leading = historyItems.get(0);
         if (leading.isMe) {
             showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
@@ -512,16 +583,26 @@ public class BidController implements Initializable {
                                 "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
                     }
                     String detail = parts.length >= 3 ? parts[2] : "";
-                    boolean isWin = detail.contains("Winner:" + username)
-                            || detail.contains("Winner: " + username);
-                    if (isWin) {
-                        showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
-                        NotificationManager.getInstance().add(
-                                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
-                    } else if (detail.contains("No winner")) {
+                    if (detail.contains("No winner")) {
                         showInfo("Phiên kết thúc - không có người thắng.");
                     } else {
-                        showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
+                        // FIX: Luôn dùng Winner từ server thay vì cache history.
+                        // Auto-bid có thể đã thay đổi kết quả sau lần update cuối.
+                        boolean isWin = detail.contains("Winner:" + username)
+                                || detail.contains("Winner: " + username);
+                        if (isWin) {
+                            showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+                            NotificationManager.getInstance().add(
+                                    "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
+                                    "auction", auctionId);
+                        } else {
+                            // Lấy tên winner từ detail để hiển thị
+                            String winnerName = "";
+                            if (detail.contains("Winner: ")) { winnerName = detail.substring(detail.indexOf("Winner: ") + 8).trim(); } else if (detail.contains("Winner:")) { winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim(); }
+                            int wSep = winnerName.indexOf("|"); if (wSep >= 0) winnerName = winnerName.substring(0, wSep).trim();
+                            showInfo("Phiên đã kết thúc. Người thắng: "
+                                    + (winnerName.isEmpty() ? "---" : winnerName));
+                        }
                     }
                 });
                 removePushListener();
