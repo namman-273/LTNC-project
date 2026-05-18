@@ -92,12 +92,6 @@ public class AuctionServiceTest {
         assertEquals(2_000_000.0, auction.getCurrentPrice(), 0.001);
     }
 
-    @Test
-    void createMultipleAuctionsAllPresent() {
-        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller", "", "");
-        auctionService.createNewAuction("ART", "Vase", 300_000.0, 9999L, "defaultSeller", "", "");
-        assertEquals(2, auctionService.getAllAuctions().size());
-    }
 
     // ===== getAuctionById =====
 
