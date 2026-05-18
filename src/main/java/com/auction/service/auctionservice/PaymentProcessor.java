@@ -102,7 +102,7 @@ public class PaymentProcessor {
    */
   private void notifySellerBalanceChanged(Auction auction, User seller, double amount) {
     String sellerMsg = Protocol.NOTI_BALANCE_CHANGED + Protocol.SEPARATOR
-        + seller.getBalance() + Protocol.SEPARATOR
+        + auction.getId() + Protocol.SEPARATOR + seller.getBalance() + Protocol.SEPARATOR
         + "+" + amount;
 
     auction.notifySpecificUser(seller.getUsername(), sellerMsg);
