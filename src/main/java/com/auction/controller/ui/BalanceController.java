@@ -27,6 +27,7 @@ import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public class BalanceController implements Initializable {
 
@@ -41,6 +42,7 @@ public class BalanceController implements Initializable {
     private static final ObservableList<TransactionItem> transactions = FXCollections.observableArrayList();
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private Timeline autoRefreshTimeline;
+    private Consumer<String> pushListener; // FIX: lắng nghe balance thay đổi realtime
 
     // ── Transaction DTO ───────────────────────────────────────────────────────
     public static class TransactionItem {
@@ -136,6 +138,7 @@ public class BalanceController implements Initializable {
         usernameLabel.setText("Tài khoản: " + username);
         loadBalance();
         startAutoRefresh();
+        registerPushListener(); // FIX
     }
 
     @Override
@@ -173,6 +176,31 @@ public class BalanceController implements Initializable {
     @FXML private void handleQuick500K()  { depositAmountField.setText("500000"); }
     @FXML private void handleQuick1M()    { depositAmountField.setText("1000000"); }
     @FXML private void handleQuick5M()    { depositAmountField.setText("5000000"); }
+
+    // FIX: lắng nghe NOTI_BALANCE_CHANGED để cập nhật ngay thay vì chờ poll 10 giây
+    private void registerPushListener() {
+        pushListener = message -> {
+            String[] parts = message.split("\\|");
+            if (parts.length >= 2 && com.auction.network.protocol.Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
+                String newBal = parts[1];
+                Platform.runLater(() -> {
+                    try {
+                        double v = Double.parseDouble(newBal);
+                        balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                        balanceLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
+                    } catch (NumberFormatException ignored) {}
+                });
+            }
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
+    }
+
+    private void removePushListener() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
+    }
 
     @FXML
     private void handleDeposit() {
@@ -227,6 +255,7 @@ public class BalanceController implements Initializable {
     @FXML
     private void handleBack() {
         stopAutoRefresh();
+        removePushListener(); // FIX
         Stage stage = (Stage) balanceLabel.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }

@@ -308,10 +308,19 @@ public class NotificationController implements Initializable {
                 subtitleTxt = extractDetail(msg, null);
                 showBid = item.getAuctionId() != null;
 
-            } else if (msg.contains("thắng") || msg.contains("Winner") || msg.contains("🎉")) {
+                // FIX: tách rõ thông báo người THẮNG (có 🎉 hoặc "Chúc mừng")
+                // khỏi thông báo phiên kết thúc chứa "Người chiến thắng: X" (người THUA đọc)
+            } else if (msg.contains("🎉") || msg.contains("Chúc mừng")) {
                 iconTxt = "★"; iconBg = "#FEF3C7"; borderColor = "#F59E0B";
                 titleTxt = "Chúc mừng! Bạn đã thắng";
                 subtitleTxt = extractDetail(msg, "phiên");
+                showBid = false;
+
+            } else if (msg.contains("không thắng") || msg.contains("Người chiến thắng")) {
+                // FIX: người thua — tiêu đề rõ ràng, không nhầm sang "Chúc mừng"
+                iconTxt = "◉"; iconBg = "#F3F4F6"; borderColor = "#E5E7EB";
+                titleTxt = "Phiên kết thúc";
+                subtitleTxt = extractDetail(msg, null);
                 showBid = false;
 
             } else if (msg.contains("Hoàn") || msg.contains("REFUND")

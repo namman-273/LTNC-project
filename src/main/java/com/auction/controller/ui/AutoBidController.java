@@ -2,6 +2,7 @@ package com.auction.controller.ui;
 
 import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
+import com.auction.util.ui.NotificationManager;
 import com.auction.views.java.BidView;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -12,6 +13,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public class AutoBidController implements Initializable {
 
@@ -28,23 +30,103 @@ public class AutoBidController implements Initializable {
     private String username;
     private long endTime;
 
+    // FIX: lưu đủ thông tin để truyền lại BidView khi back
+    private String imageUrl      = "";
+    private String description   = "";
+    private String itemType      = "";
+    private double startingPrice = 0;
+    private String sellerId      = "";
+
+    private Consumer<String> pushListener;
+
+    /** Được gọi từ AutoBidView — truyền đủ thông tin sản phẩm */
     public void setData(String auctionId, String itemName, String currentPrice,
-                        String status, String username, long endTime) {
-        this.endTime      = endTime;
-        this.auctionId    = auctionId;
-        this.itemName     = itemName;
-        this.currentPrice = currentPrice;
-        this.status       = status;
-        this.username     = username;
+                        String status, String username, long endTime,
+                        String imageUrl, String description,
+                        String itemType, double startingPrice, String sellerId) {
+        this.endTime       = endTime;
+        this.auctionId     = auctionId;
+        this.itemName      = itemName;
+        this.currentPrice  = currentPrice;
+        this.status        = status;
+        this.username      = username;
+        this.imageUrl      = imageUrl      != null ? imageUrl      : "";
+        this.description   = description   != null ? description   : "";
+        this.itemType      = itemType      != null ? itemType      : "";
+        this.startingPrice = startingPrice;
+        this.sellerId      = sellerId      != null ? sellerId      : "";
         titleLabel.setText("🤖 Auto-Bid - " + itemName);
+
+        // FIX: lắng nghe push ngay cả khi đang ở màn AutoBid
+        registerPushListener();
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {}
 
+    // ── Push Listener ────────────────────────────────────────────────────────
+    private void registerPushListener() {
+        pushListener = this::handleServerPush;
+        ServerConnection.getInstance().addPushListener(pushListener);
+    }
+
+    private void removePushListener() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
+    }
+
+    private void handleServerPush(String message) {
+        String[] parts = message.split("\\" + Protocol.SEPARATOR);
+        if (parts.length == 0) return;
+
+        switch (parts[0]) {
+
+            case Protocol.NOTI_BALANCE_CHANGED:
+                // Không có balanceLabel ở màn này nhưng không bỏ lỡ event
+                break;
+
+            // FIX: nhận kết quả phiên ngay khi đang ở màn AutoBid
+            case Protocol.RES_END_SUCCESS:
+                if (parts.length >= 2 && !parts[1].equals(auctionId)) break;
+                String detail = parts.length >= 3 ? parts[2] : "";
+                boolean isWin = detail.contains("Winner:" + username)
+                        || detail.contains("Winner: " + username);
+                Platform.runLater(() -> {
+                    if (detail.contains("No winner")) {
+                        showMessage("Phiên kết thúc - không có người thắng.", "orange");
+                    } else if (isWin) {
+                        showMessage("🎉 Auto-bid đã giúp bạn thắng phiên!", "green");
+                        NotificationManager.getInstance().add(
+                                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
+                                "auction", auctionId);
+                    } else {
+                        String winnerName = "";
+                        if (detail.contains("Winner: ")) {
+                            winnerName = detail.substring(detail.indexOf("Winner: ") + 8).trim();
+                        } else if (detail.contains("Winner:")) {
+                            winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim();
+                        }
+                        int sep = winnerName.indexOf("|");
+                        if (sep >= 0) winnerName = winnerName.substring(0, sep).trim();
+                        showMessage("Phiên kết thúc. Người chiến thắng: "
+                                + (winnerName.isEmpty() ? "---" : winnerName), "orange");
+                        NotificationManager.getInstance().add(
+                                "⚠️ Phiên " + auctionId + " kết thúc. Bạn không thắng.",
+                                "auction", auctionId);
+                    }
+                });
+                removePushListener();
+                break;
+
+            default:
+                break;
+        }
+    }
+
     @FXML
     private void handleSetAutoBid() {
-        // Không tự validate — gửi thẳng lên BE
         String maxBid    = maxBidField.getText().trim();
         String increment = incrementField.getText().trim();
 
@@ -64,19 +146,15 @@ public class AutoBidController implements Initializable {
                 if (response.startsWith(Protocol.RES_AUTO_BID_SUCCESS)) {
                     String msg = parts.length > 1 ? parts[1] : "Đặt auto-bid thành công!";
                     showMessage("✅ " + msg, "green");
-
-                    // Hiện thông tin auto-bid vừa đặt — dùng try-catch đề phòng giá trị lạ
                     try {
-                        double maxBidVal   = Double.parseDouble(maxBid);
+                        double maxBidVal    = Double.parseDouble(maxBid);
                         double incrementVal = Double.parseDouble(increment);
                         currentAutoBidLabel.setText(
                                 "Giá tối đa: " + String.format("%,.0f VNĐ", maxBidVal)
-                                        + " | Bước tăng: " + String.format("%,.0f VNĐ", incrementVal)
-                        );
+                                        + " | Bước tăng: " + String.format("%,.0f VNĐ", incrementVal));
                     } catch (NumberFormatException e) {
                         currentAutoBidLabel.setText("Đã đặt auto-bid thành công.");
                     }
-
                     maxBidField.clear();
                     incrementField.clear();
                 } else {
@@ -89,8 +167,11 @@ public class AutoBidController implements Initializable {
 
     @FXML
     private void handleBack() {
+        removePushListener();
         Stage stage = (Stage) titleLabel.getScene().getWindow();
-        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
+        // FIX: truyền đủ tham số để BidView hiển thị lại ảnh và thông tin sản phẩm
+        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime,
+                imageUrl, description, itemType, startingPrice, sellerId).show();
     }
 
     private void showMessage(String msg, String color) {

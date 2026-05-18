@@ -17,8 +17,17 @@ public class AutoBidView {
     private final String username;
     private final long endTime;
 
+    // FIX: thêm đủ thông tin sản phẩm để truyền sang AutoBidController
+    private final String imageUrl;
+    private final String description;
+    private final String itemType;
+    private final double startingPrice;
+    private final String sellerId;
+
     public AutoBidView(Stage stage, String auctionId, String itemName,
-                       String currentPrice, String status, String username, long endTime) {
+                       String currentPrice, String status, String username, long endTime,
+                       String imageUrl, String description,
+                       String itemType, double startingPrice, String sellerId) {
         this.stage        = stage;
         this.auctionId    = auctionId;
         this.itemName     = itemName;
@@ -26,6 +35,11 @@ public class AutoBidView {
         this.status       = status;
         this.username     = username;
         this.endTime      = endTime;
+        this.imageUrl      = imageUrl      != null ? imageUrl      : "";
+        this.description   = description   != null ? description   : "";
+        this.itemType      = itemType      != null ? itemType      : "";
+        this.startingPrice = startingPrice;
+        this.sellerId      = sellerId      != null ? sellerId      : "";
     }
 
     public void show() {
@@ -36,9 +50,10 @@ public class AutoBidView {
             Parent root = loader.load();
 
             AutoBidController controller = loader.getController();
-            controller.setData(auctionId, itemName, currentPrice, status, username, endTime);
+            // FIX: gọi setData với đủ tham số
+            controller.setData(auctionId, itemName, currentPrice, status, username, endTime,
+                    imageUrl, description, itemType, startingPrice, sellerId);
 
-            // Giữ nguyên kích thước màn khi chuyển sang AutoBid
             boolean wasMaximized = stage.isMaximized();
             double prevW = stage.getScene() != null ? stage.getScene().getWidth() : 0;
             double prevH = stage.getScene() != null ? stage.getScene().getHeight() : 0;

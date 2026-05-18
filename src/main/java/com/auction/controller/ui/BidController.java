@@ -92,6 +92,7 @@ public class BidController implements Initializable {
     private ObservableList<HistoryEntry> historyItems;
     private Timeline snipingTimeline;
     private Timeline countdownTimeline;
+    private Timeline priceRefreshTimeline; // FIX: poll giá định kỳ
 
     // ── HistoryEntry DTO ─────────────────────────────────────────────────────
     public static class HistoryEntry {
@@ -346,6 +347,7 @@ public class BidController implements Initializable {
         // khi auto bid chạy nhanh và phiên kết thúc ngay lúc màn đang load
         registerPushListener();
         startCountdown();
+        startPriceRefresh(); // FIX: poll giá định kỳ
         loadHistory();
 
         // Nếu phiên đã FINISHED/PAID khi mở màn (ví dụ user mở lại sau khi auto bid xong),
@@ -432,7 +434,7 @@ public class BidController implements Initializable {
                                 "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
                                 "auction", auctionId);
                     } else {
-                        showInfo("Phiên đã kết thúc. Người thắng: " + finalWinner);
+                        showInfo("Phiên kết thúc. Người chiến thắng: " + finalWinner);
                     }
                 });
             } catch (Exception e) {
@@ -456,7 +458,7 @@ public class BidController implements Initializable {
             NotificationManager.getInstance().add(
                     "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
         } else {
-            showInfo("Phiên đã kết thúc. Người thắng: " + leading.bidder);
+            showInfo("Phiên kết thúc. Người chiến thắng: " + leading.bidder);
         }
     }
 
@@ -512,6 +514,21 @@ public class BidController implements Initializable {
         if (parts.length == 0) return;
 
         switch (parts[0]) {
+
+            // FIX: cập nhật số dư realtime từ push thay vì chỉ fetch sau bid
+            case Protocol.NOTI_BALANCE_CHANGED:
+                if (parts.length >= 2) {
+                    String newBal = parts[1];
+                    Platform.runLater(() -> {
+                        if (balanceLabel != null) {
+                            try {
+                                double v = Double.parseDouble(newBal);
+                                balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    });
+                }
+                break;
 
             case Protocol.NOTI_BID_UPDATE:
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
@@ -600,7 +617,7 @@ public class BidController implements Initializable {
                             String winnerName = "";
                             if (detail.contains("Winner: ")) { winnerName = detail.substring(detail.indexOf("Winner: ") + 8).trim(); } else if (detail.contains("Winner:")) { winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim(); }
                             int wSep = winnerName.indexOf("|"); if (wSep >= 0) winnerName = winnerName.substring(0, wSep).trim();
-                            showInfo("Phiên đã kết thúc. Người thắng: "
+                            showInfo("Phiên kết thúc. Người chiến thắng: "
                                     + (winnerName.isEmpty() ? "---" : winnerName));
                         }
                     }
@@ -765,8 +782,10 @@ public class BidController implements Initializable {
     private void handleAutoBid() {
         stopAll();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
+        // FIX: truyền đủ tham số để AutoBidView -> AutoBidController -> BidView giữ lại ảnh/thông tin
         new AutoBidView(stage, auctionId, itemNameLabel.getText(),
-                currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
+                currentPriceLabel.getText(), statusLabel.getText(), username, endTime,
+                imageUrlCached, descriptionCached, itemTypeCached, startingPriceCached, sellerIdCached).show();
     }
 
     @FXML
@@ -802,10 +821,49 @@ public class BidController implements Initializable {
         }
     }
 
+    // FIX: poll giá định kỳ để đảm bảo giá luôn cập nhật dù push bị miss
+    private void startPriceRefresh() {
+        if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
+        priceRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> {
+            new Thread(() -> {
+                String resp = ServerConnection.getInstance()
+                        .sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
+                if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS)) return;
+                String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
+                try {
+                    com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(json).getAsJsonArray();
+                    for (com.google.gson.JsonElement el : arr) {
+                        com.google.gson.JsonObject obj = el.getAsJsonObject();
+                        if (obj.has("id") && auctionId.equals(obj.get("id").getAsString())) {
+                            double price = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
+                            String status = obj.has("status") ? obj.get("status").getAsString() : "";
+                            Platform.runLater(() -> {
+                                if (price > currentPriceValue) {
+                                    currentPriceValue = price;
+                                    currentPriceLabel.setText(String.format("%,.0f VNĐ", price));
+                                    updateBidSuggestion(price);
+                                }
+                                if (statusLabel != null && !status.isEmpty()) {
+                                    statusLabel.setText(status);
+                                }
+                            });
+                            break;
+                        }
+                    }
+                } catch (Exception ex) {
+                    System.err.println("[BidView] Lỗi poll giá: " + ex.getMessage());
+                }
+            }, "price-refresh-thread").start();
+        }));
+        priceRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        priceRefreshTimeline.play();
+    }
+
     private void stopAll() {
         removePushListener();
         stopSnipingCountdown();
         if (countdownTimeline != null) countdownTimeline.stop();
+        if (priceRefreshTimeline != null) priceRefreshTimeline.stop(); // FIX
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
