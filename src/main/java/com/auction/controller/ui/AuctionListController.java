@@ -217,6 +217,8 @@ public class AuctionListController implements Initializable {
           if (parts.length >= 3) {
             String refundAmt = parts[2];
             String auctionId = parts.length >= 2 ? parts[1] : "";
+            // FIX: nhận REFUND = đã bid trong phiên này → track để nhận thông báo thua
+            if (!auctionId.isEmpty()) biddedAuctions.add(auctionId);
             NotificationManager.getInstance().add(
                     "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví (Phiên " + auctionId + ")",
                     "balance", auctionId);

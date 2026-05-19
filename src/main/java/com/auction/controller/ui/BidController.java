@@ -348,6 +348,7 @@ public class BidController implements Initializable {
         registerPushListener();
         startCountdown();
         startPriceRefresh(); // FIX: poll giá định kỳ
+        loadBalance();        // FIX: load số dư ngay khi mở màn
         loadHistory();
 
         // Nếu phiên đã FINISHED/PAID khi mở màn (ví dụ user mở lại sau khi auto bid xong),
