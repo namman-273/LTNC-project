@@ -4,7 +4,7 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Item;
 import com.auction.model.observer.Observer;
 import com.auction.util.core.DataManager;
-import com.auction.util.core.IdataStorage;
+import com.auction.util.core.IDataStorage;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -30,9 +30,9 @@ public class AuctionService implements Serializable {
   private transient AuctionEndHandler endHandler;
 
   // ÁP DỤNG DIP: Khai báo Interface
-  private transient IdataStorage dataStorage;
+  private transient IDataStorage dataStorage;
 
-  private AuctionService(IdataStorage dataStorage) {
+  private AuctionService(IDataStorage dataStorage) {
     this.dataStorage = dataStorage;
     
     // Khởi tạo các helper classes

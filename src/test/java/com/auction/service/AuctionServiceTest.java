@@ -324,7 +324,7 @@ public class AuctionServiceTest {
     static AuctionService createFreshService(DataManager dm) throws Exception {
         java.lang.reflect.Constructor<AuctionService> c =
             AuctionService.class.getDeclaredConstructor(
-                com.auction.util.core.IdataStorage.class);
+                com.auction.util.core.IDataStorage.class);
         c.setAccessible(true);
         return c.newInstance(dm);
     }

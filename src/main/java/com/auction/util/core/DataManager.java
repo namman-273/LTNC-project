@@ -24,7 +24,7 @@ import java.util.Map;
  *  
  */
 
-public final class DataManager implements IdataStorage {
+public final class DataManager implements IDataStorage {
   private static final String AUCTION_DATA_FILE = "auctions.dat";
   private static final String USER_DATA_FILE = "users.dat";
   private static final String TEMP_EXT = ".tmp";
