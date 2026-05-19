@@ -11,9 +11,6 @@ import java.util.Map;
  */
 public class UserManager {
 
-  // Singleton instance
-  private static UserManager instance;
-
   // Helper classes - mỗi class có một trách nhiệm riêng (SRP)
   private final UserRepository userRepository;
   private final EmailIndexer emailIndexer;
@@ -41,11 +38,14 @@ public class UserManager {
   /**
    * Get singleton instance.
    */
+  // Class phụ static (chỉ load khi getInstance() được gọi lần đầu)
+  private static class Holder {
+    private static final UserManager INSTANCE = new UserManager();
+  }
+
+  //
   public static UserManager getInstance() {
-    if (instance == null) {
-      instance = new UserManager();
-    }
-    return instance;
+    return Holder.INSTANCE;
   }
 
   /**
@@ -88,7 +88,7 @@ public class UserManager {
 
     // Lưu file sau khi register thành công
     persistenceService.saveData();
-    
+
     return true;
   }
 
@@ -124,7 +124,7 @@ public class UserManager {
 
     // Lưu xuống file .dat ngay
     persistenceService.saveData();
-    
+
     return true;
   }
 
@@ -144,10 +144,10 @@ public class UserManager {
 
     // Cập nhật password
     user.setPassword(newPass);
-    
+
     // Lưu xuống file
     persistenceService.saveData();
-    
+
     return true;
   }
 

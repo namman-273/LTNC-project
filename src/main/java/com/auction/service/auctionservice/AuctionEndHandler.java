@@ -5,7 +5,7 @@ import com.auction.model.enums.AuctionStatus;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.PaymentProcessor.WinnerInfo;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
-import com.auction.util.core.IDataStorage;
+import com.auction.util.core.IdataStorage;
 import java.util.List;
 
 /**
@@ -18,7 +18,7 @@ public class AuctionEndHandler {
   private final AuctionScheduler scheduler;
   private final PaymentProcessor paymentProcessor;
   private final AuctionNotificationService notificationService;
-  private final IDataStorage dataStorage;
+  private final IdataStorage dataStorage;
 
   /**
    * constructor.
@@ -27,7 +27,7 @@ public class AuctionEndHandler {
       AuctionScheduler scheduler,
       PaymentProcessor paymentProcessor,
       AuctionNotificationService notificationService,
-      IDataStorage dataStorage) {
+      IdataStorage dataStorage) {
     this.auctionRepository = auctionRepository;
     this.scheduler = scheduler;
     this.paymentProcessor = paymentProcessor;
