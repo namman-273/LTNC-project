@@ -187,6 +187,8 @@ public class AuctionListController implements Initializable {
             NotificationManager.getInstance().add(
                     "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví",
                     "balance", auctionId);
+            // FIX: cập nhật lại số dư hiển thị sau khi được hoàn tiền
+            loadBalance();
           }
           break;
         }
