@@ -6,10 +6,12 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.Bidder;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
-
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * xem danh sach theo doi.
+ */
 public class GetWatchlistCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
@@ -19,7 +21,8 @@ public class GetWatchlistCommand implements ClientCommand {
       return;
     }
 
-    List<Auction> watchlist = auctionService.getWatchlistForUser(client.getCurrentUser().getUsername());
+    List<Auction> watchlist = auctionService
+        .getWatchlistForUser(client.getCurrentUser().getUsername());
     List<AuctionRow> dtoList = new ArrayList<>();
 
     for (Auction a : watchlist) {

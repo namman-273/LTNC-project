@@ -6,16 +6,20 @@ import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
+/**
+ * lenh thuc ti dat gia.
+ */
 public class BidCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     // Rào chắn bảo vệ: Cần ít nhất 3 phần (Lệnh | Mã Auction | Số tiền)
-    if (!client.validatePayload(parts, 3))
+    if (!client.validatePayload(parts, 3)) {
       return;
+    }
 
-    // Thay this.currentUser thành client.getCurrentUser()
     if (client.getCurrentUser() == null) {
-      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn phải đăng nhập trước khi đấu giá!");
+      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Bạn phải đăng nhập trước khi đấu giá!");
       return;
     }
 
@@ -30,7 +34,8 @@ public class BidCommand implements ClientCommand {
 
       Auction auction = auctionService.getAuctionById(auctionId);
       if (auction == null) {
-        client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá này");
+        client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+            + "Không tìm thấy phiên đấu giá này");
         return;
       }
 

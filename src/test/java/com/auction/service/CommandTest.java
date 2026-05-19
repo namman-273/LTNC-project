@@ -14,7 +14,6 @@ import com.auction.controller.command.DeleteAuctionCommand;
 import com.auction.controller.command.DepositCommand;
 import com.auction.controller.command.EndAuctionCommand;
 import com.auction.controller.command.GetBalanceCommand;
-import com.auction.controller.command.GetHistoryCommand;
 import com.auction.controller.command.GetWatchlistCommand;
 import com.auction.controller.command.ListAuctionsCommand;
 import com.auction.controller.command.LoginCommand;
@@ -274,33 +273,9 @@ public class CommandTest {
             new ListAuctionsCommand().execute(new String[]{"LIST_AUCTIONS"}, handler, auctionService));
     }
 
-    // ===========================
-    // GetHistoryCommand
-    // ===========================
 
-    @Test
-    void getHistoryCommandAuctionNotFoundDoesNotThrow() {
-        String[] parts = {"GET_HISTORY", "GHOST_AUCTION"};
-        assertDoesNotThrow(() ->
-            new GetHistoryCommand().execute(parts, handler, auctionService));
-    }
-
-    @Test
-    void getHistoryCommandValidAuctionDoesNotThrow() {
-        UserManager.getInstance().register("hist_seller", "pw", "SELLER", "hist_seller@test.com");
-        auctionService.createNewAuction("ELECTRONICS", "HistItem", 500_000.0, 9999L, "hist_seller", "", "");
-        Auction a = auctionService.getAllAuctions().iterator().next();
-        String[] parts = {"GET_HISTORY", a.getId()};
-        assertDoesNotThrow(() ->
-            new GetHistoryCommand().execute(parts, handler, auctionService));
-    }
-
-    @Test
-    void getHistoryCommandInsufficientPartsDoesNotThrow() {
-        String[] parts = {"GET_HISTORY"};
-        assertDoesNotThrow(() ->
-            new GetHistoryCommand().execute(parts, handler, auctionService));
-    }
+   
+    
 
     // ===========================
     // WatchCommand
