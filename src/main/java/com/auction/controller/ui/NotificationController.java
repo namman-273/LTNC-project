@@ -316,9 +316,10 @@ public class NotificationController implements Initializable {
                 subtitleTxt = extractDetail(msg, "phiên");
                 showBid = false;
 
-            } else if (msg.contains("không thắng") || msg.contains("Người chiến thắng")) {
-                // FIX: người thua — tiêu đề rõ ràng, không nhầm sang "Chúc mừng"
-                iconTxt = "🏁"; iconBg = "#F3F4F6"; borderColor = "#6B7280";
+            } else if (msg.contains("không thắng") || msg.contains("Người chiến thắng")
+                    || msg.contains("đã kết thúc") || msg.contains("kết thúc.")) {
+                // Phiên kết thúc — người thua hoặc người theo dõi
+                iconTxt = "◉"; iconBg = "#F3F4F6"; borderColor = "#E5E7EB";
                 titleTxt = "Phiên kết thúc";
                 subtitleTxt = extractDetail(msg, null);
                 showBid = false;
@@ -330,20 +331,8 @@ public class NotificationController implements Initializable {
                 subtitleTxt = msg;
                 showBid = false;
 
-            } else if (msg.contains("theo dõi") || msg.contains("📌")) {
-                iconTxt = "📌"; iconBg = "#EDE9FE"; borderColor = "#7C3AED";
-                titleTxt = "Phiên theo dõi kết thúc";
-                subtitleTxt = extractDetail(msg, null);
-                showBid = false;
-
-            } else if (msg.contains("bán thành công") || msg.contains("Nhận được")) {
-                iconTxt = "💰"; iconBg = "#DCFCE7"; borderColor = "#16A34A";
-                titleTxt = "Bán thành công!";
-                subtitleTxt = extractDetail(msg, null);
-                showBid = false;
-
             } else {
-                iconTxt = "🔔"; iconBg = "#F3F4F6"; borderColor = "#6B7280";
+                iconTxt = "◉"; iconBg = "#F3F4F6"; borderColor = "#E5E7EB";
                 titleTxt = "Thông báo hệ thống";
                 subtitleTxt = msg;
                 showBid = false;
