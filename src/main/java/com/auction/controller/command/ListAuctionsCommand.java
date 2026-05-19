@@ -5,10 +5,12 @@ import com.auction.model.dto.AuctionRow;
 import com.auction.model.entities.Auction;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
-
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * xem danh sach phien.
+ */
 public class ListAuctionsCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
@@ -17,6 +19,7 @@ public class ListAuctionsCommand implements ClientCommand {
       dtoList.add(new AuctionRow(a));
     }
     // Gọi client.gson để parse JSON
-    client.sendMessage(Protocol.RES_LIST_SUCCESS + Protocol.SEPARATOR + client.gson.toJson(dtoList));
+    client.sendMessage(Protocol.RES_LIST_SUCCESS
+        + Protocol.SEPARATOR + client.gson.toJson(dtoList));
   }
 }

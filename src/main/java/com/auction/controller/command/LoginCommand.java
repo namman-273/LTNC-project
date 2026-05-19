@@ -7,12 +7,16 @@ import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuthenticationException;
 
+/**
+ * dang nhap.
+ */
 public class LoginCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     // Cần ít nhất 3 phần: Lệnh | Username | Password
-    if (!client.validatePayload(parts, 3))
+    if (!client.validatePayload(parts, 3)) {
       return;
+    }
 
     try {
       // Xác thực User

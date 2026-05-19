@@ -7,15 +7,21 @@ import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
+
+/**
+ * lenh thuc thi dat bot.
+ */
 public class AddAutoBidCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
-    if (!client.validatePayload(parts, 4))
+    if (!client.validatePayload(parts, 4)) {
       return; // REQ_AUTO_BID = 4
+    }
 
     // Dùng client.getCurrentUser() thay vì this.currentUser
     if (!(client.getCurrentUser() instanceof Bidder)) {
-      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Chỉ người mua mới có quyền cài đặt Robot.");
+      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Chỉ người mua mới có quyền cài đặt Robot.");
       return;
     }
 
@@ -37,7 +43,8 @@ public class AddAutoBidCommand implements ClientCommand {
           + auctionId + Protocol.SEPARATOR + "Autobid bot đã sẵn sàng với hạn mức: "
           + (long) maxBid + " VNĐ");
     } catch (NumberFormatException e) {
-      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Ngân sách tối đa phải là một con số.");
+      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Ngân sách tối đa phải là một con số.");
     } catch (Exception e) {
       client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Lỗi hệ thống: " + e.getMessage());
     }
