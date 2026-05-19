@@ -22,7 +22,8 @@ public class CreateAuctionCommand implements ClientCommand {
     String role = client.getCurrentUser().getRole();
     if (!"ADMIN".equals(role) && !"SELLER".equals(role)) {
       client.sendMessage(
-          Protocol.ERROR + Protocol.SEPARATOR + "Quyền hạn không đủ. Chỉ Seller hoặc Admin mới được đăng bán.");
+          Protocol.ERROR + Protocol.SEPARATOR
+              + "Quyền hạn không đủ. Chỉ Seller hoặc Admin mới được đăng bán.");
       return;
     }
 

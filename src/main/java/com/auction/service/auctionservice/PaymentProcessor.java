@@ -1,5 +1,6 @@
 package com.auction.service.auctionservice;
 
+import com.auction.controller.network.ConnectionManager;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.BidTransaction;
 import com.auction.model.entities.user.User;
@@ -99,13 +100,24 @@ public class PaymentProcessor {
 
   /**
    * Thông báo cho seller về việc balance thay đổi.
+   * Sử dụng ConnectionManager để gửi trực tiếp, không qua observer pattern.
    */
   private void notifySellerBalanceChanged(Auction auction, User seller, double amount) {
     String sellerMsg = Protocol.NOTI_BALANCE_CHANGED + Protocol.SEPARATOR
         + auction.getId() + Protocol.SEPARATOR + seller.getBalance() + Protocol.SEPARATOR
         + "+" + amount;
 
-    auction.notifySpecificUser(seller.getUsername(), sellerMsg);
+    // Gửi thông báo trực tiếp cho seller thông qua ConnectionManager
+    boolean sent = ConnectionManager.getInstance().sendDirectMessage(
+        seller.getUsername(), sellerMsg);
+    
+    if (sent) {
+      System.out.println("[NOTIFICATION] Đã gửi thông báo balance changed cho seller: " 
+          + seller.getUsername());
+    } else {
+      System.out.println("[NOTIFICATION] Seller " + seller.getUsername() 
+          + " không online, bỏ qua thông báo");
+    }
   }
 
   /**

@@ -2,6 +2,9 @@ package com.auction.model.dto;
 
 import com.auction.model.entities.Auction;
 
+/**
+   * dto gui xuong
+   */
 public class AuctionRow {
   private final String id;
   private final String itemName;
@@ -14,6 +17,9 @@ public class AuctionRow {
   private final String itemType;
   private final double startingPrice;
 
+  /**
+   * thong tin cho bidboard.
+   */
   public AuctionRow(Auction a) {
     this.id = a.getId();
     this.endTime = a.getEndTime();
