@@ -60,7 +60,8 @@ public class Auction extends Entity {
   public Auction(String id, Item item, long durationMinutes, String sellerId) {
     super(id);
     if (item == null) {
-      throw new IllegalArgumentException("Item cannot be null .Mỗi phiên đấu giá phải có một món hàng!");
+      throw new IllegalArgumentException("Item cannot be null"
+          + ".Mỗi phiên đấu giá phải có một món hàng!");
     } else {
       this.item = item;
     }
@@ -75,35 +76,43 @@ public class Auction extends Entity {
 
   /**
    * FIX LỖI: Sau khi deserialize, các trường transient bị null.
-   * Cần gọi hàm này trong DataManager hoặc readObject.
+   * Cần gọi hàm này trong DataManager .
    */
   public void restoreTransients() {
     this.extensionCount = 0;
     // BẮT BUỘC: Vì ReentrantLock không thể lưu xuống file
-    if (this.lock == null)
+    if (this.lock == null) {
       this.lock = new ReentrantLock();
+    }
     // BẮT BUỘC: Vì các kết nối Observer/Socket phải đăng ký lại từ đầu khi Client
     // kết nối
-    if (this.observers == null)
+    if (this.observers == null) {
       this.observers = new ArrayList<>();
+    }
     // Để tránh lỗi nếu load file .dat từ phiên bản code cũ chưa có Auto-bid
-    if (this.autoBidQueue == null)
+    if (this.autoBidQueue == null) {
       this.autoBidQueue = new PriorityQueue<>();
+    }
     if (this.notifyExecutor == null || this.notifyExecutor.isShutdown()) {
       this.notifyExecutor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     }
 
     AuctionHelperFactory factory = AuctionHelperFactory.getInstance();
-    if (this.validator == null)
+    if (this.validator == null) {
       this.validator = factory.createValidator();
-    if (this.notifier == null)
+    }
+    if (this.notifier == null) {
       this.notifier = factory.createNotifier();
-    if (this.autoBidProcessor == null)
+    }
+    if (this.autoBidProcessor == null) {
       this.autoBidProcessor = factory.createAutoBidProcessor();
-    if (this.financialProcessor == null)
+    }
+    if (this.financialProcessor == null) {
       this.financialProcessor = factory.createFinancialProcessor();
-    if (this.snipingProcessor == null)
+    }
+    if (this.snipingProcessor == null) {
       this.snipingProcessor = factory.createSnipingProcessor();
+    }
   }
 
   // --- CÁC GETTER/SETTER QUAN TRỌNG ---
@@ -111,6 +120,9 @@ public class Auction extends Entity {
     return status;
   }
 
+  /**
+   * chinh trang thai phien.
+   */
   public void setStatus(AuctionStatus status) {
     this.lock.lock();
     try {
@@ -140,45 +152,78 @@ public class Auction extends Entity {
     return this.sellerId;
   }
 
-  // --- LOGIC QUẢN LÝ OBSERVER (Public để Service gọi được) ---
-  public void addObserver(Observer obs) {
-    if (observers == null)
-      restoreTransients();
-    if (!observers.contains(obs))
-      observers.add(obs);
+  public String getId() {
+    return super.getId();
   }
 
+  @Override
+  public String toString() {
+    return "id=" + getId() + ",itemName=" + (item != null ? item.getItemName() : "---")
+        + ",currentPrice=" + currentPrice + ",status=" + status;
+  }
+
+  // --- LOGIC QUẢN LÝ OBSERVER (Public để Service gọi được) ---
+
+  /**
+   * them observer.
+   */
+  public void addObserver(Observer obs) {
+    if (observers == null) {
+      restoreTransients();
+    }
+    if (!observers.contains(obs)) {
+      observers.add(obs);
+    }
+  }
+
+  /**
+   * xoa observer.
+   */
   public void removeObserver(Observer obs) {
-    if (observers != null)
+    if (observers != null) {
       observers.remove(obs);
+    }
   }
 
   // --- NEW NOTIFICATION METHODS ---
   private User getPreviousHighestBidder() {
-    if (history.isEmpty())
+    if (history.isEmpty()) {
       return null;
+    }
     return history.get(history.size() - 1).getBidder();
   }
 
+  /**
+   * thong bao nhờ oberver cho chung.
+   */
   public void notifyAllParticipants(String message, User excludeUser) {
-    if (notifier == null)
+    if (notifier == null) {
       restoreTransients();
+    }
     notifier.notifyAllParticipants(this, this.observers, this.notifyExecutor, message, excludeUser);
   }
 
+  /**
+   * thong bao rieng.
+   */
   public void notifySpecificUser(String targetUsername, String message) {
-    if (notifier == null)
+    if (notifier == null) {
       restoreTransients();
+    }
     notifier.notifySpecificUser(this, this.observers, this.notifyExecutor, targetUsername, message);
   }
 
   // --- LOGIC PHIÊN ĐẤU GIÁ ---
   private double getMinimumIncrement(double price) {
-    if (validator == null)
+    if (validator == null) {
       restoreTransients();
+    }
     return validator.getMinimumIncrement(price);
   }
 
+  /**
+   * xu ly bid moi.
+   */
   public void processNewBid(User bidder, double bidAmount)
       throws InvalidBidException, AuctionClosedException, AuthenticationException {
     lock.lock();
@@ -197,44 +242,55 @@ public class Auction extends Entity {
   }
 
   private void validateAuctionStatus() throws AuctionClosedException {
-    if (validator == null)
+    if (validator == null) {
       restoreTransients();
+    }
     validator.validateAuctionStatus(this.status, this.endTime);
   }
 
   private void validateBidAmount(double amount) throws InvalidBidException {
-    if (validator == null)
+    if (validator == null) {
       restoreTransients();
+    }
     validator.validateBidAmount(this.currentPrice, amount);
   }
 
   private void validateAuthentication(User bidder) throws AuthenticationException {
-    if (validator == null)
+    if (validator == null) {
       restoreTransients();
+    }
     validator.validateAuthentication(bidder);
   }
 
   private void updateAuctionState(User bidder, double amount) throws InvalidBidException {
-    if (financialProcessor == null)
+    if (financialProcessor == null) {
       restoreTransients();
+    }
     financialProcessor.processTransaction(this, bidder, amount, getPreviousHighestBidder(),
         (newPrice, newTransaction) -> {
           this.currentPrice = newPrice;
-          if (this.item != null)
+          if (this.item != null) {
             this.item.setCurrentPrice(newPrice);
+          }
           this.history.add(newTransaction);
         });
   }
 
-  public void addAutoBidConfig(String bidderId, double maxBid, double customStep) throws InvalidBidException {
+  /**
+   * dang ky autobid.
+   */
+  public void addAutoBidConfig(String bidderId, double maxBid, double customStep)
+      throws InvalidBidException {
     lock.lock();
     try {
       double systemMin = getMinimumIncrement(currentPrice);
       if (customStep < systemMin) {
-        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng " + (long) systemMin + " VNĐ");
+        throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng "
+            + (long) systemMin + " VNĐ");
       }
-      if (this.autoBidQueue == null)
+      if (this.autoBidQueue == null) {
         restoreTransients();
+      }
 
       autoBidQueue.removeIf(config -> config.getBidderId().equals(bidderId));
       this.autoBidQueue.add(new AutoBid(bidderId, maxBid, customStep));
@@ -247,14 +303,16 @@ public class Auction extends Entity {
   }
 
   private void executeAutoBids() {
-    if (autoBidProcessor == null)
+    if (autoBidProcessor == null) {
       restoreTransients();
+    }
     autoBidProcessor.executeAutoBids(this.autoBidQueue, this, this::updateAuctionState);
   }
 
   private void handleAntiSniping(User bidder) {
-    if (snipingProcessor == null)
+    if (snipingProcessor == null) {
       restoreTransients();
+    }
     snipingProcessor.handleAntiSniping(this, bidder,
         ONE_MINUTE_MS, TWO_MINUTES_MS, MAX_EXTENSIONS, this.extensionCount,
         (extraTime) -> {
@@ -263,28 +321,19 @@ public class Auction extends Entity {
         });
   }
 
-  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-    in.defaultReadObject(); // Load các trường không phải transient
-    restoreTransients(); // Tự động hồi sinh các trường bị null
-  }
-
-  public String getId() {
-    return super.getId();
-  }
-
-  @Override
-  public String toString() {
-    return "id=" + getId() + ",itemName=" + (item != null ? item.getItemName() : "---")
-        + ",currentPrice=" + currentPrice + ",status=" + status;
-  }
-
+  /**
+   * giai phong tai nguyen luc dong phien.
+   */
   public void closeAuction() {
     this.status = AuctionStatus.FINISHED;
-    if (observers != null)
+    if (observers != null) {
       observers.clear();
-    if (autoBidQueue != null)
+    }
+    if (autoBidQueue != null) {
       autoBidQueue.clear();
-    if (notifyExecutor != null && !notifyExecutor.isShutdown())
+    }
+    if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
       notifyExecutor.shutdown();
+    }
   }
 }

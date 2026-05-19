@@ -1,13 +1,12 @@
 package com.auction.service.auctionservice;
 
-import java.util.List;
-
 import com.auction.model.entities.Auction;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.PaymentProcessor.WinnerInfo;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.util.core.IDataStorage;
+import java.util.List;
 
 /**
  * Service xử lý logic kết thúc auction.
@@ -21,6 +20,9 @@ public class AuctionEndHandler {
   private final AuctionNotificationService notificationService;
   private final IDataStorage dataStorage;
 
+  /**
+   * constructor.
+   */
   public AuctionEndHandler(AuctionRepository auctionRepository,
       AuctionScheduler scheduler,
       PaymentProcessor paymentProcessor,
@@ -34,13 +36,6 @@ public class AuctionEndHandler {
   }
 
   /**
-   * Xử lý kết thúc auction với anti-sniping check.
-   */
-  public void endAuction(String auctionId) {
-    endAuction(auctionId, false);
-  }
-
-  /**
    * Xử lý kết thúc auction bởi Admin (bỏ qua check thời gian).
    */
   public void endAuctionByAdmin(String auctionId) {
@@ -48,10 +43,17 @@ public class AuctionEndHandler {
   }
 
   /**
+   * Xử lý kết thúc auction với anti-sniping check.
+   */
+  public void endAuction(String auctionId) {
+    endAuction(auctionId, false);
+  }
+
+  /**
    * Xử lý kết thúc auction với tùy chọn forced by Admin.
    * 
-   * @param auctionId     ID của auction
    * @param forcedByAdmin true nếu Admin đóng sớm, false nếu tự động
+   * 
    */
   private void endAuction(String auctionId, boolean forcedByAdmin) {
     Auction auction = auctionRepository.findById(auctionId);
@@ -116,7 +118,8 @@ public class AuctionEndHandler {
       // Lưu dữ liệu
       saveData();
 
-      logAuctionEnd(auctionId, auction.getStatus());
+      System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId
+          + " hoàn tất. Trạng thái cuối: " + auction.getStatus());
     }
   }
 
@@ -154,11 +157,5 @@ public class AuctionEndHandler {
     }
   }
 
-  /**
-   * Log thông tin kết thúc auction.
-   */
-  private void logAuctionEnd(String auctionId, AuctionStatus status) {
-    System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId
-        + " hoàn tất. Trạng thái cuối: " + status);
-  }
+  
 }

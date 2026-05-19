@@ -44,6 +44,9 @@ public class ServerConnection {
     this.port = PORT;
   }
 
+  /**
+ * singleton.
+ */
   public static ServerConnection getInstance() {
     if (instance == null) {
       synchronized (ServerConnection.class) {
@@ -126,16 +129,15 @@ public class ServerConnection {
   }
 
   /**
-   * IMPROVED: Bộ lọc nhận diện tất cả các tin nhắn mang tính chất THÔNG BÁO (PUSH).
+   * Bộ lọc nhận diện tất cả các tin nhắn mang tính chất THÔNG BÁO (PUSH).
    * Đặc điểm: Đây là các tin nhắn Server tự gửi xuống mà không cần Client phải
    * gọi lệnh ngay lúc đó, hoặc gửi cho nhiều người cùng lúc qua Observer Pattern.
-   * 
-   * UPDATED v2.0: Thêm support cho các notification types mới:
    * - NOTI_OUTBID: Thông báo riêng cho người bị vượt giá
    * - NOTI_REFUND: Thông báo khi tiền được hoàn lại
    * - NOTI_AUCTION_CANCELLED: Thông báo phiên đấu giá bị hủy bởi Admin
    * 
    * @param line Message từ server
+   * 
    * @return true nếu là push notification, false nếu là response
    */
   private boolean isPushMessage(String line) {
@@ -228,7 +230,6 @@ public class ServerConnection {
       out.println(message);
 
       // Đợi tối đa 5 giây để lấy đúng phản hồi của lệnh này
-      // Điều này giải quyết triệt để việc "ăn nhầm" tin UPDATE_PRICE
       String response = responseQueue.poll(5, TimeUnit.SECONDS);
 
       if (response == null) {
