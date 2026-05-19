@@ -348,7 +348,6 @@ public class BidController implements Initializable {
         registerPushListener();
         startCountdown();
         startPriceRefresh(); // FIX: poll giá định kỳ
-        loadBalance();        // FIX: load số dư ngay khi mở màn
         loadHistory();
 
         // Nếu phiên đã FINISHED/PAID khi mở màn (ví dụ user mở lại sau khi auto bid xong),
@@ -603,6 +602,9 @@ public class BidController implements Initializable {
                     String detail = parts.length >= 3 ? parts[2] : "";
                     if (detail.contains("No winner")) {
                         showInfo("Phiên kết thúc - không có người thắng.");
+                        NotificationManager.getInstance().add(
+                                "⚠️ Phiên " + auctionId + " kết thúc. Không có người thắng.",
+                                "auction", auctionId);
                     } else {
                         // FIX: Luôn dùng Winner từ server thay vì cache history.
                         // Auto-bid có thể đã thay đổi kết quả sau lần update cuối.
@@ -614,12 +616,15 @@ public class BidController implements Initializable {
                                     "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
                                     "auction", auctionId);
                         } else {
-                            // Lấy tên winner từ detail để hiển thị
+                            // FIX: người thua cũng được add vào NotificationManager
                             String winnerName = "";
                             if (detail.contains("Winner: ")) { winnerName = detail.substring(detail.indexOf("Winner: ") + 8).trim(); } else if (detail.contains("Winner:")) { winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim(); }
                             int wSep = winnerName.indexOf("|"); if (wSep >= 0) winnerName = winnerName.substring(0, wSep).trim();
-                            showInfo("Phiên kết thúc. Người chiến thắng: "
-                                    + (winnerName.isEmpty() ? "---" : winnerName));
+                            String winnerDisplay = winnerName.isEmpty() ? "---" : winnerName;
+                            showInfo("Phiên kết thúc. Người chiến thắng: " + winnerDisplay);
+                            NotificationManager.getInstance().add(
+                                    "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerDisplay,
+                                    "auction", auctionId);
                         }
                     }
                 });

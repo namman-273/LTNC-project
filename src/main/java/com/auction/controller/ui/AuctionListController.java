@@ -73,7 +73,6 @@ public class AuctionListController implements Initializable {
   private Timeline autoRefreshTimeline;
   // FIX: Track các auctionId mà user đã đặt bid để tránh nhầm "không thắng"
   private final java.util.Set<String> biddedAuctions = new java.util.HashSet<>();
-  private final java.util.Set<String> watchedAuctions = new java.util.HashSet<>(); // FIX: track watcher
 
   private final Gson gson = new GsonBuilder()
           .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -120,36 +119,8 @@ public class AuctionListController implements Initializable {
       String header = parts[0];
       switch (header) {
         case Protocol.NOTI_BALANCE_CHANGED:
-          // FIX: format mới BALANCE_CHANGED|auctionId|newBalance|+amount
-          // parts[1]=auctionId, parts[2]=newBalance, parts[3]=+amount
-          if (parts.length >= 3) {
-            String sellerAuctionId = parts[1];
-            String newBal = parts[2];
-            String gained = parts.length >= 4 ? parts[3].replace("+", "") : "";
-            Platform.runLater(() -> {
-              if (balanceLabel != null) {
-                try {
-                  double v = Double.parseDouble(newBal);
-                  balanceLabel.setText(String.format("%,.0f VNĐ", v));
-                } catch (NumberFormatException e) {
-                  balanceLabel.setText(newBal + " VNĐ");
-                }
-              }
-              // FIX: add thông báo cho seller
-              if (!sellerAuctionId.isEmpty()) {
-                String gainedFmt;
-                try {
-                  gainedFmt = String.format("%,.0f VNĐ", Double.parseDouble(gained));
-                } catch (NumberFormatException e) {
-                  gainedFmt = gained;
-                }
-                NotificationManager.getInstance().add(
-                        "🎉 Phiên " + sellerAuctionId + " của bạn đã bán thành công! Nhận được: " + gainedFmt,
-                        "auction", sellerAuctionId);
-              }
-            });
-          } else if (parts.length >= 2) {
-            // fallback format cũ
+          // Cập nhật số dư sidebar realtime
+          if (parts.length >= 2) {
             String newBal = parts[1];
             Platform.runLater(() -> {
               if (balanceLabel != null) {
@@ -176,24 +147,20 @@ public class AuctionListController implements Initializable {
           String detail    = parts.length >= 3 ? parts[2] : "";
           boolean isWin = detail.contains("Winner:" + username)
                   || detail.contains("Winner: " + username);
-          // FIX: Chỉ add notification "không thắng" nếu user thực sự đã đặt bid
-          // trong phiên này (được track qua NOTI_OUTBID hoặc BID_SUCCESS).
-          boolean userParticipated = biddedAuctions.contains(auctionId);
+
           if (isWin) {
             NotificationManager.getInstance().add(
                     "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
                     "auction", auctionId);
-          } else if (!detail.contains("No winner") && !auctionId.isEmpty() && userParticipated) {
-            NotificationManager.getInstance().add(
-                    "⚠️ Phiên " + auctionId + " kết thúc. Bạn không thắng.",
-                    "auction", auctionId);
-          } else if (!auctionId.isEmpty() && watchedAuctions.contains(auctionId) && !userParticipated) {
-            // FIX: watcher (theo dõi nhưng không bid) cũng nhận thông báo
+          } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
             String winnerName = extractWinner(detail);
-            String endMsg = detail.contains("No winner")
-                    ? "📌 Phiên " + auctionId + " bạn theo dõi đã kết thúc — Không có người thắng."
-                    : "📌 Phiên " + auctionId + " bạn theo dõi đã kết thúc — Người thắng: " + winnerName;
-            NotificationManager.getInstance().add(endMsg, "auction", auctionId);
+            NotificationManager.getInstance().add(
+                    "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerName,
+                    "auction", auctionId);
+          } else if (!auctionId.isEmpty()) {
+            NotificationManager.getInstance().add(
+                    "🔔 Phiên " + auctionId + " đã kết thúc. Không có người thắng.",
+                    "auction", auctionId);
           }
           Platform.runLater(this::loadFromServer);
           break;
@@ -217,13 +184,9 @@ public class AuctionListController implements Initializable {
           if (parts.length >= 3) {
             String refundAmt = parts[2];
             String auctionId = parts.length >= 2 ? parts[1] : "";
-            // FIX: nhận REFUND = đã bid trong phiên này → track để nhận thông báo thua
-            if (!auctionId.isEmpty()) biddedAuctions.add(auctionId);
             NotificationManager.getInstance().add(
-                    "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví (Phiên " + auctionId + ")",
+                    "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví",
                     "balance", auctionId);
-            // FIX: cập nhật lại số dư sau khi hoàn tiền
-            Platform.runLater(this::loadBalance);
           }
           break;
         }
@@ -556,7 +519,6 @@ public class AuctionListController implements Initializable {
               Protocol.CMD_WATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
-          watchedAuctions.add(selectedRow.getId()); // FIX: track để nhận thông báo kết thúc
           setStatusBar("✅ Đã theo dõi phiên!");
           AlertUtil.showSuccess("Theo dõi thành công",
                   "✅ Đang theo dõi: " + selectedRow.getItemName());
