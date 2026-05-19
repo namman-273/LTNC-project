@@ -5,12 +5,16 @@ import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
+/**
+ * nap tien.
+ */
 public class DepositCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     // Rào chắn bảo vệ: Cần ít nhất 2 phần (Lệnh | Số tiền)
-    if (!client.validatePayload(parts, 2))
+    if (!client.validatePayload(parts, 2)) {
       return;
+    }
 
     if (client.getCurrentUser() == null) {
       client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Vui lòng đăng nhập để nạp tiền.");

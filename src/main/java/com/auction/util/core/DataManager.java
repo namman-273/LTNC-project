@@ -6,7 +6,6 @@ import com.auction.model.entities.user.User;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.service.usermanger.UserManager;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,7 +29,6 @@ public final class DataManager implements IDataStorage {
   private static final String USER_DATA_FILE = "users.dat";
   private static final String TEMP_EXT = ".tmp";
   private static final String HISTORY_DATA_FILE = "history.dat";
-  private static DataManager instance;
 
   // Singleton Pattern để giải quyết lỗi
   private DataManager() {
@@ -40,11 +38,13 @@ public final class DataManager implements IDataStorage {
    *  * Áp dụng singleton.
    *  
    */
-  public static synchronized DataManager getInstance() {
-    if (instance == null) {
-      instance = new DataManager();
-    }
-    return instance;
+  private static class Holder {
+    private static final DataManager INSTANCE = new DataManager();
+  }
+
+  // 3. Hàm getInstance không còn synchronized, không còn if-else
+  public static DataManager getInstance() {
+    return Holder.INSTANCE;
   }
 
   /**
@@ -59,7 +59,7 @@ public final class DataManager implements IDataStorage {
   /**
    * Tải toàn bộ dữ liệu hệ thống khi khởi động Server.
    */
-  public void loadData() {
+  public synchronized void loadData() {
     // Tải người dùng
     Map<String, User> loadedUsers = loadMapFromFile(USER_DATA_FILE);
     if (loadedUsers != null) {

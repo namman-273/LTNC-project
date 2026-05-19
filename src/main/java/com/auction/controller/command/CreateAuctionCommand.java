@@ -4,13 +4,17 @@ import com.auction.controller.network.ClientHandler;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
+/**
+ * tao phien moi.
+ */
 public class CreateAuctionCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     // Rào chắn bảo vệ: Cần ít nhất 5 phần (Lệnh | Loại | Tên SP | Giá khởi điểm |
     // Thời gian | mô tả | đường dẫn ảnh)
-    if (!client.validatePayload(parts, 7))
+    if (!client.validatePayload(parts, 7)) {
       return;
+    }
 
     // Kiểm tra trạng thái đăng nhập
     if (client.getCurrentUser() == null) {

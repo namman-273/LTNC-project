@@ -7,5 +7,6 @@ package com.auction.util.core;
 public interface IDataStorage {
   void loadData();
 
+  
   void saveData();
 }

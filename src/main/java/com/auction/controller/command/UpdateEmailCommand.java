@@ -1,12 +1,16 @@
 package com.auction.controller.command;
 
+import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.user.User;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
-import com.auction.controller.network.ClientHandler;
 
+/**
+ * chinh email.
+ */
 public class UpdateEmailCommand implements ClientCommand {
+  @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     if (!client.validatePayload(parts, 2)) {
       return;
@@ -19,8 +23,8 @@ public class UpdateEmailCommand implements ClientCommand {
     String newEmail = parts[1];
     if (UserManager.getInstance().updateEmail(user.getUsername(), newEmail)) {
       client.sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR + "Cập nhật thành công email");
-    }else{
-      client.sendMessage(Protocol.ERROR+Protocol.SEPARATOR+ "Email đã được đăng ký");
+    } else {
+      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Email đã được đăng ký");
     }
   }
 }
