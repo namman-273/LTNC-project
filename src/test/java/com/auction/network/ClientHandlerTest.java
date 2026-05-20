@@ -6,6 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.auction.controller.command.AddAutoBidCommand;
+import com.auction.controller.command.BidCommand;
+import com.auction.controller.command.CreateAuctionCommand;
+import com.auction.controller.command.DeleteAuctionCommand;
+import com.auction.controller.command.DepositCommand;
+import com.auction.controller.command.EndAuctionCommand;
+import com.auction.controller.command.GetBalanceCommand;
+import com.auction.controller.command.GetBidHistoryCommand;
+import com.auction.controller.command.GetWatchlistCommand;
+import com.auction.controller.command.ListAuctionsCommand;
+import com.auction.controller.command.LoginCommand;
+import com.auction.controller.command.RegisterCommand;
+import com.auction.controller.command.UnwatchCommand;
+import com.auction.controller.command.WatchCommand;
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.user.Bidder;
 import com.auction.network.protocol.Protocol;
@@ -107,9 +121,20 @@ public class ClientHandlerTest {
 
   /** Reset field static (Singleton) về null giữa các test. */
   private static void resetSingleton(Class<?> clazz, String fieldName) throws Exception {
-    Field f = clazz.getDeclaredField(fieldName);
-    f.setAccessible(true);
-    f.set(null, null);
+    // AuctionService uses direct volatile field "instance"
+    // UserManager and DataManager use Holder pattern with "INSTANCE" field
+    try {
+      Field f = clazz.getDeclaredField(fieldName);
+      f.setAccessible(true);
+      f.set(null, null);
+    } catch (NoSuchFieldException e) {
+      // Try Holder inner class pattern
+      String holderName = clazz.getName() + "$Holder";
+      Class<?> holderClass = Class.forName(holderName);
+      Field f = holderClass.getDeclaredField("INSTANCE");
+      f.setAccessible(true);
+      f.set(null, null);
+    }
   }
 
   /**
@@ -129,9 +154,9 @@ public class ClientHandlerTest {
 
   /** Login nhanh với admin mặc định; bỏ qua response. */
   private void loginAsAdmin() throws IOException {
-    handler.handleLogin(
+    new LoginCommand().execute(
         new String[]{Protocol.CMD_LOGIN, "admin", "admin123"},
-        auctionService);
+        handler, auctionService);
     readResponse(); // consume response, không dùng
   }
 
@@ -227,7 +252,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleRegisterFailsWhenPayloadTooShort() throws IOException {
-    handler.handleRegister(new String[]{Protocol.CMD_REGISTER, "only_user"});
+    new RegisterCommand().execute(new String[]{Protocol.CMD_REGISTER, "only_user"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "Thiếu tham số phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -240,9 +265,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleLoginSuccessWithDefaultAdmin() throws IOException {
-    handler.handleLogin(
-        new String[]{Protocol.CMD_LOGIN, "admin", "admin123"},
-        auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "admin123"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "handleLogin phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.RES_LOGIN_SUCCESS),
@@ -251,9 +274,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleLoginSetsCurrentUser() throws IOException {
-    handler.handleLogin(
-        new String[]{Protocol.CMD_LOGIN, "admin", "admin123"},
-        auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "admin123"}, handler, auctionService);
     readResponse();
     assertNotNull(handler.getCurrentUser());
     assertEquals("admin", handler.getCurrentUser().getUsername());
@@ -261,9 +282,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleLoginFailsWithWrongPassword() throws IOException {
-    handler.handleLogin(
-        new String[]{Protocol.CMD_LOGIN, "admin", "wrongpass"},
-        auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "wrongpass"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "Sai mật khẩu phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.RES_LOGIN_FAILED),
@@ -272,9 +291,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleLoginFailsWithUnknownUser() throws IOException {
-    handler.handleLogin(
-        new String[]{Protocol.CMD_LOGIN, "nobody", "pass"},
-        auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "nobody", "pass"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "User không tồn tại phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.RES_LOGIN_FAILED),
@@ -283,9 +300,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleLoginFailsWhenPayloadTooShort() throws IOException {
-    handler.handleLogin(
-        new String[]{Protocol.CMD_LOGIN, "admin"},
-        auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR));
@@ -293,9 +308,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleLoginDoesNotSetCurrentUserOnFailure() throws IOException {
-    handler.handleLogin(
-        new String[]{Protocol.CMD_LOGIN, "admin", "wrong"},
-        auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "wrong"}, handler, auctionService);
     readResponse();
     assertNull(handler.getCurrentUser(),
         "currentUser phải giữ null khi login thất bại");
@@ -307,7 +320,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleListAuctionsReturnsListSuccess() throws IOException {
-    handler.handleListAuctions(auctionService);
+    new ListAuctionsCommand().execute(new String[]{Protocol.CMD_LIST_AUCTIONS}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "handleListAuctions phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.RES_LIST_SUCCESS),
@@ -317,7 +330,7 @@ public class ClientHandlerTest {
   @Test
   void handleListAuctionsWorksWhenNotLoggedIn() throws IOException {
     assertNull(handler.getCurrentUser());
-    handler.handleListAuctions(auctionService);
+    new ListAuctionsCommand().execute(new String[]{Protocol.CMD_LIST_AUCTIONS}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "handleListAuctions phải gửi phản hồi dù chưa login");
     assertFalse(response.startsWith(Protocol.ERROR),
@@ -330,7 +343,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleDepositFailsWhenNotLoggedIn() throws IOException {
-    handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT, "500000"});
+    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "500000"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "Nạp tiền chưa login phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -342,7 +355,7 @@ public class ClientHandlerTest {
     loginAsAdmin();
     double balanceBefore = handler.getCurrentUser().getBalance();
 
-    handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT, "100000"});
+    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "100000"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "Nạp tiền hợp lệ phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.RES_DEPOSIT_SUCCESS),
@@ -353,7 +366,7 @@ public class ClientHandlerTest {
   @Test
   void handleDepositFailsForNegativeAmount() throws IOException {
     loginAsAdmin();
-    handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT, "-500"});
+    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "-500"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -363,7 +376,7 @@ public class ClientHandlerTest {
   @Test
   void handleDepositFailsForZeroAmount() throws IOException {
     loginAsAdmin();
-    handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT, "0"});
+    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "0"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -373,7 +386,7 @@ public class ClientHandlerTest {
   @Test
   void handleDepositFailsForNonNumericAmount() throws IOException {
     loginAsAdmin();
-    handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT, "abc"});
+    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "abc"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -383,7 +396,7 @@ public class ClientHandlerTest {
   @Test
   void handleDepositFailsWhenPayloadTooShort() throws IOException {
     loginAsAdmin();
-    handler.handleDeposit(new String[]{Protocol.CMD_DEPOSIT});
+    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR));
@@ -395,7 +408,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleGetBalanceFailsWhenNotLoggedIn() throws IOException {
-    handler.handleGetBalance();
+    new GetBalanceCommand().execute(new String[]{Protocol.CMD_GET_BALANCE}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "GetBalance chưa login phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -405,7 +418,7 @@ public class ClientHandlerTest {
   @Test
   void handleGetBalanceReturnsBalanceInfoWhenLoggedIn() throws IOException {
     loginAsAdmin();
-    handler.handleGetBalance();
+    new GetBalanceCommand().execute(new String[]{Protocol.CMD_GET_BALANCE}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response, "GetBalance đã login phải gửi phản hồi");
     assertTrue(response.startsWith(Protocol.RES_BALANCE_INFO),
@@ -419,9 +432,7 @@ public class ClientHandlerTest {
   @Test
   void handleCreateAuctionFailsWhenNotLoggedIn() throws IOException {
     // CreateAuctionCommand yêu cầu 7 parts: CMD|type|name|price|duration|desc|imageUrl
-    handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""},
-        auctionService);
+    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR));
@@ -430,12 +441,10 @@ public class ClientHandlerTest {
   @Test
   void handleCreateAuctionFailsForBidderRole() throws IOException {
     userManager.register("bidder01", "pass", "BIDDER", "bidder01@test.com");
-    handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "bidder01", "pass"}, auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "bidder01", "pass"}, handler, auctionService);
     readResponse();
 
-    handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""},
-        auctionService);
+    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -445,9 +454,7 @@ public class ClientHandlerTest {
   @Test
   void handleCreateAuctionSuccessForAdmin() throws IOException {
     loginAsAdmin();
-    handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop Test", "5000000", "60", "", ""},
-        auctionService);
+    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop Test", "5000000", "60", "", ""}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.RES_SUCCESS),
@@ -457,12 +464,10 @@ public class ClientHandlerTest {
   @Test
   void handleCreateAuctionSuccessForSeller() throws IOException {
     userManager.register("seller01", "pass", "SELLER", "seller01@test.com");
-    handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "seller01", "pass"}, auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "seller01", "pass"}, handler, auctionService);
     readResponse();
 
-    handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ART", "Tranh Son Dau", "1000000", "30", "", ""},
-        auctionService);
+    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ART", "Tranh Son Dau", "1000000", "30", "", ""}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.RES_SUCCESS),
@@ -472,9 +477,7 @@ public class ClientHandlerTest {
   @Test
   void handleCreateAuctionFailsForInvalidPrice() throws IOException {
     loginAsAdmin();
-    handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "INVALID_PRICE", "60", "", ""},
-        auctionService);
+    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "INVALID_PRICE", "60", "", ""}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -484,9 +487,7 @@ public class ClientHandlerTest {
   @Test
   void handleCreateAuctionFailsWhenPayloadTooShort() throws IOException {
     loginAsAdmin();
-    handler.handleCreateAuction(
-        new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS"},
-        auctionService);
+    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR));
@@ -498,9 +499,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleEndAuctionFailsWhenNotLoggedIn() throws IOException {
-    handler.handleEndAuction(
-        new String[]{Protocol.CMD_END_AUCTION, "AUC_FAKE"},
-        auctionService);
+    new EndAuctionCommand().execute(new String[]{Protocol.CMD_END_AUCTION, "AUC_FAKE"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR));
@@ -509,12 +508,10 @@ public class ClientHandlerTest {
   @Test
   void handleEndAuctionFailsForNonAdmin() throws IOException {
     userManager.register("seller02", "pass", "SELLER", "seller02@test.com");
-    handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "seller02", "pass"}, auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "seller02", "pass"}, handler, auctionService);
     readResponse();
 
-    handler.handleEndAuction(
-        new String[]{Protocol.CMD_END_AUCTION, "AUC_FAKE"},
-        auctionService);
+    new EndAuctionCommand().execute(new String[]{Protocol.CMD_END_AUCTION, "AUC_FAKE"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -523,9 +520,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleDeleteAuctionFailsWhenNotLoggedIn() throws IOException {
-    handler.handleDeleteAuction(
-        new String[]{Protocol.CMD_DELETE_AUCTION, "AUC_FAKE"},
-        auctionService);
+    new DeleteAuctionCommand().execute(new String[]{Protocol.CMD_DELETE_AUCTION, "AUC_FAKE"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR));
@@ -534,12 +529,10 @@ public class ClientHandlerTest {
   @Test
   void handleDeleteAuctionFailsForNonAdmin() throws IOException {
     userManager.register("bidder02", "pass", "BIDDER", "bidder02@test.com");
-    handler.handleLogin(new String[]{Protocol.CMD_LOGIN, "bidder02", "pass"}, auctionService);
+    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "bidder02", "pass"}, handler, auctionService);
     readResponse();
 
-    handler.handleDeleteAuction(
-        new String[]{Protocol.CMD_DELETE_AUCTION, "AUC_FAKE"},
-        auctionService);
+    new DeleteAuctionCommand().execute(new String[]{Protocol.CMD_DELETE_AUCTION, "AUC_FAKE"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -552,9 +545,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleBidFailsWhenNotLoggedIn() throws IOException {
-    handler.handleBid(
-        new String[]{Protocol.CMD_BID, "AUC_FAKE", "500000"},
-        auctionService);
+    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE", "500000"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -564,9 +555,7 @@ public class ClientHandlerTest {
   @Test
   void handleBidFailsForNonExistentAuction() throws IOException {
     loginAsAdmin();
-    handler.handleBid(
-        new String[]{Protocol.CMD_BID, "AUC_NOT_EXIST", "500000"},
-        auctionService);
+    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_NOT_EXIST", "500000"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -576,9 +565,7 @@ public class ClientHandlerTest {
   @Test
   void handleBidFailsForNegativeAmount() throws IOException {
     loginAsAdmin();
-    handler.handleBid(
-        new String[]{Protocol.CMD_BID, "AUC_FAKE", "-100"},
-        auctionService);
+    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE", "-100"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -588,9 +575,7 @@ public class ClientHandlerTest {
   @Test
   void handleBidFailsForNonNumericAmount() throws IOException {
     loginAsAdmin();
-    handler.handleBid(
-        new String[]{Protocol.CMD_BID, "AUC_FAKE", "notANumber"},
-        auctionService);
+    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE", "notANumber"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -600,9 +585,7 @@ public class ClientHandlerTest {
   @Test
   void handleBidFailsWhenPayloadTooShort() throws IOException {
     loginAsAdmin();
-    handler.handleBid(
-        new String[]{Protocol.CMD_BID, "AUC_FAKE"},
-        auctionService);
+    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR));
@@ -614,9 +597,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleGetHistoryFailsForNonExistentAuction() throws IOException {
-    handler.handleGetHistory(
-        new String[]{Protocol.CMD_GET_HISTORY, "AUC_NOT_EXIST"},
-        auctionService);
+    new GetBidHistoryCommand().execute(new String[]{Protocol.CMD_GET_HISTORY, "AUC_NOT_EXIST"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -626,9 +607,7 @@ public class ClientHandlerTest {
   @Test
   void handleWatchFailsForNonBidder() throws IOException {
     loginAsAdmin(); // Admin không phải Bidder
-    handler.handleWatch(
-        new String[]{Protocol.CMD_WATCH, "AUC_FAKE"},
-        auctionService);
+    new WatchCommand().execute(new String[]{Protocol.CMD_WATCH, "AUC_FAKE"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -638,9 +617,7 @@ public class ClientHandlerTest {
   @Test
   void handleUnwatchFailsWhenPayloadTooShort() throws IOException {
     loginAsAdmin();
-    handler.handleUnwatch(
-        new String[]{Protocol.CMD_UNWATCH},
-        auctionService);
+    new UnwatchCommand().execute(new String[]{Protocol.CMD_UNWATCH}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -650,7 +627,7 @@ public class ClientHandlerTest {
   @Test
   void handleGetWatchlistDoesNotCrashWhenNotLoggedIn() {
     // Không crash — chỉ cần không ném exception
-    handler.handleGetWatchlist(auctionService);
+    new GetWatchlistCommand().execute(new String[]{Protocol.CMD_GET_WATCHLIST}, handler, auctionService);
   }
 
   // =========================================================================
@@ -659,9 +636,7 @@ public class ClientHandlerTest {
 
   @Test
   void handleAddAutoBidFailsWhenNotLoggedIn() throws IOException {
-    handler.handleAddAutoBid(
-        new String[]{Protocol.CMD_ADD_AUTO_BID, "AUC_FAKE", "1000000", "50000"},
-        auctionService);
+    new AddAutoBidCommand().execute(new String[]{Protocol.CMD_ADD_AUTO_BID, "AUC_FAKE", "1000000", "50000"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
@@ -671,9 +646,7 @@ public class ClientHandlerTest {
   @Test
   void handleAddAutoBidFailsForNonExistentAuction() throws IOException {
     loginAsAdmin();
-    handler.handleAddAutoBid(
-        new String[]{Protocol.CMD_ADD_AUTO_BID, "AUC_NOT_EXIST", "1000000", "50000"},
-        auctionService);
+    new AddAutoBidCommand().execute(new String[]{Protocol.CMD_ADD_AUTO_BID, "AUC_NOT_EXIST", "1000000", "50000"}, handler, auctionService);
     String response = readResponse();
     assertNotNull(response);
     assertTrue(response.startsWith(Protocol.ERROR),
