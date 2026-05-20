@@ -1,16 +1,23 @@
 package com.auction.model.auctionhelpers;
 
+/**
+ * Simple Factory.
+ */
 public class AuctionHelperFactory {
-  private static AuctionHelperFactory instance;
 
   private AuctionHelperFactory() {
   }
 
+  // Tạo một lớp static lồng bên trong (Holder),cơ chế Bill Pugh Singleton
+  private static class Holder {
+    private static final AuctionHelperFactory INSTANCE = new AuctionHelperFactory();
+  }
+
+  /**
+   * singelton.
+   */
   public static AuctionHelperFactory getInstance() {
-    if (instance == null) {
-      instance = new AuctionHelperFactory();
-    }
-    return instance;
+    return Holder.INSTANCE;
   }
 
   public AuctionValidator createValidator() {

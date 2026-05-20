@@ -66,14 +66,14 @@ public class Protocol {
    * Reasons:
    * - "OUTBID": Bị người khác vượt giá
    * - "AUCTION_CANCELLED": Phiên đấu giá bị hủy
-   * - "AUCTION_ENDED": Phiên kết thúc, không phải winner
+   * 
    */
   public static final String NOTI_REFUND = "REFUND";
 
   /**
    * NOTI_AUCTION_CANCELLED: Thông báo phiên đấu giá bị hủy bởi Admin
    * Format: AUCTION_CANCELLED|auctionId|reason
-   * NEW: Gửi cho TẤT CẢ participants khi Admin đóng phiên sớm
+   * NEW: Gửi cho TẤT CẢ participants khi Admin đóng phiên sớm.
    */
   public static final String NOTI_AUCTION_CANCELLED = "AUCTION_CANCELLED";
 

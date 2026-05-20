@@ -1,8 +1,8 @@
 package com.auction.model.entities.user;
 
-import java.text.SimpleDateFormat;
 import com.auction.model.entities.Entity;
 import com.auction.util.core.SecurityUtils;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -39,6 +39,9 @@ public abstract class User extends Entity {
     return username;
   }
 
+  /**
+   * set password cho user.
+   */
   public void setPassword(String rawPassword) {
     if (rawPassword != null && !rawPassword.isEmpty()) {
       this.password = SecurityUtils.hashPassword(rawPassword, this.username);

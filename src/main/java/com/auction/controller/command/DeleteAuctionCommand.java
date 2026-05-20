@@ -4,12 +4,16 @@ import com.auction.controller.network.ClientHandler;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
+/**
+ * xoa phien.
+ */
 public class DeleteAuctionCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     // Cần ít nhất 2 phần: Lệnh | Mã Auction
-    if (!client.validatePayload(parts, 2))
+    if (!client.validatePayload(parts, 2)) {
       return;
+    }
 
     // Kiểm tra quyền Admin
     if (client.getCurrentUser() == null || !"ADMIN".equals(client.getCurrentUser().getRole())) {

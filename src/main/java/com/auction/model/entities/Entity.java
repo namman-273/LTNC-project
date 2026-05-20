@@ -6,7 +6,7 @@ import java.io.Serializable;
  * .
  */
 public abstract class Entity implements Serializable {
-  protected String id;
+  private String id;
   private static final long serialVersionUID = 1L;
 
   public Entity(String id) {
