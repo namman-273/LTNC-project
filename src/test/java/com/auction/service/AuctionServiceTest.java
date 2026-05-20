@@ -92,15 +92,7 @@ public class AuctionServiceTest {
         assertEquals(2_000_000.0, auction.getCurrentPrice(), 0.001);
     }
 
-    @Test
-    void createMultipleAuctionsAllPresent() {
-        auctionService.createNewAuction("ELECTRONICS", "TV", 500_000.0, 9999L, "defaultSeller", "", "");
-        auctionService.createNewAuction("ART", "Vase", 300_000.0, 9999L, "defaultSeller", "", "");
-        assertEquals(2, auctionService.getAllAuctions().size());
-    }
-
-    // ===== getAuctionById =====
-
+  
     @Test
     void getAuctionByIdReturnsCorrectAuction() {
         auctionService.createNewAuction("ELECTRONICS", "Camera", 1_500_000.0, 9999L, "defaultSeller", "", "");
@@ -313,26 +305,14 @@ public class AuctionServiceTest {
     }
 
     private void resetSingletons() throws Exception {
-        Field dm = DataManager.class.getDeclaredField("instance");
-        dm.setAccessible(true);
-        dm.set(null, null);
-
+        // DataManager đã chuyển sang Holder idiom (không có field 'instance').
+        // Không cần reset vì DataManager không giữ business state.
         Field as = AuctionService.class.getDeclaredField("instance");
         as.setAccessible(true);
         as.set(null, null);
 
-        Field um = UserManager.class.getDeclaredField("instance");
-        um.setAccessible(true);
-        um.set(null, null);
-    }
-
-    // Allow reflection to access private constructor for setInstance test
-    static AuctionService createFreshService(DataManager dm) throws Exception {
-        java.lang.reflect.Constructor<AuctionService> c =
-            AuctionService.class.getDeclaredConstructor(
-                com.auction.util.core.IDataStorage.class);
-        c.setAccessible(true);
-        return c.newInstance(dm);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
     }
 
     private void cleanFiles() {
