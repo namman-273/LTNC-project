@@ -8,7 +8,7 @@ import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
 /**
- * bo theo doi.
+ * Lệnh bỏ theo dõi.
  */
 public class UnwatchCommand implements ClientCommand {
   @Override
@@ -38,8 +38,9 @@ public class UnwatchCommand implements ClientCommand {
           + " đã ngừng nhận thông báo từ phiên " + auctionId);
     }
 
-    // Lưu dữ liệu và báo thành công
-    DataManager.getInstance().saveData();
+    // Đánh dấu users cần save
+    DataManager.getInstance().markUsersDirty();
+    
     client.sendMessage(Protocol.RES_UNWATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
   }
 }

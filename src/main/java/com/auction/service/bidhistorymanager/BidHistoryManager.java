@@ -8,15 +8,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * quan li lich su dau gia.
+ * Quản lý lịch sử đấu giá.
+ * Thread-safe với ConcurrentHashMap.
  */
 public class BidHistoryManager {
   private Map<String, List<BidHistoryEntry>> userHistory = new ConcurrentHashMap<>();
 
   /**
-   * singleton.
+   * Singleton pattern.
    */
-  // Inner class giữ instance. JVM đảm bảo luồng an toàn khi load class này
   private static class Holder {
     private static final BidHistoryManager INSTANCE = new BidHistoryManager();
   }
@@ -34,24 +34,28 @@ public class BidHistoryManager {
   }
 
   /**
-   * cac du lieu cua 1 user.
+   * Lấy lịch sử đấu giá của 1 user.
    */
   public List<BidHistoryEntry> getHistoryForUser(String username) {
-    // Trả về list lịch sử, nếu chưa có thì trả về list rỗng thay vì null để tránh
-    // lỗi crash
+    // Trả về list lịch sử, nếu chưa có thì trả về list rỗng thay vì null
     return userHistory.getOrDefault(username, new ArrayList<>());
   }
 
   /**
-   * ban luu lich su dau gia.
+   * Lưu lịch sử đấu giá.
+   * Sử dụng mark dirty thay vì save ngay lập tức để tối ưu performance.
    */
-  public void recordHistory(String auctionId, String itemName, double finalPrice, String endTime,
-      String winner, List<String> participants) {
+  public void recordHistory(String auctionId, String itemName, double finalPrice,
+      String endTime, String winner, List<String> participants) {
+
+    // Thêm entry cho mỗi participant
     for (String user : participants) {
-      String res = user.equals(winner) ? "WIN" : "LOSE";
+      String result = user.equals(winner) ? "WIN" : "LOSE";
       userHistory.computeIfAbsent(user, k -> new ArrayList<>())
-          .add(new BidHistoryEntry(auctionId, itemName, finalPrice, res, endTime));
+          .add(new BidHistoryEntry(auctionId, itemName, finalPrice, result, endTime));
     }
-    DataManager.getInstance().saveData(); // Gọi lưu file .dat ngay
+
+    // Đánh dấu history cần save (sẽ auto-save sau 5 giây)
+    DataManager.getInstance().markHistoryDirty();
   }
 }

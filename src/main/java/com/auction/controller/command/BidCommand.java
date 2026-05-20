@@ -7,7 +7,7 @@ import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
 /**
- * lenh thuc ti dat gia.
+ * Lệnh thực thi đặt giá.
  */
 public class BidCommand implements ClientCommand {
   @Override
@@ -39,17 +39,18 @@ public class BidCommand implements ClientCommand {
         return;
       }
 
-      // Chuyền đối tượng User vào hàm xử lý
+      // Xử lý bid
       auction.processNewBid(client.getCurrentUser(), amount);
 
-      // Thay this thành client: Đăng ký nhận thông báo cho socket hiện tại
+      // Đăng ký nhận thông báo cho socket hiện tại
       auction.addObserver(client);
 
       client.sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId
           + Protocol.SEPARATOR + amount);
 
-      // Lưu trạng thái mới (tiền bị trừ, lịch sử bid tăng lên)
-      DataManager.getInstance().saveData();
+      // Đánh dấu cần save (users + auctions đều thay đổi)
+      DataManager.getInstance().markUsersDirty(); // User balance changed
+      DataManager.getInstance().markAuctionsDirty(); // Auction bid history changed
 
     } catch (NumberFormatException e) {
       client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền phải là con số hợp lệ");
