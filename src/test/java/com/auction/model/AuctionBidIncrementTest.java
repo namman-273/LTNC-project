@@ -11,7 +11,7 @@ import com.auction.model.enums.AuctionStatus;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
 
-import java.lang.reflect.Field;
+import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,9 +28,9 @@ public class AuctionBidIncrementTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // UserManager dùng Holder idiom nên không còn field "instance" để reset.
+        // Thay vào đó, clear toàn bộ users qua setUsers() để bắt đầu phiên test sạch.
+        UserManager.getInstance().setUsers(new HashMap<>());
         UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder.addBalance(100_000_000.0);
@@ -125,9 +125,9 @@ public class AuctionBidIncrementTest {
 
     @Test
     void sellerCannotBidOwnAuction() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Clear users để có môi trường test sạch (không dùng reflection vì
+        // UserManager đã chuyển sang Holder idiom).
+        UserManager.getInstance().setUsers(new HashMap<>());
         UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
         Bidder bob = (Bidder) UserManager.getInstance().findUserByUsername("bob");
         bob.addBalance(100_000_000.0);
