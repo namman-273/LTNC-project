@@ -18,9 +18,8 @@ public class UserManagerIntegrationTest {
  
     @BeforeEach
     void setUp() throws Exception {
-        Field field = UserManager.class.getDeclaredField("instance");
-        field.setAccessible(true);
-        field.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         manager = UserManager.getInstance();
     }
  
