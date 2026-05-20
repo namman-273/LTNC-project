@@ -5,6 +5,9 @@ import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
 
+/**
+ *dang ky.
+ */
 public class RegisterCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {

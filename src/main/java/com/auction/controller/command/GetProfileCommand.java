@@ -5,7 +5,11 @@ import com.auction.model.entities.user.User;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
+/**
+ * xem profile.
+ */
 public class GetProfileCommand implements ClientCommand {
+  @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     User user = client.getCurrentUser();
     if (user == null) {
@@ -18,7 +22,7 @@ public class GetProfileCommand implements ClientCommand {
     double balance = user.getBalance();
     String joinDate = user.getJoinDate();
     if (joinDate == null || joinDate.equals("N/A")) {
-      joinDate = "01/01/2026"; // Gán một ngày mặc định cho các user "cựu chiến binh"
+      joinDate = "01/01/2026"; // Gán một ngày mặc định cho các user mat du lieu
     }
 
     String response = String.format("%s|%s|%s|%s|%.2f|%s",

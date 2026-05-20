@@ -3,8 +3,6 @@ package com.auction.service.auctionservice;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Item;
 import com.auction.model.observer.Observer;
-import com.auction.util.core.DataManager;
-import com.auction.util.core.IDataStorage;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -29,12 +27,11 @@ public class AuctionService implements Serializable {
   private final WatchlistService watchlistService;
   private transient AuctionEndHandler endHandler;
 
-  // ÁP DỤNG DIP: Khai báo Interface
-  private transient IDataStorage dataStorage;
+  // Data persistence service
+  private final AuctionDataPersistenceService persistenceService;
 
-  private AuctionService(IDataStorage dataStorage) {
-    this.dataStorage = dataStorage;
-    
+  private AuctionService() {
+
     // Khởi tạo các helper classes
     this.auctionRepository = new AuctionRepository();
     this.scheduler = new AuctionScheduler();
@@ -42,8 +39,9 @@ public class AuctionService implements Serializable {
     this.paymentProcessor = new PaymentProcessor();
     this.notificationService = new AuctionNotificationService();
     this.watchlistService = new WatchlistService(auctionRepository);
-    this.endHandler = new AuctionEndHandler(auctionRepository, scheduler, 
-        paymentProcessor, notificationService, dataStorage);
+    this.persistenceService = new AuctionDataPersistenceService();
+    this.endHandler = new AuctionEndHandler(auctionRepository, scheduler,
+        paymentProcessor, notificationService, persistenceService);
   }
 
   /**
@@ -53,7 +51,7 @@ public class AuctionService implements Serializable {
     if (instance == null) {
       synchronized (AuctionService.class) {
         if (instance == null) {
-          instance = new AuctionService(DataManager.getInstance());
+          instance = new AuctionService();
         }
       }
     }
@@ -70,22 +68,22 @@ public class AuctionService implements Serializable {
   /**
    * Tạo phiên đấu giá mới.
    */
-  public synchronized void createNewAuction(String itemType, String itemName, 
-      double startingPrice, long durationMinutes, String sellerId, 
+  public synchronized void createNewAuction(String itemType, String itemName,
+      double startingPrice, long durationMinutes, String sellerId,
       String description, String imageUrl) {
-    
+
     // Tạo auction mới sử dụng Factory
-    Auction newAuction = auctionFactory.createAuction(itemType, itemName, 
+    Auction newAuction = auctionFactory.createAuction(itemType, itemName,
         startingPrice, durationMinutes, sellerId, description, imageUrl);
 
     // Lưu vào repository
     auctionRepository.add(newAuction.getId(), newAuction);
 
-    // Lưu xuống file
-    saveData();
+    // Đánh dấu cần save (sẽ auto-save sau 5 giây)
+    persistenceService.markAuctionsDirty();
 
     // Lên lịch tự động đóng
-    scheduler.scheduleAuctionEnd(newAuction.getId(), durationMinutes, 
+    scheduler.scheduleAuctionEnd(newAuction.getId(), durationMinutes,
         () -> endAuction(newAuction.getId()));
   }
 
@@ -94,32 +92,31 @@ public class AuctionService implements Serializable {
    * FIX: Truyền đúng endAuction handler thay vì lambda rỗng.
    */
   private void recoverScheduledTasks() {
-    scheduler.recoverScheduledTasks(auctionRepository, 
+    scheduler.recoverScheduledTasks(auctionRepository,
         auctionId -> endAuction(auctionId));
   }
 
   /**
    * FIX LỖI: Singleton bị phá khi deserialize.
-   * Java (JVM) sẽ tự động quét qua class AuctionService xem có 
-   * hàm nào tên là readResolve() hay không. Nếu có, JVM sẽ ngầm kích hoạt hàm này.
+   * Java (JVM) sẽ tự động quét qua class AuctionService xem có
+   * hàm nào tên là readResolve() hay không. Nếu có, JVM sẽ ngầm kích hoạt hàm
+   * này.
    * (khi he thong doc file .dat)
    */
   protected Object readResolve() {
     // Khi load từ file, gán instance hiện tại
     instance = this;
-    
+
     // Khôi phục transient fields
-    if (this.dataStorage == null) {
-      this.dataStorage = DataManager.getInstance();
-    }
-    
+
     if (this.scheduler == null) {
       this.scheduler = new AuctionScheduler();
     }
 
-    // Tạo lại endHandler với dependencies
-    this.endHandler = new AuctionEndHandler(auctionRepository, scheduler, 
-        paymentProcessor, notificationService, dataStorage);
+    // Tạo lại endHandler với dependencies (dùng persistenceService thay vì
+    // dataStorage)
+    this.endHandler = new AuctionEndHandler(auctionRepository, scheduler,
+        paymentProcessor, notificationService, persistenceService);
 
     // Khôi phục scheduled tasks
     recoverScheduledTasks();
@@ -185,12 +182,12 @@ public class AuctionService implements Serializable {
   public void setAuctions(Map<String, Auction> loadedAuctions) {
     if (loadedAuctions != null) {
       auctionRepository.replaceAll(loadedAuctions);
-      
+
       // Đảm bảo scheduler được khởi tạo
       if (scheduler == null) {
         scheduler = new AuctionScheduler();
       }
-      
+
       // Khôi phục lại lịch trình
       recoverScheduledTasks();
     }
@@ -212,12 +209,12 @@ public class AuctionService implements Serializable {
       auction.closeAuction();
     }
 
-    // Lưu dữ liệu
+    // Lưu dữ liệu NGAY LẬP TỨC (critical operation)
     try {
-      saveData();
+      persistenceService.saveDataImmediately();
       System.out.println("[SERVICE] Dữ liệu đã được lưu an toàn vào file .dat.");
     } catch (Exception e) {
-      System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: " 
+      System.err.println("[SERVICE ERROR] Không thể lưu dữ liệu khi shutdown: "
           + e.getMessage());
     }
   }
@@ -233,8 +230,10 @@ public class AuctionService implements Serializable {
 
     auction.closeAuction();
     auctionRepository.remove(auctionId);
-    saveData();
-    
+
+    // Đánh dấu cần save
+    persistenceService.markAuctionsDirty();
+
     System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
     return true;
   }
@@ -245,15 +244,6 @@ public class AuctionService implements Serializable {
   public void removeObserverFromAll(Observer obs) {
     for (Auction auction : auctionRepository.getAllAuctions()) {
       auction.removeObserver(obs);
-    }
-  }
-
-  /**
-   * Helper method để lưu dữ liệu.
-   */
-  private void saveData() {
-    if (dataStorage != null) {
-      dataStorage.saveData();
     }
   }
 }

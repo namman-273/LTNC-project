@@ -6,16 +6,20 @@ import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
+/**
+ * Lệnh thực thi đặt giá.
+ */
 public class BidCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     // Rào chắn bảo vệ: Cần ít nhất 3 phần (Lệnh | Mã Auction | Số tiền)
-    if (!client.validatePayload(parts, 3))
+    if (!client.validatePayload(parts, 3)) {
       return;
+    }
 
-    // Thay this.currentUser thành client.getCurrentUser()
     if (client.getCurrentUser() == null) {
-      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Bạn phải đăng nhập trước khi đấu giá!");
+      client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+          + "Bạn phải đăng nhập trước khi đấu giá!");
       return;
     }
 
@@ -30,21 +34,23 @@ public class BidCommand implements ClientCommand {
 
       Auction auction = auctionService.getAuctionById(auctionId);
       if (auction == null) {
-        client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Không tìm thấy phiên đấu giá này");
+        client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
+            + "Không tìm thấy phiên đấu giá này");
         return;
       }
 
-      // Chuyền đối tượng User vào hàm xử lý
+      // Xử lý bid
       auction.processNewBid(client.getCurrentUser(), amount);
 
-      // Thay this thành client: Đăng ký nhận thông báo cho socket hiện tại
+      // Đăng ký nhận thông báo cho socket hiện tại
       auction.addObserver(client);
 
       client.sendMessage(Protocol.RES_BID_SUCCESS + Protocol.SEPARATOR + auctionId
           + Protocol.SEPARATOR + amount);
 
-      // Lưu trạng thái mới (tiền bị trừ, lịch sử bid tăng lên)
-      DataManager.getInstance().saveData();
+      // Đánh dấu cần save (users + auctions đều thay đổi)
+      DataManager.getInstance().markUsersDirty(); // User balance changed
+      DataManager.getInstance().markAuctionsDirty(); // Auction bid history changed
 
     } catch (NumberFormatException e) {
       client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Giá tiền phải là con số hợp lệ");

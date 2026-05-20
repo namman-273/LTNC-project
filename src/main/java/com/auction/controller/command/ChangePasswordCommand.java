@@ -1,15 +1,20 @@
 package com.auction.controller.command;
 
+import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.user.User;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
-import com.auction.controller.network.ClientHandler;
 
+/**
+ * lenh doi mat khau.
+ */
 public class ChangePasswordCommand implements ClientCommand {
+  @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
-    if (!client.validatePayload(parts, 3))
+    if (!client.validatePayload(parts, 3)) {
       return;
+    }
     User user = client.getCurrentUser();
     if (user == null) {
       client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Vui lòng đăng nhập trước.");

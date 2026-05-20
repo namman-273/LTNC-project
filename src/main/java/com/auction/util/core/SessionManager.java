@@ -1,5 +1,9 @@
 package com.auction.util.core;
 
+/**
+   *  * Áp dụng singleton.
+   *  
+   */
 public class SessionManager {
 
   private static volatile SessionManager instance;
