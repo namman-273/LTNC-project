@@ -5,7 +5,6 @@ import com.auction.model.enums.AuctionStatus;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.PaymentProcessor.WinnerInfo;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
-import com.auction.util.core.IDataStorage;
 import java.util.List;
 
 /**
@@ -18,21 +17,21 @@ public class AuctionEndHandler {
   private final AuctionScheduler scheduler;
   private final PaymentProcessor paymentProcessor;
   private final AuctionNotificationService notificationService;
-  private final IDataStorage dataStorage;
+  private final AuctionDataPersistenceService persistenceService;
 
   /**
-   * constructor.
+   * Constructor với dependency injection.
    */
   public AuctionEndHandler(AuctionRepository auctionRepository,
       AuctionScheduler scheduler,
       PaymentProcessor paymentProcessor,
       AuctionNotificationService notificationService,
-      IDataStorage dataStorage) {
+      AuctionDataPersistenceService persistenceService) {
     this.auctionRepository = auctionRepository;
     this.scheduler = scheduler;
     this.paymentProcessor = paymentProcessor;
     this.notificationService = notificationService;
-    this.dataStorage = dataStorage;
+    this.persistenceService = persistenceService;
   }
 
   /**
@@ -53,7 +52,6 @@ public class AuctionEndHandler {
    * Xử lý kết thúc auction với tùy chọn forced by Admin.
    * 
    * @param forcedByAdmin true nếu Admin đóng sớm, false nếu tự động
-   * 
    */
   private void endAuction(String auctionId, boolean forcedByAdmin) {
     Auction auction = auctionRepository.findById(auctionId);
@@ -103,6 +101,8 @@ public class AuctionEndHandler {
           .map(bid -> bid.getBidder().getUsername())
           .distinct()
           .collect(java.util.stream.Collectors.toList());
+
+      // BidHistoryManager sẽ tự mark dirty
       BidHistoryManager.getInstance().recordHistory(
           auction.getId(),
           auction.getItem().getItemName(),
@@ -115,8 +115,8 @@ public class AuctionEndHandler {
       // Giải phóng tài nguyên
       auction.closeAuction();
 
-      // Lưu dữ liệu
-      saveData();
+      // Đánh dấu auctions cần save
+      persistenceService.markAuctionsDirty();
 
       System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId
           + " hoàn tất. Trạng thái cuối: " + auction.getStatus());
@@ -147,15 +147,4 @@ public class AuctionEndHandler {
     return auction.getStatus() == AuctionStatus.FINISHED
         || auction.getStatus() == AuctionStatus.PAID;
   }
-
-  /**
-   * Lưu dữ liệu xuống storage.
-   */
-  private void saveData() {
-    if (dataStorage != null) {
-      dataStorage.saveData();
-    }
-  }
-
-  
 }

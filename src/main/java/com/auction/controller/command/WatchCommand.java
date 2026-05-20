@@ -8,13 +8,12 @@ import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
 /**
- * theo doi phien.
+ * Lệnh theo dõi phiên.
  */
 public class WatchCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
-    // Kiểm tra payload để đảm bảo không bị IndexOutOfBoundsException khi lấy
-    // parts[1]
+    // Kiểm tra payload để đảm bảo không bị IndexOutOfBoundsException
     if (!client.validatePayload(parts, 2)) {
       return;
     }
@@ -32,7 +31,9 @@ public class WatchCommand implements ClientCommand {
     boolean isSuccess = ((Bidder) client.getCurrentUser()).addToWatchlist(auctionId);
 
     if (isSuccess) {
-      DataManager.getInstance().saveData();
+      // Đánh dấu users cần save
+      DataManager.getInstance().markUsersDirty();
+
       client.sendMessage(Protocol.RES_WATCH_SUCCESS + Protocol.SEPARATOR + auctionId);
 
       Auction targetAuction = auctionService.getAuctionById(auctionId);

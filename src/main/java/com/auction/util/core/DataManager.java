@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * - Dirty flag tracking để chỉ save khi có thay đổi
  * - Graceful shutdown
  */
-public final class DataManager implements IDataStorage {
+public final class DataManager {
   private static final String AUCTION_DATA_FILE = "auctions.dat";
   private static final String USER_DATA_FILE = "users.dat";
   private static final String HISTORY_DATA_FILE = "history.dat";
@@ -155,7 +155,7 @@ public final class DataManager implements IDataStorage {
   /**
    * Save ngay lập tức (dùng cho critical operations hoặc shutdown).
    */
-  @Override
+
   public synchronized void saveData() {
     if (isShutdown.get()) {
       System.out.println("[DataManager] Đã shutdown, bỏ qua save request");
@@ -265,7 +265,7 @@ public final class DataManager implements IDataStorage {
   /**
    * Load toàn bộ dữ liệu khi khởi động (thread-safe).
    */
-  @Override
+
   public synchronized void loadData() {
     System.out.println("[DataManager] Đang load dữ liệu...");
 
