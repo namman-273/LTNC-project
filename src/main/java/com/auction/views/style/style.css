@@ -303,3 +303,23 @@
     -fx-border-color: transparent;
     -fx-background-color: transparent;
 }
+
+/* ── TextArea mô tả sản phẩm ── */
+.text-area {
+    -fx-background-color: #0D1B2E;
+    -fx-border-color: #1E3A5F;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 12px;
+}
+.text-area .content {
+    -fx-background-color: #0D1B2E;
+    -fx-background-radius: 10;
+}
+.text-area .scroll-pane {
+    -fx-background-color: transparent;
+}
+.text-area .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}

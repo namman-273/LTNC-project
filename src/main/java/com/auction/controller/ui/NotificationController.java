@@ -157,7 +157,9 @@ public class NotificationController implements Initializable {
                     if (target != null) {
                         new BidView(stage, target.getId(), target.getItemName(),
                                 String.valueOf(target.getCurrentPrice()),
-                                target.getStatus(), username, target.getEndTime()).show();
+                                target.getStatus(), username, target.getEndTime(),
+                                target.getImageUrl() != null ? target.getImageUrl() : "",
+                                target.getDescription() != null ? target.getDescription() : "").show();
                     } else {
                         new AuctionListView(stage, username).show();
                     }

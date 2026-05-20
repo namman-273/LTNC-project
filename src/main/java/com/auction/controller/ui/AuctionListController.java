@@ -142,8 +142,27 @@ public class AuctionListController implements Initializable {
 
         case Protocol.NOTI_BALANCE_CHANGED:
           // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
-          if (parts.length >= 3) {
-            String newBal = parts[2]; // parts[1] là auctionId, parts[2] mới là balance
+          if (parts.length >= 4) {
+            String auctionId = parts[1];
+            String newBal    = parts[2];
+            String delta     = parts[3];
+            Platform.runLater(() -> {
+              if (balanceLabel != null) {
+                try {
+                  double v = Double.parseDouble(newBal);
+                  balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                } catch (NumberFormatException e) {
+                  balanceLabel.setText(newBal + " VNĐ");
+                }
+              }
+            });
+            // Thông báo cho seller nhận tiền
+            NotificationManager.getInstance().add(
+                    "💰 Phiên " + auctionId + " kết thúc. Bạn nhận: "
+                            + delta + " VNĐ",
+                    "balance", auctionId);
+          } else if (parts.length == 3) {
+            String newBal = parts[2];
             Platform.runLater(() -> {
               if (balanceLabel != null) {
                 try {
