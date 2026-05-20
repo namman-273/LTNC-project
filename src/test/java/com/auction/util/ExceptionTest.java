@@ -30,9 +30,8 @@ public class ExceptionTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder.addBalance(10_000_000.0);
@@ -65,9 +64,8 @@ public class ExceptionTest {
     @Test
     void processNewBidInsufficientBalanceThrowsInvalidBidException() throws Exception {
         // Bidder mới không có balance
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         UserManager.getInstance().register("broke", "pw", "BIDDER", "broke@test.com");
         Bidder brokeBidder = (Bidder) UserManager.getInstance().findUserByUsername("broke");
         // balance = 0, không thể bid 51000
@@ -119,9 +117,8 @@ public class ExceptionTest {
 
     @Test
     void sellerBiddingOwnAuctionThrowsInvalidBidException() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         UserManager.getInstance().register("seller1", "pw", "BIDDER", "seller1@test.com");
         Bidder seller = (Bidder) UserManager.getInstance().findUserByUsername("seller1");
         seller.addBalance(10_000_000.0);
