@@ -715,14 +715,15 @@ public class BidController implements Initializable {
     private void loadHistory() {
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
-                    Protocol.CMD_GET_BID_HISTORY + Protocol.SEPARATOR + auctionId);
+                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
             if (response == null || response.startsWith("ERROR")) return;
-            if (!response.startsWith(Protocol.RES_BID_HISTORY)) return;
+            if (!response.startsWith(Protocol.RES_HISTORY)) return;
 
-            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-            if (parts.length < 3) return;
+            // Format: HISTORY_RES|auctionId|[...]
+            String[] parts = response.split("\\" + Protocol.SEPARATOR, 4);
+            if (parts.length < 4) return;
 
-            String json = parts[2].trim();
+            String json = parts[3].trim();
             if (json.isEmpty() || json.equals("[]")) return;
 
             try {
