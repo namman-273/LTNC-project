@@ -3,6 +3,7 @@ package com.auction.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,9 +30,9 @@ public class AntiSnipingTest {
  
     @BeforeEach
     void setUp() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // UserManager dùng Holder idiom nên không còn field "instance" để reset.
+        // Thay vào đó, clear toàn bộ users qua setUsers() để bắt đầu phiên test sạch.
+        UserManager.getInstance().setUsers(new HashMap<>());
         UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder1.addBalance(10_000_000.0);
@@ -110,9 +111,9 @@ public class AntiSnipingTest {
  
     @Test
     void antiSnipingCanExtendMultipleTimesUpToMax() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Clear users để có môi trường test sạch (không dùng reflection vì
+        // UserManager đã chuyển sang Holder idiom).
+        UserManager.getInstance().setUsers(new HashMap<>());
         UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
         Bidder alice = (Bidder) UserManager.getInstance().findUserByUsername("alice");
