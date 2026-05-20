@@ -262,12 +262,7 @@
                 </configuration>
             </plugin>
 
-            <!--
-                [THÊM MỚI] 6. MAVEN SHADE PLUGIN: đóng gói fat JAR có thể chạy bằng
-                "java -jar AuctionSystem-server.jar" — không cần cài Maven trên máy khác.
-                Thực tế dự án cần build 2 JAR (server + client), cấu hình ở đây
-                là cho Server; Client sẽ chạy qua mvn javafx:run.
-            -->
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
