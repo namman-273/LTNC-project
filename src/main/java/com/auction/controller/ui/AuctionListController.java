@@ -16,6 +16,7 @@ import com.auction.views.java.NotificationView;
 import com.auction.views.java.ProfileView;
 import com.auction.views.java.SellerView;
 import com.auction.views.java.WatchlistView;
+import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -37,12 +38,14 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 public class AuctionListController implements Initializable {
 
+  @FXML private StackPane rootBox;
   @FXML private Label welcomeLabel;
   @FXML private Label balanceLabel;
   @FXML private FlowPane auctionGrid;
@@ -83,6 +86,7 @@ public class AuctionListController implements Initializable {
   public void setUsername(String username) {
     this.username = username;
     if (welcomeLabel != null) welcomeLabel.setText("Xin chào, " + username + "!");
+    if (rootBox != null) ToastManager.init(rootBox);
     String role = SessionManager.getInstance().getRole();
     if (adminButton != null) {
       adminButton.setVisible("ADMIN".equalsIgnoreCase(role));
@@ -126,14 +130,14 @@ public class AuctionListController implements Initializable {
             String bidder    = parts[3];
             try {
               double amt = Double.parseDouble(amount);
-              NotificationManager.getInstance().add(
-                      "🔨 Phiên " + auctionId + " có giá mới: "
-                              + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")",
-                      "auction", auctionId);
+              String msg = "🔨 Phiên " + auctionId + " có giá mới: "
+                      + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")";
+              NotificationManager.getInstance().add(msg, "auction", auctionId);
+              Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
             } catch (NumberFormatException e) {
-              NotificationManager.getInstance().add(
-                      "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ",
-                      "auction", auctionId);
+              String msg = "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ";
+              NotificationManager.getInstance().add(msg, "auction", auctionId);
+              Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
             }
             Platform.runLater(this::loadFromServer);
           }
