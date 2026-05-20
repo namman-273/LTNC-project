@@ -27,10 +27,8 @@ public class BidderWatchlistTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
-
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         Field asField = AuctionService.class.getDeclaredField("instance");
         asField.setAccessible(true);
         asField.set(null, null);
@@ -107,9 +105,8 @@ public class BidderWatchlistTest {
 
     @Test
     void getWatchlistForUserNonBidderReturnsEmpty() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         UserManager.getInstance().register("bob", "pw", "SELLER", "bob@test.com");
 
         List<Auction> result = service.getWatchlistForUser("bob");
