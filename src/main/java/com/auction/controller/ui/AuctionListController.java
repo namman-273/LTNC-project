@@ -118,6 +118,28 @@ public class AuctionListController implements Initializable {
       String[] parts = message.split("\\|");
       String header = parts[0];
       switch (header) {
+        case Protocol.NOTI_BID_UPDATE: {
+          // BID_UPDATE|auctionId|amount|bidderName|itemType
+          if (parts.length >= 4) {
+            String auctionId = parts[1];
+            String amount    = parts[2];
+            String bidder    = parts[3];
+            try {
+              double amt = Double.parseDouble(amount);
+              NotificationManager.getInstance().add(
+                      "🔨 Phiên " + auctionId + " có giá mới: "
+                              + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")",
+                      "auction", auctionId);
+            } catch (NumberFormatException e) {
+              NotificationManager.getInstance().add(
+                      "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ",
+                      "auction", auctionId);
+            }
+            Platform.runLater(this::loadFromServer);
+          }
+          break;
+        }
+
         case Protocol.NOTI_BALANCE_CHANGED:
           // Cập nhật số dư sidebar realtime
           if (parts.length >= 2) {
