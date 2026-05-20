@@ -208,29 +208,18 @@ public class SellerController implements Initializable {
 
             case Protocol.NOTI_BALANCE_CHANGED:
                 // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
-                // BE gửi riêng cho seller sau khi thanh toán hoàn tất
                 if (parts.length >= 4) {
                     String auctionId = parts[1];
                     String newBalance = parts[2];
-                    String delta = parts[3]; // ví dụ: "+5000000"
-                    boolean isMine = auctionData.stream()
-                            .anyMatch(a -> a.getId().equals(auctionId));
-                    if (isMine) {
-                        Platform.runLater(() -> {
-                            loadMyAuctions();
-                            try {
-                                double bal = Double.parseDouble(newBalance);
-                                showNotification("💰 Nhận tiền từ phiên đấu giá!",
-                                        "Phiên " + auctionId + " đã kết thúc thành công.\n"
-                                                + "Số tiền " + delta + " VNĐ đã được cộng vào ví.\n"
-                                                + "Số dư hiện tại: "
-                                                + String.format("%,.0f VNĐ", bal));
-                            } catch (NumberFormatException e) {
-                                showNotification("💰 Nhận tiền từ phiên đấu giá!",
-                                        "Phiên " + auctionId + " đã kết thúc. Số dư mới: " + newBalance + " VNĐ");
-                            }
-                        });
-                    }
+                    String delta = parts[3];
+                    Platform.runLater(() -> {
+                        loadMyAuctions();
+                        showNotification("💰 Tiền đã về tài khoản!",
+                                "Phiên " + auctionId + " đã thanh toán thành công.\n"
+                                        + "Số tiền nhận: " + delta + " VNĐ\n"
+                                        + "Số dư mới: " + String.format("%,.0f VNĐ",
+                                        Double.parseDouble(newBalance)));
+                    });
                 }
                 break;
 

@@ -107,11 +107,6 @@
             <Label text="&#x2B50; Danh sách theo dõi của tôi"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="&#x1F504; Làm mới" onAction="#handleRefresh"
-                    style="-fx-background-color: rgba(59,130,246,0.12); -fx-text-fill: #60A5FA;
-                           -fx-font-size: 12px; -fx-cursor: hand; -fx-background-radius: 8;
-                           -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;
-                           -fx-padding: 6 14;"/>
             <Region HBox.hgrow="ALWAYS"/>
             <HBox onMouseClicked="#handleGoBalance" alignment="CENTER"
                   prefHeight="36" prefWidth="36"

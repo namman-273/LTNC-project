@@ -288,7 +288,7 @@
         <VBox spacing="0"
               style="-fx-padding: 10 20 0 20; -fx-background-color: #0B1120;">
             <HBox spacing="6" alignment="CENTER_LEFT" style="-fx-padding: 0 0 8 0;">
-                <Label text="Loại SP:"
+                <Label text="Loại sản phẩm:"
                        style="-fx-font-size: 11px; -fx-text-fill: #475569; -fx-font-weight: bold;"/>
                 <Button fx:id="btnFilterAll" text="Tất cả" onAction="#handleFilterType"
                         prefHeight="28" styleClass="filter-active"

@@ -303,18 +303,26 @@ public class AuctionListController implements Initializable {
     renderCards(filtered);
   }
 
+  private static final String FILTER_ACTIVE_STYLE =
+          "-fx-background-color: rgba(59,130,246,0.3); -fx-text-fill: #93C5FD;" +
+                  "-fx-font-size: 11px; -fx-font-weight: bold;" +
+                  "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;" +
+                  "-fx-border-color: #3B82F6; -fx-border-radius: 8; -fx-border-width: 1;";
+
+  private static final String FILTER_INACTIVE_STYLE =
+          "-fx-background-color: transparent; -fx-text-fill: #64748B;" +
+                  "-fx-font-size: 11px; -fx-background-radius: 8; -fx-cursor: hand;" +
+                  "-fx-padding: 0 12; -fx-border-color: #1E3A5F;" +
+                  "-fx-border-radius: 8; -fx-border-width: 1;";
+
   // ── Filter ────────────────────────────────────────────────────────────────
   @FXML
   private void handleFilterType(ActionEvent e) {
     Button clicked = (Button) e.getSource();
     List<Button> typeButtons = List.of(btnFilterAll, btnFilterArt,
             btnFilterElec, btnFilterVehicle, btnFilterOther);
-    typeButtons.forEach(b -> {
-      b.getStyleClass().remove("filter-active");
-      if (!b.getStyleClass().contains("filter-btn")) b.getStyleClass().add("filter-btn");
-    });
-    clicked.getStyleClass().remove("filter-btn");
-    if (!clicked.getStyleClass().contains("filter-active")) clicked.getStyleClass().add("filter-active");
+    typeButtons.forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
+    clicked.setStyle(FILTER_ACTIVE_STYLE);
 
     if (clicked == btnFilterArt)          activeTypeFilter = "Art";
     else if (clicked == btnFilterElec)    activeTypeFilter = "Electronics";
@@ -328,12 +336,8 @@ public class AuctionListController implements Initializable {
   private void handleFilterPrice(ActionEvent e) {
     Button clicked = (Button) e.getSource();
     List<Button> priceButtons = List.of(btnPriceAll, btnPriceUnder5, btnPriceMid, btnPriceOver50);
-    priceButtons.forEach(b -> {
-      b.getStyleClass().remove("filter-active");
-      if (!b.getStyleClass().contains("filter-btn")) b.getStyleClass().add("filter-btn");
-    });
-    clicked.getStyleClass().remove("filter-btn");
-    if (!clicked.getStyleClass().contains("filter-active")) clicked.getStyleClass().add("filter-active");
+    priceButtons.forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
+    clicked.setStyle(FILTER_ACTIVE_STYLE);
 
     if (clicked == btnPriceUnder5)      activePriceFilter = "UNDER5";
     else if (clicked == btnPriceMid)    activePriceFilter = "MID";

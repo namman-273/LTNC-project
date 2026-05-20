@@ -88,11 +88,11 @@
                 <TextArea fx:id="descriptionArea"
                           promptText="Mô tả chi tiết về sản phẩm..."
                           prefHeight="80" maxWidth="Infinity" wrapText="true"
-                          style="-fx-background-color: #162236;
+                          style="-fx-background-color: #0D1B2E;
                                  -fx-border-color: #1E3A5F;
                                  -fx-border-radius: 10; -fx-background-radius: 10;
                                  -fx-font-size: 12px; -fx-padding: 10 14;
-                                 -fx-text-fill: #E2E8F0; -fx-prompt-text-fill: #334155;"/>
+                                 -fx-text-fill: #CBD5E1; -fx-prompt-text-fill: #475569;"/>
             </VBox>
 
             <Label fx:id="messageLabel" text=""
