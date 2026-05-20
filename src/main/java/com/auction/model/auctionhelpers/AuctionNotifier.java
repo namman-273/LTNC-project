@@ -7,12 +7,19 @@ import com.auction.model.observer.Observer;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * thong bao cua auction.
+ */
 public class AuctionNotifier {
 
-  public void notifyAllParticipants(Auction auction, List<Observer> observers, ExecutorService notifyExecutor,
-      String message, User excludeUser) {
-    if (observers == null || observers.isEmpty())
+  /**
+   * cho tat ca.
+   */
+  public void notifyAllParticipants(Auction auction, List<Observer> observers,
+      ExecutorService notifyExecutor, String message, User excludeUser) {
+    if (observers == null || observers.isEmpty()) {
       return;
+    }
 
     for (Observer observer : observers) {
 
@@ -28,8 +35,9 @@ public class AuctionNotifier {
       }
       notifyExecutor.submit(() -> {
         try {
-          if (observer != null)
+          if (observer != null) {
             observer.update(message);
+          }
         } catch (Exception e) {
           auction.removeObserver(observer);
           // Nếu Socket sập, gỡ luôn khỏi danh sách
@@ -37,13 +45,19 @@ public class AuctionNotifier {
         }
       });
     }
-    System.out.println("[NOTIFICATION] Đã phát sóng thông báo tới " + observers.size() + " đường truyền mạng.");
+    System.out.println("[NOTIFICATION] Đã phát sóng thông báo tới "
+        + observers.size() + " đường truyền mạng.");
   }
 
-  public void notifySpecificUser(Auction auction, List<Observer> observers, ExecutorService notifyExecutor,
+  /**
+   * cho ng duoc chi dinh.
+   */
+  public void notifySpecificUser(Auction auction,
+      List<Observer> observers, ExecutorService notifyExecutor,
       String targetUsername, String message) {
-    if (observers == null || observers.isEmpty() || targetUsername == null)
+    if (observers == null || observers.isEmpty() || targetUsername == null) {
       return;
+    }
 
     for (Observer observer : observers) {
       if (observer instanceof AuctionParticipant) {

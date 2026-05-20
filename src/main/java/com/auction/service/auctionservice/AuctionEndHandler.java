@@ -1,12 +1,11 @@
 package com.auction.service.auctionservice;
 
-import java.util.List;
-
 import com.auction.model.entities.Auction;
 import com.auction.model.enums.AuctionStatus;
+import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.PaymentProcessor.WinnerInfo;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
-import com.auction.util.core.IDataStorage;
+import java.util.List;
 
 /**
  * Service xử lý logic kết thúc auction.
@@ -18,24 +17,43 @@ public class AuctionEndHandler {
   private final AuctionScheduler scheduler;
   private final PaymentProcessor paymentProcessor;
   private final AuctionNotificationService notificationService;
-  private final IDataStorage dataStorage;
+  private final AuctionDataPersistenceService persistenceService;
 
+  /**
+   * Constructor với dependency injection.
+   */
   public AuctionEndHandler(AuctionRepository auctionRepository,
       AuctionScheduler scheduler,
       PaymentProcessor paymentProcessor,
       AuctionNotificationService notificationService,
-      IDataStorage dataStorage) {
+      AuctionDataPersistenceService persistenceService) {
     this.auctionRepository = auctionRepository;
     this.scheduler = scheduler;
     this.paymentProcessor = paymentProcessor;
     this.notificationService = notificationService;
-    this.dataStorage = dataStorage;
+    this.persistenceService = persistenceService;
+  }
+
+  /**
+   * Xử lý kết thúc auction bởi Admin (bỏ qua check thời gian).
+   */
+  public void endAuctionByAdmin(String auctionId) {
+    endAuction(auctionId, true);
   }
 
   /**
    * Xử lý kết thúc auction với anti-sniping check.
    */
   public void endAuction(String auctionId) {
+    endAuction(auctionId, false);
+  }
+
+  /**
+   * Xử lý kết thúc auction với tùy chọn forced by Admin.
+   * 
+   * @param forcedByAdmin true nếu Admin đóng sớm, false nếu tự động
+   */
+  private void endAuction(String auctionId, boolean forcedByAdmin) {
     Auction auction = auctionRepository.findById(auctionId);
     if (auction == null) {
       return;
@@ -43,8 +61,8 @@ public class AuctionEndHandler {
 
     // Synchronized để đảm bảo chỉ có 1 thread xử lý
     synchronized (auction) {
-      // Kiểm tra lại thời gian (xử lý xung đột với Anti-sniping)
-      if (!isTimeToEnd(auction, auctionId)) {
+      // Nếu KHÔNG phải Admin đóng sớm, kiểm tra thời gian
+      if (!forcedByAdmin && !isTimeToEnd(auction, auctionId)) {
         return;
       }
 
@@ -56,11 +74,25 @@ public class AuctionEndHandler {
       // Khóa auction bằng cách set FINISHED
       auction.setStatus(AuctionStatus.FINISHED);
 
-      // Xử lý thanh toán
-      WinnerInfo winnerInfo = paymentProcessor.processPayment(auction);
+      WinnerInfo winnerInfo;
 
-      // Gửi thông báo
-      notificationService.notifyAuctionEnd(auction, winnerInfo);
+      // Nếu Admin đóng sớm → Hoàn tiền
+      if (forcedByAdmin && System.currentTimeMillis() < auction.getEndTime()) {
+        winnerInfo = paymentProcessor.processRefund(auction);
+
+        // Gửi thông báo đặc biệt cho tất cả participants
+        String cancelMsg = Protocol.NOTI_AUCTION_CANCELLED + Protocol.SEPARATOR
+            + "Phiên " + auctionId + " đã bị đóng sớm bởi Admin";
+        notificationService.notifyAll(auction, cancelMsg);
+
+        System.out.println("[ADMIN] Phiên " + auctionId
+            + " bị đóng sớm. Đã hoàn tiền cho người dẫn đầu.");
+      } else {
+        // Kết thúc bình thường → Xử lý thanh toán
+        winnerInfo = paymentProcessor.processPayment(auction);
+        notificationService.notifyAuctionEnd(auction, winnerInfo);
+      }
+
       // Lưu lịch sử cho tất cả người đặt giá
       String winner = (winnerInfo != null && winnerInfo.hasWinner())
           ? winnerInfo.getWinner().getUsername()
@@ -69,6 +101,8 @@ public class AuctionEndHandler {
           .map(bid -> bid.getBidder().getUsername())
           .distinct()
           .collect(java.util.stream.Collectors.toList());
+
+      // BidHistoryManager sẽ tự mark dirty
       BidHistoryManager.getInstance().recordHistory(
           auction.getId(),
           auction.getItem().getItemName(),
@@ -81,10 +115,11 @@ public class AuctionEndHandler {
       // Giải phóng tài nguyên
       auction.closeAuction();
 
-      // Lưu dữ liệu
-      saveData();
+      // Đánh dấu auctions cần save
+      persistenceService.markAuctionsDirty();
 
-      logAuctionEnd(auctionId, auction.getStatus());
+      System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId
+          + " hoàn tất. Trạng thái cuối: " + auction.getStatus());
     }
   }
 
@@ -111,22 +146,5 @@ public class AuctionEndHandler {
   private boolean isAlreadyFinished(Auction auction) {
     return auction.getStatus() == AuctionStatus.FINISHED
         || auction.getStatus() == AuctionStatus.PAID;
-  }
-
-  /**
-   * Lưu dữ liệu xuống storage.
-   */
-  private void saveData() {
-    if (dataStorage != null) {
-      dataStorage.saveData();
-    }
-  }
-
-  /**
-   * Log thông tin kết thúc auction.
-   */
-  private void logAuctionEnd(String auctionId, AuctionStatus status) {
-    System.out.println("[FINANCIAL SYSTEM] Phiên " + auctionId
-        + " hoàn tất. Trạng thái cuối: " + status);
   }
 }

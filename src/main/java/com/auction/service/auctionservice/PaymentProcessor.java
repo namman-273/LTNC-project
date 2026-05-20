@@ -1,5 +1,6 @@
 package com.auction.service.auctionservice;
 
+import com.auction.controller.network.ConnectionManager;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.BidTransaction;
 import com.auction.model.entities.user.User;
@@ -60,14 +61,63 @@ public class PaymentProcessor {
   }
 
   /**
+   * Hoàn tiền cho người dẫn đầu khi auction bị hủy sớm.
+   * 
+   * @return WinnerInfo chứa thông tin người được hoàn tiền
+   */
+  public WinnerInfo processRefund(Auction auction) {
+    if (auction == null) {
+      return null;
+    }
+
+    // Xác định người dẫn đầu từ BidHistory
+    List<BidTransaction> history = auction.getBidHistory();
+    User leadingBidder = null;
+    double refundAmount = 0;
+
+    if (!history.isEmpty()) {
+      BidTransaction lastBid = history.get(history.size() - 1);
+      leadingBidder = lastBid.getBidder();
+      refundAmount = lastBid.getAmount();
+
+      // Hoàn tiền cho người dẫn đầu
+      leadingBidder.addBalance(refundAmount);
+
+      // Gửi thông báo hoàn tiền
+      String refundMsg = Protocol.NOTI_REFUND + Protocol.SEPARATOR
+          + auction.getId() + Protocol.SEPARATOR
+          + refundAmount + Protocol.SEPARATOR
+          + "Phiên đấu giá đã bị đóng bởi Admin";
+
+      auction.notifySpecificUser(leadingBidder.getUsername(), refundMsg);
+
+      System.out.println("[REFUND] Đã hoàn " + refundAmount + "$ cho user: "
+          + leadingBidder.getUsername());
+    }
+
+    return new WinnerInfo(leadingBidder, refundAmount);
+  }
+
+  /**
    * Thông báo cho seller về việc balance thay đổi.
+   * Sử dụng ConnectionManager để gửi trực tiếp, không qua observer pattern.
    */
   private void notifySellerBalanceChanged(Auction auction, User seller, double amount) {
     String sellerMsg = Protocol.NOTI_BALANCE_CHANGED + Protocol.SEPARATOR
-        + seller.getBalance() + Protocol.SEPARATOR
+        + auction.getId() + Protocol.SEPARATOR + seller.getBalance() + Protocol.SEPARATOR
         + "+" + amount;
 
-    auction.notifySpecificUser(seller.getUsername(), sellerMsg);
+    // Gửi thông báo trực tiếp cho seller thông qua ConnectionManager
+    boolean sent = ConnectionManager.getInstance().sendDirectMessage(
+        seller.getUsername(), sellerMsg);
+    
+    if (sent) {
+      System.out.println("[NOTIFICATION] Đã gửi thông báo balance changed cho seller: " 
+          + seller.getUsername());
+    } else {
+      System.out.println("[NOTIFICATION] Seller " + seller.getUsername() 
+          + " không online, bỏ qua thông báo");
+    }
   }
 
   /**

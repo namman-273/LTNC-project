@@ -5,19 +5,28 @@ import com.auction.model.entities.AutoBid;
 import com.auction.model.entities.user.User;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
-
 import java.util.PriorityQueue;
 
+/**
+ * bot tu dong.
+ */
 public class AutoBidProcessor {
 
+  /**
+   * ap dung de xu li trang thai phien moi nhu dat gia thu cong.
+   */
   @FunctionalInterface
   public interface BidUpdater {
     void updateState(User user, double amount) throws InvalidBidException;
   }
 
+  /**
+   * method dau tu dong.
+   */
   public void executeAutoBids(PriorityQueue<AutoBid> queue, Auction auction, BidUpdater updater) {
-    if (queue == null || queue.isEmpty())
+    if (queue == null || queue.isEmpty()) {
       return;
+    }
 
     int maxIterations = 100; // Chống treo Server và đệ quy vô hạn
     int count = 0;
@@ -28,7 +37,8 @@ public class AutoBidProcessor {
       AutoBid top = queue.poll();
 
       String lastBidderId = auction.getBidHistory().isEmpty() ? ""
-          : auction.getBidHistory().get(auction.getBidHistory().size() - 1).getBidder().getUsername();
+          : auction.getBidHistory().get(auction.getBidHistory().size() - 1)
+              .getBidder().getUsername();
 
       if (top.getBidderId().equals(lastBidderId)) {
         AutoBid second = queue.poll();

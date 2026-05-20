@@ -6,14 +6,24 @@ import com.auction.model.entities.user.User;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.exception.InvalidBidException;
 
+/**
+ * xu ly tai chinh.
+ */
 public class AuctionFinancialProcessor {
 
+  /**
+   * interface method ap dung de update tinh trang dau gia.
+   */
   @FunctionalInterface
   public interface StateUpdater {
     void applyState(double newPrice, BidTransaction newTransaction);
   }
 
-  public void processTransaction(Auction auction, User bidder, double amount, User previousBidder, StateUpdater updater)
+  /**
+   * xu li giao dich(su dung lambda khi goi method nay o auction).
+   */
+  public void processTransaction(Auction auction, User bidder, double amount,
+      User previousBidder, StateUpdater updater)
       throws InvalidBidException {
     if (bidder.getUsername().equals(auction.getSellerId())) {
       throw new InvalidBidException("Bạn không thể đấu giá sản phẩm của chính mình!");
@@ -28,7 +38,8 @@ public class AuctionFinancialProcessor {
 
     if (previousBidder != null && !previousBidder.equals(bidder)) {
       // Refund previous bidder (only after new bidder's money is secured)
-      BidTransaction lastTransaction = auction.getBidHistory().get(auction.getBidHistory().size() - 1);
+      BidTransaction lastTransaction = auction.getBidHistory()
+          .get(auction.getBidHistory().size() - 1);
       double refundAmount = lastTransaction.getAmount();
       previousBidder.addBalance(refundAmount);
 
