@@ -9,6 +9,7 @@ import com.auction.views.java.BidHistoryView;
 import com.auction.views.java.BalanceView;
 import com.auction.views.java.NotificationView;
 import com.auction.views.java.BidView;
+import com.auction.util.ui.NotificationManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.animation.KeyFrame;
@@ -327,18 +328,76 @@ public class WatchlistController implements Initializable {
     private void registerBalancePushListener() {
         balancePushListener = message -> {
             String[] parts = message.split("\\|");
-            if (parts.length >= 2 && com.auction.network.protocol.Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
-                String newBal = parts[1];
-                javafx.application.Platform.runLater(() -> {
-                    if (balanceLabel != null) {
-                        try {
-                            double v = Double.parseDouble(newBal);
-                            balanceLabel.setText(String.format("%,.0f VNĐ", v));
-                        } catch (NumberFormatException e) {
-                            balanceLabel.setText(newBal + " VNĐ");
+            if (parts.length == 0) return;
+
+            switch (parts[0]) {
+                case Protocol.NOTI_BALANCE_CHANGED:
+                    // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
+                    if (parts.length >= 3) {
+                        String newBal = parts[2]; // parts[1] là auctionId
+                        javafx.application.Platform.runLater(() -> {
+                            if (balanceLabel != null) {
+                                try {
+                                    double v = Double.parseDouble(newBal);
+                                    balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                                } catch (NumberFormatException e) {
+                                    balanceLabel.setText(newBal + " VNĐ");
+                                }
+                            }
+                        });
+                    }
+                    break;
+
+                case Protocol.NOTI_BID_UPDATE:
+                    // Format: BID_UPDATE|auctionId|amount|bidderName|itemType
+                    // Chỉ thông báo nếu phiên đó đang nằm trong watchlist
+                    if (parts.length >= 4) {
+                        String auctionId = parts[1];
+                        String amount    = parts[2];
+                        String bidder    = parts[3];
+                        boolean isWatched = currentData.stream()
+                                .anyMatch(a -> auctionId.equals(a.getId()));
+                        if (isWatched) {
+                            try {
+                                double amt = Double.parseDouble(amount);
+                                NotificationManager.getInstance().add(
+                                        "🔨 Giá mới tại phiên " + auctionId + ": "
+                                                + String.format("%,.0f VNĐ", amt)
+                                                + " (bởi " + bidder + ")",
+                                        "auction", auctionId);
+                            } catch (NumberFormatException e) {
+                                NotificationManager.getInstance().add(
+                                        "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ",
+                                        "auction", auctionId);
+                            }
+                            Platform.runLater(this::loadWatchlist);
                         }
                     }
-                });
+                    break;
+
+                case Protocol.RES_END_SUCCESS:
+                    // Format: END_SUCCESS|auctionId|Winner:xxx|Bid:yyy  hoặc  END_SUCCESS|auctionId|No winner|Bid:yyy
+                    if (parts.length >= 3) {
+                        String auctionId = parts[1];
+                        boolean isWatched = currentData.stream()
+                                .anyMatch(a -> auctionId.equals(a.getId()));
+                        if (isWatched) {
+                            String detail = parts[2]; // "Winner:abc" hoặc "No winner"
+                            String notifMsg;
+                            if (detail.startsWith("Winner:")) {
+                                String winnerName = detail.substring("Winner:".length());
+                                notifMsg = "🏁 Phiên " + auctionId + " kết thúc. Người thắng: " + winnerName;
+                            } else {
+                                notifMsg = "🏁 Phiên " + auctionId + " kết thúc. Không có người thắng.";
+                            }
+                            NotificationManager.getInstance().add(notifMsg, "auction", auctionId);
+                            Platform.runLater(this::loadWatchlist);
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
             }
         };
         com.auction.network.client.ServerConnection.getInstance().addPushListener(balancePushListener);
