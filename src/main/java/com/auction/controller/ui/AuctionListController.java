@@ -141,9 +141,9 @@ public class AuctionListController implements Initializable {
         }
 
         case Protocol.NOTI_BALANCE_CHANGED:
-          // Cập nhật số dư sidebar realtime
-          if (parts.length >= 2) {
-            String newBal = parts[1];
+          // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
+          if (parts.length >= 3) {
+            String newBal = parts[2]; // parts[1] là auctionId, parts[2] mới là balance
             Platform.runLater(() -> {
               if (balanceLabel != null) {
                 try {

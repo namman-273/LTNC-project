@@ -324,6 +324,12 @@ public class NotificationController implements Initializable {
                 subtitleTxt = extractDetail(msg, null);
                 showBid = false;
 
+            } else if (msg.contains("🔨") || msg.contains("giá mới")) {
+                iconTxt = "🔨"; iconBg = "#EDE9FE"; borderColor = "#8B5CF6";
+                titleTxt = "Giá mới trong phiên";
+                subtitleTxt = extractDetail(msg, null);
+                showBid = item.getAuctionId() != null;
+
             } else if (msg.contains("Hoàn") || msg.contains("REFUND")
                     || msg.contains("nạp") || msg.contains("VNĐ")) {
                 iconTxt = "$"; iconBg = "#DBEAFE"; borderColor = "#3B82F6";
