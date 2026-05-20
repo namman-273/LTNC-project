@@ -4,7 +4,8 @@ import com.auction.util.core.DataManager;
 
 /**
  * Service để xử lý persistence operations cho AuctionService.
- * Tuân thủ Dependency Inversion Principle - có thể thay đổi implementation dễ dàng.
+ * Tuân thủ Dependency Inversion Principle - có thể thay đổi implementation dễ
+ * dàng.
  */
 public class AuctionDataPersistenceService {
 

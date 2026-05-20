@@ -373,7 +373,7 @@ public final class DataManager {
   /**
    * Shutdown gracefully - save cuối cùng và dừng scheduler.
    */
-  public void shutdown() {
+  private void shutdown() {
     if (isShutdown.compareAndSet(false, true)) {
       System.out.println("[DataManager] Đang shutdown...");
 

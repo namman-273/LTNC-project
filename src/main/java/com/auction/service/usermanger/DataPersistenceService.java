@@ -16,10 +16,5 @@ public class DataPersistenceService {
     DataManager.getInstance().markUsersDirty();
   }
 
-  /**
-   * Save ngay lập tức (dùng cho critical operations).
-   */
-  public void saveDataImmediately() {
-    DataManager.getInstance().saveData();
-  }
+  
 }
