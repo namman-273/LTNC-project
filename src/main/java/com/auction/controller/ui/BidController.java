@@ -720,10 +720,10 @@ public class BidController implements Initializable {
             if (!response.startsWith(Protocol.RES_HISTORY)) return;
 
             // Format: HISTORY_RES|auctionId|[...]
-            String[] parts = response.split("\\" + Protocol.SEPARATOR, 4);
-            if (parts.length < 4) return;
+            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+            if (parts.length < 3) return;
 
-            String json = parts[3].trim();
+            String json = parts[2].trim();
             if (json.isEmpty() || json.equals("[]")) return;
 
             try {
