@@ -109,16 +109,13 @@ public class DataManagerRoundtripTest {
     }
 
     private void resetAllSingletons() throws Exception {
-        Field dm = DataManager.class.getDeclaredField("instance");
-        dm.setAccessible(true);
-        dm.set(null, null);
-
+        // DataManager đã chuyển sang Holder idiom (không có field 'instance').
+        // Không cần reset vì DataManager không giữ business state.
         Field as = AuctionService.class.getDeclaredField("instance");
         as.setAccessible(true);
         as.set(null, null);
 
-        Field um = UserManager.class.getDeclaredField("instance");
-        um.setAccessible(true);
-        um.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
     }
 }
