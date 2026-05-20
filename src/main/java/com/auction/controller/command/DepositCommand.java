@@ -6,7 +6,7 @@ import com.auction.service.auctionservice.AuctionService;
 import com.auction.util.core.DataManager;
 
 /**
- * nap tien.
+ * Lệnh nạp tiền.
  */
 public class DepositCommand implements ClientCommand {
   @Override
@@ -30,8 +30,8 @@ public class DepositCommand implements ClientCommand {
         // Cộng tiền cho User
         client.getCurrentUser().addBalance(amount);
 
-        // Lưu dữ liệu ngay lập tức xuống file
-        DataManager.getInstance().saveData();
+        // Đánh dấu users cần save (sẽ auto-save sau 5 giây)
+        DataManager.getInstance().markUsersDirty();
 
         // Báo cáo thành công
         client.sendMessage(Protocol.RES_DEPOSIT_SUCCESS + Protocol.SEPARATOR

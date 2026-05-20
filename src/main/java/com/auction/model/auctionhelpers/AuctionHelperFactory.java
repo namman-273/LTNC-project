@@ -4,7 +4,6 @@ package com.auction.model.auctionhelpers;
  * Simple Factory.
  */
 public class AuctionHelperFactory {
-  private static AuctionHelperFactory instance;
 
   private AuctionHelperFactory() {
   }
