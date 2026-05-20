@@ -29,9 +29,8 @@ public class AuctionInputValidationTest {
  
     @BeforeEach
     void setUp() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
