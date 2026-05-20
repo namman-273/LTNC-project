@@ -1,14 +1,15 @@
 package com.auction.model.entities;
 
+import com.auction.model.entities.user.User;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import com.auction.model.entities.user.User;
+
 
 /**
  * Lớp đại diện cho một giao dịch đặt giá.
- * Đã tách riêng để FE dễ dàng parse lịch sử đấu giá.
+ *  tách riêng để FE dễ dàng parse lịch sử đấu giá.
  */
 public class BidTransaction implements Serializable {
   private static final long serialVersionUID = 1L;

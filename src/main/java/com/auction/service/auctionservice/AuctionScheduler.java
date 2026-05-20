@@ -32,7 +32,7 @@ public class AuctionScheduler {
 
   /**
    * Khôi phục lịch trình cho các auction đang mở sau khi system restart.
-   * FIX: Truyền auctionId cụ thể cho mỗi task thay vì dùng Runnable chung.
+   * Truyền auctionId cụ thể cho mỗi task thay vì dùng Runnable chung.
    */
   public void recoverScheduledTasks(AuctionRepository repository,
       Consumer<String> endAuctionHandler) {

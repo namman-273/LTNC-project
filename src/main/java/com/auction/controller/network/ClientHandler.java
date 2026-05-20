@@ -201,11 +201,26 @@ public class ClientHandler implements Runnable, AuctionParticipant {
   }
 
   public void setCurrentUser(User user) {
+    // Nếu đang có user cũ, hủy đăng ký trước
+    if (this.currentUser != null) {
+      ConnectionManager.getInstance().unregisterConnection(this.currentUser.getUsername());
+    }
+
     this.currentUser = user;
+
+    // Đăng ký user mới với ConnectionManager
+    if (user != null) {
+      ConnectionManager.getInstance().registerConnection(user.getUsername(), this);
+    }
   }
 
   private void cleanUp() {
     try {
+      // Hủy đăng ký với ConnectionManager
+      if (currentUser != null) {
+        ConnectionManager.getInstance().unregisterConnection(currentUser.getUsername());
+      }
+
       AuctionService.getInstance().removeObserverFromAll(this);
       if (in != null)
         in.close();

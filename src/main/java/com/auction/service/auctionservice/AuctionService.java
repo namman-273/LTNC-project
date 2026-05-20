@@ -100,6 +100,9 @@ public class AuctionService implements Serializable {
 
   /**
    * FIX LỖI: Singleton bị phá khi deserialize.
+   * Java (JVM) sẽ tự động quét qua class AuctionService xem có 
+   * hàm nào tên là readResolve() hay không. Nếu có, JVM sẽ ngầm kích hoạt hàm này.
+   * (khi he thong doc file .dat)
    */
   protected Object readResolve() {
     // Khi load từ file, gán instance hiện tại
