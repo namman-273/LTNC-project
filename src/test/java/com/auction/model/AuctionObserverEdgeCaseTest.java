@@ -30,9 +30,8 @@ public class AuctionObserverEdgeCaseTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new java.util.HashMap<>());
         UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         bidder1 = (Bidder) UserManager.getInstance().findUserByUsername("alice");
         bidder1.addBalance(10_000_000.0);
