@@ -1,15 +1,8 @@
 package com.auction.model;
- 
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.lang.reflect.Field;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
@@ -19,6 +12,13 @@ import com.auction.model.enums.AuctionStatus;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.InvalidBidException;
+
+import java.util.HashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
  
 public class AuctionConcurrencyTest {
  
@@ -36,10 +36,8 @@ public class AuctionConcurrencyTest {
  
     @BeforeEach
     void setUp() throws Exception {
-        Field umField = UserManager.class.getDeclaredField("instance");
-        umField.setAccessible(true);
-        umField.set(null, null);
- 
+        // Holder idiom: clear users via setUsers() thay vì reflection.
+        UserManager.getInstance().setUsers(new HashMap<>());
         UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
         UserManager.getInstance().register("bob", "pw", "BIDDER", "bob@test.com");
  
