@@ -6,6 +6,10 @@ import com.auction.util.ui.NotificationManager;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
+import com.auction.views.java.BidHistoryView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.ProfileView;
+import com.auction.views.java.NotificationView;
 import com.auction.views.java.CreateAuctionView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -387,5 +391,42 @@ public class SellerController implements Initializable {
         this.username = username;
         if (welcomeLabel != null)
             welcomeLabel.setText("Xin chào, " + username + "!");
+    }
+
+    @FXML
+    public void handleBidHistory() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new BidHistoryView(stage, username).show();
+    }
+
+    @FXML
+    public void handleBalance() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new BalanceView(stage, username).show();
+    }
+
+    @FXML
+    public void handleProfile() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new ProfileView(stage, username).show();
+    }
+
+    @FXML
+    public void handleNotification() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
+
+    @FXML
+    public void handleLogout() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
+        if (autoRefreshTimeline != null) autoRefreshTimeline.stop();
+        ServerConnection.getInstance().disconnect();
+        SessionManager.getInstance().clear();
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new com.auction.views.java.LoginView(stage).show();
     }
 }
