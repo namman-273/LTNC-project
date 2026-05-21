@@ -82,9 +82,10 @@
                           -fx-min-height: 1; -fx-max-height: 1;" prefWidth="200"/>
             <Button text="&#x1F6AA;  Đăng xuất" onAction="#handleBack"
                     prefWidth="200" prefHeight="38"
-                    style="-fx-background-color: transparent; -fx-text-fill: #F87171;
+                    style="-fx-background-color: rgba(248,113,113,0.12); -fx-text-fill: #F87171;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
-                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
+                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
+                           -fx-border-color: rgba(248,113,113,0.25); -fx-border-radius: 10; -fx-border-width: 1;"/>
         </VBox>
     </VBox>
 

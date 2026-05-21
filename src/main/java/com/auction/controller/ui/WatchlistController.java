@@ -184,6 +184,20 @@ public class WatchlistController implements Initializable {
                 + "-fx-background-color: " + badgeBg + "; -fx-text-fill: " + badgeFg + ";"
                 + "-fx-background-radius: 20; -fx-padding: 3 10;");
 
+        // Bug 5: Badge gia hạn - hiển thị số lần gia hạn nếu có
+        int extCount = extensionCountMap.getOrDefault(row.getId(), 0);
+        Label extBadge = null;
+        if (extCount > 0) {
+            extBadge = new Label("⏱ Gia hạn " + extCount + "/3");
+            extBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;"
+                    + "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309;"
+                    + "-fx-background-radius: 20; -fx-padding: 2 8;");
+            VBox info2 = new VBox(3, name, price, extBadge);
+            info2.setStyle(info.getStyle() != null ? info.getStyle() : "");
+            HBox.setHgrow(info2, Priority.ALWAYS);
+            info.getChildren().add(extBadge);
+        }
+
         // Nút Chọn (để select vào table ẩn — phục vụ handleViewDetail/handleUnwatch)
         Button btnSelect = new Button("Chọn");
         btnSelect.setStyle("-fx-background-color: transparent; -fx-text-fill: #1565C0;"
@@ -331,6 +345,9 @@ public class WatchlistController implements Initializable {
     // BUG FIX 2: Dùng Set riêng để track watchedIds, tránh race condition với currentData
     private final java.util.Set<String> watchedAuctionIds =
             java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    // Bug 5: Track số lần gia hạn per auctionId để hiển thị cho watcher
+    private final java.util.Map<String, Integer> extensionCountMap =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     @FXML
     private void registerBalancePushListener() {
@@ -412,6 +429,11 @@ public class WatchlistController implements Initializable {
                             NotificationManager.getInstance().add(
                                     "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
                                     "auction", auctionId);
+                            // Bug 5: cập nhật map và reload cards để hiện số lần gia hạn
+                            try {
+                                extensionCountMap.put(auctionId, Integer.parseInt(count));
+                            } catch (NumberFormatException ignored) {}
+                            Platform.runLater(() -> updateCards(currentData));
                         }
                     }
                     break;

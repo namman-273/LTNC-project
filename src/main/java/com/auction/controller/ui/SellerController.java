@@ -39,6 +39,7 @@ import javafx.stage.Stage;
 public class SellerController implements Initializable {
 
     @FXML private Label welcomeLabel;
+    @FXML private Label balanceLabel;
     @FXML private Label statsLabel;
     @FXML private Label statTotal;
     @FXML private Label statOpen;
@@ -157,6 +158,7 @@ public class SellerController implements Initializable {
         );
 
         loadMyAuctions();
+        loadBalance();
         registerPushListener();
     }
 
@@ -201,22 +203,39 @@ public class SellerController implements Initializable {
             case Protocol.NOTI_BALANCE_CHANGED:
                 // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
                 // Đây là message DUY NHẤT BE gửi thẳng cho seller qua ConnectionManager.
-                // Dùng nó để thông báo cả "phiên kết thúc" + "tiền đã về".
+                // Bug 2 fix: gộp 2 alert thành 1 để không lặp; sửa tiêu đề đúng với seller;
+                // fix format số tiền nhận (delta có thể có dấu + ở đầu, cần parse đúng).
                 if (parts.length >= 4) {
                     String auctionId = parts[1];
                     String newBalance = parts[2];
                     String delta = parts[3];
                     Platform.runLater(() -> {
                         loadMyAuctions();
-                        // Thông báo kết thúc phiên
-                        showNotification("🎉 Phiên đấu giá kết thúc!",
-                                "Phiên " + auctionId + " đã có người thắng!");
-                        // Thông báo tiền về
+                        // Cập nhật balance label ngay lập tức
+                        if (balanceLabel != null) {
+                            try {
+                                balanceLabel.setText(String.format("%,.0f VNĐ", Double.parseDouble(newBalance)));
+                            } catch (NumberFormatException ignored) {}
+                        }
+                        // Format số tiền nhận - loại bỏ dấu + nếu có
+                        String deltaClean = delta.startsWith("+") ? delta.substring(1) : delta;
+                        String deltaFormatted;
+                        String balanceFormatted;
+                        try {
+                            deltaFormatted = String.format("%,.0f VNĐ", Double.parseDouble(deltaClean));
+                        } catch (NumberFormatException e) {
+                            deltaFormatted = deltaClean + " VNĐ";
+                        }
+                        try {
+                            balanceFormatted = String.format("%,.0f VNĐ", Double.parseDouble(newBalance));
+                        } catch (NumberFormatException e) {
+                            balanceFormatted = newBalance + " VNĐ";
+                        }
+                        // Gộp 1 thông báo duy nhất, tiêu đề phù hợp với seller
                         showNotification("💰 Tiền đã về tài khoản!",
-                                "Phiên " + auctionId + " thanh toán thành công.\n"
-                                        + "Số tiền nhận: " + delta + " VNĐ\n"
-                                        + "Số dư mới: " + String.format("%,.0f VNĐ",
-                                        Double.parseDouble(newBalance)));
+                                "Phiên " + auctionId + " đã kết thúc thành công.\n"
+                                        + "Số tiền nhận: " + deltaFormatted + "\n"
+                                        + "Số dư mới: " + balanceFormatted);
                     });
                 }
                 break;
@@ -250,6 +269,27 @@ public class SellerController implements Initializable {
     private String formatPrice(String raw) {
         try { return String.format("%,.0f VNĐ", Double.parseDouble(raw)); }
         catch (NumberFormatException e) { return raw + " VNĐ"; }
+    }
+
+    private void loadBalance() {
+        new Thread(() -> {
+            String res = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_GET_BALANCE);
+            Platform.runLater(() -> {
+                if (balanceLabel == null) return;
+                if (res != null && res.startsWith(Protocol.RES_BALANCE_INFO)) {
+                    String[] p = res.split("\\|", -1);
+                    String amt = p.length >= 2 ? p[1] : "---";
+                    try {
+                        balanceLabel.setText(String.format("%,.0f VNĐ", Double.parseDouble(amt)));
+                    } catch (NumberFormatException e) {
+                        balanceLabel.setText(amt + " VNĐ");
+                    }
+                } else {
+                    balanceLabel.setText("---");
+                }
+            });
+        }, "seller-balance-thread").start();
     }
 
     private void showNotification(String title, String message) {

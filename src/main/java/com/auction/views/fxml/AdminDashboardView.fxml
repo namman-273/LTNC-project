@@ -28,8 +28,6 @@
         <Label text="⚙️ ADMIN DASHBOARD"
                style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         <HBox HBox.hgrow="ALWAYS"/>
-        style="-fx-background-color: white; -fx-text-fill: #e53935;
-        -fx-font-weight: bold; -fx-background-radius: 5;"/>
     </HBox>
 
     <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS" styleClass="table-view">

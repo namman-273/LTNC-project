@@ -52,6 +52,7 @@ public class BidHistoryController implements Initializable {
     @FXML private Button tabWin;
     @FXML private Button tabLose;
     @FXML private Button sellerBtnHistory;
+    @FXML private Button watchlistBtnHistory;
 
     private String username;
     private String activeTab = "all";
@@ -98,12 +99,17 @@ public class BidHistoryController implements Initializable {
     public void setUsername(String u) {
         initToastManager(historyList);
         this.username = u;
-        // Show seller button only for SELLER role
+        // Show seller button only for SELLER role; hide watchlist for SELLER
         String role = SessionManager.getInstance().getRole();
         if (sellerBtnHistory != null) {
             boolean isSeller = "SELLER".equalsIgnoreCase(role);
             sellerBtnHistory.setVisible(isSeller);
             sellerBtnHistory.setManaged(isSeller);
+            // Seller không có danh sách theo dõi → ẩn luôn
+            if (watchlistBtnHistory != null) {
+                watchlistBtnHistory.setVisible(!isSeller);
+                watchlistBtnHistory.setManaged(!isSeller);
+            }
         }
         loadFromServer();
         registerPushListener();
@@ -127,6 +133,16 @@ public class BidHistoryController implements Initializable {
                             }
                         }
                     });
+                }
+            } else if (Protocol.NOTI_SNIPING_UPDATE.equals(header)) {
+                // Bug 1 fix: nhận thông báo gia hạn cho bidder ở màn BidHistory
+                // Format: SNIPING_UPDATE|auctionId|newEndTime|extensionCount
+                if (parts.length >= 4) {
+                    String auctionId = parts[1];
+                    String count     = parts[3];
+                    com.auction.util.ui.NotificationManager.getInstance().add(
+                            "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
+                            "auction", auctionId);
                 }
             } else if (Protocol.RES_END_SUCCESS.equals(header)) {
                 // Phiên kết thúc → reload lịch sử
