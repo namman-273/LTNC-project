@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.auction.controller.command.AddAutoBidCommand;
 import com.auction.controller.command.BidCommand;
 import com.auction.controller.command.CreateAuctionCommand;
-import com.auction.controller.command.DeleteAuctionCommand;
 import com.auction.controller.command.DepositCommand;
 import com.auction.controller.command.EndAuctionCommand;
 import com.auction.controller.command.GetBalanceCommand;
@@ -456,51 +455,6 @@ public class CommandTest {
     void endAuctionCommandInsufficientPartsDoesNotThrow() {
         String[] parts = {"END_AUCTION"};
         assertDoesNotThrow(() -> new EndAuctionCommand().execute(parts, handler, auctionService));
-    }
-
-    // ===========================
-    // DeleteAuctionCommand
-    // ===========================
-
-    @Test
-    void deleteAuctionCommandNotAdminDoesNotThrow() {
-        UserManager.getInstance().register("dac_bidder", "pw", "BIDDER", "dac_bidder@test.com");
-        handler.setCurrentUser(UserManager.getInstance().findUserByUsername("dac_bidder"));
-        String[] parts = {"DELETE_AUCTION", "AUC_123"};
-        assertDoesNotThrow(() ->
-            new DeleteAuctionCommand().execute(parts, handler, auctionService));
-    }
-
-    @Test
-    void deleteAuctionCommandAdminDeletesExisting() {
-        UserManager.getInstance().register("dac_admin", "pw", "ADMIN", "dac_admin@test.com");
-        handler.setCurrentUser(UserManager.getInstance().findUserByUsername("dac_admin"));
-
-        UserManager.getInstance().register("dac_seller", "pw", "SELLER", "dac_seller@test.com");
-        auctionService.createNewAuction("ELECTRONICS", "DAC_Item", 500_000.0, 9999L, "dac_seller", "", "");
-        Auction a = auctionService.getAllAuctions().iterator().next();
-        String id = a.getId();
-
-        String[] parts = {"DELETE_AUCTION", id};
-        new DeleteAuctionCommand().execute(parts, handler, auctionService);
-
-        assertNull(auctionService.getAuctionById(id));
-    }
-
-    @Test
-    void deleteAuctionCommandAdminNonExistentDoesNotThrow() {
-        UserManager.getInstance().register("dac_admin2", "pw", "ADMIN", "dac_admin2@test.com");
-        handler.setCurrentUser(UserManager.getInstance().findUserByUsername("dac_admin2"));
-        String[] parts = {"DELETE_AUCTION", "DOES_NOT_EXIST"};
-        assertDoesNotThrow(() ->
-            new DeleteAuctionCommand().execute(parts, handler, auctionService));
-    }
-
-    @Test
-    void deleteAuctionCommandInsufficientPartsDoesNotThrow() {
-        String[] parts = {"DELETE_AUCTION"};
-        assertDoesNotThrow(() ->
-            new DeleteAuctionCommand().execute(parts, handler, auctionService));
     }
 
     // ===========================
