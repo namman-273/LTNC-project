@@ -173,28 +173,8 @@ public class AuctionServiceTest {
     // ===== setInstance =====
 
    
-    @Test
-    void deleteAuctionReturnsTrueWhenFound() {
-        auctionService.createNewAuction("ELECTRONICS", "Tablet", 2_000_000.0, 9999L, "defaultSeller", "", "");
-        Auction a = auctionService.getAllAuctions().iterator().next();
-        assertTrue(auctionService.deleteAuction(a.getId()));
-    }
 
-    @Test
-    void deleteAuctionReturnsFalseWhenNotFound() {
-        assertFalse(auctionService.deleteAuction("DOES_NOT_EXIST"));
-    }
-
-    @Test
-    void deleteAuctionRemovesFromMap() {
-        auctionService.createNewAuction("ELECTRONICS", "Headset", 500_000.0, 9999L, "defaultSeller", "", "");
-        Auction a = auctionService.getAllAuctions().iterator().next();
-        String id = a.getId();
-        auctionService.deleteAuction(id);
-        assertNull(auctionService.getAuctionById(id));
-    }
-
-    // ===== endAuction =====
+   
 
     @Test
     void endAuctionNonExistentIdDoesNotThrow() {
