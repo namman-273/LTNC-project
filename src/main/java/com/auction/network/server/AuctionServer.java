@@ -3,7 +3,8 @@ package com.auction.network.server;
 import com.auction.controller.network.ClientHandler;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
-import com.auction.util.core.DataManager;
+import com.auction.util.core.datamanager.DataManager;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
