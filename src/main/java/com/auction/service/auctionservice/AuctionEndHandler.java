@@ -51,6 +51,11 @@ public class AuctionEndHandler {
   /**
    * Xử lý kết thúc auction với tùy chọn forced by Admin.
    * 
+   * LOGIC TRẠNG THÁI:
+   * - Admin đóng sớm: FINISHED (sau refund)
+   * - Kết thúc bình thường + có winner: PAID (sau payment)
+   * - Kết thúc bình thường + không có winner: FINISHED
+   * 
    * @param forcedByAdmin true nếu Admin đóng sớm, false nếu tự động
    */
   private void endAuction(String auctionId, boolean forcedByAdmin) {
@@ -71,12 +76,13 @@ public class AuctionEndHandler {
         return;
       }
 
-      // Khóa auction bằng cách set FINISHED
+      // Khóa auction tạm thời bằng cách set FINISHED
+      // (Status cuối cùng sẽ được set bởi payment processor)
       auction.setStatus(AuctionStatus.FINISHED);
 
       WinnerInfo winnerInfo;
 
-      // Nếu Admin đóng sớm → Hoàn tiền
+      // ===== CASE 1: Admin đóng sớm → Hoàn tiền =====
       if (forcedByAdmin && System.currentTimeMillis() < auction.getEndTime()) {
         winnerInfo = paymentProcessor.processRefund(auction);
 
@@ -85,12 +91,26 @@ public class AuctionEndHandler {
             + "Phiên " + auctionId + " đã bị đóng sớm bởi Admin";
         notificationService.notifyAll(auction, cancelMsg);
 
+        // Trạng thái cuối: FINISHED (không set PAID vì không thanh toán)
         System.out.println("[ADMIN] Phiên " + auctionId
-            + " bị đóng sớm. Đã hoàn tiền cho người dẫn đầu.");
+            + " bị đóng sớm. Đã hoàn tiền. Trạng thái: FINISHED");
+
+      // ===== CASE 2: Kết thúc bình thường → Xử lý thanh toán =====
       } else {
-        // Kết thúc bình thường → Xử lý thanh toán
         winnerInfo = paymentProcessor.processPayment(auction);
+        
+        // PaymentProcessor sẽ tự động set status = PAID nếu có winner
+        // Nếu không có winner, status vẫn là FINISHED
+        
         notificationService.notifyAuctionEnd(auction, winnerInfo);
+
+        if (winnerInfo != null && winnerInfo.hasWinner()) {
+          System.out.println("[PAYMENT] Phiên " + auctionId
+              + " kết thúc bình thường. Đã thanh toán. Trạng thái: PAID");
+        } else {
+          System.out.println("[END] Phiên " + auctionId
+              + " kết thúc không có người thắng. Trạng thái: FINISHED");
+        }
       }
 
       // Lưu lịch sử cho tất cả người đặt giá
