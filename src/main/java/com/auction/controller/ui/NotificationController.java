@@ -315,6 +315,13 @@ public class NotificationController implements Initializable {
 
                 // FIX: tách rõ thông báo người THẮNG (có 🎉 hoặc "Chúc mừng")
                 // khỏi thông báo phiên kết thúc chứa "Người chiến thắng: X" (người THUA đọc)
+            } else if (msg.contains("💰") && msg.contains("đã kết thúc")) {
+                // FIX BUG 3: Noti cho seller khi phiên bán thành công
+                iconTxt = "💰"; iconBg = "#DBEAFE"; borderColor = "#3B82F6";
+                titleTxt = "Phiên bán thành công";
+                subtitleTxt = extractDetail(msg, "Phiên");
+                showBid = false;
+
             } else if (msg.contains("🎉") || msg.contains("Chúc mừng")) {
                 iconTxt = "★"; iconBg = "#FEF3C7"; borderColor = "#F59E0B";
                 titleTxt = "Chúc mừng! Bạn đã thắng";

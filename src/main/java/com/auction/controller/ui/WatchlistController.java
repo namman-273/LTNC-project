@@ -301,6 +301,8 @@ public class WatchlistController implements Initializable {
             showMessage("⚠️ Vui lòng chọn một phiên trước!", "#D97706");
             return;
         }
+        // FIX BUG 2: Remove listener trước khi vào BidView để BidController không bị duplicate noti
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) (watchlistCards != null
                 ? watchlistCards.getScene().getWindow()
                 : watchlistTable.getScene().getWindow());
@@ -324,34 +326,48 @@ public class WatchlistController implements Initializable {
     }
 
 
+    // FIX BUG 2: Gỡ push listener khi rời màn hình để tránh lặp noti watcher
+    private void removePushListener() {
+        if (balancePushListener != null) {
+            com.auction.network.client.ServerConnection.getInstance()
+                    .removePushListener(balancePushListener);
+            balancePushListener = null;
+        }
+    }
+
     @FXML public void handleProfile() {
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) watchlistCards.getScene().getWindow();
         new ProfileView(stage, username).show();
     }
 
     @FXML public void handleBidHistory() {
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) watchlistCards.getScene().getWindow();
         new BidHistoryView(stage, username).show();
     }
 
     @FXML public void handleBalance() {
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) watchlistCards.getScene().getWindow();
         new BalanceView(stage, username).show();
     }
 
     @FXML public void handleNotification() {
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) watchlistCards.getScene().getWindow();
         new NotificationView(stage, username).show();
     }
 
     @FXML public void handleHome() {
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) watchlistCards.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
 
     @FXML
     public void handleBack() {
-        stopAutoRefresh();
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) (watchlistCards != null
                 ? watchlistCards.getScene().getWindow()
                 : watchlistTable.getScene().getWindow());
