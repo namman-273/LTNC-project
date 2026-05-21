@@ -72,7 +72,7 @@
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
                            -fx-border-color: transparent transparent transparent #3B82F6;
                            -fx-border-width: 0 0 0 3;"/>
-            <Button text="&#x2B50;  Danh sách theo dõi" onAction="#handleWatchlist"
+            <Button fx:id="watchlistBtnHistory" text="&#x2B50;  Danh sách theo dõi" onAction="#handleWatchlist"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;

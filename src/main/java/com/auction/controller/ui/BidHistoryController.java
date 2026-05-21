@@ -51,6 +51,7 @@ public class BidHistoryController implements Initializable {
     @FXML private Button tabWin;
     @FXML private Button tabLose;
     @FXML private Button sellerBtnHistory;
+    @FXML private Button watchlistBtnHistory;
 
     private String username;
     private String activeTab = "all";
@@ -77,12 +78,16 @@ public class BidHistoryController implements Initializable {
 
     public void setUsername(String u) {
         this.username = u;
-        // Show seller button only for SELLER role
+        // Show seller button only for SELLER role, hide watchlist for seller
         String role = SessionManager.getInstance().getRole();
+        boolean isSeller = "SELLER".equalsIgnoreCase(role);
         if (sellerBtnHistory != null) {
-            boolean isSeller = "SELLER".equalsIgnoreCase(role);
             sellerBtnHistory.setVisible(isSeller);
             sellerBtnHistory.setManaged(isSeller);
+        }
+        if (watchlistBtnHistory != null) {
+            watchlistBtnHistory.setVisible(!isSeller);
+            watchlistBtnHistory.setManaged(!isSeller);
         }
         loadFromServer();
         registerPushListener();
