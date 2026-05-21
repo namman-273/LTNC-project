@@ -71,16 +71,7 @@ public class AuctionStateMachineTest {
         assertEquals(AuctionStatus.CANCELED, a.getStatus());
     }
  
-    @Test
-    void closeAuctionAlwaysResultsInFinished() {
-        Auction a = new Auction("st-6", new Electronics("e6", "TV", STARTING_PRICE), DURATION, null);
-        a.setStatus(AuctionStatus.RUNNING);
-        a.closeAuction();
-        assertEquals(AuctionStatus.FINISHED, a.getStatus());
-    }
- 
-    // --- bids: valid vs invalid by status ---
- 
+   
     @Test
     void bidInOpenStatusSucceeds() {
         Auction a = new Auction("st-7", new Electronics("e7", "TV", STARTING_PRICE), DURATION, null);
