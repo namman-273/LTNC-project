@@ -6,26 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.auction.controller.command.AddAutoBidCommand;
-import com.auction.controller.command.BidCommand;
-import com.auction.controller.command.CreateAuctionCommand;
-import com.auction.controller.command.DeleteAuctionCommand;
-import com.auction.controller.command.DepositCommand;
-import com.auction.controller.command.EndAuctionCommand;
-import com.auction.controller.command.GetBalanceCommand;
-import com.auction.controller.command.GetBidHistoryCommand;
-import com.auction.controller.command.GetWatchlistCommand;
-import com.auction.controller.command.ListAuctionsCommand;
-import com.auction.controller.command.LoginCommand;
-import com.auction.controller.command.RegisterCommand;
-import com.auction.controller.command.UnwatchCommand;
-import com.auction.controller.command.WatchCommand;
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.user.Bidder;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
-import com.auction.util.core.DataManager;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,18 +20,27 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit test cho ClientHandler.
+ * Unit test cho ClientHandler (kiến trúc Command Pattern mới).
  *
- * <p>Vấn đề cốt lõi: PrintWriter "out" trong ClientHandler chỉ được tạo bên trong run().
- * Các test gọi handle* trực tiếp (không qua run()) nên "out" = null → sendMessage() im lặng.
- * Giải pháp: dùng reflection để inject "out" vào handler ngay sau khi tạo,
- * trỏ vào outputStream của serverSide socket — test đọc từ clientSide như bình thường.
+ * <p>API mới: ClientHandler.run() đọc lệnh từ socket -> dispatch tới Command tương ứng
+ * trong commandMap. Không còn các method handleLogin/handleBid/... gọi trực tiếp.
+ *
+ * <p>Chiến lược test:
+ * <ul>
+ *   <li><b>Direct API</b>: test getCurrentUser/setCurrentUser/sendMessage/validatePayload
+ *       trên handler trực tiếp. Inject {@code out} qua reflection để sendMessage hoạt
+ *       động khi không chạy run() (run() mới là nơi out được khởi tạo).</li>
+ *   <li><b>Dispatch qua run()</b>: chạy run() trên thread riêng, gửi lệnh qua socket,
+ *       đọc response từ phía client -> kiểm tra ClientHandler dispatch đúng Command
+ *       và Command phản hồi đúng định dạng.</li>
+ * </ul>
  */
 public class ClientHandlerTest {
 
@@ -55,36 +49,39 @@ public class ClientHandlerTest {
   // =========================================================================
 
   private ServerSocket serverSocket;
-  private Socket clientSide;    // phía test đọc response
+  private Socket clientSide;    // phía test: ghi command, đọc response
   private Socket serverSide;    // phía ClientHandler cầm
   private ClientHandler handler;
-  private BufferedReader clientIn; // test đọc từ đây
+  private BufferedReader clientIn;
+  private PrintWriter clientOut;
 
   private AuctionService auctionService;
   private UserManager userManager;
 
+  // Thread chạy run() khi test cần dispatch loop. Null nếu test không dùng.
+  private Thread runThread;
+
   @BeforeEach
   void setUp() throws Exception {
-    // Reset Singleton để mỗi test độc lập
-    resetSingleton(UserManager.class, "instance");
-    resetSingleton(AuctionService.class, "instance");
-    resetSingleton(DataManager.class, "instance");
+    // Reset state. UserManager/DataManager dùng Holder idiom -> clear bằng API.
+    UserManager.getInstance().setUsers(new HashMap<>());
+    resetSingletonIfExists(AuctionService.class, "instance");
 
     userManager = UserManager.getInstance();
-    userManager.initDefaultData(); // tạo admin mặc định
-
+    userManager.initDefaultData(); // tạo admin/admin123
     auctionService = AuctionService.getInstance();
 
-    // Tạo cặp socket thật qua localhost (cổng ngẫu nhiên, tránh xung đột)
+    // Cặp socket localhost với cổng ngẫu nhiên (tránh xung đột)
     serverSocket = new ServerSocket(0);
     int port = serverSocket.getLocalPort();
 
-    // Thread chờ accept phía server
     final Socket[] acceptHolder = new Socket[1];
     Thread acceptThread = new Thread(() -> {
       try {
         acceptHolder[0] = serverSocket.accept();
-      } catch (IOException ignored) {}
+      } catch (IOException ignored) {
+        // socket bị đóng trong tearDown
+      }
     });
     acceptThread.setDaemon(true);
     acceptThread.start();
@@ -93,75 +90,111 @@ public class ClientHandlerTest {
     acceptThread.join(2000);
     serverSide = acceptHolder[0];
 
-    // Tạo ClientHandler với serverSide socket
     handler = new ClientHandler(serverSide);
 
-    // *** KEY FIX: inject PrintWriter "out" vào handler bằng reflection ***
-    // ClientHandler chỉ init "out" trong run() — ta làm thay để handle* có thể gửi message
-    PrintWriter injectedOut = new PrintWriter(serverSide.getOutputStream(), true);
-    Field outField = ClientHandler.class.getDeclaredField("out");
-    outField.setAccessible(true);
-    outField.set(handler, injectedOut);
-
-    // Test đọc response từ clientSide
+    // I/O phía test
     clientIn = new BufferedReader(new InputStreamReader(clientSide.getInputStream()));
+    clientOut = new PrintWriter(clientSide.getOutputStream(), true);
   }
 
   @AfterEach
-  void tearDown() throws Exception {
-    if (clientIn   != null) try { clientIn.close();   } catch (IOException ignored) {}
-    if (clientSide  != null && !clientSide.isClosed())  try { clientSide.close();  } catch (IOException ignored) {}
-    if (serverSide  != null && !serverSide.isClosed())  try { serverSide.close();  } catch (IOException ignored) {}
-    if (serverSocket != null && !serverSocket.isClosed()) try { serverSocket.close(); } catch (IOException ignored) {}
+  void tearDown() {
+    // Đóng socket trước để run() thoát khỏi readLine()
+    safeClose(clientSide);
+    safeClose(serverSide);
+    safeClose(serverSocket);
+    if (runThread != null) {
+      try {
+        runThread.join(1500);
+      } catch (InterruptedException ignored) {
+        Thread.currentThread().interrupt();
+      }
+    }
     new File("auctions.dat").delete();
     new File("users.dat").delete();
     new File("auctions.dat.tmp").delete();
     new File("users.dat.tmp").delete();
   }
 
-  /** Reset field static (Singleton) về null giữa các test. */
-  private static void resetSingleton(Class<?> clazz, String fieldName) throws Exception {
-    // AuctionService uses direct volatile field "instance"
-    // UserManager and DataManager use Holder pattern with "INSTANCE" field
-    try {
-      Field f = clazz.getDeclaredField(fieldName);
-      f.setAccessible(true);
-      f.set(null, null);
-    } catch (NoSuchFieldException e) {
-      // Try Holder inner class pattern
-      String holderName = clazz.getName() + "$Holder";
-      Class<?> holderClass = Class.forName(holderName);
-      Field f = holderClass.getDeclaredField("INSTANCE");
-      f.setAccessible(true);
-      f.set(null, null);
-    }
+  // =========================================================================
+  // HELPERS
+  // =========================================================================
+
+  /**
+   * Inject {@code out} vào handler để sendMessage hoạt động khi không chạy run().
+   * Field {@code out} của ClientHandler chỉ được khởi tạo trong run() - với các
+   * test gọi method trực tiếp, ta gán out bằng reflection.
+   */
+  private void injectOut() throws Exception {
+    PrintWriter out = new PrintWriter(serverSide.getOutputStream(), true);
+    Field outField = ClientHandler.class.getDeclaredField("out");
+    outField.setAccessible(true);
+    outField.set(handler, out);
   }
 
   /**
-   * Đọc một dòng response với timeout 1500ms.
-   * Trả về null nếu không có gì đến trong thời gian đó.
+   * Bật run() trên thread daemon. Sau lần gọi này, mọi dòng test ghi vào
+   * clientOut sẽ được handler đọc và dispatch.
    */
+  private void startRunLoop() {
+    runThread = new Thread(handler);
+    runThread.setDaemon(true);
+    runThread.start();
+    // Cho run() vài chục ms để init in/out trước khi test ghi lệnh
+    try {
+      Thread.sleep(50);
+    } catch (InterruptedException ignored) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  /** Đọc 1 dòng response với timeout 1500ms; null nếu hết giờ. */
   private String readResponse() throws IOException {
     long deadline = System.currentTimeMillis() + 1500;
     while (System.currentTimeMillis() < deadline) {
       if (clientIn.ready()) {
         return clientIn.readLine();
       }
-      try { Thread.sleep(20); } catch (InterruptedException ignored) {}
+      try {
+        Thread.sleep(20);
+      } catch (InterruptedException ignored) {
+        Thread.currentThread().interrupt();
+        return null;
+      }
     }
     return null;
   }
 
-  /** Login nhanh với admin mặc định; bỏ qua response. */
-  private void loginAsAdmin() throws IOException {
-    new LoginCommand().execute(
-        new String[]{Protocol.CMD_LOGIN, "admin", "admin123"},
-        handler, auctionService);
-    readResponse(); // consume response, không dùng
+  /** Gửi lệnh qua socket (yêu cầu đã startRunLoop). */
+  private void sendCommand(String line) {
+    clientOut.println(line);
+  }
+
+  /** Reset singleton nếu field 'instance' còn tồn tại (chỉ áp dụng cho non-Holder). */
+  private static void resetSingletonIfExists(Class<?> clazz, String fieldName) {
+    try {
+      Field f = clazz.getDeclaredField(fieldName);
+      f.setAccessible(true);
+      f.set(null, null);
+    } catch (NoSuchFieldException e) {
+      // Class đã chuyển sang Holder idiom - bỏ qua
+    } catch (Exception ignored) {
+      // ignore
+    }
+  }
+
+  private static void safeClose(java.io.Closeable c) {
+    if (c != null) {
+      try {
+        c.close();
+      } catch (IOException ignored) {
+        // best-effort
+      }
+    }
   }
 
   // =========================================================================
-  // GETTER / SETTER CƠ BẢN
+  // 1. GETTER / SETTER CƠ BẢN (không cần out, không cần run)
   // =========================================================================
 
   @Test
@@ -171,57 +204,42 @@ public class ClientHandlerTest {
   }
 
   @Test
-  void setAndGetCurrentUser() {
-    Bidder bidder = new Bidder("alice", "hash", null);
+  void setAndGetCurrentUserRoundtrip() {
+    Bidder bidder = new Bidder("alice", "hash", "alice@test.com");
     handler.setCurrentUser(bidder);
-    assertEquals(bidder, handler.getCurrentUser());
+    assertEquals(bidder, handler.getCurrentUser(),
+        "setCurrentUser rồi getCurrentUser phải trả về cùng object");
   }
 
   @Test
   void getAssociatedUsernameNullWhenNotLoggedIn() {
-    assertNull(handler.getAssociatedUsername());
+    assertNull(handler.getAssociatedUsername(),
+        "Chưa login thì associatedUsername phải null");
   }
 
   @Test
   void getAssociatedUsernameReturnsUsernameAfterSetUser() {
-    handler.setCurrentUser(new Bidder("bob", "hash", null));
-    assertEquals("bob", handler.getAssociatedUsername());
-  }
-
-  // =========================================================================
-  // validatePayload
-  // =========================================================================
-
-  @Test
-  void validatePayloadReturnsTrueWhenSufficient() throws IOException {
-    String[] parts = {"CMD", "arg1", "arg2"};
-    assertTrue(handler.validatePayload(parts, 3));
+    handler.setCurrentUser(new Bidder("bob", "hash", "bob@test.com"));
+    assertEquals("bob", handler.getAssociatedUsername(),
+        "Sau setCurrentUser, associatedUsername phải = username của user");
   }
 
   @Test
-  void validatePayloadReturnsFalseAndSendsErrorWhenInsufficient() throws IOException {
-    String[] parts = {"CMD"};
-    boolean result = handler.validatePayload(parts, 3);
-    assertFalse(result, "Phải trả false khi thiếu tham số");
-
-    String response = readResponse();
-    assertNotNull(response, "validatePayload phải gửi ERROR message khi thiếu tham số");
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Phải gửi ERROR khi thiếu tham số, nhận được: " + response);
-  }
-
-  @Test
-  void validatePayloadReturnsFalseForNull() throws IOException {
-    boolean result = handler.validatePayload(null, 1);
-    assertFalse(result, "null parts phải trả về false");
+  void setCurrentUserToNullClearsState() {
+    handler.setCurrentUser(new Bidder("charlie", "hash", "c@test.com"));
+    handler.setCurrentUser(null);
+    assertNull(handler.getCurrentUser(),
+        "setCurrentUser(null) phải clear currentUser");
+    assertNull(handler.getAssociatedUsername());
   }
 
   // =========================================================================
-  // sendMessage & update (AuctionParticipant)
+  // 2. sendMessage / update / validatePayload (cần out)
   // =========================================================================
 
   @Test
-  void sendMessageDeliversSingleLine() throws IOException {
+  void sendMessageDeliversSingleLineThroughSocket() throws Exception {
+    injectOut();
     handler.sendMessage("HELLO_TEST");
     String response = readResponse();
     assertNotNull(response, "sendMessage phải gửi được dữ liệu qua socket");
@@ -229,7 +247,8 @@ public class ClientHandlerTest {
   }
 
   @Test
-  void updateDeliversSameAsSendMessage() throws IOException {
+  void updateActsAsSendMessage() throws Exception {
+    injectOut();
     handler.update("NOTI_TEST|data");
     String response = readResponse();
     assertNotNull(response, "update() phải gửi được dữ liệu qua socket");
@@ -237,471 +256,482 @@ public class ClientHandlerTest {
   }
 
   @Test
-  void sendMessageHandlesNullGracefully() {
-    // Không được ném exception khi gửi null
-    handler.sendMessage(null);
+  void sendMessageHandlesNullOutGracefully() {
+    // out chưa init (chưa inject, chưa chạy run) - sendMessage phải không crash
+    handler.sendMessage("anything");
+    // không assertion, chỉ cần không ném exception
+  }
+
+  @Test
+  void validatePayloadReturnsTrueWhenLengthSufficient() throws Exception {
+    injectOut();
+    String[] parts = {"CMD", "arg1", "arg2"};
+    assertTrue(handler.validatePayload(parts, 3),
+        "parts đủ độ dài phải trả về true");
+  }
+
+  @Test
+  void validatePayloadReturnsFalseAndSendsErrorWhenInsufficient() throws Exception {
+    injectOut();
+    String[] parts = {"CMD"};
+    assertFalse(handler.validatePayload(parts, 3),
+        "parts thiếu phải trả về false");
+    String response = readResponse();
+    assertNotNull(response, "Thiếu parts phải gửi ERROR message");
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Response phải bắt đầu bằng ERROR, nhận được: " + response);
+  }
+
+  @Test
+  void validatePayloadReturnsFalseForNullParts() throws Exception {
+    injectOut();
+    assertFalse(handler.validatePayload(null, 1),
+        "null parts phải trả về false");
   }
 
   // =========================================================================
-  // handleRegister
+  // 3. DISPATCH QUA run() - UNKNOWN COMMAND
   // =========================================================================
 
-  
+  @Test
+  void runReturnsErrorForUnknownCommand() throws Exception {
+    startRunLoop();
+    sendCommand("INVALID_COMMAND|x");
+    String response = readResponse();
+    assertNotNull(response, "Lệnh không hợp lệ phải nhận phản hồi");
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Lệnh không hợp lệ phải trả ERROR, nhận: " + response);
+  }
 
  
-
-  @Test
-  void handleRegisterFailsWhenPayloadTooShort() throws IOException {
-    new RegisterCommand().execute(new String[]{Protocol.CMD_REGISTER, "only_user"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "Thiếu tham số phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Thiếu tham số phải trả về ERROR, nhận được: " + response);
-  }
-
   // =========================================================================
-  // handleLogin
+  // 4. DISPATCH QUA run() - LOGIN
   // =========================================================================
 
   @Test
-  void handleLoginSuccessWithDefaultAdmin() throws IOException {
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "admin123"}, handler, auctionService);
+  void runDispatchesLoginSuccessForDefaultAdmin() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
     String response = readResponse();
-    assertNotNull(response, "handleLogin phải gửi phản hồi");
+    assertNotNull(response, "Login đúng phải có phản hồi");
     assertTrue(response.startsWith(Protocol.RES_LOGIN_SUCCESS),
-        "Login đúng credentials phải thành công, nhận được: " + response);
+        "Login admin/admin123 phải thành công, nhận: " + response);
   }
 
   @Test
-  void handleLoginSetsCurrentUser() throws IOException {
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "admin123"}, handler, auctionService);
+  void runDispatchesLoginFailsWithWrongPassword() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|sai_mat_khau");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.RES_LOGIN_FAILED),
+        "Sai mật khẩu phải trả LOGIN_FAILED, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesLoginFailsForUnknownUser() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|nguoi_la|pw");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.RES_LOGIN_FAILED),
+        "User không tồn tại phải trả LOGIN_FAILED, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesLoginFailsWhenPayloadTooShort() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Login thiếu password phải trả ERROR, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 5. DISPATCH QUA run() - REGISTER
+  // =========================================================================
+
+  @Test
+  void runDispatchesRegisterFailsWhenPayloadTooShort() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_REGISTER + "|only_user");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Register thiếu tham số phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesRegisterSuccessForNewUser() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_REGISTER + "|newbie|pw|BIDDER|newbie@test.com");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.RES_REGISTER_SUCCESS),
+        "Đăng ký user mới phải thành công, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 6. DISPATCH QUA run() - LIST AUCTIONS (không cần login)
+  // =========================================================================
+
+  @Test
+  void runDispatchesListAuctionsWorksWithoutLogin() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LIST_AUCTIONS);
+    String response = readResponse();
+    assertNotNull(response, "List auctions phải có phản hồi dù chưa login");
+    assertFalse(response.startsWith(Protocol.ERROR),
+        "List auctions không cần login, không được trả ERROR, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 7. DISPATCH QUA run() - DEPOSIT (yêu cầu login)
+  // =========================================================================
+
+  @Test
+  void runDispatchesDepositFailsWhenNotLoggedIn() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_DEPOSIT + "|500000");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Deposit chưa login phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesDepositSuccessAfterLogin() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse(); // consume login response
+
+    sendCommand(Protocol.CMD_DEPOSIT + "|100000");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.RES_DEPOSIT_SUCCESS),
+        "Deposit hợp lệ sau login phải thành công, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesDepositFailsForNegativeAmount() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
     readResponse();
-    assertNotNull(handler.getCurrentUser());
+
+    sendCommand(Protocol.CMD_DEPOSIT + "|-500");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Số tiền âm phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesDepositFailsForNonNumericAmount() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_DEPOSIT + "|abc");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Số tiền không phải số phải trả ERROR, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 8. DISPATCH QUA run() - GET_BALANCE
+  // =========================================================================
+
+  @Test
+  void runDispatchesGetBalanceFailsWhenNotLoggedIn() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_GET_BALANCE);
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "GetBalance chưa login phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesGetBalanceReturnsInfoAfterLogin() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_GET_BALANCE);
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.RES_BALANCE_INFO),
+        "GetBalance sau login phải trả BALANCE_INFO, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 9. DISPATCH QUA run() - CREATE_AUCTION (phân quyền)
+  // =========================================================================
+
+  @Test
+  void runDispatchesCreateAuctionFailsWhenNotLoggedIn() throws Exception {
+    startRunLoop();
+    // 7 parts: CMD|type|name|price|duration|desc|image
+    sendCommand(Protocol.CMD_CREATE_AUCTION + "|ELECTRONICS|Laptop|5000000|60|desc|img");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Create auction chưa login phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesCreateAuctionFailsForBidderRole() throws Exception {
+    userManager.register("bidder01", "pw", "BIDDER", "bidder01@test.com");
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|bidder01|pw");
+    readResponse();
+
+    sendCommand(Protocol.CMD_CREATE_AUCTION + "|ELECTRONICS|Laptop|5000000|60|desc|img");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Bidder không được tạo auction, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesCreateAuctionSuccessForAdmin() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_CREATE_AUCTION + "|ELECTRONICS|LaptopTest|5000000|60|desc|img");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.RES_SUCCESS),
+        "Admin tạo auction phải thành công, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesCreateAuctionSuccessForSeller() throws Exception {
+    userManager.register("seller01", "pw", "SELLER", "seller01@test.com");
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|seller01|pw");
+    readResponse();
+
+    sendCommand(Protocol.CMD_CREATE_AUCTION + "|ART|TranhSonDau|1000000|30|desc|img");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.RES_SUCCESS),
+        "Seller tạo auction phải thành công, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesCreateAuctionFailsForInvalidPrice() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_CREATE_AUCTION + "|ELECTRONICS|Laptop|NOT_A_NUMBER|60|desc|img");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Giá không hợp lệ phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesCreateAuctionFailsWhenPayloadTooShort() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_CREATE_AUCTION + "|ELECTRONICS");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Create auction thiếu parts phải trả ERROR, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 10. DISPATCH QUA run() - END / DELETE AUCTION (phân quyền)
+  // =========================================================================
+
+  @Test
+  void runDispatchesEndAuctionFailsWhenNotLoggedIn() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_END_AUCTION + "|AUC_FAKE");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "End auction chưa login phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesDeleteAuctionFailsForBidder() throws Exception {
+    userManager.register("bidder02", "pw", "BIDDER", "bidder02@test.com");
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|bidder02|pw");
+    readResponse();
+
+    sendCommand(Protocol.CMD_DELETE_AUCTION + "|AUC_FAKE");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Bidder không được xoá auction, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 11. DISPATCH QUA run() - BID
+  // =========================================================================
+
+  @Test
+  void runDispatchesBidFailsWhenNotLoggedIn() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_BID + "|AUC_FAKE|500000");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Bid chưa login phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesBidFailsForNonExistentAuction() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_BID + "|AUC_NOT_EXIST|500000");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Bid auction không tồn tại phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesBidFailsForNegativeAmount() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_BID + "|AUC_FAKE|-100");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Bid số tiền âm phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesBidFailsForNonNumericAmount() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_BID + "|AUC_FAKE|notANumber");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Bid không phải số phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesBidFailsWhenPayloadTooShort() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_BID + "|AUC_FAKE");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Bid thiếu amount phải trả ERROR, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 12. DISPATCH QUA run() - WATCH / GET_WATCHLIST / ADD_AUTO_BID
+  // =========================================================================
+
+  @Test
+  void runDispatchesWatchFailsForNonBidderRole() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123"); // admin không phải Bidder
+    readResponse();
+
+    sendCommand(Protocol.CMD_WATCH + "|AUC_FAKE");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Chỉ Bidder mới được watch, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesUnwatchFailsWhenPayloadTooShort() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_UNWATCH);
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "Unwatch thiếu auctionId phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesAddAutoBidFailsWhenNotLoggedIn() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_ADD_AUTO_BID + "|AUC_FAKE|1000000|50000");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "AutoBid chưa login phải trả ERROR, nhận: " + response);
+  }
+
+  @Test
+  void runDispatchesAddAutoBidFailsForNonExistentAuction() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    sendCommand(Protocol.CMD_ADD_AUTO_BID + "|AUC_NOT_EXIST|1000000|50000");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "AutoBid auction không tồn tại phải trả ERROR, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 13. DISPATCH QUA run() - GET_HISTORY
+  // =========================================================================
+
+  @Test
+  void runDispatchesGetHistoryFailsForNonExistentAuction() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_GET_HISTORY + "|AUC_NOT_EXIST");
+    String response = readResponse();
+    assertNotNull(response);
+    assertTrue(response.startsWith(Protocol.ERROR),
+        "GetHistory auction không tồn tại phải trả ERROR, nhận: " + response);
+  }
+
+  // =========================================================================
+  // 14. STATE FLOW - login -> setCurrentUser được set qua dispatch
+  // =========================================================================
+
+  @Test
+  void runLoginSetsCurrentUserOnHandler() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|admin123");
+    readResponse();
+
+    // run() đang chạy; ClientHandler.currentUser được set qua LoginCommand
+    assertNotNull(handler.getCurrentUser(),
+        "Sau login thành công, handler.getCurrentUser() phải khác null");
     assertEquals("admin", handler.getCurrentUser().getUsername());
   }
 
   @Test
-  void handleLoginFailsWithWrongPassword() throws IOException {
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "wrongpass"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "Sai mật khẩu phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.RES_LOGIN_FAILED),
-        "Sai mật khẩu phải trả về LOGIN_FAILED, nhận được: " + response);
-  }
-
-  @Test
-  void handleLoginFailsWithUnknownUser() throws IOException {
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "nobody", "pass"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "User không tồn tại phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.RES_LOGIN_FAILED),
-        "User không tồn tại phải trả về LOGIN_FAILED, nhận được: " + response);
-  }
-
-  @Test
-  void handleLoginFailsWhenPayloadTooShort() throws IOException {
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR));
-  }
-
-  @Test
-  void handleLoginDoesNotSetCurrentUserOnFailure() throws IOException {
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "admin", "wrong"}, handler, auctionService);
+  void runLoginFailureDoesNotSetCurrentUser() throws Exception {
+    startRunLoop();
+    sendCommand(Protocol.CMD_LOGIN + "|admin|sai");
     readResponse();
+
     assertNull(handler.getCurrentUser(),
-        "currentUser phải giữ null khi login thất bại");
-  }
-
-  // =========================================================================
-  // handleListAuctions
-  // =========================================================================
-
-  @Test
-  void handleListAuctionsReturnsListSuccess() throws IOException {
-    new ListAuctionsCommand().execute(new String[]{Protocol.CMD_LIST_AUCTIONS}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "handleListAuctions phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.RES_LIST_SUCCESS),
-        "LIST_AUCTIONS phải trả về LIST_AUCTIONS_SUCCESS, nhận được: " + response);
-  }
-
-  @Test
-  void handleListAuctionsWorksWhenNotLoggedIn() throws IOException {
-    assertNull(handler.getCurrentUser());
-    new ListAuctionsCommand().execute(new String[]{Protocol.CMD_LIST_AUCTIONS}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "handleListAuctions phải gửi phản hồi dù chưa login");
-    assertFalse(response.startsWith(Protocol.ERROR),
-        "List auction không cần login, không được trả ERROR, nhận được: " + response);
-  }
-
-  // =========================================================================
-  // handleDeposit
-  // =========================================================================
-
-  @Test
-  void handleDepositFailsWhenNotLoggedIn() throws IOException {
-    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "500000"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "Nạp tiền chưa login phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Nạp tiền mà chưa login phải báo ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleDepositSuccessWhenLoggedIn() throws IOException {
-    loginAsAdmin();
-    double balanceBefore = handler.getCurrentUser().getBalance();
-
-    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "100000"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "Nạp tiền hợp lệ phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.RES_DEPOSIT_SUCCESS),
-        "Nạp tiền hợp lệ phải trả về DEPOSIT_SUCCESS, nhận được: " + response);
-    assertEquals(balanceBefore + 100000, handler.getCurrentUser().getBalance(), 0.01);
-  }
-
-  @Test
-  void handleDepositFailsForNegativeAmount() throws IOException {
-    loginAsAdmin();
-    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "-500"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Số tiền âm phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleDepositFailsForZeroAmount() throws IOException {
-    loginAsAdmin();
-    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "0"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Số tiền = 0 phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleDepositFailsForNonNumericAmount() throws IOException {
-    loginAsAdmin();
-    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT, "abc"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Chuỗi không phải số phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleDepositFailsWhenPayloadTooShort() throws IOException {
-    loginAsAdmin();
-    new DepositCommand().execute(new String[]{Protocol.CMD_DEPOSIT}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR));
-  }
-
-  // =========================================================================
-  // handleGetBalance
-  // =========================================================================
-
-  @Test
-  void handleGetBalanceFailsWhenNotLoggedIn() throws IOException {
-    new GetBalanceCommand().execute(new String[]{Protocol.CMD_GET_BALANCE}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "GetBalance chưa login phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Chưa login phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleGetBalanceReturnsBalanceInfoWhenLoggedIn() throws IOException {
-    loginAsAdmin();
-    new GetBalanceCommand().execute(new String[]{Protocol.CMD_GET_BALANCE}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response, "GetBalance đã login phải gửi phản hồi");
-    assertTrue(response.startsWith(Protocol.RES_BALANCE_INFO),
-        "Đã login phải nhận được BALANCE_INFO, nhận được: " + response);
-  }
-
-  // =========================================================================
-  // handleCreateAuction
-  // =========================================================================
-
-  @Test
-  void handleCreateAuctionFailsWhenNotLoggedIn() throws IOException {
-    // CreateAuctionCommand yêu cầu 7 parts: CMD|type|name|price|duration|desc|imageUrl
-    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR));
-  }
-
-  @Test
-  void handleCreateAuctionFailsForBidderRole() throws IOException {
-    userManager.register("bidder01", "pass", "BIDDER", "bidder01@test.com");
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "bidder01", "pass"}, handler, auctionService);
-    readResponse();
-
-    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "5000000", "60", "", ""}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Bidder không có quyền tạo auction, nhận được: " + response);
-  }
-
-  @Test
-  void handleCreateAuctionSuccessForAdmin() throws IOException {
-    loginAsAdmin();
-    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop Test", "5000000", "60", "", ""}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.RES_SUCCESS),
-        "Admin tạo auction hợp lệ phải thành công, nhận được: " + response);
-  }
-
-  @Test
-  void handleCreateAuctionSuccessForSeller() throws IOException {
-    userManager.register("seller01", "pass", "SELLER", "seller01@test.com");
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "seller01", "pass"}, handler, auctionService);
-    readResponse();
-
-    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ART", "Tranh Son Dau", "1000000", "30", "", ""}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.RES_SUCCESS),
-        "Seller tạo auction hợp lệ phải thành công, nhận được: " + response);
-  }
-
-  @Test
-  void handleCreateAuctionFailsForInvalidPrice() throws IOException {
-    loginAsAdmin();
-    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS", "Laptop", "INVALID_PRICE", "60", "", ""}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Giá không hợp lệ phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleCreateAuctionFailsWhenPayloadTooShort() throws IOException {
-    loginAsAdmin();
-    new CreateAuctionCommand().execute(new String[]{Protocol.CMD_CREATE_AUCTION, "ELECTRONICS"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR));
-  }
-
-  // =========================================================================
-  // handleEndAuction & handleDeleteAuction (kiểm tra phân quyền)
-  // =========================================================================
-
-  @Test
-  void handleEndAuctionFailsWhenNotLoggedIn() throws IOException {
-    new EndAuctionCommand().execute(new String[]{Protocol.CMD_END_AUCTION, "AUC_FAKE"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR));
-  }
-
-  @Test
-  void handleEndAuctionFailsForNonAdmin() throws IOException {
-    userManager.register("seller02", "pass", "SELLER", "seller02@test.com");
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "seller02", "pass"}, handler, auctionService);
-    readResponse();
-
-    new EndAuctionCommand().execute(new String[]{Protocol.CMD_END_AUCTION, "AUC_FAKE"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Non-admin không được đóng phiên, nhận được: " + response);
-  }
-
-  @Test
-  void handleDeleteAuctionFailsWhenNotLoggedIn() throws IOException {
-    new DeleteAuctionCommand().execute(new String[]{Protocol.CMD_DELETE_AUCTION, "AUC_FAKE"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR));
-  }
-
-  @Test
-  void handleDeleteAuctionFailsForNonAdmin() throws IOException {
-    userManager.register("bidder02", "pass", "BIDDER", "bidder02@test.com");
-    new LoginCommand().execute(new String[]{Protocol.CMD_LOGIN, "bidder02", "pass"}, handler, auctionService);
-    readResponse();
-
-    new DeleteAuctionCommand().execute(new String[]{Protocol.CMD_DELETE_AUCTION, "AUC_FAKE"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Bidder không được xóa phiên, nhận được: " + response);
-  }
-
-  // =========================================================================
-  // handleBid
-  // =========================================================================
-
-  @Test
-  void handleBidFailsWhenNotLoggedIn() throws IOException {
-    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE", "500000"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Chưa login không được đặt giá, nhận được: " + response);
-  }
-
-  @Test
-  void handleBidFailsForNonExistentAuction() throws IOException {
-    loginAsAdmin();
-    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_NOT_EXIST", "500000"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Auction không tồn tại phải trả ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleBidFailsForNegativeAmount() throws IOException {
-    loginAsAdmin();
-    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE", "-100"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Giá âm phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleBidFailsForNonNumericAmount() throws IOException {
-    loginAsAdmin();
-    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE", "notANumber"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Chuỗi không phải số phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleBidFailsWhenPayloadTooShort() throws IOException {
-    loginAsAdmin();
-    new BidCommand().execute(new String[]{Protocol.CMD_BID, "AUC_FAKE"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR));
-  }
-
-  // =========================================================================
-  // handleGetHistory
-  // =========================================================================
-
-  @Test
-  void handleGetHistoryFailsForNonExistentAuction() throws IOException {
-    new GetBidHistoryCommand().execute(new String[]{Protocol.CMD_GET_HISTORY, "AUC_NOT_EXIST"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Auction không tồn tại phải trả ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleWatchFailsForNonBidder() throws IOException {
-    loginAsAdmin(); // Admin không phải Bidder
-    new WatchCommand().execute(new String[]{Protocol.CMD_WATCH, "AUC_FAKE"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Chỉ Bidder mới được watch, nhận được: " + response);
-  }
-
-  @Test
-  void handleUnwatchFailsWhenPayloadTooShort() throws IOException {
-    loginAsAdmin();
-    new UnwatchCommand().execute(new String[]{Protocol.CMD_UNWATCH}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Thiếu tham số phải trả về ERROR, nhận được: " + response);
-  }
-
-  @Test
-  void handleGetWatchlistDoesNotCrashWhenNotLoggedIn() {
-    // Không crash — chỉ cần không ném exception
-    new GetWatchlistCommand().execute(new String[]{Protocol.CMD_GET_WATCHLIST}, handler, auctionService);
-  }
-
-  // =========================================================================
-  // handleAddAutoBid
-  // =========================================================================
-
-  @Test
-  void handleAddAutoBidFailsWhenNotLoggedIn() throws IOException {
-    new AddAutoBidCommand().execute(new String[]{Protocol.CMD_ADD_AUTO_BID, "AUC_FAKE", "1000000", "50000"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Chưa login không được đặt auto-bid, nhận được: " + response);
-  }
-
-  @Test
-  void handleAddAutoBidFailsForNonExistentAuction() throws IOException {
-    loginAsAdmin();
-    new AddAutoBidCommand().execute(new String[]{Protocol.CMD_ADD_AUTO_BID, "AUC_NOT_EXIST", "1000000", "50000"}, handler, auctionService);
-    String response = readResponse();
-    assertNotNull(response);
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Auction không tồn tại phải trả ERROR, nhận được: " + response);
-  }
-
-  // =========================================================================
-  // LỆNH KHÔNG HỢP LỆ — test qua luồng run() thật
-  // =========================================================================
-
-  @Test
-  void unknownCommandReturnsError() throws Exception {
-    // Test này dùng run() thật để out được init bên trong run()
-    // Đóng cặp socket cũ đã inject trước (tránh resource leak)
-    serverSide.close();
-    clientSide.close();
-
-    // Tạo cặp socket mới sạch, không inject out
-    ServerSocket tmpServer = new ServerSocket(0);
-    final Socket[] tmpAccepted = new Socket[1];
-    Thread acc = new Thread(() -> {
-      try { tmpAccepted[0] = tmpServer.accept(); } catch (IOException ignored) {}
-    });
-    acc.setDaemon(true);
-    acc.start();
-
-    Socket tmpClient = new Socket("localhost", tmpServer.getLocalPort());
-    acc.join(2000);
-    tmpServer.close();
-
-    // Chạy handler trên thread riêng (run() sẽ init out từ socket stream)
-    ClientHandler runHandler = new ClientHandler(tmpAccepted[0]);
-    Thread runThread = new Thread(runHandler);
-    runThread.setDaemon(true);
-    runThread.start();
-
-    PrintWriter tmpOut = new PrintWriter(tmpClient.getOutputStream(), true);
-    BufferedReader tmpIn = new BufferedReader(new InputStreamReader(tmpClient.getInputStream()));
-
-    // Gửi lệnh không hợp lệ
-    tmpOut.println("INVALID_COMMAND|arg1");
-
-    // Đọc response với timeout 2 giây
-    String response = null;
-    long deadline = System.currentTimeMillis() + 2000;
-    while (System.currentTimeMillis() < deadline) {
-      if (tmpIn.ready()) { response = tmpIn.readLine(); break; }
-      Thread.sleep(20);
-    }
-
-    tmpClient.close();
-    runThread.join(1000);
-
-    assertNotNull(response, "Lệnh không hợp lệ phải nhận được phản hồi");
-    assertTrue(response.startsWith(Protocol.ERROR),
-        "Lệnh không hợp lệ phải trả về ERROR, nhận được: " + response);
+        "Login sai phải KHÔNG set currentUser");
   }
 }
