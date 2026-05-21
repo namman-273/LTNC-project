@@ -6,8 +6,9 @@ import com.auction.util.ui.NotificationManager;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
-import com.auction.views.java.BidHistoryView;
 import com.auction.views.java.CreateAuctionView;
+import com.auction.views.java.BidHistoryView;
+import com.auction.views.java.ProfileView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -354,6 +355,18 @@ public class SellerController implements Initializable {
     }
 
     @FXML
+    public void handleBidHistory() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new BidHistoryView(stage, username).show();
+    }
+
+    @FXML
+    public void handleProfile() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new ProfileView(stage, username).show();
+    }
+
+    @FXML
     public void handleBack() {
         if (pushListener != null) {
             ServerConnection.getInstance().removePushListener(pushListener);
@@ -362,12 +375,6 @@ public class SellerController implements Initializable {
         if (autoRefreshTimeline != null) autoRefreshTimeline.stop();
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
-    }
-
-    @FXML
-    public void handleBidHistory() {
-        Stage stage = (Stage) auctionTable.getScene().getWindow();
-        new BidHistoryView(stage, username).show();
     }
 
     public void setUsername(String username) {
