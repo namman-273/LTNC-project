@@ -7,7 +7,7 @@ import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Electronics;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
-import com.auction.util.core.DataManager;
+import com.auction.util.core.datamanager.DataManager;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -116,6 +116,6 @@ public class DataManagerRoundtripTest {
         as.set(null, null);
 
         // Holder idiom: clear users via setUsers() thay vì reflection.
-        UserManager.getInstance().setUsers(new java.util.HashMap<>());
+        UserManager.getInstance().setUsers(new HashMap<>());
     }
 }
