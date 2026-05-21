@@ -306,7 +306,8 @@ public class Auction extends Entity {
     if (autoBidProcessor == null) {
       restoreTransients();
     }
-    autoBidProcessor.executeAutoBids(this.autoBidQueue, this, this::updateAuctionState);
+    autoBidProcessor.executeAutoBids(this.autoBidQueue,
+        this, (user, price) -> this.updateAuctionState(user, price));
   }
 
   private void handleAntiSniping(User bidder) {
