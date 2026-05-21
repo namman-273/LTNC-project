@@ -28,7 +28,7 @@ public class NotificationManager {
       this.auctionId = auctionId;
       this.read = false;
       this.time = LocalDateTime.now()
-          .format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
+              .format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
     }
 
     public NotificationItem(String message, String category) {
@@ -41,14 +41,14 @@ public class NotificationManager {
         return "system";
       String lower = msg.toLowerCase();
       if (lower.contains("thắng") || lower.contains("winner")
-          || lower.contains("vượt giá") || lower.contains("outbid")
-          || lower.contains("gia hạn") || lower.contains("đặt giá")
-          || lower.contains("bid") || lower.contains("phiên")) {
+              || lower.contains("vượt giá") || lower.contains("outbid")
+              || lower.contains("gia hạn") || lower.contains("đặt giá")
+              || lower.contains("bid") || lower.contains("phiên")) {
         return "auction";
       } else if (lower.contains("nạp") || lower.contains("số dư")
-          || lower.contains("hoàn") || lower.contains("balance")
-          || lower.contains("refund") || lower.contains("vnđ")
-          || lower.contains("vnd") || lower.contains("tiền")) {
+              || lower.contains("hoàn") || lower.contains("balance")
+              || lower.contains("refund") || lower.contains("vnđ")
+              || lower.contains("vnd") || lower.contains("tiền")) {
         return "balance";
       }
       return "system";
@@ -113,13 +113,13 @@ public class NotificationManager {
   public void add(String message, String category, String auctionId) {
     // Dedup: không add nếu đã có cùng auctionId + cùng loại thắng/thua trong 10s
     // gần nhất
+    // BUG FIX: dùng toàn bộ message để dedup, tránh bỏ sót thông báo gia hạn lần 2+
+    // (lần 1: "...gia hạn lần 1", lần 2: "...gia hạn lần 2" — khác nhau ở cuối)
     String dedupeKey = (auctionId != null ? auctionId : "") + "|"
-        + (message != null ? message.substring(0, Math.min(20, message.length())) : "");
+            + (message != null ? message : "");
     for (NotificationItem existing : items) {
       String existKey = (existing.getAuctionId() != null ? existing.getAuctionId() : "") + "|"
-          + (existing.getMessage() != null
-              ? existing.getMessage().substring(0, Math.min(20, existing.getMessage().length()))
-              : "");
+              + (existing.getMessage() != null ? existing.getMessage() : "");
       if (dedupeKey.equals(existKey))
         return; // bỏ qua nếu trùng
     }

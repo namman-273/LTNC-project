@@ -3,7 +3,6 @@ package com.auction.controller.ui;
 import com.auction.model.dto.AuctionRow;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.NotificationManager;
-import com.auction.util.ui.ToastManager;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
@@ -24,13 +23,13 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 public class SellerController implements Initializable {
@@ -54,6 +53,9 @@ public class SellerController implements Initializable {
     private final ObservableList<String> historyData = FXCollections.observableArrayList();
     private String username;
     private Consumer<String> pushListener;
+    // BUG FIX 1: dùng Set riêng thay vì check auctionData (có thể rỗng do async)
+    private final java.util.Set<String> myAuctionIds =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
     private Timeline autoRefreshTimeline;
 
     private final Gson gson = new GsonBuilder()
@@ -176,17 +178,14 @@ public class SellerController implements Initializable {
                     String auctionId = parts[1];
                     String newPrice  = parts[2];
                     String bidder    = parts[3];
-                    // Kiểm tra bằng sellerId từ auctionData HOẶC chấp nhận luôn nếu list chưa load
-                    boolean isMine = auctionData.isEmpty()
-                            || auctionData.stream().anyMatch(a -> a.getId().equals(auctionId));
+                    boolean isMine = myAuctionIds.contains(auctionId);
                     if (isMine) {
-                        String msg = "🔔 " + bidder + " vừa đặt giá "
-                                + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
-                                + " tại phiên: " + auctionId;
                         Platform.runLater(() -> {
                             loadMyAuctions();
-                            NotificationManager.getInstance().add(msg, "auction", auctionId);
-                            ToastManager.show(ToastManager.Type.INFO, msg);
+                            showNotification("🔔 Có bid mới!",
+                                    bidder + " vừa đặt giá "
+                                            + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
+                                            + " tại phiên: " + auctionId);
                         });
                     }
                 }
@@ -195,8 +194,7 @@ public class SellerController implements Initializable {
             case Protocol.RES_END_SUCCESS:
                 if (parts.length >= 3) {
                     String auctionId = parts[1];
-                    boolean isMine = auctionData.stream()
-                            .anyMatch(a -> a.getId().equals(auctionId));
+                    boolean isMine = myAuctionIds.contains(auctionId);
                     if (isMine) {
                         String detail = parts.length > 2 ? parts[2] : "";
                         Platform.runLater(() -> {
@@ -226,15 +224,34 @@ public class SellerController implements Initializable {
                 }
                 break;
 
+            case Protocol.NOTI_SNIPING_UPDATE:
+                // Hiển thị thông báo gia hạn thời gian cho Seller
+                // Format: SNIPING_UPDATE|auctionId|newEndTime|extensionCount
+                if (parts.length >= 4) {
+                    String auctionId = parts[1];
+                    String count     = parts[3];
+                    if (myAuctionIds.contains(auctionId)) {
+                        Platform.runLater(() -> {
+                            loadMyAuctions();
+                            showNotification("⏱ Phiên được gia hạn!",
+                                    "Phiên " + auctionId + " vừa được gia hạn thêm 2 phút (lần " + count + ")\nDo có người đặt giá trong phút cuối.");
+                        });
+                    }
+                }
+                break;
+
             default:
                 break;
         }
     }
 
     private void showNotification(String title, String message) {
-        String full = title + ": " + message;
-        NotificationManager.getInstance().add(full, "auction");
-        ToastManager.show(ToastManager.Type.INFO, full);
+        NotificationManager.getInstance().add(title + ": " + message);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.show();
     }
 
     private void loadMyAuctions() {
@@ -266,6 +283,9 @@ public class SellerController implements Initializable {
 
                     Platform.runLater(() -> {
                         auctionData.setAll(data);
+                        // BUG FIX 1: cập nhật myAuctionIds để push listener dùng
+                        myAuctionIds.clear();
+                        for (AuctionRow row : data) myAuctionIds.add(row.getId());
                         if (statsLabel    != null) statsLabel.setText("(" + data.size() + " phiên)");
                         if (statTotal     != null) statTotal.setText(String.valueOf(data.size()));
                         if (statOpen      != null) statOpen.setText(String.valueOf(open));
@@ -363,27 +383,7 @@ public class SellerController implements Initializable {
         new AuctionListView(stage, username).show();
     }
 
-
-    private void initToastManager(javafx.scene.Node anchor) {
-        Platform.runLater(() -> {
-            try {
-                javafx.scene.Parent root = anchor.getScene().getRoot();
-                if (root instanceof StackPane) {
-                    ToastManager.init((StackPane) root);
-                } else {
-                    javafx.scene.Scene scene = anchor.getScene();
-                    StackPane overlay = new StackPane();
-                    overlay.getChildren().add(root);
-                    scene.setRoot(overlay);
-                    ToastManager.init(overlay);
-                }
-            } catch (Exception e) {
-                System.err.println("[Toast] Init failed: " + e.getMessage());
-            }
-        });
-    }
     public void setUsername(String username) {
-        initToastManager(welcomeLabel);
         this.username = username;
         if (welcomeLabel != null)
             welcomeLabel.setText("Xin chào, " + username + "!");

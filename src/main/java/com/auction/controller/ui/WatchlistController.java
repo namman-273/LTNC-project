@@ -10,7 +10,6 @@ import com.auction.views.java.BalanceView;
 import com.auction.views.java.NotificationView;
 import com.auction.views.java.BidView;
 import com.auction.util.ui.NotificationManager;
-import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.animation.KeyFrame;
@@ -29,7 +28,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -67,26 +65,6 @@ public class WatchlistController implements Initializable {
         loadWatchlist();
         loadBalance();
         startAutoRefresh();
-        // Init ToastManager: wrap root HBox trong StackPane overlay
-        Platform.runLater(this::initToastManager);
-    }
-
-    private void initToastManager() {
-        try {
-            javafx.scene.Parent root = watchlistCards.getScene().getRoot();
-            if (root instanceof StackPane) {
-                ToastManager.init((StackPane) root);
-            } else {
-                // Wrap root hiện tại vào StackPane để Toast có chỗ hiển thị
-                javafx.scene.Scene scene = watchlistCards.getScene();
-                StackPane overlay = new StackPane();
-                overlay.getChildren().add(root);
-                scene.setRoot(overlay);
-                ToastManager.init(overlay);
-            }
-        } catch (Exception e) {
-            System.err.println("[WatchlistController] Không thể init ToastManager: " + e.getMessage());
-        }
     }
 
     @Override
@@ -128,6 +106,10 @@ public class WatchlistController implements Initializable {
                 }
 
                 currentData.setAll(data);
+                // BUG FIX 2: Cập nhật watchedAuctionIds sau khi load xong
+                // để push listener có thể check ngay lập tức
+                watchedAuctionIds.clear();
+                for (AuctionRow row : data) watchedAuctionIds.add(row.getId());
                 if (watchlistTable != null) watchlistTable.setItems(data);
                 updateCards(data);
 
@@ -346,17 +328,23 @@ public class WatchlistController implements Initializable {
             messageLabel.setText(msg);
         }
     }
+    // BUG FIX 2: Dùng Set riêng để track watchedIds, tránh race condition với currentData
+    private final java.util.Set<String> watchedAuctionIds =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
     @FXML
     private void registerBalancePushListener() {
+        // Chỉ đăng ký 1 lần, tránh duplicate listener
+        if (balancePushListener != null) return;
+
         balancePushListener = message -> {
             String[] parts = message.split("\\|");
             if (parts.length == 0) return;
 
             switch (parts[0]) {
                 case Protocol.NOTI_BALANCE_CHANGED:
-                    // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
                     if (parts.length >= 3) {
-                        String newBal = parts[2]; // parts[1] là auctionId
+                        String newBal = parts[2];
                         javafx.application.Platform.runLater(() -> {
                             if (balanceLabel != null) {
                                 try {
@@ -371,40 +359,36 @@ public class WatchlistController implements Initializable {
                     break;
 
                 case Protocol.NOTI_BID_UPDATE:
-                    // Format: BID_UPDATE|auctionId|amount|bidderName|itemType
-                    // Chỉ thông báo nếu phiên đó đang nằm trong watchlist
+                    // BUG FIX 2: check watchedAuctionIds thay vì currentData
+                    // để tránh race condition khi loadWatchlist() chạy async
                     if (parts.length >= 4) {
                         String auctionId = parts[1];
                         String amount    = parts[2];
                         String bidder    = parts[3];
-                        boolean isWatched = currentData.stream()
-                                .anyMatch(a -> auctionId.equals(a.getId()));
-                        if (isWatched) {
+                        if (watchedAuctionIds.contains(auctionId)) {
                             try {
                                 double amt = Double.parseDouble(amount);
-                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": "
-                                        + String.format("%,.0f VNĐ", amt)
-                                        + " (bởi " + bidder + ")";
-                                NotificationManager.getInstance().add(msg, "auction", auctionId);
-                                ToastManager.show(ToastManager.Type.INFO, msg);
+                                NotificationManager.getInstance().add(
+                                        "🔨 Giá mới tại phiên " + auctionId + ": "
+                                                + String.format("%,.0f VNĐ", amt)
+                                                + " (bởi " + bidder + ")",
+                                        "auction", auctionId);
                             } catch (NumberFormatException e) {
-                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ";
-                                NotificationManager.getInstance().add(msg, "auction", auctionId);
-                                ToastManager.show(ToastManager.Type.INFO, msg);
+                                NotificationManager.getInstance().add(
+                                        "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ",
+                                        "auction", auctionId);
                             }
+                            // Reload watchlist để cập nhật giá mới
                             Platform.runLater(this::loadWatchlist);
                         }
                     }
                     break;
 
                 case Protocol.RES_END_SUCCESS:
-                    // Format: END_SUCCESS|auctionId|Winner:xxx|Bid:yyy  hoặc  END_SUCCESS|auctionId|No winner|Bid:yyy
                     if (parts.length >= 3) {
                         String auctionId = parts[1];
-                        boolean isWatched = currentData.stream()
-                                .anyMatch(a -> auctionId.equals(a.getId()));
-                        if (isWatched) {
-                            String detail = parts[2]; // "Winner:abc" hoặc "No winner"
+                        if (watchedAuctionIds.contains(auctionId)) {
+                            String detail = parts[2];
                             String notifMsg;
                             if (detail.startsWith("Winner:")) {
                                 String winnerName = detail.substring("Winner:".length());
@@ -418,12 +402,28 @@ public class WatchlistController implements Initializable {
                     }
                     break;
 
+                case Protocol.NOTI_SNIPING_UPDATE:
+                    // Hiển thị thông báo gia hạn thời gian cho Watcher
+                    // Format: SNIPING_UPDATE|auctionId|newEndTime|extensionCount
+                    if (parts.length >= 4) {
+                        String auctionId = parts[1];
+                        String count     = parts[3];
+                        if (watchedAuctionIds.contains(auctionId)) {
+                            NotificationManager.getInstance().add(
+                                    "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
+                                    "auction", auctionId);
+                        }
+                    }
+                    break;
+
                 default:
                     break;
             }
         };
         com.auction.network.client.ServerConnection.getInstance().addPushListener(balancePushListener);
     }
+
+
 
     private void loadBalance() {
         if (balanceLabel == null) return;
