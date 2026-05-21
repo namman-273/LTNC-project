@@ -1,21 +1,21 @@
 package com.auction.util.core;
 
-/**
- * Hệ thống Quản lý Phiên làm việc (Session) phía Client.
- * Áp dụng Bill Pugh Singleton Thread-safe tối ưu hiệu năng và giữ lại Password.
- */
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 public class SessionManager {
 
   private String username;
   private String password;
   private String role;
 
-  // 1. Private constructor ngăn chặn tạo đối tượng từ bên ngoài
+  // Sử dụng cặp khóa Đọc - Ghi tách biệt
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+  private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
+  private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+
   private SessionManager() {
   }
 
-  // 2. Bill Pugh Holder: Tự động Thread-safe bởi ClassLoader của JVM, tối ưu hơn
-  // synchronized cũ
   private static class SingletonHolder {
     private static final SessionManager INSTANCE = new SessionManager();
   }
@@ -25,35 +25,61 @@ public class SessionManager {
   }
 
   /**
-   * Khởi tạo session khi đăng nhập thành công.
-   * Đồng bộ hóa (synchronized) để đảm bảo an toàn khi luồng Socket ghi đè dữ
-   * liệu.
+   * Khóa GHI (WriteLock): Khi đang ghi, cấm tất cả các luồng khác Đọc hoặc Ghi.
    */
-  public synchronized void setSession(String username, String password, String role) {
-    this.username = username;
-    this.password = password;
-    this.role = role;
+  public void setSession(String username, String password, String role) {
+    writeLock.lock();
+    try {
+      this.username = username;
+      this.password = password;
+      this.role = role;
+    } finally {
+      writeLock.unlock();
+    }
   }
-
-  public synchronized String getUsername() {
-    return username;
-  }
-
-  public synchronized String getPassword() {
-    return password;
-  }
-
-  public synchronized String getRole() {
-    return role;
-  }
-
 
   /**
-   * Đăng xuất: Xóa sạch ruột dữ liệu để bảo mật, giữ nguyên xác Object Singleton.
+   * Khóa ĐỌC (ReadLock): Hàng trăm luồng có thể vào đọc getUsername(), getRole()
+   * cùng một lúc mà không bị nghẽn, miễn là không có ai đang ghi.
    */
-  public synchronized void clear() {
-    this.username = null;
-    this.password = null;
-    this.role = null;
+  public String getUsername() {
+    readLock.lock();
+    try {
+      return username;
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  public String getPassword() {
+    readLock.lock();
+    try {
+      return password;
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  public String getRole() {
+    readLock.lock();
+    try {
+      return role;
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  /**
+   * Khóa GHI (WriteLock).
+   */
+  public void clear() {
+    writeLock.lock();
+    try {
+      this.username = null;
+      this.password = null;
+      this.role = null;
+    } finally {
+      writeLock.unlock();
+    }
   }
 }
