@@ -4,6 +4,7 @@ import com.auction.model.dto.AuctionRow;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.AlertUtil;
 import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AdminDashboardView;
@@ -16,7 +17,6 @@ import com.auction.views.java.NotificationView;
 import com.auction.views.java.ProfileView;
 import com.auction.views.java.SellerView;
 import com.auction.views.java.WatchlistView;
-import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -38,6 +38,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -86,7 +87,6 @@ public class AuctionListController implements Initializable {
   public void setUsername(String username) {
     this.username = username;
     if (welcomeLabel != null) welcomeLabel.setText("Xin chào, " + username + "!");
-    if (rootBox != null) ToastManager.init(rootBox);
     String role = SessionManager.getInstance().getRole();
     if (adminButton != null) {
       adminButton.setVisible("ADMIN".equalsIgnoreCase(role));
@@ -110,6 +110,7 @@ public class AuctionListController implements Initializable {
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
+    if (rootBox != null) ToastManager.init(rootBox); // FIX: enable toast trên AuctionList
     loadFromServer();
     registerPushListener();
     loadBalance();
@@ -130,14 +131,14 @@ public class AuctionListController implements Initializable {
             String bidder    = parts[3];
             try {
               double amt = Double.parseDouble(amount);
-              String msg = "🔨 Phiên " + auctionId + " có giá mới: "
-                      + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")";
-              NotificationManager.getInstance().add(msg, "auction", auctionId);
-              Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
+              NotificationManager.getInstance().add(
+                      "🔨 Phiên " + auctionId + " có giá mới: "
+                              + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")",
+                      "auction", auctionId);
             } catch (NumberFormatException e) {
-              String msg = "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ";
-              NotificationManager.getInstance().add(msg, "auction", auctionId);
-              Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
+              NotificationManager.getInstance().add(
+                      "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ",
+                      "auction", auctionId);
             }
             Platform.runLater(this::loadFromServer);
           }
@@ -146,27 +147,8 @@ public class AuctionListController implements Initializable {
 
         case Protocol.NOTI_BALANCE_CHANGED:
           // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
-          if (parts.length >= 4) {
-            String auctionId = parts[1];
-            String newBal    = parts[2];
-            String delta     = parts[3];
-            Platform.runLater(() -> {
-              if (balanceLabel != null) {
-                try {
-                  double v = Double.parseDouble(newBal);
-                  balanceLabel.setText(String.format("%,.0f VNĐ", v));
-                } catch (NumberFormatException e) {
-                  balanceLabel.setText(newBal + " VNĐ");
-                }
-              }
-            });
-            // Thông báo cho seller nhận tiền
-            NotificationManager.getInstance().add(
-                    "💰 Phiên " + auctionId + " kết thúc. Bạn nhận: "
-                            + delta + " VNĐ",
-                    "balance", auctionId);
-          } else if (parts.length == 3) {
-            String newBal = parts[2];
+          if (parts.length >= 3) {
+            String newBal = parts[2]; // parts[1] là auctionId, parts[2] mới là balance
             Platform.runLater(() -> {
               if (balanceLabel != null) {
                 try {
