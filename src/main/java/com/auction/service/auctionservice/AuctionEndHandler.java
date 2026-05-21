@@ -91,17 +91,17 @@ public class AuctionEndHandler {
             + "Phiên " + auctionId + " đã bị đóng sớm bởi Admin";
         notificationService.notifyAll(auction, cancelMsg);
 
-        // Trạng thái cuối: FINISHED (không set PAID vì không thanh toán)
+        // Trạng thái cuối: CANCELED (không set PAID vì không thanh toán)
         System.out.println("[ADMIN] Phiên " + auctionId
-            + " bị đóng sớm. Đã hoàn tiền. Trạng thái: FINISHED");
+            + " bị đóng sớm. Đã hoàn tiền. Trạng thái: CANCELED");
 
-      // ===== CASE 2: Kết thúc bình thường → Xử lý thanh toán =====
+        // ===== CASE 2: Kết thúc bình thường → Xử lý thanh toán =====
       } else {
         winnerInfo = paymentProcessor.processPayment(auction);
-        
+
         // PaymentProcessor sẽ tự động set status = PAID nếu có winner
         // Nếu không có winner, status vẫn là FINISHED
-        
+
         notificationService.notifyAuctionEnd(auction, winnerInfo);
 
         if (winnerInfo != null && winnerInfo.hasWinner()) {
@@ -165,6 +165,7 @@ public class AuctionEndHandler {
    */
   private boolean isAlreadyFinished(Auction auction) {
     return auction.getStatus() == AuctionStatus.FINISHED
-        || auction.getStatus() == AuctionStatus.PAID;
+        || auction.getStatus() == AuctionStatus.PAID
+        || auction.getStatus() == AuctionStatus.CANCELED;
   }
 }
