@@ -51,6 +51,7 @@ public class ClientHandler implements Runnable, AuctionParticipant {
     commandMap.put(Protocol.CMD_GET_BALANCE, new GetBalanceCommand());
     commandMap.put(Protocol.CMD_WATCH, new WatchCommand());
     commandMap.put(Protocol.CMD_UNWATCH, new UnwatchCommand());
+    commandMap.put(Protocol.CMD_GET_HISTORY, new GetHistoryCommand());
     commandMap.put(Protocol.CMD_GET_WATCHLIST, new GetWatchlistCommand());
     commandMap.put(Protocol.CMD_ADD_AUTO_BID, new AddAutoBidCommand());
     commandMap.put(Protocol.CMD_GET_BID_HISTORY, new GetBidHistoryCommand());
