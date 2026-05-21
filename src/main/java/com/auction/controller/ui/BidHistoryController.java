@@ -11,6 +11,7 @@ import com.auction.views.java.BalanceView;
 import com.auction.views.java.NotificationView;
 import com.auction.views.java.SellerView;
 import com.auction.util.core.SessionManager;
+import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -51,7 +52,6 @@ public class BidHistoryController implements Initializable {
     @FXML private Button tabWin;
     @FXML private Button tabLose;
     @FXML private Button sellerBtnHistory;
-    @FXML private Button watchlistBtnHistory;
 
     private String username;
     private String activeTab = "all";
@@ -76,18 +76,34 @@ public class BidHistoryController implements Initializable {
         historyList.setCellFactory(lv -> new HistoryCell());
     }
 
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[Toast] Init failed: " + e.getMessage());
+            }
+        });
+    }
     public void setUsername(String u) {
+        initToastManager(historyList);
         this.username = u;
-        // Show seller button only for SELLER role, hide watchlist for seller
+        // Show seller button only for SELLER role
         String role = SessionManager.getInstance().getRole();
-        boolean isSeller = "SELLER".equalsIgnoreCase(role);
         if (sellerBtnHistory != null) {
+            boolean isSeller = "SELLER".equalsIgnoreCase(role);
             sellerBtnHistory.setVisible(isSeller);
             sellerBtnHistory.setManaged(isSeller);
-        }
-        if (watchlistBtnHistory != null) {
-            watchlistBtnHistory.setVisible(!isSeller);
-            watchlistBtnHistory.setManaged(!isSeller);
         }
         loadFromServer();
         registerPushListener();

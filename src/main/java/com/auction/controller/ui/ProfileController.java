@@ -7,6 +7,7 @@ import com.auction.model.dto.BidHistoryEntry;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.BidHistoryView;
+import com.auction.util.ui.ToastManager;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -15,6 +16,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -56,7 +58,27 @@ public class ProfileController implements Initializable {
 
     // ─────────────────────────────────────────────────────────────────────────
 
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[Toast] Init failed: " + e.getMessage());
+            }
+        });
+    }
     public void setUsername(String u) {
+        initToastManager(avatarLabel);
         this.username = u;
         loadProfile();
         registerPushListener(); // FIX

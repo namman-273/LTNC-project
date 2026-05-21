@@ -3,6 +3,7 @@ package com.auction.controller.ui;
 import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
 import com.auction.views.java.AuctionListView;
+import com.auction.util.ui.ToastManager;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -18,6 +19,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -133,7 +135,27 @@ public class BalanceController implements Initializable {
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[Toast] Init failed: " + e.getMessage());
+            }
+        });
+    }
     public void setUsername(String username) {
+        initToastManager(balanceLabel);
         this.username = username;
         usernameLabel.setText("Tài khoản: " + username);
         loadBalance();

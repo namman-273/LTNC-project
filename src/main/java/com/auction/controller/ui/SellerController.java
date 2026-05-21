@@ -3,12 +3,11 @@ package com.auction.controller.ui;
 import com.auction.model.dto.AuctionRow;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.CreateAuctionView;
-import com.auction.views.java.BidHistoryView;
-import com.auction.views.java.ProfileView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -32,6 +31,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 public class SellerController implements Initializable {
@@ -182,6 +182,7 @@ public class SellerController implements Initializable {
                     if (isMine) {
                         Platform.runLater(() -> {
                             loadMyAuctions();
+                            ToastManager.show(ToastManager.Type.INFO, "🔔 " + bidder + " vừa đặt giá " + String.format("%,.0f VNĐ", Double.parseDouble(newPrice)) + " tại phiên: " + auctionId);
                             showNotification("🔔 Có bid mới!",
                                     bidder + " vừa đặt giá "
                                             + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
@@ -355,18 +356,6 @@ public class SellerController implements Initializable {
     }
 
     @FXML
-    public void handleBidHistory() {
-        Stage stage = (Stage) auctionTable.getScene().getWindow();
-        new BidHistoryView(stage, username).show();
-    }
-
-    @FXML
-    public void handleProfile() {
-        Stage stage = (Stage) auctionTable.getScene().getWindow();
-        new ProfileView(stage, username).show();
-    }
-
-    @FXML
     public void handleBack() {
         if (pushListener != null) {
             ServerConnection.getInstance().removePushListener(pushListener);
@@ -377,7 +366,27 @@ public class SellerController implements Initializable {
         new AuctionListView(stage, username).show();
     }
 
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[Toast] Init failed: " + e.getMessage());
+            }
+        });
+    }
     public void setUsername(String username) {
+        initToastManager(welcomeLabel);
         this.username = username;
         if (welcomeLabel != null)
             welcomeLabel.setText("Xin chào, " + username + "!");
