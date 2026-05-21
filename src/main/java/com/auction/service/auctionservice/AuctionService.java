@@ -219,24 +219,7 @@ public class AuctionService implements Serializable {
     }
   }
 
-  /**
-   * Xóa phiên đấu giá - chỉ Admin.
-   */
-  public boolean deleteAuction(String auctionId) {
-    Auction auction = auctionRepository.findById(auctionId);
-    if (auction == null) {
-      return false;
-    }
-    
-    auction.closeAuction();
-    auctionRepository.remove(auctionId);
-
-    // Đánh dấu cần save
-    persistenceService.markAuctionsDirty();
-
-    System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
-    return true;
-  }
+  
 
   /**
    * Ngắt bỏ mọi observer.
