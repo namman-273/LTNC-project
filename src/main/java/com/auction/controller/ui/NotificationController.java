@@ -159,7 +159,10 @@ public class NotificationController implements Initializable {
                                 String.valueOf(target.getCurrentPrice()),
                                 target.getStatus(), username, target.getEndTime(),
                                 target.getImageUrl() != null ? target.getImageUrl() : "",
-                                target.getDescription() != null ? target.getDescription() : "").show();
+                                target.getDescription() != null ? target.getDescription() : "",
+                                target.getItemType() != null ? target.getItemType() : "",
+                                target.getStartingPrice(),
+                                target.getSellerId() != null ? target.getSellerId() : "").show();
                     } else {
                         new AuctionListView(stage, username).show();
                     }

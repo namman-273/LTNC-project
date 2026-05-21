@@ -77,17 +77,17 @@
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
+            <Button text="&#x1F464;  Hồ sơ cá nhân" onAction="#handleProfile"
+                    prefWidth="200" prefHeight="40"
+                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
+                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
             <Button fx:id="sellerBtnHistory" text="&#x1F3EA;  Quản lý bán hàng" onAction="#handleSellerDashboard"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"
                     visible="false" managed="false"/>
-            <Button text="&#x1F464;  Hồ sơ cá nhân" onAction="#handleProfile"
-                    prefWidth="200" prefHeight="40"
-                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
-                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
-                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
             <Region VBox.vgrow="ALWAYS"/>
             <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
                           -fx-min-height: 1; -fx-max-height: 1;" prefWidth="200"/>

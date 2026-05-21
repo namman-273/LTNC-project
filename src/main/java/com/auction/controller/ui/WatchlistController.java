@@ -10,6 +10,7 @@ import com.auction.views.java.BalanceView;
 import com.auction.views.java.NotificationView;
 import com.auction.views.java.BidView;
 import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.animation.KeyFrame;
@@ -28,6 +29,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -62,9 +64,29 @@ public class WatchlistController implements Initializable {
 
     public void setUsername(String username) {
         this.username = username;
+        initToastManager(watchlistCards);
         loadWatchlist();
         loadBalance();
         startAutoRefresh();
+    }
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[WatchlistToast] Init failed: " + e.getMessage());
+            }
+        });
     }
 
     @Override
@@ -385,15 +407,18 @@ public class WatchlistController implements Initializable {
                         if (watchedAuctionIds.contains(auctionId)) {
                             try {
                                 double amt = Double.parseDouble(amount);
-                                NotificationManager.getInstance().add(
-                                        "🔨 Giá mới tại phiên " + auctionId + ": "
-                                                + String.format("%,.0f VNĐ", amt)
-                                                + " (bởi " + bidder + ")",
-                                        "auction", auctionId);
+                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": "
+                                        + String.format("%,.0f VNĐ", amt)
+                                        + " (bởi " + bidder + ")";
+                                NotificationManager.getInstance().add(msg, "auction", auctionId);
+                                Platform.runLater(() ->
+                                        ToastManager.show(ToastManager.Type.INFO,
+                                                "Giá mới: " + String.format("%,.0f VNĐ", amt) + " – " + bidder));
                             } catch (NumberFormatException e) {
-                                NotificationManager.getInstance().add(
-                                        "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ",
-                                        "auction", auctionId);
+                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ";
+                                NotificationManager.getInstance().add(msg, "auction", auctionId);
+                                Platform.runLater(() ->
+                                        ToastManager.show(ToastManager.Type.INFO, "Giá mới: " + amount + " VNĐ"));
                             }
                             // Reload watchlist để cập nhật giá mới
                             Platform.runLater(this::loadWatchlist);
@@ -433,7 +458,11 @@ public class WatchlistController implements Initializable {
                             try {
                                 extensionCountMap.put(auctionId, Integer.parseInt(count));
                             } catch (NumberFormatException ignored) {}
-                            Platform.runLater(() -> updateCards(currentData));
+                            Platform.runLater(() -> {
+                                ToastManager.show(ToastManager.Type.WARNING,
+                                        "⏱ Phiên " + auctionId + " gia hạn lần " + count + " (+2 phút)");
+                                updateCards(currentData);
+                            });
                         }
                     }
                     break;

@@ -35,6 +35,9 @@ public class AdminDashboardController implements Initializable {
     @FXML private TableColumn<AuctionRow, String> statusCol;
     @FXML private Label     messageLabel;
     @FXML private Label     balanceLabel;
+    @FXML private Label     statTotalLabel;
+    @FXML private Label     statOpenLabel;
+    @FXML private Label     statFinishedLabel;
     @FXML private TextField depositAmountField;
     @FXML private TextField depositUsernameField;
 
@@ -98,6 +101,12 @@ public class AdminDashboardController implements Initializable {
             final ObservableList<AuctionRow> finalData = data;
             Platform.runLater(() -> {
                 auctionTable.setItems(finalData);
+                // Cập nhật stats bar
+                long openCount     = finalData.stream().filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus())).count();
+                long finishedCount = finalData.stream().filter(r -> "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
+                if (statTotalLabel    != null) statTotalLabel.setText(String.valueOf(finalData.size()));
+                if (statOpenLabel     != null) statOpenLabel.setText(String.valueOf(openCount));
+                if (statFinishedLabel != null) statFinishedLabel.setText(String.valueOf(finishedCount));
                 showMessage(finalData.isEmpty()
                         ? "ℹ️ Chưa có phiên nào."
                         : "✅ Tải xong " + finalData.size() + " phiên.", "gray");
