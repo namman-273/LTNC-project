@@ -1,52 +1,85 @@
 package com.auction.util.core;
 
-/**
-   *  * Áp dụng singleton.
-   *  
-   */
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 public class SessionManager {
 
-  private static volatile SessionManager instance;
   private String username;
   private String password;
   private String role;
 
+  // Sử dụng cặp khóa Đọc - Ghi tách biệt
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+  private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
+  private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+
   private SessionManager() {
   }
 
+  private static class SingletonHolder {
+    private static final SessionManager INSTANCE = new SessionManager();
+  }
+
   public static SessionManager getInstance() {
-    if (instance == null) {
-      synchronized (SessionManager.class) {
-        if (instance == null) {
-          instance = new SessionManager();
-        }
-      }
-    }
-    return instance;
+    return SingletonHolder.INSTANCE;
   }
 
+  /**
+   * Khóa GHI (WriteLock): Khi đang ghi, cấm tất cả các luồng khác Đọc hoặc Ghi.
+   */
   public void setSession(String username, String password, String role) {
-    this.username = username;
-    this.password = password;
-    this.role = role;
+    writeLock.lock();
+    try {
+      this.username = username;
+      this.password = password;
+      this.role = role;
+    } finally {
+      writeLock.unlock();
+    }
   }
 
+  /**
+   * Khóa ĐỌC (ReadLock): Hàng trăm luồng có thể vào đọc getUsername(), getRole()
+   * cùng một lúc mà không bị nghẽn, miễn là không có ai đang ghi.
+   */
   public String getUsername() {
-    return username;
-  }
-
-  public String getRole() {
-    return role;
+    readLock.lock();
+    try {
+      return username;
+    } finally {
+      readLock.unlock();
+    }
   }
 
   public String getPassword() {
-    return password;
+    readLock.lock();
+    try {
+      return password;
+    } finally {
+      readLock.unlock();
+    }
   }
 
+  public String getRole() {
+    readLock.lock();
+    try {
+      return role;
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  /**
+   * Khóa GHI (WriteLock).
+   */
   public void clear() {
-    username = null;
-    password = null;
-    role = null;
-    instance = null;
+    writeLock.lock();
+    try {
+      this.username = null;
+      this.password = null;
+      this.role = null;
+    } finally {
+      writeLock.unlock();
+    }
   }
 }
