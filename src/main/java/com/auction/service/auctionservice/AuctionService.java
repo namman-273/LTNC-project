@@ -227,7 +227,7 @@ public class AuctionService implements Serializable {
     if (auction == null) {
       return false;
     }
-
+    
     auction.closeAuction();
     auctionRepository.remove(auctionId);
 
