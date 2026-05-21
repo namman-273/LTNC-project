@@ -152,8 +152,31 @@ public class AuctionListController implements Initializable {
 
         case Protocol.NOTI_BALANCE_CHANGED:
           // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
-          if (parts.length >= 3) {
-            String newBal = parts[2]; // parts[1] là auctionId, parts[2] mới là balance
+          // FIX: Đây là message BE gửi thẳng cho seller qua ConnectionManager.
+          // Dùng nó làm tín hiệu "phiên kết thúc có người thắng" cho seller.
+          if (parts.length >= 4) {
+            String auctionId = parts[1];
+            String newBal    = parts[2];
+            String delta     = parts[3];
+            Platform.runLater(() -> {
+              // Cập nhật số dư hiển thị
+              if (balanceLabel != null) {
+                try {
+                  double v = Double.parseDouble(newBal);
+                  balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                } catch (NumberFormatException e) {
+                  balanceLabel.setText(newBal + " VNĐ");
+                }
+              }
+              // Thêm thông báo kết thúc phiên vào NotificationManager cho seller
+              NotificationManager.getInstance().add(
+                      "🎉 Phiên " + auctionId + " đã kết thúc! Nhận " + delta + " VNĐ",
+                      "auction", auctionId);
+              loadFromServer();
+            });
+          } else if (parts.length >= 3) {
+            // Fallback nếu format thiếu delta
+            String newBal = parts[2];
             Platform.runLater(() -> {
               if (balanceLabel != null) {
                 try {
@@ -180,13 +203,8 @@ public class AuctionListController implements Initializable {
           boolean isWin = detail.contains("Winner:" + username)
                   || detail.contains("Winner: " + username);
 
-          // FIX: Nếu user là Seller, luôn hiện thông báo phiên của mình kết thúc
-          String role = SessionManager.getInstance().getRole();
-          if ("SELLER".equalsIgnoreCase(role) && !auctionId.isEmpty()) {
-            NotificationManager.getInstance().add(
-                    "🎉 Phiên " + auctionId + " đã kết thúc! " + detail,
-                    "auction", auctionId);
-          } else if (isWin) {
+          // Chỉ xử lý cho Bidder — Seller dùng BALANCE_CHANGED làm tín hiệu kết thúc
+          if (isWin) {
             NotificationManager.getInstance().add(
                     "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
                     "auction", auctionId);
