@@ -31,7 +31,6 @@ import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
-import com.auction.util.core.DataManager;
 import com.auction.util.core.SecurityUtils;
 
 import java.io.File;
@@ -683,17 +682,16 @@ public class CommandTest {
     // ===========================
 
     private void resetSingletons() throws Exception {
-        Field dm = DataManager.class.getDeclaredField("instance");
-        dm.setAccessible(true);
-        dm.set(null, null);
+        // DataManager đã chuyển sang Holder idiom (package datamanager).
+        // Không có field 'instance' để reset; cũng không giữ business state cần reset.
 
+        // AuctionService vẫn dùng double-checked locking → có field 'instance'.
         Field as = AuctionService.class.getDeclaredField("instance");
         as.setAccessible(true);
         as.set(null, null);
 
-        Field um = UserManager.class.getDeclaredField("instance");
-        um.setAccessible(true);
-        um.set(null, null);
+        // UserManager dùng Holder idiom → clear users qua API public.
+        UserManager.getInstance().setUsers(new HashMap<>());
     }
 
     private void cleanFiles() {
