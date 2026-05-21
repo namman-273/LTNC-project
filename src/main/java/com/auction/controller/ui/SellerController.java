@@ -24,7 +24,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
@@ -177,16 +176,17 @@ public class SellerController implements Initializable {
                     String auctionId = parts[1];
                     String newPrice  = parts[2];
                     String bidder    = parts[3];
-                    boolean isMine = auctionData.stream()
-                            .anyMatch(a -> a.getId().equals(auctionId));
+                    // Kiểm tra bằng sellerId từ auctionData HOẶC chấp nhận luôn nếu list chưa load
+                    boolean isMine = auctionData.isEmpty()
+                            || auctionData.stream().anyMatch(a -> a.getId().equals(auctionId));
                     if (isMine) {
+                        String msg = "🔔 " + bidder + " vừa đặt giá "
+                                + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
+                                + " tại phiên: " + auctionId;
                         Platform.runLater(() -> {
                             loadMyAuctions();
-                            ToastManager.show(ToastManager.Type.INFO, "🔔 " + bidder + " vừa đặt giá " + String.format("%,.0f VNĐ", Double.parseDouble(newPrice)) + " tại phiên: " + auctionId);
-                            showNotification("🔔 Có bid mới!",
-                                    bidder + " vừa đặt giá "
-                                            + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
-                                            + " tại phiên: " + auctionId);
+                            NotificationManager.getInstance().add(msg, "auction", auctionId);
+                            ToastManager.show(ToastManager.Type.INFO, msg);
                         });
                     }
                 }
@@ -232,12 +232,9 @@ public class SellerController implements Initializable {
     }
 
     private void showNotification(String title, String message) {
-        NotificationManager.getInstance().add(title + ": " + message);
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.show();
+        String full = title + ": " + message;
+        NotificationManager.getInstance().add(full, "auction");
+        ToastManager.show(ToastManager.Type.INFO, full);
     }
 
     private void loadMyAuctions() {
