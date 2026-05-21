@@ -4,7 +4,6 @@ import com.auction.model.dto.AuctionRow;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.AlertUtil;
 import com.auction.util.ui.NotificationManager;
-import com.auction.util.ui.ToastManager;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AdminDashboardView;
@@ -37,7 +36,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -52,6 +50,8 @@ public class AuctionListController implements Initializable {
   @FXML private Button sellerButton;
   @FXML private Button watchlistButton;
   @FXML private Button watchlistIconButton;
+  @FXML private Button sellerIconButton;
+  @FXML private Button adminIconButton;
   @FXML private Label statusBarLabel;
   @FXML private TextField searchField;
 
@@ -82,27 +82,7 @@ public class AuctionListController implements Initializable {
                           java.time.LocalDateTime.parse(json.getAsString()))
           .create();
 
-
-  private void initToastManager(javafx.scene.Node anchor) {
-    Platform.runLater(() -> {
-      try {
-        javafx.scene.Parent root = anchor.getScene().getRoot();
-        if (root instanceof StackPane) {
-          ToastManager.init((StackPane) root);
-        } else {
-          javafx.scene.Scene scene = anchor.getScene();
-          StackPane overlay = new StackPane();
-          overlay.getChildren().add(root);
-          scene.setRoot(overlay);
-          ToastManager.init(overlay);
-        }
-      } catch (Exception e) {
-        System.err.println("[Toast] Init failed: " + e.getMessage());
-      }
-    });
-  }
   public void setUsername(String username) {
-    initToastManager(welcomeLabel);
     this.username = username;
     if (welcomeLabel != null) welcomeLabel.setText("Xin chào, " + username + "!");
     String role = SessionManager.getInstance().getRole();
@@ -113,6 +93,14 @@ public class AuctionListController implements Initializable {
     if (sellerButton != null) {
       sellerButton.setVisible("SELLER".equalsIgnoreCase(role));
       sellerButton.setManaged("SELLER".equalsIgnoreCase(role));
+    }
+    if (sellerIconButton != null) {
+      sellerIconButton.setVisible("SELLER".equalsIgnoreCase(role));
+      sellerIconButton.setManaged("SELLER".equalsIgnoreCase(role));
+    }
+    if (adminIconButton != null) {
+      adminIconButton.setVisible("ADMIN".equalsIgnoreCase(role));
+      adminIconButton.setManaged("ADMIN".equalsIgnoreCase(role));
     }
     // Watchlist chỉ dành cho Bidder
     boolean isBidder = !"SELLER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role);
@@ -148,10 +136,10 @@ public class AuctionListController implements Initializable {
             String bidder    = parts[3];
             try {
               double amt = Double.parseDouble(amount);
-              String _msg = "🔨 Phiên " + auctionId + " có giá mới: "
-                      + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")";
-              NotificationManager.getInstance().add(_msg, "auction", auctionId);
-              ToastManager.show(ToastManager.Type.INFO, _msg);
+              NotificationManager.getInstance().add(
+                      "🔨 Phiên " + auctionId + " có giá mới: "
+                              + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")",
+                      "auction", auctionId);
             } catch (NumberFormatException e) {
               NotificationManager.getInstance().add(
                       "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ",
@@ -192,7 +180,13 @@ public class AuctionListController implements Initializable {
           boolean isWin = detail.contains("Winner:" + username)
                   || detail.contains("Winner: " + username);
 
-          if (isWin) {
+          // FIX: Nếu user là Seller, luôn hiện thông báo phiên của mình kết thúc
+          String role = SessionManager.getInstance().getRole();
+          if ("SELLER".equalsIgnoreCase(role) && !auctionId.isEmpty()) {
+            NotificationManager.getInstance().add(
+                    "🎉 Phiên " + auctionId + " đã kết thúc! " + detail,
+                    "auction", auctionId);
+          } else if (isWin) {
             NotificationManager.getInstance().add(
                     "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
                     "auction", auctionId);

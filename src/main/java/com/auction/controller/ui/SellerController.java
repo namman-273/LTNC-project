@@ -53,9 +53,6 @@ public class SellerController implements Initializable {
     private final ObservableList<String> historyData = FXCollections.observableArrayList();
     private String username;
     private Consumer<String> pushListener;
-    // BUG FIX 1: dùng Set riêng thay vì check auctionData (có thể rỗng do async)
-    private final java.util.Set<String> myAuctionIds =
-            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
     private Timeline autoRefreshTimeline;
 
     private final Gson gson = new GsonBuilder()
@@ -178,7 +175,8 @@ public class SellerController implements Initializable {
                     String auctionId = parts[1];
                     String newPrice  = parts[2];
                     String bidder    = parts[3];
-                    boolean isMine = myAuctionIds.contains(auctionId);
+                    boolean isMine = auctionData.stream()
+                            .anyMatch(a -> a.getId().equals(auctionId));
                     if (isMine) {
                         Platform.runLater(() -> {
                             loadMyAuctions();
@@ -192,18 +190,18 @@ public class SellerController implements Initializable {
                 break;
 
             case Protocol.RES_END_SUCCESS:
-                if (parts.length >= 3) {
+                if (parts.length >= 2) {
                     String auctionId = parts[1];
-                    boolean isMine = myAuctionIds.contains(auctionId);
-                    if (isMine) {
-                        String detail = parts.length > 2 ? parts[2] : "";
-                        Platform.runLater(() -> {
-                            loadMyAuctions();
-                            showNotification("🎉 Phiên đấu giá kết thúc!",
-                                    "Phiên " + auctionId + " đã kết thúc!\n"
-                                            + detail + "\nTiền đã được chuyển vào tài khoản.");
-                        });
-                    }
+                    String detail = parts.length > 2 ? parts[2] : "";
+                    // FIX: Bỏ check isMine qua auctionData — race condition vì loadMyAuctions()
+                    // chạy async, auctionData có thể chưa có dữ liệu khi push tới.
+                    // Server chỉ gửi RES_END_SUCCESS cho đúng seller của phiên đó nên không cần lọc thêm.
+                    Platform.runLater(() -> {
+                        loadMyAuctions();
+                        showNotification("🎉 Phiên đấu giá kết thúc!",
+                                "Phiên " + auctionId + " đã kết thúc!\n"
+                                        + detail + "\nTiền đã được chuyển vào tài khoản.");
+                    });
                 }
                 break;
 
@@ -221,22 +219,6 @@ public class SellerController implements Initializable {
                                         + "Số dư mới: " + String.format("%,.0f VNĐ",
                                         Double.parseDouble(newBalance)));
                     });
-                }
-                break;
-
-            case Protocol.NOTI_SNIPING_UPDATE:
-                // Hiển thị thông báo gia hạn thời gian cho Seller
-                // Format: SNIPING_UPDATE|auctionId|newEndTime|extensionCount
-                if (parts.length >= 4) {
-                    String auctionId = parts[1];
-                    String count     = parts[3];
-                    if (myAuctionIds.contains(auctionId)) {
-                        Platform.runLater(() -> {
-                            loadMyAuctions();
-                            showNotification("⏱ Phiên được gia hạn!",
-                                    "Phiên " + auctionId + " vừa được gia hạn thêm 2 phút (lần " + count + ")\nDo có người đặt giá trong phút cuối.");
-                        });
-                    }
                 }
                 break;
 
@@ -283,9 +265,6 @@ public class SellerController implements Initializable {
 
                     Platform.runLater(() -> {
                         auctionData.setAll(data);
-                        // BUG FIX 1: cập nhật myAuctionIds để push listener dùng
-                        myAuctionIds.clear();
-                        for (AuctionRow row : data) myAuctionIds.add(row.getId());
                         if (statsLabel    != null) statsLabel.setText("(" + data.size() + " phiên)");
                         if (statTotal     != null) statTotal.setText(String.valueOf(data.size()));
                         if (statOpen      != null) statOpen.setText(String.valueOf(open));
