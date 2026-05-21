@@ -19,10 +19,10 @@ import java.util.Map;
  * Tuân thủ Open/Closed Principle - có thể extend cho các storage khác.
  */
 public class FileDataPersistence<K, V> implements DataPersistence<K, V> {
-  
+
   private static final String FILE_EXTENSION = ".dat";
   private static final String TEMP_EXTENSION = ".tmp";
-  
+
   /**
    * Save data với atomic write.
    */
@@ -63,7 +63,7 @@ public class FileDataPersistence<K, V> implements DataPersistence<K, V> {
   public Map<K, V> load(String identifier) throws DataPersistenceException {
     String fileName = identifier + FILE_EXTENSION;
     File file = new File(fileName);
-    
+
     if (!file.exists()) {
       return null;
     }
@@ -82,7 +82,7 @@ public class FileDataPersistence<K, V> implements DataPersistence<K, V> {
   private void cleanup(File tempFile) {
     if (tempFile.exists()) {
       if (!tempFile.delete()) {
-        System.err.println("[FileDataPersistence] Warning: Could not delete temp file: " 
+        System.err.println("[FileDataPersistence] Warning: Could not delete temp file: "
             + tempFile.getAbsolutePath());
       }
     }
