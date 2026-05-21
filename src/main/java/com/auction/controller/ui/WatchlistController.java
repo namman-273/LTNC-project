@@ -10,6 +10,7 @@ import com.auction.views.java.BalanceView;
 import com.auction.views.java.NotificationView;
 import com.auction.views.java.BidView;
 import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.animation.KeyFrame;
@@ -28,6 +29,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -65,6 +67,26 @@ public class WatchlistController implements Initializable {
         loadWatchlist();
         loadBalance();
         startAutoRefresh();
+        // Init ToastManager: wrap root HBox trong StackPane overlay
+        Platform.runLater(this::initToastManager);
+    }
+
+    private void initToastManager() {
+        try {
+            javafx.scene.Parent root = watchlistCards.getScene().getRoot();
+            if (root instanceof StackPane) {
+                ToastManager.init((StackPane) root);
+            } else {
+                // Wrap root hiện tại vào StackPane để Toast có chỗ hiển thị
+                javafx.scene.Scene scene = watchlistCards.getScene();
+                StackPane overlay = new StackPane();
+                overlay.getChildren().add(root);
+                scene.setRoot(overlay);
+                ToastManager.init(overlay);
+            }
+        } catch (Exception e) {
+            System.err.println("[WatchlistController] Không thể init ToastManager: " + e.getMessage());
+        }
     }
 
     @Override
@@ -360,15 +382,15 @@ public class WatchlistController implements Initializable {
                         if (isWatched) {
                             try {
                                 double amt = Double.parseDouble(amount);
-                                NotificationManager.getInstance().add(
-                                        "🔨 Giá mới tại phiên " + auctionId + ": "
-                                                + String.format("%,.0f VNĐ", amt)
-                                                + " (bởi " + bidder + ")",
-                                        "auction", auctionId);
+                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": "
+                                        + String.format("%,.0f VNĐ", amt)
+                                        + " (bởi " + bidder + ")";
+                                NotificationManager.getInstance().add(msg, "auction", auctionId);
+                                ToastManager.show(ToastManager.Type.INFO, msg);
                             } catch (NumberFormatException e) {
-                                NotificationManager.getInstance().add(
-                                        "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ",
-                                        "auction", auctionId);
+                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ";
+                                NotificationManager.getInstance().add(msg, "auction", auctionId);
+                                ToastManager.show(ToastManager.Type.INFO, msg);
                             }
                             Platform.runLater(this::loadWatchlist);
                         }
