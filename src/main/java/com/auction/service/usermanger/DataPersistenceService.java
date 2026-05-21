@@ -1,6 +1,6 @@
 package com.auction.service.usermanger;
 
-import com.auction.util.core.DataManager;
+import com.auction.util.core.datamanager.DataManager;
 
 /**
  * Service để xử lý persistence operations cho UserManager.
