@@ -35,13 +35,6 @@ public class AuctionRepository {
   }
 
   /**
-   * Xóa auction.
-   */
-  public boolean remove(String auctionId) {
-    return auctions.remove(auctionId) != null;
-  }
-
-  /**
    * Lấy tất cả auctions dưới dạng Collection.
    */
   public Collection<Auction> getAllAuctions() {

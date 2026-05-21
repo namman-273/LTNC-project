@@ -16,7 +16,11 @@ import java.util.List;
 public class PaymentProcessor {
 
   /**
-   * Xử lý thanh toán khi auction kết thúc.
+   * Xử lý thanh toán khi auction kết thúc BÌNH THƯỜNG (không bị Admin đóng sớm).
+   * 
+   * LOGIC:
+   * - Có winner → Cộng tiền cho seller → Set status = PAID
+   * - Không có winner → Giữ nguyên status = FINISHED
    * 
    * @return WinnerInfo chứa thông tin winner và giá thắng
    */
@@ -36,32 +40,41 @@ public class PaymentProcessor {
       maxPrice = lastBid.getAmount();
     }
 
-    // Xử lý thanh toán nếu có winner
+    // ===== XỬ LÝ THANH TOÁN NẾU CÓ WINNER =====
     if (winner != null) {
       User seller = UserManager.getInstance().findUserByUsername(auction.getSellerId());
 
       if (seller != null) {
-        // Cộng tiền cho người bán
+        // 1. Cộng tiền cho người bán
         seller.addBalance(maxPrice);
 
-        // Cập nhật trạng thái auction
+        // 2. CẬP NHẬT TRẠNG THÁI → PAID (thanh toán thành công)
         auction.setStatus(AuctionStatus.PAID);
 
-        // Thông báo balance changed cho seller
+        // 3. Thông báo balance changed cho seller
         notifySellerBalanceChanged(auction, seller, maxPrice);
 
-        System.out.println("[PAYMENT] Đã chuyển " + maxPrice + "$ cho seller: "
-            + seller.getUsername());
+        System.out.println("[PAYMENT]  Đã chuyển " + maxPrice + "$ cho seller: "
+            + seller.getUsername() + " - Trạng thái: PAID");
       } else {
-        System.err.println("[PAYMENT ERROR] Không tìm thấy seller: " + auction.getSellerId());
+        System.err.println("[PAYMENT ERROR]  Không tìm thấy seller: "
+            + auction.getSellerId() + " - Trạng thái: FINISHED");
+        // Trạng thái vẫn là FINISHED vì không thanh toán được
       }
+    } else {
+      System.out.println("[PAYMENT]  Không có winner - Trạng thái: FINISHED");
+      // Trạng thái vẫn là FINISHED vì không có người thắng
     }
 
     return new WinnerInfo(winner, maxPrice);
   }
 
   /**
-   * Hoàn tiền cho người dẫn đầu khi auction bị hủy sớm.
+   * Hoàn tiền cho người dẫn đầu khi auction bị Admin đóng sớm.
+   * 
+   * LOGIC:
+   * - Tìm người dẫn đầu → Hoàn tiền
+   * - Trạng thái vẫn là CANCELED (không phải PAID vì không thanh toán cho seller)
    * 
    * @return WinnerInfo chứa thông tin người được hoàn tiền
    */
@@ -82,6 +95,8 @@ public class PaymentProcessor {
 
       // Hoàn tiền cho người dẫn đầu
       leadingBidder.addBalance(refundAmount);
+      // thông báo phiên bị hủy
+      auction.setStatus(AuctionStatus.CANCELED);
 
       // Gửi thông báo hoàn tiền
       String refundMsg = Protocol.NOTI_REFUND + Protocol.SEPARATOR
@@ -91,10 +106,11 @@ public class PaymentProcessor {
 
       auction.notifySpecificUser(leadingBidder.getUsername(), refundMsg);
 
-      System.out.println("[REFUND] Đã hoàn " + refundAmount + "$ cho user: "
-          + leadingBidder.getUsername());
+      System.out.println("[REFUND]  Đã hoàn " + refundAmount + "$ cho user: "
+          + leadingBidder.getUsername() + " - Trạng thái: CANCELED");
     }
 
+    // Trạng thái  là CANCELED (không set PAID vì không thanh toán cho seller)
     return new WinnerInfo(leadingBidder, refundAmount);
   }
 
@@ -110,12 +126,12 @@ public class PaymentProcessor {
     // Gửi thông báo trực tiếp cho seller thông qua ConnectionManager
     boolean sent = ConnectionManager.getInstance().sendDirectMessage(
         seller.getUsername(), sellerMsg);
-    
+
     if (sent) {
-      System.out.println("[NOTIFICATION] Đã gửi thông báo balance changed cho seller: " 
+      System.out.println("[NOTIFICATION]  Đã gửi thông báo balance changed cho seller: "
           + seller.getUsername());
     } else {
-      System.out.println("[NOTIFICATION] Seller " + seller.getUsername() 
+      System.out.println("[NOTIFICATION]   Seller " + seller.getUsername()
           + " không online, bỏ qua thông báo");
     }
   }
