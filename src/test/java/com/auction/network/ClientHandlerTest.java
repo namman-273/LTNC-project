@@ -74,7 +74,6 @@ public class ClientHandlerTest {
     // Cặp socket localhost với cổng ngẫu nhiên (tránh xung đột)
     serverSocket = new ServerSocket(0);
     int port = serverSocket.getLocalPort();
-
     final Socket[] acceptHolder = new Socket[1];
     Thread acceptThread = new Thread(() -> {
       try {
