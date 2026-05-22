@@ -86,7 +86,9 @@ public class BidController implements Initializable {
 
     private Consumer<String> pushListener;
 
-    private static final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache
+    // FIX Lỗi 2: bỏ static — mỗi BidController instance dùng cache riêng,
+    // tránh 2 controller cùng auctionId dùng chung list và clear() ảnh hưởng nhau
+    private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache
             = new ConcurrentHashMap<>();
 
     private ObservableList<HistoryEntry> historyItems;
@@ -505,6 +507,9 @@ public class BidController implements Initializable {
 
     // ── Push Listener ────────────────────────────────────────────────────────
     private void registerPushListener() {
+        // FIX Lỗi 3: remove listener cũ trước (phòng trường hợp AutoBidController
+        // chưa remove kịp hoặc BidController được re-init) để không có 2 listener cùng lúc
+        removePushListener();
         pushListener = this::handleServerPush;
         ServerConnection.getInstance().addPushListener(pushListener);
     }
@@ -557,7 +562,7 @@ public class BidController implements Initializable {
                         this.endTime = newEndTime;
                         Platform.runLater(() -> showSnipingAlert(count));
                         NotificationManager.getInstance().add(
-                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
+                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count,
                                 "auction", auctionId);
                     } catch (NumberFormatException ignored) {}
                 }

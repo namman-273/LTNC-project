@@ -87,6 +87,14 @@ public class AutoBidController implements Initializable {
                 // Không có balanceLabel ở màn này nhưng không bỏ lỡ event
                 break;
 
+            // FIX Lỗi 2: cập nhật currentPrice khi nhận NOTI_BID_UPDATE,
+            // để khi handleBack() truyền về BidView giá luôn là mới nhất
+            case Protocol.NOTI_BID_UPDATE:
+                if (parts.length >= 3 && parts[1].equals(auctionId)) {
+                    this.currentPrice = parts[2]; // cập nhật cache currentPrice
+                }
+                break;
+
             // FIX: nhận kết quả phiên ngay khi đang ở màn AutoBid
             case Protocol.RES_END_SUCCESS:
                 if (parts.length >= 2 && !parts[1].equals(auctionId)) break;
@@ -167,9 +175,12 @@ public class AutoBidController implements Initializable {
 
     @FXML
     private void handleBack() {
+        // FIX Lỗi 3: remove listener TRƯỚC KHI show BidView để BidView.registerPushListener()
+        // không bị duplicate với listener của AutoBidController còn sót lại
         removePushListener();
+        // FIX Lỗi 2: truyền currentPrice đã được cập nhật từ NOTI_BID_UPDATE
+        // để BidView hiển thị đúng giá mới nhất ngay khi quay về
         Stage stage = (Stage) titleLabel.getScene().getWindow();
-        // FIX: truyền đủ tham số để BidView hiển thị lại ảnh và thông tin sản phẩm
         new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime,
                 imageUrl, description, itemType, startingPrice, sellerId).show();
     }
