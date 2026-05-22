@@ -557,7 +557,7 @@ public class BidController implements Initializable {
                         this.endTime = newEndTime;
                         Platform.runLater(() -> showSnipingAlert(count));
                         NotificationManager.getInstance().add(
-                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count,
+                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
                                 "auction", auctionId);
                     } catch (NumberFormatException ignored) {}
                 }
