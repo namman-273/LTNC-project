@@ -53,10 +53,12 @@ public class AuctionFinancialProcessor {
     }
 
     updater.applyState(amount, new BidTransaction(bidder, amount));
+    double minIncrement = new AuctionValidator().getMinimumIncrement(amount);
 
     String bidUpdateMessage = Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR + auction.getId()
         + "|" + amount + "|" + bidder.getUsername() + "|"
-        + auction.getItem().getClass().getSimpleName();
+        + auction.getItem().getClass().getSimpleName()
+        + Protocol.SEPARATOR + minIncrement;
     auction.notifyAllParticipants(bidUpdateMessage, bidder);
   }
 }

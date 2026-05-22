@@ -18,7 +18,6 @@ public class Protocol {
   public static final String CMD_UNWATCH = "UNWATCH";
   public static final String CMD_GET_WATCHLIST = "GET_WATCHLIST";
   public static final String CMD_ADD_AUTO_BID = "ADD_AUTO_BID";
-  public static final String CMD_DELETE_AUCTION = "DELETE_AUCTION";
   public static final String CMD_GET_PROFILE = "GET_PROFILE";
   public static final String CMD_UPDATE_EMAIL = "UPDATE_EMAIL";
   public static final String CMD_UPDATE_PASSWORD = "UPDATE_PASSWORD";
@@ -36,11 +35,11 @@ public class Protocol {
   public static final String RES_BALANCE_INFO = "BALANCE_INFO";
   public static final String RES_END_SUCCESS = "END_SUCCESS";
   public static final String RES_SUCCESS = "SUCCESS";
+  public static final String RES_ADMIN_END_SUCCESS = "ADMIN_END_SUCCESS";
   public static final String RES_WATCHLIST = "RES_WATCHLIST";
   public static final String RES_WATCH_SUCCESS = "WATCH_SUCCESS";
   public static final String RES_UNWATCH_SUCCESS = "UNWATCH_SUCCESS";
   public static final String RES_AUTO_BID_SUCCESS = "AUTO_BID_SUCCESS";
-  public static final String RES_DELETE_SUCCESS = "DELETE_SUCCESS";
   public static final String RES_PROFILE_INFO = "PROFILE_INFO";
   public static final String RES_BID_HISTORY = "BID_HISTORY_RES";
   public static final String ERROR = "ERROR";
