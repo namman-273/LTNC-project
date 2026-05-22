@@ -44,30 +44,51 @@ import javafx.util.Duration;
 
 public class AuctionListController implements Initializable {
 
-  @FXML private Label welcomeLabel;
-  @FXML private Label balanceLabel;
-  @FXML private FlowPane auctionGrid;
-  @FXML private javafx.scene.layout.StackPane rootBox;
-  @FXML private Button adminButton;
-  @FXML private Button sellerButton;
-  @FXML private Button watchlistButton;
-  @FXML private Button watchlistIconButton;
-  @FXML private Button sellerIconButton;
-  @FXML private Button adminIconButton;
-  @FXML private Label statusBarLabel;
-  @FXML private TextField searchField;
+  @FXML
+  private javafx.scene.layout.StackPane rootBox;
+  @FXML
+  private Label welcomeLabel;
+  @FXML
+  private Label balanceLabel;
+  @FXML
+  private FlowPane auctionGrid;
+  @FXML
+  private Button adminButton;
+  @FXML
+  private Button sellerButton;
+  @FXML
+  private Button watchlistButton;
+  @FXML
+  private Button watchlistIconButton;
+  @FXML
+  private Button sellerIconButton;
+  @FXML
+  private Button adminIconButton;
+  @FXML
+  private Label statusBarLabel;
+  @FXML
+  private TextField searchField;
 
-  @FXML private Button btnFilterAll;
-  @FXML private Button btnFilterArt;
-  @FXML private Button btnFilterElec;
-  @FXML private Button btnFilterVehicle;
-  @FXML private Button btnFilterOther;
-  @FXML private Button btnPriceAll;
-  @FXML private Button btnPriceUnder5;
-  @FXML private Button btnPriceMid;
-  @FXML private Button btnPriceOver50;
+  @FXML
+  private Button btnFilterAll;
+  @FXML
+  private Button btnFilterArt;
+  @FXML
+  private Button btnFilterElec;
+  @FXML
+  private Button btnFilterVehicle;
+  @FXML
+  private Button btnFilterOther;
+  @FXML
+  private Button btnPriceAll;
+  @FXML
+  private Button btnPriceUnder5;
+  @FXML
+  private Button btnPriceMid;
+  @FXML
+  private Button btnPriceOver50;
 
-  private String activeTypeFilter  = "ALL";
+  private String activeTypeFilter = "ALL";
   private String activePriceFilter = "ALL";
 
   private String username;
@@ -77,9 +98,6 @@ public class AuctionListController implements Initializable {
   private Timeline autoRefreshTimeline;
   // FIX: Track các auctionId mà user đã đặt bid để tránh nhầm "không thắng"
   private final java.util.Set<String> biddedAuctions = new java.util.HashSet<>();
-  // FIX BUG 2: Track watched auctions để toast đúng cho watcher ở AuctionList
-  private final java.util.Set<String> watchedAuctionIds =
-          java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
   private final Gson gson = new GsonBuilder()
           .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -125,8 +143,8 @@ public class AuctionListController implements Initializable {
     registerPushListener();
     loadBalance();
     startAutoRefreshTimeline();
-    // Init ToastManager để hiện toast cho watcher tại AuctionList
-    javafx.application.Platform.runLater(() -> {
+    // Init ToastManager để có thể hiện popup toast tại màn này
+    Platform.runLater(() -> {
       if (rootBox != null) ToastManager.init(rootBox);
     });
   }
@@ -141,58 +159,32 @@ public class AuctionListController implements Initializable {
           // BID_UPDATE|auctionId|amount|bidderName|itemType
           if (parts.length >= 4) {
             String auctionId = parts[1];
-            String amount    = parts[2];
-            String bidder    = parts[3];
+            String amount = parts[2];
+            String bidder = parts[3];
             try {
               double amt = Double.parseDouble(amount);
-              NotificationManager.getInstance().add(
-                      "🔨 Phiên " + auctionId + " có giá mới: "
-                              + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")",
-                      "auction", auctionId);
-              // FIX BUG 2: Toast cho watcher đang ở AuctionList
-              if (watchedAuctionIds.contains(auctionId)) {
-                final double finalAmt = amt;
-                Platform.runLater(() ->
-                        ToastManager.show(ToastManager.Type.INFO,
-                                "🔨 Giá mới phiên " + auctionId + ": "
-                                        + String.format("%,.0f VNĐ", finalAmt) + " – " + bidder));
-              }
+              String msg = "🔨 Phiên " + auctionId + " có giá mới: "
+                      + String.format("%,.0f", amt) + " VNĐ (bởi " + bidder + ")";
+              NotificationManager.getInstance().add(msg, "auction", auctionId);
+              ToastManager.show(ToastManager.Type.INFO, msg);
             } catch (NumberFormatException e) {
-              NotificationManager.getInstance().add(
-                      "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ",
-                      "auction", auctionId);
+              String msg = "🔨 Phiên " + auctionId + " có giá mới: " + amount + " VNĐ";
+              NotificationManager.getInstance().add(msg, "auction", auctionId);
+              ToastManager.show(ToastManager.Type.INFO, msg);
             }
             Platform.runLater(this::loadFromServer);
           }
           break;
         }
 
-        case Protocol.NOTI_SNIPING_UPDATE: {
-          // FIX BUG 2: Xử lý gia hạn thời gian cho watcher tại AuctionList
-          // Format: SNIPING_UPDATE|auctionId|newEndTime|extensionCount
-          if (parts.length >= 4) {
-            String auctionId = parts[1];
-            String count     = parts[3];
-            if (watchedAuctionIds.contains(auctionId)) {
-              NotificationManager.getInstance().add(
-                      "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
-                      "auction", auctionId);
-              Platform.runLater(() ->
-                      ToastManager.show(ToastManager.Type.WARNING,
-                              "⏱ Phiên " + auctionId + " gia hạn lần " + count + " (+2 phút)"));
-            }
-          }
-          break;
-        }
-
         case Protocol.NOTI_BALANCE_CHANGED:
           // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
-          // Đây là message BE gửi thẳng cho seller qua ConnectionManager.
+          // FIX: Đây là message BE gửi thẳng cho seller qua ConnectionManager.
           // Dùng nó làm tín hiệu "phiên kết thúc có người thắng" cho seller.
           if (parts.length >= 4) {
             String auctionId = parts[1];
-            String newBal    = parts[2];
-            String delta     = parts[3];
+            String newBal = parts[2];
+            String delta = parts[3];
             Platform.runLater(() -> {
               // Cập nhật số dư hiển thị
               if (balanceLabel != null) {
@@ -203,12 +195,10 @@ public class AuctionListController implements Initializable {
                   balanceLabel.setText(newBal + " VNĐ");
                 }
               }
-              // FIX BUG 1 & 3: Dùng "💰" thay "🎉" để tránh hiển thị title sai
-              // "Chúc mừng bạn đã thắng" trong NotificationController.
-              // Seller nhận thông báo kết thúc phiên qua BALANCE_CHANGED (không qua RES_END_SUCCESS)
-              NotificationManager.getInstance().add(
-                      "💰 Phiên " + auctionId + " đã kết thúc! Nhận " + delta + " VNĐ",
-                      "balance", auctionId);
+              // Thêm thông báo kết thúc phiên vào NotificationManager cho seller
+              String msg = "🎉 Phiên " + auctionId + " đã kết thúc! Nhận " + delta + " VNĐ";
+              NotificationManager.getInstance().add(msg, "auction", auctionId);
+              ToastManager.show(ToastManager.Type.SUCCESS, msg);
               loadFromServer();
             });
           } else if (parts.length >= 3) {
@@ -230,63 +220,58 @@ public class AuctionListController implements Initializable {
         case Protocol.NOTI_NEW_AUCTION:
           Platform.runLater(() -> {
             setStatusBar("🆕 Có phiên đấu giá mới! Đang tải lại...");
+            ToastManager.show(ToastManager.Type.INFO, "🆕 Có phiên đấu giá mới!");
             loadFromServer();
           });
           break;
 
         case Protocol.RES_END_SUCCESS: {
           String auctionId = parts.length >= 2 ? parts[1] : "";
-          String detail    = parts.length >= 3 ? parts[2] : "";
+          String detail = parts.length >= 3 ? parts[2] : "";
           boolean isWin = detail.contains("Winner:" + username)
                   || detail.contains("Winner: " + username);
 
-          // FIX BUG 1: Seller đã nhận noti qua NOTI_BALANCE_CHANGED → bỏ qua RES_END_SUCCESS cho seller
-          // Chỉ xử lý cho Bidder (không phải seller của phiên này)
-          String role = com.auction.util.core.SessionManager.getInstance().getRole();
-          boolean isSeller = "SELLER".equalsIgnoreCase(role);
-
-          if (!isSeller) {
-            if (isWin) {
-              NotificationManager.getInstance().add(
-                      "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
-                      "auction", auctionId);
-            } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
-              String winnerName = extractWinner(detail);
-              NotificationManager.getInstance().add(
-                      "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerName,
-                      "auction", auctionId);
-              // FIX BUG 2: Toast cho watcher ở AuctionList khi phiên kết thúc
-              if (watchedAuctionIds.contains(auctionId)) {
-                final String wn = winnerName;
-                Platform.runLater(() ->
-                        ToastManager.show(ToastManager.Type.INFO,
-                                "🏁 Phiên " + auctionId + " kết thúc. Thắng: " + wn));
-              }
-            } else if (!auctionId.isEmpty()) {
-              NotificationManager.getInstance().add(
-                      "🔔 Phiên " + auctionId + " đã kết thúc. Không có người thắng.",
-                      "auction", auctionId);
-              if (watchedAuctionIds.contains(auctionId)) {
-                Platform.runLater(() ->
-                        ToastManager.show(ToastManager.Type.INFO,
-                                "🏁 Phiên " + auctionId + " kết thúc. Không có người thắng."));
-              }
-            }
+          // Chỉ xử lý cho Bidder — Seller dùng BALANCE_CHANGED làm tín hiệu kết thúc
+          if (isWin) {
+            String msg = "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId;
+            NotificationManager.getInstance().add(msg, "auction", auctionId);
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, msg));
+          } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
+            String winnerName = extractWinner(detail);
+            String msg = "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerName;
+            NotificationManager.getInstance().add(msg, "auction", auctionId);
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
+          } else if (!auctionId.isEmpty()) {
+            String msg = "🔔 Phiên " + auctionId + " đã kết thúc. Không có người thắng.";
+            NotificationManager.getInstance().add(msg, "auction", auctionId);
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
           }
           Platform.runLater(this::loadFromServer);
+          break;
+        }
+
+        case Protocol.NOTI_SNIPING_UPDATE: {
+          // SNIPING_UPDATE|auctionId|newEndTime|count
+          if (parts.length >= 4) {
+            String auctionId = parts[1];
+            String count = parts[3];
+            String msg = "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)";
+            NotificationManager.getInstance().add(msg, "auction", auctionId);
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.WARNING, msg));
+          }
           break;
         }
 
         case Protocol.NOTI_OUTBID: {
           if (parts.length >= 4) {
             String auctionId = parts[1];
-            String newAmt    = parts[3];
+            String newAmt = parts[3];
             // FIX: Đánh dấu user đã tham gia bid trong phiên này
             biddedAuctions.add(auctionId);
-            NotificationManager.getInstance().add(
-                    "⚠️ Bị vượt giá trong phiên " + auctionId
-                            + " — Giá mới: " + newAmt + " VNĐ",
-                    "auction", auctionId);
+            String msg = "⚠️ Bị vượt giá trong phiên " + auctionId
+                    + " — Giá mới: " + newAmt + " VNĐ";
+            NotificationManager.getInstance().add(msg, "auction", auctionId);
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.WARNING, msg));
           }
           break;
         }
@@ -295,9 +280,9 @@ public class AuctionListController implements Initializable {
           if (parts.length >= 3) {
             String refundAmt = parts[2];
             String auctionId = parts.length >= 2 ? parts[1] : "";
-            NotificationManager.getInstance().add(
-                    "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví",
-                    "balance", auctionId);
+            String msg = "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví";
+            NotificationManager.getInstance().add(msg, "balance", auctionId);
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, msg));
             // FIX: cập nhật lại số dư hiển thị sau khi được hoàn tiền
             loadBalance();
           }
@@ -413,11 +398,11 @@ public class AuctionListController implements Initializable {
     typeButtons.forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
     clicked.setStyle(FILTER_ACTIVE_STYLE);
 
-    if (clicked == btnFilterArt)          activeTypeFilter = "Art";
-    else if (clicked == btnFilterElec)    activeTypeFilter = "Electronics";
+    if (clicked == btnFilterArt) activeTypeFilter = "Art";
+    else if (clicked == btnFilterElec) activeTypeFilter = "Electronics";
     else if (clicked == btnFilterVehicle) activeTypeFilter = "Vehicle";
-    else if (clicked == btnFilterOther)   activeTypeFilter = "OTHER";
-    else                                  activeTypeFilter = "ALL";
+    else if (clicked == btnFilterOther) activeTypeFilter = "OTHER";
+    else activeTypeFilter = "ALL";
     applyFilter();
   }
 
@@ -428,10 +413,10 @@ public class AuctionListController implements Initializable {
     priceButtons.forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
     clicked.setStyle(FILTER_ACTIVE_STYLE);
 
-    if (clicked == btnPriceUnder5)      activePriceFilter = "UNDER5";
-    else if (clicked == btnPriceMid)    activePriceFilter = "MID";
+    if (clicked == btnPriceUnder5) activePriceFilter = "UNDER5";
+    else if (clicked == btnPriceMid) activePriceFilter = "MID";
     else if (clicked == btnPriceOver50) activePriceFilter = "OVER50";
-    else                                activePriceFilter = "ALL";
+    else activePriceFilter = "ALL";
     applyFilter();
   }
 
@@ -446,18 +431,18 @@ public class AuctionListController implements Initializable {
             .filter(r -> {
               String type = r.getItemType() != null ? r.getItemType() : "";
               return switch (activeTypeFilter) {
-                case "Art"         -> "Art".equals(type);
+                case "Art" -> "Art".equals(type);
                 case "Electronics" -> "Electronics".equals(type);
-                case "Vehicle"     -> "Vehicle".equals(type);
-                case "OTHER"       -> !List.of("Art", "Electronics", "Vehicle").contains(type);
-                default            -> true;
+                case "Vehicle" -> "Vehicle".equals(type);
+                case "OTHER" -> !List.of("Art", "Electronics", "Vehicle").contains(type);
+                default -> true;
               };
             })
             .filter(r -> switch (activePriceFilter) {
-              case "UNDER5"  -> r.getCurrentPrice() < 5_000_000;
-              case "MID"     -> r.getCurrentPrice() >= 5_000_000 && r.getCurrentPrice() <= 50_000_000;
-              case "OVER50"  -> r.getCurrentPrice() > 50_000_000;
-              default        -> true;
+              case "UNDER5" -> r.getCurrentPrice() < 5_000_000;
+              case "MID" -> r.getCurrentPrice() >= 5_000_000 && r.getCurrentPrice() <= 50_000_000;
+              case "OVER50" -> r.getCurrentPrice() > 50_000_000;
+              default -> true;
             })
             .collect(Collectors.toList());
     renderCards(filtered);
@@ -481,8 +466,8 @@ public class AuctionListController implements Initializable {
   private VBox buildCard(AuctionRow row) {
     String statusColor = switch (row.getStatus()) {
       case "RUNNING" -> "#E65100";
-      case "OPEN"    -> "#2E7D32";
-      default        -> "#888888";
+      case "OPEN" -> "#2E7D32";
+      default -> "#888888";
     };
     Label badge = new Label("RUNNING".equals(row.getStatus()) ? "🔴 LIVE" : "⬤ " + row.getStatus());
     badge.setStyle(
@@ -492,10 +477,10 @@ public class AuctionListController implements Initializable {
                     "-fx-background-radius: 6; -fx-padding: 3 8;");
 
     String typeIcon = switch (row.getItemType() != null ? row.getItemType() : "") {
-      case "Art"         -> "🎨";
+      case "Art" -> "🎨";
       case "Electronics" -> "⚡";
-      case "Vehicle"     -> "🚗";
-      default            -> "🏷";
+      case "Vehicle" -> "🚗";
+      default -> "🏷";
     };
 
     javafx.scene.Node iconNode;
@@ -636,7 +621,6 @@ public class AuctionListController implements Initializable {
               Protocol.CMD_WATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
-          watchedAuctionIds.add(selectedRow.getId()); // FIX BUG 2: track để toast
           setStatusBar("✅ Đã theo dõi phiên!");
           AlertUtil.showSuccess("Theo dõi thành công",
                   "✅ Đang theo dõi: " + selectedRow.getItemName());
@@ -658,7 +642,6 @@ public class AuctionListController implements Initializable {
               Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
-          watchedAuctionIds.remove(selectedRow.getId()); // FIX BUG 2: untrack
           setStatusBar("✅ Đã bỏ theo dõi!");
         } else {
           setStatusBar("❌ Bỏ theo dõi thất bại!");
@@ -679,9 +662,13 @@ public class AuctionListController implements Initializable {
   }
 
   @FXML
-  public void handleRefresh() { loadFromServer(); }
+  public void handleRefresh() {
+    loadFromServer();
+  }
 
-  public void refreshList() { loadFromServer(); }
+  public void refreshList() {
+    loadFromServer();
+  }
 
   private void startAutoRefreshTimeline() {
     autoRefreshTimeline = new Timeline(
@@ -770,6 +757,7 @@ public class AuctionListController implements Initializable {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new ProfileView(stage, username).show();
   }
+
   @FXML
   public void handleToggleSidebar() {
     // Sidebar toggle — có thể mở rộng sau
