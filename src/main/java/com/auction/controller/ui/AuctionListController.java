@@ -611,6 +611,8 @@ public class AuctionListController implements Initializable {
 
   @FXML
   public void handleGetWatchlist() {
+    stopAutoRefresh();
+    removePushListener(); // FIX: dọn listener trước khi rời màn để tránh toast lặp ở Watchlist
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new WatchlistView(stage, username).show();
   }

@@ -94,6 +94,8 @@ public class BidController implements Initializable {
 
     // FIX Bug2a: guard để không chạy 2 loadHistory thread cùng lúc
     private final AtomicBoolean historyLoading = new AtomicBoolean(false);
+    // FIX: nếu bị skip do đang loading, đánh dấu để reload lại sau khi xong
+    private final AtomicBoolean pendingHistoryReload = new AtomicBoolean(false);
 
     // ── HistoryEntry DTO ─────────────────────────────────────────────────────
     public static class HistoryEntry {
@@ -692,8 +694,12 @@ public class BidController implements Initializable {
 
     // ── History ──────────────────────────────────────────────────────────────
     private void loadHistory() {
-        // FIX Bug2a: nếu đang có thread load rồi thì bỏ qua, tránh chồng chất
-        if (!historyLoading.compareAndSet(false, true)) return;
+        // FIX Bug2a: nếu đang có thread load rồi thì đánh dấu pending, không bỏ qua hẳn
+        if (!historyLoading.compareAndSet(false, true)) {
+            pendingHistoryReload.set(true); // sẽ reload lại sau khi thread hiện tại xong
+            return;
+        }
+        pendingHistoryReload.set(false);
 
         new Thread(() -> {
             try {
@@ -727,8 +733,11 @@ public class BidController implements Initializable {
             } catch (Exception e) {
                 System.err.println("Lỗi parse history: " + e.getMessage());
             } finally {
-                // FIX Bug2a: luôn release lock dù có exception
                 historyLoading.set(false);
+                // FIX: nếu có pending (bị skip lúc auto-bid liên tục) → reload thêm 1 lần
+                if (pendingHistoryReload.compareAndSet(true, false)) {
+                    loadHistory();
+                }
             }
         }).start();
     }
