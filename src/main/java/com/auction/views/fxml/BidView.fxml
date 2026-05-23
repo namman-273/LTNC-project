@@ -256,7 +256,7 @@
                                            -fx-background-radius: 8; -fx-cursor: hand;
                                            -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;"/>
                         </HBox>
-                        <Button text="🔨 ĐẶT GIÁ NGAY" onAction="#handleBid"
+                        <Button fx:id="bidButton" text="🔨 ĐẶT GIÁ NGAY" onAction="#handleBid"
                                 prefWidth="350" prefHeight="48"
                                 style="-fx-background-color: linear-gradient(to right, #DC2626, #EF4444);
                                        -fx-text-fill: white;
