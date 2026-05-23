@@ -22,6 +22,7 @@ public class AutoBidController implements Initializable {
     @FXML private TextField maxBidField;
     @FXML private TextField incrementField;
     @FXML private Label messageLabel;
+    @FXML private Label minIncrementHintLabel;
 
     private String auctionId;
     private String itemName;
@@ -56,6 +57,15 @@ public class AutoBidController implements Initializable {
         this.startingPrice = startingPrice;
         this.sellerId      = sellerId      != null ? sellerId      : "";
         titleLabel.setText("🤖 Auto-Bid - " + itemName);
+
+        // Hiện gợi ý bước tăng tối thiểu dựa trên giá hiện tại
+        try {
+            double price = Double.parseDouble(currentPrice.replaceAll("[^0-9.]", ""));
+            long minStep = getMinimumIncrement(price);
+            if (minIncrementHintLabel != null) {
+                minIncrementHintLabel.setText("💡 Bước tối thiểu: " + String.format("%,d VNĐ", minStep));
+            }
+        } catch (NumberFormatException ignored) {}
 
         // FIX: lắng nghe push ngay cả khi đang ở màn AutoBid
         registerPushListener();
@@ -150,6 +160,25 @@ public class AutoBidController implements Initializable {
         String maxBid    = maxBidField.getText().trim();
         String increment = incrementField.getText().trim();
 
+        // Validate FE trước khi gửi
+        try {
+            double maxBidVal = Double.parseDouble(maxBid);
+            double incVal    = Double.parseDouble(increment);
+            double price = Double.parseDouble(currentPrice.replaceAll("[^0-9.]", ""));
+            long minStep = getMinimumIncrement(price);
+            if (incVal < minStep) {
+                showMessage("❌ Bước tăng tối thiểu: " + String.format("%,d VNĐ", minStep), "red");
+                return;
+            }
+            if (maxBidVal <= price) {
+                showMessage("❌ Giá tối đa phải lớn hơn giá hiện tại: " + String.format("%,d VNĐ", (long)price), "red");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            showMessage("❌ Vui lòng nhập số hợp lệ!", "red");
+            return;
+        }
+
         new Thread(() -> {
             ServerConnection conn = ServerConnection.getInstance();
             String response = conn.sendAndReceive(
@@ -195,6 +224,14 @@ public class AutoBidController implements Initializable {
         Stage stage = (Stage) titleLabel.getScene().getWindow();
         new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime,
                 imageUrl, description, itemType, startingPrice, sellerId).show();
+    }
+
+    /** Mirror AuctionValidator.getMinimumIncrement */
+    private long getMinimumIncrement(double price) {
+        if (price < 1_000_000)  return 50_000;
+        if (price < 5_000_000)  return 100_000;
+        if (price < 10_000_000) return 250_000;
+        return 500_000;
     }
 
     private void showMessage(String msg, String color) {

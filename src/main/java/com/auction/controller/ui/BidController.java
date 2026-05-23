@@ -528,12 +528,17 @@ public class BidController implements Initializable {
                             currentPriceValue = amt;
                             currentPriceLabel.setText(formatPrice(newAmt));
                             updateBidSuggestion(amt);
-                            // Append history trực tiếp — tránh gọi loadHistory() bị queue chậm
-                            if (!historyItems.isEmpty()) {
-                                HistoryEntry prev = historyItems.get(0);
-                                historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+                            // Chỉ append nếu NOTI_BID_UPDATE chưa append entry này rồi
+                            boolean alreadyAppended = !historyItems.isEmpty()
+                                    && historyItems.get(0).bidder.equals(newBidder)
+                                    && historyItems.get(0).amount == amt;
+                            if (!alreadyAppended) {
+                                if (!historyItems.isEmpty()) {
+                                    HistoryEntry prev = historyItems.get(0);
+                                    historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+                                }
+                                historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
                             }
-                            historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
                         } catch (NumberFormatException ignored) {}
                         showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
                     });
