@@ -12,7 +12,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-
 /**
  * .
  */
@@ -35,7 +34,7 @@ public class ServerConnection {
   // Listener này xử lý các tin Real-time (ví dụ: BID_UPDATE, SNIPING...)
   // Sử dụng CopyOnWriteArrayList để tránh lỗi khi vừa duyệt vừa xóa listener
   private final List<Consumer<String>> pushListeners = new CopyOnWriteArrayList<>();
-  private boolean isListening = false;
+  private volatile boolean isListening = false;
 
   private static volatile ServerConnection instance;
 
@@ -176,13 +175,7 @@ public class ServerConnection {
 
                     // --- NHÓM 3: KẾT THÚC PHIÊN ĐẤU GIÁ ---
                     // Khi một phiên kết thúc, Server dùng notify để báo cho TOÀN BỘ người đang xem
-                    // --- NHOM 3: KET THUC PHIEN DAU GIA ---
-                    // RES_END_SUCCESS: scheduler broadcast cho tat ca bidders khi phien het gio
-                    // RES_ADMIN_END_SUCCESS: response rieng cho Admin -> tach header de khong bi
-                    //   nuot vao push truoc khi sendAndReceive cua Admin kip poll -> tranh timeout
                     header.equals(Protocol.RES_END_SUCCESS);
-
-
   }
 
   /**
@@ -239,21 +232,24 @@ public class ServerConnection {
       String response = responseQueue.poll(5, TimeUnit.SECONDS);
 
       if (response == null) {
-        throw new Exception("Server đóng kết nối đột ngột");
+        throw new Exception("Server không phản hồi");
       }
 
       return response;
 
     } catch (Exception e) {
       System.err.println("Lỗi gửi/nhận: " + e.getMessage());
-      socket = null;
 
       // Retry 1 lần sau khi mất kết nối
       System.out.println("Đang thử kết nối lại...");
       try {
         if (connectWithRetry()) {
+          responseQueue.clear();
           out.println(message);
-          return responseQueue.poll(5, TimeUnit.SECONDS);
+          String retryResponse = responseQueue.poll(5, TimeUnit.SECONDS);
+          return retryResponse != null
+                  ? retryResponse
+                  : "ERROR|Server không phản hồi sau khi kết nối lại!";
         }
       } catch (Exception retryEx) {
         System.err.println("Retry thất bại: " + retryEx.getMessage());
@@ -267,17 +263,19 @@ public class ServerConnection {
     return socket != null && !socket.isClosed() && socket.isConnected();
   }
 
-  public void disconnect() {
-    synchronized (ServerConnection.class) {
-      try {
-        if (socket != null)
-          socket.close();
-        socket = null;
-        instance = null;
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+  public synchronized void disconnect() {
+    isListening = false; // báo listener thread dừng lại
+    try {
+      if (socket != null && !socket.isClosed())
+        socket.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      socket = null;
+      out = null;
+      in = null;
     }
+    instance = null;
   }
 
 }
