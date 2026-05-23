@@ -646,13 +646,20 @@ public class BidController implements Initializable {
     }
 
     private void updateBidSuggestion(double price) {
-        long suggested = (long)(price + 1_000_000);
-        bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
+        long minIncrement = getMinimumIncrement(price);
+        long minBid = (long) price + minIncrement;
+        bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", minBid));
         if (minBidLabel != null) {
-            // Giá tối thiểu = currentPrice + 1 (phải cao hơn giá hiện tại)
-            long minBid = (long)(price) + 1;
             minBidLabel.setText(String.format("%,d VNĐ", minBid));
         }
+    }
+
+    /** Mirror của AuctionValidator.getMinimumIncrement phía server */
+    private long getMinimumIncrement(double price) {
+        if (price < 1_000_000)  return 50_000;
+        if (price < 5_000_000)  return 100_000;
+        if (price < 10_000_000) return 250_000;
+        return 500_000;
     }
 
     // ── Countdown ────────────────────────────────────────────────────────────
