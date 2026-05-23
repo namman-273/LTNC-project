@@ -63,7 +63,6 @@ public class BidController implements Initializable {
     @FXML private Label      messageLabel;
     @FXML private Label      descriptionLabel;
     @FXML private Label      minBidLabel;
-    @FXML private Button     bidButton;
 
     @FXML private Button toggleDetailBtn;
     @FXML private VBox   productDetailPanel;
@@ -518,14 +517,26 @@ public class BidController implements Initializable {
                 }
                 break;
 
-            // FIX Bug2c: guard auctionId cho NOTI_OUTBID
             case Protocol.NOTI_OUTBID:
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
-                    // FIX: toast chỉ hiện tên bidder (không có số tiền) → dedup hoạt động đúng
-                    Platform.runLater(() ->
-                            showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!"));
+                    Platform.runLater(() -> {
+                        try {
+                            double amt = Double.parseDouble(newAmt);
+                            // Cập nhật giá ngay lập tức
+                            currentPriceValue = amt;
+                            currentPriceLabel.setText(formatPrice(newAmt));
+                            updateBidSuggestion(amt);
+                            // Append history trực tiếp — tránh gọi loadHistory() bị queue chậm
+                            if (!historyItems.isEmpty()) {
+                                HistoryEntry prev = historyItems.get(0);
+                                historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+                            }
+                            historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
+                        } catch (NumberFormatException ignored) {}
+                        showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
+                    });
                     NotificationManager.getInstance().add(
                             "⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt),
                             "auction", auctionId);
@@ -758,17 +769,11 @@ public class BidController implements Initializable {
         String amountStr = bidAmountField.getText().trim();
         if (amountStr.isEmpty()) { showWarning("Vui lòng nhập giá!"); return; }
 
-        // Disable button ngay để chặn double-click
-        if (bidButton != null) bidButton.setDisable(true);
-
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
                     Protocol.CMD_BID + Protocol.SEPARATOR + auctionId
                             + Protocol.SEPARATOR + amountStr);
             Platform.runLater(() -> {
-                // Re-enable button sau khi có response
-                if (bidButton != null) bidButton.setDisable(false);
-
                 if (response == null || response.startsWith("ERROR|Mất kết nối")) {
                     showError("Mất kết nối server!"); return;
                 }
@@ -784,12 +789,9 @@ public class BidController implements Initializable {
                             updateBidSuggestion(newPrice);
                         } catch (NumberFormatException ignored) {}
                     }
-                    // Append history ngay — bidder bị exclude khỏi NOTI_BID_UPDATE
-                    if (!historyItems.isEmpty()) {
-                        HistoryEntry prev = historyItems.get(0);
-                        historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
-                    }
-                    historyItems.add(0, new HistoryEntry(username, currentPriceValue, true, true));
+                    // FIX: KHÔNG gọi loadHistory/loadBalance ở đây
+                    // Server sẽ gửi NOTI_BID_UPDATE (cập nhật history) và NOTI_BALANCE_CHANGED
+                    // ngay sau BID_SUCCESS → tránh 2 sendAndReceive chạy đồng thời
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
@@ -838,7 +840,7 @@ public class BidController implements Initializable {
 
     private void startPriceRefresh() {
         if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
-        priceRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> {
+        priceRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(2), e -> {
             new Thread(() -> {
                 String resp = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
                 if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS)) return;
@@ -855,6 +857,9 @@ public class BidController implements Initializable {
                                     currentPriceValue = price;
                                     currentPriceLabel.setText(String.format("%,.0f VNĐ", price));
                                     updateBidSuggestion(price);
+                                    // Auto-bid của mình thắng → không nhận NOTI_BID_UPDATE
+                                    // Dùng poll này làm trigger sync history
+                                    loadHistory();
                                 }
                                 if (statusLabel != null && !status.isEmpty()) {
                                     statusLabel.setText(status);
