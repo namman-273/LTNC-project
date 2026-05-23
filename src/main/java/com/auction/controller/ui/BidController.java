@@ -789,9 +789,12 @@ public class BidController implements Initializable {
                             updateBidSuggestion(newPrice);
                         } catch (NumberFormatException ignored) {}
                     }
-                    // FIX: KHÔNG gọi loadHistory/loadBalance ở đây
-                    // Server sẽ gửi NOTI_BID_UPDATE (cập nhật history) và NOTI_BALANCE_CHANGED
-                    // ngay sau BID_SUCCESS → tránh 2 sendAndReceive chạy đồng thời
+                    // Append history ngay — bidder bị exclude khỏi NOTI_BID_UPDATE
+                    if (!historyItems.isEmpty()) {
+                        HistoryEntry prev = historyItems.get(0);
+                        historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+                    }
+                    historyItems.add(0, new HistoryEntry(username, currentPriceValue, true, true));
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
