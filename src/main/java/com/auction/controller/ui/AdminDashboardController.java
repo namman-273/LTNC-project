@@ -25,6 +25,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public class AdminDashboardController implements Initializable {
 
@@ -43,6 +44,9 @@ public class AdminDashboardController implements Initializable {
 
     private String   username;
     private Timeline autoRefreshTimeline;
+
+    // FIX: Giữ reference để có thể removePushListener khi thoát màn hình
+    private Consumer<String> pushListener;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -78,6 +82,32 @@ public class AdminDashboardController implements Initializable {
 
         loadFromServer();
         startAutoRefresh();
+        registerPushListener(); // FIX: đăng ký nhận broadcast từ server
+    }
+
+    // FIX 2 — AdminDashboardController.java (xóa dead code, thêm NOTI_AUCTION_CANCELLED)
+    private void registerPushListener() {
+        pushListener = message -> {
+            String[] parts = message.split("\\|");
+            String header  = parts[0];
+            switch (header) {
+                // ĐÃ XÓA case RES_ADMIN_END_SUCCESS:
+                // RES_ADMIN_END_SUCCESS KHÔNG phải push → nó vào responseQueue
+                // và được handleEndAuction() xử lý qua sendAndReceive bình thường.
+                // Giữ case này ở đây sẽ KHÔNG BAO GIỜ fire và gây nhầm lẫn.
+
+                case Protocol.NOTI_AUCTION_CANCELLED -> {
+                    // Broadcast khi admin cancel → cập nhật cho tất cả màn hình khác
+                    String detail = parts.length >= 2 ? parts[1] : "Phiên đã bị hủy";
+                    Platform.runLater(() -> {
+                        showMessage("🚫 " + detail, "gray");
+                        loadFromServer();
+                    });
+                }
+                default -> {}
+            }
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
     }
 
     public void loadFromServer() {
@@ -165,7 +195,8 @@ public class AdminDashboardController implements Initializable {
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
-                // FIX: đổi RES_END_SUCCESS → RES_ADMIN_END_SUCCESS cho đúng response code
+                // RES_ADMIN_END_SUCCESS là direct response (1-1), KHÔNG phải push
+                // → nó đi qua responseQueue → sendAndReceive nhận đúng, không timeout
                 if (response.startsWith(Protocol.RES_ADMIN_END_SUCCESS)) {
                     showMessage("✅ " + (parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!"), "green");
                 } else {
@@ -230,6 +261,11 @@ public class AdminDashboardController implements Initializable {
 
     public void handleBack() {
         stopAutoRefresh();
+        // FIX: dọn dẹp pushListener để tránh memory leak và callback sau khi thoát
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
@@ -241,3 +277,8 @@ public class AdminDashboardController implements Initializable {
         }
     }
 }
+
+
+
+
+

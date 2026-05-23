@@ -16,6 +16,7 @@ public class Protocol {
   public static final String CMD_GET_BALANCE = "GET_BALANCE";
   public static final String CMD_WATCH = "WATCH";
   public static final String CMD_UNWATCH = "UNWATCH";
+  public static final String CMD_DELETE_AUCTION = "DELETE_AUCTION";
   public static final String CMD_GET_WATCHLIST = "GET_WATCHLIST";
   public static final String CMD_ADD_AUTO_BID = "ADD_AUTO_BID";
   public static final String CMD_GET_PROFILE = "GET_PROFILE";
@@ -31,6 +32,7 @@ public class Protocol {
   public static final String RES_LIST_SUCCESS = "LIST_AUCTIONS_SUCCESS";
   public static final String RES_BID_SUCCESS = "BID_SUCCESS";
   public static final String RES_HISTORY = "HISTORY_RES";
+  public static final String RES_DELETE_SUCCESS = "DELETE_SUCCESS";
   public static final String RES_DEPOSIT_SUCCESS = "DEPOSIT_SUCCESS";
   public static final String RES_BALANCE_INFO = "BALANCE_INFO";
   public static final String RES_END_SUCCESS = "END_SUCCESS";

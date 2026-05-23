@@ -10,6 +10,7 @@ import com.auction.util.exception.InvalidBidException;
  * xu ly tai chinh.
  */
 public class AuctionFinancialProcessor {
+  private final AuctionValidator validator = new AuctionValidator();
 
   /**
    * interface method ap dung de update tinh trang dau gia.
@@ -53,7 +54,7 @@ public class AuctionFinancialProcessor {
     }
 
     updater.applyState(amount, new BidTransaction(bidder, amount));
-    double minIncrement = new AuctionValidator().getMinimumIncrement(amount);
+    double minIncrement = validator.getMinimumIncrement(amount);
 
     String bidUpdateMessage = Protocol.NOTI_BID_UPDATE + Protocol.SEPARATOR + auction.getId()
         + "|" + amount + "|" + bidder.getUsername() + "|"

@@ -175,7 +175,11 @@ public class ServerConnection {
 
                     // --- NHÓM 3: KẾT THÚC PHIÊN ĐẤU GIÁ ---
                     // Khi một phiên kết thúc, Server dùng notify để báo cho TOÀN BỘ người đang xem
+                    // --- NHOM 3: KET THUC PHIEN DAU GIA ---
+                    // RES_END_SUCCESS: scheduler broadcast cho tat ca bidders khi phien het gio
+                   
                     header.equals(Protocol.RES_END_SUCCESS);
+                    
   }
 
   /**
@@ -248,8 +252,8 @@ public class ServerConnection {
           out.println(message);
           String retryResponse = responseQueue.poll(5, TimeUnit.SECONDS);
           return retryResponse != null
-                  ? retryResponse
-                  : "ERROR|Server không phản hồi sau khi kết nối lại!";
+                    ? retryResponse
+                    : "ERROR|Server không phản hồi sau khi kết nối lại!";
         }
       } catch (Exception retryEx) {
         System.err.println("Retry thất bại: " + retryEx.getMessage());
