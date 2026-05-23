@@ -180,9 +180,9 @@ public class ServerConnection {
                     // RES_END_SUCCESS: scheduler broadcast cho tat ca bidders khi phien het gio
                     // RES_ADMIN_END_SUCCESS: response rieng cho Admin -> tach header de khong bi
                     //   nuot vao push truoc khi sendAndReceive cua Admin kip poll -> tranh timeout
-                    header.equals(Protocol.RES_END_SUCCESS)
-                    ||
-                    header.equals(Protocol.RES_ADMIN_END_SUCCESS);
+                    header.equals(Protocol.RES_END_SUCCESS);
+
+
   }
 
   /**
