@@ -139,39 +139,8 @@
                                    -fx-border-width: 1;
                                    -fx-margin: 16 0 0 0;">
 
-            <!-- Nạp tiền row -->
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label text="&#x1F4B0; Nạp tiền:"
-                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
-                <TextField fx:id="depositUsernameField" promptText="Username..."
-                           prefHeight="34" prefWidth="130"
-                           style="-fx-background-color: #1E293B; -fx-text-fill: #E2E8F0;
-                                  -fx-border-color: #334155; -fx-border-radius: 6;
-                                  -fx-background-radius: 6; -fx-prompt-text-fill: #475569;
-                                  -fx-font-size: 12px; -fx-padding: 0 10;"/>
-                <TextField fx:id="depositAmountField" promptText="Số tiền (VND)..."
-                           prefHeight="34" prefWidth="160"
-                           style="-fx-background-color: #1E293B; -fx-text-fill: #E2E8F0;
-                                  -fx-border-color: #334155; -fx-border-radius: 6;
-                                  -fx-background-radius: 6; -fx-prompt-text-fill: #475569;
-                                  -fx-font-size: 12px; -fx-padding: 0 10;"/>
-                <Button text="&#x1F4B0; Nạp" onAction="#handleDeposit"
-                        prefHeight="34" prefWidth="90"
-                        style="-fx-background-color: linear-gradient(to right,#059669,#10B981);
-                               -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;
-                               -fx-background-radius: 6; -fx-cursor: hand;"/>
-                <Label fx:id="balanceLabel" text="Số dư: ---"
-                       style="-fx-font-size: 12px; -fx-text-fill: #34D399; -fx-font-weight: bold;"/>
-            </HBox>
-
             <!-- Action buttons row -->
             <HBox spacing="10" alignment="CENTER_RIGHT">
-                <Button text="&#x1F5D1; Xóa phiên" onAction="#handleDeleteAuction"
-                        prefHeight="36" prefWidth="150"
-                        style="-fx-background-color: rgba(239,68,68,0.15); -fx-text-fill: #F87171;
-                               -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 8;
-                               -fx-border-color: rgba(239,68,68,0.4); -fx-border-radius: 8;
-                               -fx-border-width: 1; -fx-cursor: hand;"/>
                 <Button text="&#x1F534; Kết thúc phiên" onAction="#handleEndAuction"
                         prefHeight="36" prefWidth="160"
                         style="-fx-background-color: rgba(245,158,11,0.15); -fx-text-fill: #FBBF24;

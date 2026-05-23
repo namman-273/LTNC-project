@@ -637,6 +637,28 @@ public class BidController implements Initializable {
                 removePushListener();
                 break;
 
+            case Protocol.NOTI_AUCTION_CANCELLED:
+                // Admin cancel phien som -> hoan tien da xu ly phia server
+                if (parts.length >= 2) {
+                    String msg = parts[1];
+                    Platform.runLater(() -> {
+                        statusLabel.setText("CANCELED");
+                        stopSnipingCountdown();
+                        if (countdownTimeline != null) countdownTimeline.stop();
+                        if (countdownLabel != null) {
+                            countdownLabel.setText("\u274c B\u1ecb h\u1ee7y!");
+                            countdownLabel.setStyle(
+                                    "-fx-text-fill: #888888; -fx-font-weight: bold; -fx-font-size: 28px;");
+                        }
+                        showWarning("\u274c " + msg);
+                        NotificationManager.getInstance().add(
+                                "\u274c Phi\u00ean " + auctionId + " b\u1ecb Admin h\u1ee7y. Ti\u1ec1n \u0111\u00e3 \u0111\u01b0\u1ee3c ho\u00e0n.",
+                                "auction", auctionId);
+                    });
+                }
+                removePushListener();
+                break;
+
             default:
                 break;
         }

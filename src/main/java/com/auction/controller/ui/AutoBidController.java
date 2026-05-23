@@ -128,6 +128,18 @@ public class AutoBidController implements Initializable {
                 removePushListener();
                 break;
 
+            case Protocol.NOTI_AUCTION_CANCELLED:
+                if (parts.length >= 2 && parts[1].contains(auctionId)) {
+                    String cancelMsg = parts[1];
+                    Platform.runLater(() ->
+                            showMessage("\u274c " + cancelMsg, "gray"));
+                    NotificationManager.getInstance().add(
+                            "\u274c Phi\u00ean " + auctionId + " b\u1ecb Admin h\u1ee7y. Ti\u1ec1n \u0111\u00e3 \u0111\u01b0\u1ee3c ho\u00e0n.",
+                            "auction", auctionId);
+                }
+                removePushListener();
+                break;
+
             default:
                 break;
         }

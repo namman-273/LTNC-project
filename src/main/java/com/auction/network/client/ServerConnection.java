@@ -45,8 +45,8 @@ public class ServerConnection {
   }
 
   /**
- * singleton.
- */
+   * singleton.
+   */
   public static ServerConnection getInstance() {
     if (instance == null) {
       synchronized (ServerConnection.class) {
@@ -135,9 +135,9 @@ public class ServerConnection {
    * - NOTI_OUTBID: Thông báo riêng cho người bị vượt giá
    * - NOTI_REFUND: Thông báo khi tiền được hoàn lại
    * - NOTI_AUCTION_CANCELLED: Thông báo phiên đấu giá bị hủy bởi Admin
-   * 
+   *
    * @param line Message từ server
-   * 
+   *
    * @return true nếu là push notification, false nếu là response
    */
   private boolean isPushMessage(String line) {
@@ -149,40 +149,46 @@ public class ServerConnection {
     String header = line.split("\\|")[0];
 
     return
-    // --- NHÓM 1: NOTIFICATIONS CHUNG ---
-    // Thông báo về thay đổi giá đấu (gửi cho watchers + bidders)
-    header.equals(Protocol.NOTI_BID_UPDATE)
-        ||
-        // Thông báo về gia hạn thời gian (Anti-sniping)
-        header.equals(Protocol.NOTI_SNIPING_UPDATE)
-        ||
-        // Thông báo về thay đổi số dư ví
-        header.equals(Protocol.NOTI_BALANCE_CHANGED)
-        ||
-        // Thông báo về auction mới được tạo
-        header.equals(Protocol.NOTI_NEW_AUCTION)
-        ||
+            // --- NHÓM 1: NOTIFICATIONS CHUNG ---
+            // Thông báo về thay đổi giá đấu (gửi cho watchers + bidders)
+            header.equals(Protocol.NOTI_BID_UPDATE)
+                    ||
+                    // Thông báo về gia hạn thời gian (Anti-sniping)
+                    header.equals(Protocol.NOTI_SNIPING_UPDATE)
+                    ||
+                    // Thông báo về thay đổi số dư ví
+                    header.equals(Protocol.NOTI_BALANCE_CHANGED)
+                    ||
+                    // Thông báo về auction mới được tạo
+                    header.equals(Protocol.NOTI_NEW_AUCTION)
+                    ||
 
-        // --- NHÓM 2: NOTIFICATIONS CÁ NHÂN ---
-        // Thông báo riêng cho người bị vượt giá
-        header.equals(Protocol.NOTI_OUTBID)
-        ||
-        // Thông báo khi tiền được hoàn lại vào ví
-        header.equals(Protocol.NOTI_REFUND)
-        ||
-        // Thông báo phiên đấu giá bị hủy bởi Admin
-        header.equals(Protocol.NOTI_AUCTION_CANCELLED)
-        ||
+                    // --- NHÓM 2: NOTIFICATIONS CÁ NHÂN ---
+                    // Thông báo riêng cho người bị vượt giá
+                    header.equals(Protocol.NOTI_OUTBID)
+                    ||
+                    // Thông báo khi tiền được hoàn lại vào ví
+                    header.equals(Protocol.NOTI_REFUND)
+                    ||
+                    // Thông báo phiên đấu giá bị hủy bởi Admin
+                    header.equals(Protocol.NOTI_AUCTION_CANCELLED)
+                    ||
 
-        // --- NHÓM 3: KẾT THÚC PHIÊN ĐẤU GIÁ ---
-        // Khi một phiên kết thúc, Server dùng notify để báo cho TOÀN BỘ người đang xem
-        header.equals(Protocol.RES_END_SUCCESS);
+                    // --- NHÓM 3: KẾT THÚC PHIÊN ĐẤU GIÁ ---
+                    // Khi một phiên kết thúc, Server dùng notify để báo cho TOÀN BỘ người đang xem
+                    // --- NHOM 3: KET THUC PHIEN DAU GIA ---
+                    // RES_END_SUCCESS: scheduler broadcast cho tat ca bidders khi phien het gio
+                    // RES_ADMIN_END_SUCCESS: response rieng cho Admin -> tach header de khong bi
+                    //   nuot vao push truoc khi sendAndReceive cua Admin kip poll -> tranh timeout
+                    header.equals(Protocol.RES_END_SUCCESS)
+                    ||
+                    header.equals(Protocol.RES_ADMIN_END_SUCCESS);
   }
 
   /**
    * Đăng ký listener để nhận push notifications.
    * Listener sẽ được gọi mỗi khi có message từ server thuộc loại push.
-   * 
+   *
    * @param listener Consumer xử lý notification message
    */
   public void addPushListener(Consumer<String> listener) {

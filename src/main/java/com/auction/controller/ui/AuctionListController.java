@@ -262,6 +262,19 @@ public class AuctionListController implements Initializable {
           break;
         }
 
+        // Phien bi Admin cancel -> refresh list, tien da duoc hoan
+        case Protocol.NOTI_AUCTION_CANCELLED: {
+          String cancelledId = parts.length >= 2 ? parts[1] : "";
+          Platform.runLater(() -> {
+            setStatusBar("\u274c Phi\u00ean " + cancelledId + " \u0111\u00e3 b\u1ecb Admin h\u1ee7y.");
+            NotificationManager.getInstance().add(
+                    "\u274c Phi\u00ean " + cancelledId + " b\u1ecb Admin h\u1ee7y. Ti\u1ec1n \u0111\u00e3 \u0111\u01b0\u1ee3c ho\u00e0n.",
+                    "auction", cancelledId);
+            loadFromServer();
+          });
+          break;
+        }
+
         case Protocol.NOTI_OUTBID: {
           if (parts.length >= 4) {
             String auctionId = parts[1];
