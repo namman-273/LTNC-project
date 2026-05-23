@@ -258,12 +258,15 @@ public class AuctionListController implements Initializable {
         case Protocol.NOTI_OUTBID: {
           if (parts.length >= 4) {
             String auctionId = parts[1];
+            String newBidder = parts[2];
             String newAmt    = parts[3];
             biddedAuctions.add(auctionId);
-            String msg = "⚠️ Bị vượt giá trong phiên " + auctionId
+            String detailMsg = "⚠️ Bị vượt giá trong phiên " + auctionId
                     + " — Giá mới: " + newAmt + " VNĐ";
-            NotificationManager.getInstance().add(msg, "auction", auctionId);
-            Platform.runLater(() -> ToastManager.show(ToastManager.Type.WARNING, msg));
+            NotificationManager.getInstance().add(detailMsg, "auction", auctionId);
+            // FIX: toast chỉ hiện tên bidder để dedup hoạt động đúng
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.WARNING,
+                    "⚠️ Bị vượt giá bởi " + newBidder + "!"));
           }
           break;
         }
@@ -272,9 +275,10 @@ public class AuctionListController implements Initializable {
           if (parts.length >= 3) {
             String refundAmt = parts[2];
             String auctionId = parts.length >= 2 ? parts[1] : "";
-            String msg = "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví";
-            NotificationManager.getInstance().add(msg, "balance", auctionId);
-            Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, msg));
+            String detailMsg = "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví";
+            NotificationManager.getInstance().add(detailMsg, "balance", auctionId);
+            // FIX: toast cố định để dedup hoạt động, chi tiết vào NotificationManager
+            Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, "💰 Hoàn tiền vào ví"));
             loadBalance();
           }
           break;

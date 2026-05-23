@@ -21,10 +21,11 @@ public class ToastManager {
   private static VBox container;
   private static javafx.scene.layout.StackPane initializedRoot;
 
-  // FIX: dedup guard — lưu message đang hiện, bỏ qua nếu trùng trong 1.5 giây
+  // FIX: dedup guard — chặn toast cùng TYPE trong 2 giây
+  // Key = type + 40 ký tự đầu message (bỏ số tiền thay đổi liên tục ở cuối)
   private static final java.util.Map<String, Long> recentToasts =
           new java.util.concurrent.ConcurrentHashMap<>();
-  private static final long DEDUP_WINDOW_MS = 1500;
+  private static final long DEDUP_WINDOW_MS = 2000;
 
   public static void init(javafx.scene.layout.StackPane root) {
     // Nếu đã init trên đúng root này rồi thì không làm gì
@@ -46,8 +47,9 @@ public class ToastManager {
   public static void show(Type type, String message) {
     if (container == null)
       return;
-    // FIX: bỏ qua toast trùng trong vòng DEDUP_WINDOW_MS ms
-    String key = type.name() + "|" + message;
+    // FIX: key = type + 35 ký tự đầu, tránh bị bypass khi số tiền thay đổi
+    String msgPrefix = message.length() > 35 ? message.substring(0, 35) : message;
+    String key = type.name() + "|" + msgPrefix;
     long now = System.currentTimeMillis();
     Long lastShown = recentToasts.get(key);
     if (lastShown != null && (now - lastShown) < DEDUP_WINDOW_MS) return;

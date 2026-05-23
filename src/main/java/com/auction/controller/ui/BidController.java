@@ -478,7 +478,6 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.NOTI_BID_UPDATE:
-                // FIX Bug2a: guard auctionId + throttle loadHistory với AtomicBoolean
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
                     String bidder   = parts[3];
@@ -490,10 +489,18 @@ public class BidController implements Initializable {
                         if (!bidder.equals(username)) {
                             showWarning(bidder + " vừa đặt " + formatPrice(newPrice));
                         }
+                        // FIX: cập nhật history TRỰC TIẾP từ push data
+                        // KHÔNG gọi loadHistory() → tránh sendAndReceive contention khi auto-bid liên tục
+                        double amt = currentPriceValue;
+                        boolean isMe = bidder.equals(username);
+                        // Đánh dấu entry cũ không còn dẫn đầu
+                        if (!historyItems.isEmpty()) {
+                            HistoryEntry old = historyItems.get(0);
+                            historyItems.set(0, new HistoryEntry(old.bidder, old.amount, old.isMe, false));
+                        }
+                        historyItems.add(0, new HistoryEntry(bidder, amt, isMe, true));
                     });
-                    // FIX Bug2a: chỉ spawn 1 loadHistory thread tại một thời điểm
-                    loadHistory();
-                    loadBalance();
+                    // Balance đã được cập nhật qua NOTI_BALANCE_CHANGED → không cần gọi loadBalance()
                 }
                 break;
 
@@ -515,8 +522,9 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
+                    // FIX: toast chỉ hiện tên bidder (không có số tiền) → dedup hoạt động đúng
                     Platform.runLater(() ->
-                            showWarning("Bị vượt giá bởi " + newBidder + "! Giá mới: " + formatPrice(newAmt)));
+                            showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!"));
                     NotificationManager.getInstance().add(
                             "⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt),
                             "auction", auctionId);
@@ -528,8 +536,9 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String refundAmt = parts[2];
                     String newBal    = parts[3];
+                    // FIX: toast cố định, số tiền chi tiết chỉ vào NotificationManager
                     Platform.runLater(() ->
-                            showInfo("Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal)));
+                            showInfo("💰 Hoàn tiền vào ví"));
                     NotificationManager.getInstance().add(
                             "Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal),
                             "balance", auctionId);
@@ -768,8 +777,9 @@ public class BidController implements Initializable {
                             updateBidSuggestion(newPrice);
                         } catch (NumberFormatException ignored) {}
                     }
-                    loadHistory();
-                    loadBalance();
+                    // FIX: KHÔNG gọi loadHistory/loadBalance ở đây
+                    // Server sẽ gửi NOTI_BID_UPDATE (cập nhật history) và NOTI_BALANCE_CHANGED
+                    // ngay sau BID_SUCCESS → tránh 2 sendAndReceive chạy đồng thời
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
