@@ -337,13 +337,19 @@ public class AuctionListController implements Initializable {
                   Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
           AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
           if (rows != null) {
+            long now = System.currentTimeMillis();
             for (AuctionRow row : rows) {
               // FIX Bug1a: lọc thêm CANCELED/CANCELLED để phiên bị hủy không hiện
               String s = row.getStatus();
-              if (!"FINISHED".equals(s) && !"PAID".equals(s)
-                      && !"CANCELED".equals(s) && !"CANCELLED".equals(s)) {
-                data.add(row);
+              if ("FINISHED".equals(s) || "PAID".equals(s)
+                      || "CANCELED".equals(s) || "CANCELLED".equals(s)) {
+                continue; // đã kết thúc rõ ràng → bỏ qua
               }
+              // Ẩn phiên đã hết giờ dù server chưa kịp đổi status (scheduler delay)
+              if (row.getEndTime() > 0 && row.getEndTime() < now) {
+                continue;
+              }
+              data.add(row);
             }
           }
         }

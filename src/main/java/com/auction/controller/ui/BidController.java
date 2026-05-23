@@ -517,14 +517,27 @@ public class BidController implements Initializable {
                 }
                 break;
 
-            // FIX Bug2c: guard auctionId cho NOTI_OUTBID
+            // FIX: NOTI_OUTBID → cập nhật giá và history trực tiếp, không gọi loadHistory()
             case Protocol.NOTI_OUTBID:
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
-                    // FIX: toast chỉ hiện tên bidder (không có số tiền) → dedup hoạt động đúng
-                    Platform.runLater(() ->
-                            showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!"));
+                    Platform.runLater(() -> {
+                        // Cập nhật giá hiện tại ngay lập tức
+                        try {
+                            double amt = Double.parseDouble(newAmt);
+                            currentPriceValue = amt;
+                            currentPriceLabel.setText(formatPrice(newAmt));
+                            updateBidSuggestion(amt);
+                            // Append vào history trực tiếp — không gọi server
+                            if (!historyItems.isEmpty()) {
+                                HistoryEntry old = historyItems.get(0);
+                                historyItems.set(0, new HistoryEntry(old.bidder, old.amount, old.isMe, false));
+                            }
+                            historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
+                        } catch (NumberFormatException ignored) {}
+                        showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
+                    });
                     NotificationManager.getInstance().add(
                             "⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt),
                             "auction", auctionId);
@@ -646,20 +659,13 @@ public class BidController implements Initializable {
     }
 
     private void updateBidSuggestion(double price) {
-        long minIncrement = getMinimumIncrement(price);
-        long minBid = (long) price + minIncrement;
-        bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", minBid));
+        long suggested = (long)(price + 1_000_000);
+        bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
         if (minBidLabel != null) {
+            // Giá tối thiểu = currentPrice + 1 (phải cao hơn giá hiện tại)
+            long minBid = (long)(price) + 1;
             minBidLabel.setText(String.format("%,d VNĐ", minBid));
         }
-    }
-
-    /** Mirror của AuctionValidator.getMinimumIncrement phía server */
-    private long getMinimumIncrement(double price) {
-        if (price < 1_000_000)  return 50_000;
-        if (price < 5_000_000)  return 100_000;
-        if (price < 10_000_000) return 250_000;
-        return 500_000;
     }
 
     // ── Countdown ────────────────────────────────────────────────────────────
@@ -784,9 +790,13 @@ public class BidController implements Initializable {
                             updateBidSuggestion(newPrice);
                         } catch (NumberFormatException ignored) {}
                     }
-                    // FIX: KHÔNG gọi loadHistory/loadBalance ở đây
-                    // Server sẽ gửi NOTI_BID_UPDATE (cập nhật history) và NOTI_BALANCE_CHANGED
-                    // ngay sau BID_SUCCESS → tránh 2 sendAndReceive chạy đồng thời
+                    // Append history trực tiếp khi tự đặt thành công
+                    // (bidder bị exclude khỏi NOTI_BID_UPDATE nên không tự nhận được)
+                    if (!historyItems.isEmpty()) {
+                        HistoryEntry old2 = historyItems.get(0);
+                        historyItems.set(0, new HistoryEntry(old2.bidder, old2.amount, old2.isMe, false));
+                    }
+                    historyItems.add(0, new HistoryEntry(username, currentPriceValue, true, true));
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
