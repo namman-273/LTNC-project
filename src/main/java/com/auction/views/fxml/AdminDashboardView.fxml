@@ -77,12 +77,6 @@
             <Label text="&#x2699;&#xFE0F; Admin Dashboard"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="&#x1F504; Làm mới" onAction="#handleRefresh"
-                    prefHeight="34"
-                    style="-fx-background-color: rgba(59,130,246,0.12); -fx-text-fill: #60A5FA;
-                           -fx-font-size: 12px; -fx-cursor: hand; -fx-background-radius: 8;
-                           -fx-border-color: #1E3A5F; -fx-border-radius: 8; -fx-border-width: 1;
-                           -fx-padding: 6 14;"/>
         </HBox>
 
         <!-- STATS BAR -->
@@ -146,6 +140,12 @@
                         style="-fx-background-color: rgba(245,158,11,0.15); -fx-text-fill: #FBBF24;
                                -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 8;
                                -fx-border-color: rgba(245,158,11,0.4); -fx-border-radius: 8;
+                               -fx-border-width: 1; -fx-cursor: hand;"/>
+                <Button text="&#x1F5D1; Xóa phiên" onAction="#handleDeleteAuction"
+                        prefHeight="36" prefWidth="140"
+                        style="-fx-background-color: rgba(220,38,38,0.15); -fx-text-fill: #F87171;
+                               -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 8;
+                               -fx-border-color: rgba(220,38,38,0.4); -fx-border-radius: 8;
                                -fx-border-width: 1; -fx-cursor: hand;"/>
                 <Button text="&#x2795; Tạo phiên mới" onAction="#handleCreateAuction"
                         prefHeight="36" prefWidth="160"

@@ -442,23 +442,13 @@ public class WatchlistController implements Initializable {
                     }
                     break;
 
-                case Protocol.RES_END_SUCCESS:
-                    if (parts.length >= 3) {
-                        String auctionId = parts[1];
-                        if (watchedAuctionIds.contains(auctionId)) {
-                            String detail = parts[2];
-                            String notifMsg;
-                            if (detail.startsWith("Winner:")) {
-                                String winnerName = detail.substring("Winner:".length());
-                                notifMsg = "🏁 Phiên " + auctionId + " kết thúc. Người thắng: " + winnerName;
-                            } else {
-                                notifMsg = "🏁 Phiên " + auctionId + " kết thúc. Không có người thắng.";
-                            }
-                            NotificationManager.getInstance().add(notifMsg, "auction", auctionId);
-                            Platform.runLater(this::loadWatchlist);
-                        }
-                    }
-                    break;
+                // FIX Bug3: RES_END_SUCCESS là direct response (1-1), KHÔNG phải broadcast push.
+                // Dùng nó trong push listener sẽ bị lặp vì server gửi cùng message cho cả
+                // responseQueue lẫn pushChannel → popup hiện 2 lần.
+                // Giải pháp: xóa case này khỏi push listener hoàn toàn.
+                // Watcher vẫn biết phiên kết thúc qua NOTI_BID_UPDATE (status thay đổi)
+                // và autoRefresh mỗi 10s sẽ reload danh sách.
+                // case Protocol.RES_END_SUCCESS: → ĐÃ XÓA CỐ TÌNH
 
                 case Protocol.NOTI_SNIPING_UPDATE:
                     // Hiển thị thông báo gia hạn thời gian cho Watcher

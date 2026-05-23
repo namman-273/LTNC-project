@@ -62,6 +62,7 @@ public class BidController implements Initializable {
     @FXML private VBox       descriptionBox;
     @FXML private Label      messageLabel;
     @FXML private Label      descriptionLabel;
+    @FXML private Label      minBidLabel;
 
     @FXML private Button toggleDetailBtn;
     @FXML private VBox   productDetailPanel;
@@ -636,6 +637,11 @@ public class BidController implements Initializable {
     private void updateBidSuggestion(double price) {
         long suggested = (long)(price + 1_000_000);
         bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
+        if (minBidLabel != null) {
+            // Giá tối thiểu = currentPrice + 1 (phải cao hơn giá hiện tại)
+            long minBid = (long)(price) + 1;
+            minBidLabel.setText(String.format("%,d VNĐ", minBid));
+        }
     }
 
     // ── Countdown ────────────────────────────────────────────────────────────

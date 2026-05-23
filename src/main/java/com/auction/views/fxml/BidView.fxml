@@ -224,6 +224,15 @@
                                        prefHeight="44"
                                        styleClass="text-field-modern"
                                        style="-fx-font-size: 14px;"/>
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <Label text="💡 Giá tối thiểu:"
+                                       style="-fx-font-size: 11px; -fx-text-fill: #64748B;"/>
+                                <Label fx:id="minBidLabel" text="---"
+                                       style="-fx-font-size: 12px; -fx-font-weight: bold;
+                                              -fx-text-fill: #38BDF8;
+                                              -fx-background-color: rgba(56,189,248,0.1);
+                                              -fx-background-radius: 4; -fx-padding: 1 6;"/>
+                            </HBox>
                             <Label text="Giá đặt phải cao hơn giá hiện tại"
                                    style="-fx-font-size: 11px; -fx-text-fill: #334155;"/>
                         </VBox>
