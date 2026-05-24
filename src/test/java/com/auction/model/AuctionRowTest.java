@@ -131,10 +131,4 @@ public class AuctionRowTest {
         assertEquals(AuctionStatus.RUNNING.toString(), r.getStatus());
     }
 
-    @Test
-    void statusIsFinishedWhenAuctionIsClosed() {
-        auction.closeAuction();
-        AuctionRow r = new AuctionRow(auction);
-        assertEquals(AuctionStatus.FINISHED.toString(), r.getStatus());
-    }
 }

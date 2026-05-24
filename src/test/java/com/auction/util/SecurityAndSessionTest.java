@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.auction.util.core.SecurityUtils;
 import com.auction.util.core.SessionManager;
 
-import java.lang.reflect.Field;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +37,6 @@ public class SecurityAndSessionTest {
 
     @Test
     void hashPasswordDifferentSaltsDifferentHashes() {
-        // Same password, different usernames (salts) → different hash
         String h1 = SecurityUtils.hashPassword("secret", "alice");
         String h2 = SecurityUtils.hashPassword("secret", "bob");
         assertNotEquals(h1, h2, "Same password with different salts must produce different hashes");
@@ -69,7 +66,6 @@ public class SecurityAndSessionTest {
     void hashPasswordProducesBase64String() {
         String hash = SecurityUtils.hashPassword("pw", "user");
         assertNotNull(hash);
-        // Base64 strings only contain A-Z, a-z, 0-9, +, /, =
         assertTrue(hash.matches("^[A-Za-z0-9+/=]+$"),
             "Hash should be a valid Base64 string");
     }
@@ -77,10 +73,11 @@ public class SecurityAndSessionTest {
     // ==================== SessionManager ====================
 
     @BeforeEach
-    void clearSession() throws Exception {
-        Field f = SessionManager.class.getDeclaredField("instance");
-        f.setAccessible(true);
-        f.set(null, null);
+    void clearSession() {
+        // Dùng clear() để reset state thay vì hack reflection,
+        // vì SessionManager dùng Initialization-on-demand holder (SingletonHolder)
+        // nên không có field "instance" trực tiếp để reset qua reflection.
+        SessionManager.getInstance().clear();
     }
 
     @Test
@@ -111,7 +108,6 @@ public class SecurityAndSessionTest {
         SessionManager sm = SessionManager.getInstance();
         sm.setSession("alice", "pw", "BIDDER");
         sm.clear();
-        // After clear, getInstance creates a new one
         assertNull(SessionManager.getInstance().getUsername());
     }
 
@@ -133,6 +129,7 @@ public class SecurityAndSessionTest {
 
     @Test
     void freshSessionHasNullUsername() {
+        // BeforeEach đã clear(), nên instance mới có username = null
         assertNull(SessionManager.getInstance().getUsername());
     }
 

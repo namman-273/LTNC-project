@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,11 +14,11 @@ import com.auction.util.core.SessionManager;
 public class SessionManagerTest {
 
     @BeforeEach
-    void setUp() throws Exception {
-        // Reset singleton để mỗi test có môi trường sạch
-        Field field = SessionManager.class.getDeclaredField("instance");
-        field.setAccessible(true);
-        field.set(null, null);
+    void setUp() {
+        // Reset state bằng clear() thay vì reflection,
+        // vì SessionManager dùng Initialization-on-demand holder (SingletonHolder)
+        // không có field "instance" trực tiếp ở class ngoài để reset.
+        SessionManager.getInstance().clear();
     }
 
     // --- Singleton ---
@@ -64,7 +63,7 @@ public class SessionManagerTest {
         assertEquals("ADMIN", SessionManager.getInstance().getRole());
     }
 
-    // --- Initial state ---
+    // --- Initial state (sau khi clear() trong @BeforeEach) ---
 
     @Test
     void freshInstanceUsernameIsNull() {
@@ -88,7 +87,6 @@ public class SessionManagerTest {
         SessionManager sm = SessionManager.getInstance();
         sm.setSession("alice", "pw", "BIDDER");
         sm.clear();
-        // Sau clear, instance bị null nên gọi getInstance() tạo instance mới
         assertNull(SessionManager.getInstance().getUsername());
     }
 
@@ -113,9 +111,9 @@ public class SessionManagerTest {
         SessionManager first = SessionManager.getInstance();
         first.setSession("alice", "pw", "BIDDER");
         first.clear();
-        // clear() sets instance = null, so next call creates a brand new instance
+        // Sau clear(), các field được reset về null nhưng singleton vẫn là cùng instance
         SessionManager second = SessionManager.getInstance();
         assertNull(second.getUsername(),
-            "After clear(), new instance should have null username");
+            "After clear(), instance should have null username");
     }
 }

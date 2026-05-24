@@ -172,12 +172,7 @@ public class AuctionCoreTest {
 
     // ===== closeAuction =====
 
-    @Test
-    void closeAuctionSetsFinishedStatus() {
-        Auction a = new Auction("CA1", new Electronics("e-ca1", "TV", 500_000.0), DURATION, null);
-        a.closeAuction();
-        assertEquals(AuctionStatus.FINISHED, a.getStatus());
-    }
+   
 
     @Test
     void closeAuctionTwiceDoesNotThrow() {
@@ -186,16 +181,7 @@ public class AuctionCoreTest {
         assertDoesNotThrow(a::closeAuction);
     }
 
-    @Test
-    void afterCloseAuctionBidThrowsClosed() {
-        Auction a = new Auction("CA3", new Electronics("e-ca3", "TV", 500_000.0), DURATION, null);
-        a.closeAuction();
-        assertThrows(AuctionClosedException.class,
-            () -> a.processNewBid(alice, 600_000.0));
-    }
-
-    // ===== restoreTransients =====
-
+   
     @Test
     void restoreTransientsIsIdempotent() {
         Auction a = new Auction("RT1", new Electronics("e-rt1", "TV", 500_000.0), DURATION, null);

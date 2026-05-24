@@ -74,7 +74,7 @@ public class PaymentProcessor {
    * 
    * LOGIC:
    * - Tìm người dẫn đầu → Hoàn tiền
-   * - Trạng thái vẫn là FINISHED (không phải PAID vì không thanh toán cho seller)
+   * - Trạng thái vẫn là CANCELED (không phải PAID vì không thanh toán cho seller)
    * 
    * @return WinnerInfo chứa thông tin người được hoàn tiền
    */
@@ -95,6 +95,8 @@ public class PaymentProcessor {
 
       // Hoàn tiền cho người dẫn đầu
       leadingBidder.addBalance(refundAmount);
+      // thông báo phiên bị hủy
+      auction.setStatus(AuctionStatus.CANCELED);
 
       // Gửi thông báo hoàn tiền
       String refundMsg = Protocol.NOTI_REFUND + Protocol.SEPARATOR
@@ -105,10 +107,10 @@ public class PaymentProcessor {
       auction.notifySpecificUser(leadingBidder.getUsername(), refundMsg);
 
       System.out.println("[REFUND]  Đã hoàn " + refundAmount + "$ cho user: "
-          + leadingBidder.getUsername() + " - Trạng thái: FINISHED");
+          + leadingBidder.getUsername() + " - Trạng thái: CANCELED");
     }
 
-    // Trạng thái vẫn là FINISHED (không set PAID vì không thanh toán cho seller)
+    // Trạng thái  là CANCELED (không set PAID vì không thanh toán cho seller)
     return new WinnerInfo(leadingBidder, refundAmount);
   }
 
