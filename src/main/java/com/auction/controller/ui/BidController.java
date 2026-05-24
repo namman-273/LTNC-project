@@ -665,9 +665,15 @@ public class BidController implements Initializable {
     private void updateBidSuggestion(double price) {
         long minIncrement = getMinimumIncrement(price);
         long minBid = (long) price + minIncrement;
-        bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", minBid));
+        // Điền sẵn giá gợi ý vào ô nhập (chỉ khi ô đang trống hoặc chứa giá cũ)
+        if (bidAmountField != null) {
+            String current = bidAmountField.getText().trim();
+            if (current.isEmpty()) {
+                bidAmountField.setText(String.valueOf(minBid));
+            }
+        }
         if (minBidLabel != null) {
-            minBidLabel.setText(String.format("%,d VNĐ", minBid));
+            minBidLabel.setText("💡 Giá tối thiểu: " + String.format("%,d VNĐ", minBid));
         }
     }
 
