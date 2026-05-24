@@ -323,8 +323,15 @@ public class NotificationController implements Initializable {
                 showBid = false;
 
             } else if (msg.contains("🎉") || msg.contains("Chúc mừng")) {
-                iconTxt = "★"; iconBg = "#FEF3C7"; borderColor = "#F59E0B";
-                titleTxt = "Chúc mừng! Bạn đã thắng";
+                boolean isSeller = "SELLER".equalsIgnoreCase(
+                        com.auction.util.core.SessionManager.getInstance().getRole());
+                if (isSeller) {
+                    iconTxt = "◉"; iconBg = "#F3F4F6"; borderColor = "#E5E7EB";
+                    titleTxt = "Phiên kết thúc";
+                } else {
+                    iconTxt = "★"; iconBg = "#FEF3C7"; borderColor = "#F59E0B";
+                    titleTxt = "Chúc mừng! Bạn đã thắng";
+                }
                 subtitleTxt = extractDetail(msg, "phiên");
                 showBid = false;
 
