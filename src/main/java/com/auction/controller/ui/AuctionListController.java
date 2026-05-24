@@ -49,6 +49,7 @@ public class AuctionListController implements Initializable {
   @FXML private Label   welcomeLabel;
   @FXML private Label   balanceLabel;
   @FXML private FlowPane auctionGrid;
+  @FXML private Label     notifBadge;
   @FXML private Button  adminButton;
   @FXML private Button  sellerButton;
   @FXML private Button  watchlistButton;
@@ -122,6 +123,10 @@ public class AuctionListController implements Initializable {
     registerPushListener();
     loadBalance();
     startAutoRefreshTimeline();
+    // Lắng nghe notification mới → cập nhật badge ngay lập tức
+    NotificationManager.getInstance().getObservableItems()
+            .addListener((javafx.collections.ListChangeListener<Object>) c -> updateNotifBadge());
+    updateNotifBadge(); // init badge khi mở
     Platform.runLater(() -> {
       if (rootBox != null) ToastManager.init(rootBox);
     });
@@ -337,19 +342,13 @@ public class AuctionListController implements Initializable {
                   Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
           AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
           if (rows != null) {
-            long now = System.currentTimeMillis();
             for (AuctionRow row : rows) {
               // FIX Bug1a: lọc thêm CANCELED/CANCELLED để phiên bị hủy không hiện
               String s = row.getStatus();
-              if ("FINISHED".equals(s) || "PAID".equals(s)
-                      || "CANCELED".equals(s) || "CANCELLED".equals(s)) {
-                continue; // đã kết thúc rõ ràng → bỏ qua
+              if (!"FINISHED".equals(s) && !"PAID".equals(s)
+                      && !"CANCELED".equals(s) && !"CANCELLED".equals(s)) {
+                data.add(row);
               }
-              // Ẩn phiên đã hết giờ dù server chưa kịp đổi status (scheduler delay)
-              if (row.getEndTime() > 0 && row.getEndTime() < now) {
-                continue;
-              }
-              data.add(row);
             }
           }
         }
@@ -693,9 +692,26 @@ public class AuctionListController implements Initializable {
     new BalanceView(stage, username).show();
   }
 
+  private void updateNotifBadge() {
+    if (notifBadge == null) return;
+    long count = NotificationManager.getInstance().unreadCount();
+    Platform.runLater(() -> {
+      if (count > 0) {
+        notifBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+        notifBadge.setVisible(true);
+        notifBadge.setManaged(true);
+      } else {
+        notifBadge.setVisible(false);
+        notifBadge.setManaged(false);
+      }
+    });
+  }
+
   @FXML public void handleNotification() {
+    // Ẩn badge khi user mở notification
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new NotificationView(stage, username).show();
+    updateNotifBadge();
   }
 
   @FXML public void handleBidHistory() {
