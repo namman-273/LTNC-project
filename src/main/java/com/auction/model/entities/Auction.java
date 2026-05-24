@@ -55,7 +55,7 @@ public class Auction extends Entity {
   private transient AuctionSnipingProcessor snipingProcessor;
 
   /**
-   * .
+   * Constructor.
    */
   public Auction(String id, Item item, long durationMinutes, String sellerId) {
     super(id);
@@ -76,7 +76,7 @@ public class Auction extends Entity {
 
   /**
    * FIX LỖI: Sau khi deserialize, các trường transient bị null.
-   * Cần gọi hàm này trong DataManager .
+   * Cần gọi hàm này trong DataManager.
    */
   public void restoreTransients() {
     this.extensionCount = 0;
@@ -121,7 +121,7 @@ public class Auction extends Entity {
   }
 
   /**
-   * chinh trang thai phien.
+   * Chỉnh trạng thái phiên.
    */
   public void setStatus(AuctionStatus status) {
     this.lock.lock();
@@ -165,7 +165,7 @@ public class Auction extends Entity {
   // --- LOGIC QUẢN LÝ OBSERVER (Public để Service gọi được) ---
 
   /**
-   * them observer.
+   * Thêm observer.
    */
   public void addObserver(Observer obs) {
     if (observers == null) {
@@ -177,7 +177,7 @@ public class Auction extends Entity {
   }
 
   /**
-   * xoa observer.
+   * Xóa observer.
    */
   public void removeObserver(Observer obs) {
     if (observers != null) {
@@ -194,7 +194,7 @@ public class Auction extends Entity {
   }
 
   /**
-   * thong bao nhờ oberver cho chung.
+   * Thông báo nhờ observer cho chung.
    */
   public void notifyAllParticipants(String message, User excludeUser) {
     if (notifier == null) {
@@ -204,7 +204,7 @@ public class Auction extends Entity {
   }
 
   /**
-   * thong bao rieng.
+   * Thông báo riêng.
    */
   public void notifySpecificUser(String targetUsername, String message) {
     if (notifier == null) {
@@ -222,7 +222,7 @@ public class Auction extends Entity {
   }
 
   /**
-   * xu ly bid moi.
+   * Xử lý bid mới.
    */
   public void processNewBid(User bidder, double bidAmount)
       throws InvalidBidException, AuctionClosedException, AuthenticationException {
@@ -277,7 +277,7 @@ public class Auction extends Entity {
   }
 
   /**
-   * dang ky autobid.
+   * Đăng ký autobid.
    */
   public void addAutoBidConfig(String bidderId, double maxBid, double customStep)
       throws InvalidBidException {
@@ -306,7 +306,8 @@ public class Auction extends Entity {
     if (autoBidProcessor == null) {
       restoreTransients();
     }
-    autoBidProcessor.executeAutoBids(this.autoBidQueue, this, this::updateAuctionState);
+    autoBidProcessor.executeAutoBids(this.autoBidQueue,
+        this, (user, price) -> this.updateAuctionState(user, price));
   }
 
   private void handleAntiSniping(User bidder) {
@@ -322,10 +323,16 @@ public class Auction extends Entity {
   }
 
   /**
-   * giai phong tai nguyen luc dong phien.
+   * Giải phóng tài nguyên khi đóng phiên.
+   * Status đã được set bởi AuctionEndHandler:
+   * - FINISHED: Admin đóng sớm hoặc không có winner
+   * - PAID: Kết thúc bình thường và thanh toán thành công
+   * 
    */
   public void closeAuction() {
-    this.status = AuctionStatus.FINISHED;
+   
+    
+    //  CHỈ CLEANUP RESOURCES
     if (observers != null) {
       observers.clear();
     }
@@ -335,5 +342,8 @@ public class Auction extends Entity {
     if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
       notifyExecutor.shutdown();
     }
+    
+    System.out.println("[AUCTION] Đã giải phóng tài nguyên cho phiên: " + getId() 
+        + " - Status cuối: " + status);
   }
 }

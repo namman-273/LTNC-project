@@ -14,7 +14,7 @@ public abstract class User extends Entity {
   private String password; // Lưu trữ dưới dạng hash đơn giản
   private String role; // "ADMIN", "SELLER", hoặc "BIDDER"
   private static final long serialVersionUID = 1L;
-  private double balance;
+  private volatile double balance;
   private String email;
   private String joinDate;
 
