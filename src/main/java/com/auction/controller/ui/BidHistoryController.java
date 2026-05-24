@@ -5,6 +5,13 @@ import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.views.java.AuctionListView;
+import com.auction.views.java.ProfileView;
+import com.auction.views.java.WatchlistView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.NotificationView;
+import com.auction.views.java.SellerView;
+import com.auction.util.core.SessionManager;
+import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -30,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import java.util.function.Consumer;
+
 public class BidHistoryController implements Initializable {
 
     @FXML private ListView<BidHistoryEntry> historyList;
@@ -38,13 +47,17 @@ public class BidHistoryController implements Initializable {
     @FXML private Label loseLabel;
     @FXML private Label rateLabel;
     @FXML private Label subtitleLabel;
+    @FXML private Label balanceLabel;
     @FXML private Button tabAll;
     @FXML private Button tabWin;
     @FXML private Button tabLose;
+    @FXML private Button sellerBtnHistory;
+    @FXML private Button watchlistBtnHistory;
 
     private String username;
     private String activeTab = "all";
     private List<BidHistoryEntry> allEntries = new ArrayList<>();
+    private Consumer<String> pushListener;
 
     private static final String TAB_ACTIVE =
             "-fx-background-color: #111827; -fx-text-fill: white; " +
@@ -64,9 +77,101 @@ public class BidHistoryController implements Initializable {
         historyList.setCellFactory(lv -> new HistoryCell());
     }
 
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[Toast] Init failed: " + e.getMessage());
+            }
+        });
+    }
     public void setUsername(String u) {
+        initToastManager(historyList);
         this.username = u;
+        // Show seller button only for SELLER role; hide watchlist for SELLER
+        String role = SessionManager.getInstance().getRole();
+        if (sellerBtnHistory != null) {
+            boolean isSeller = "SELLER".equalsIgnoreCase(role);
+            sellerBtnHistory.setVisible(isSeller);
+            sellerBtnHistory.setManaged(isSeller);
+            // Seller không có danh sách theo dõi → ẩn luôn
+            if (watchlistBtnHistory != null) {
+                watchlistBtnHistory.setVisible(!isSeller);
+                watchlistBtnHistory.setManaged(!isSeller);
+            }
+        }
         loadFromServer();
+        registerPushListener();
+    }
+
+    private void registerPushListener() {
+        pushListener = message -> {
+            String[] parts = message.split("\\|");
+            String header = parts[0];
+            if (Protocol.NOTI_BALANCE_CHANGED.equals(header)) {
+                // Cập nhật số dư sidebar realtime
+                if (parts.length >= 2) {
+                    String newBal = parts[1];
+                    Platform.runLater(() -> {
+                        if (balanceLabel != null) {
+                            try {
+                                double v = Double.parseDouble(newBal);
+                                balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                            } catch (NumberFormatException e) {
+                                balanceLabel.setText(newBal + " VNĐ");
+                            }
+                        }
+                    });
+                }
+            } else if (Protocol.NOTI_SNIPING_UPDATE.equals(header)) {
+                // Bug 1 fix: nhận thông báo gia hạn cho bidder ở màn BidHistory
+                // Format: SNIPING_UPDATE|auctionId|newEndTime|extensionCount
+                if (parts.length >= 4) {
+                    String auctionId = parts[1];
+                    String count     = parts[3];
+                    com.auction.util.ui.NotificationManager.getInstance().add(
+                            "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
+                            "auction", auctionId);
+                }
+            } else if (Protocol.RES_END_SUCCESS.equals(header)) {
+                // Phiên kết thúc → reload lịch sử
+                String auctionId = parts.length >= 2 ? parts[1] : "";
+                String detail    = parts.length >= 3 ? parts[2] : "";
+                boolean isWin = detail.contains("Winner:" + username)
+                        || detail.contains("Winner: " + username);
+                // Thêm thông báo cho người thua
+                if (!isWin && !detail.contains("No winner") && !auctionId.isEmpty()) {
+                    com.auction.util.ui.NotificationManager.getInstance().add(
+                            "⚠️ Phiên " + auctionId + " đã kết thúc. Bạn không thắng lần này.",
+                            "auction", auctionId);
+                }
+                // Delay nhỏ để server kịp cập nhật DB rồi mới reload
+                new Thread(() -> {
+                    try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                    loadFromServer();
+                }).start();
+            }
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
+        loadBalance();
+    }
+
+    private void removePushListener() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
     }
 
     private void loadFromServer() {
@@ -80,7 +185,10 @@ public class BidHistoryController implements Initializable {
                             Protocol.RES_BID_HISTORY.length() + Protocol.SEPARATOR.length());
                     Type listType = new TypeToken<List<BidHistoryEntry>>(){}.getType();
                     List<BidHistoryEntry> entries = gson.fromJson(json, listType);
-                    if (entries != null) allEntries = entries;
+                    if (entries != null) {
+                        java.util.Collections.reverse(entries);
+                        allEntries = entries;
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("[BidHistoryController] Lỗi load: " + e.getMessage());
@@ -136,24 +244,78 @@ public class BidHistoryController implements Initializable {
         if (subtitleLabel != null) subtitleLabel.setText(total + " phiên đã tham gia");
     }
 
+
+    @FXML public void handleProfile() {
+        removePushListener();
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new ProfileView(stage, username).show();
+    }
+
+    @FXML public void handleWatchlist() {
+        removePushListener();
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new WatchlistView(stage, username).show();
+    }
+
+    private void loadBalance() {
+        if (balanceLabel == null) return;
+        new Thread(() -> {
+            String res = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_GET_BALANCE);
+            Platform.runLater(() -> {
+                if (res != null && res.startsWith(Protocol.RES_BALANCE_INFO)) {
+                    String[] p = res.split("\\|", -1);
+                    String amt = p.length >= 2 ? p[1] : "---";
+                    try {
+                        double v = Double.parseDouble(amt);
+                        if (balanceLabel != null) balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                    } catch (NumberFormatException e) {
+                        if (balanceLabel != null) balanceLabel.setText(amt + " VNĐ");
+                    }
+                } else {
+                    if (balanceLabel != null) balanceLabel.setText("---");
+                }
+            });
+        }, "bidhistory-balance-thread").start();
+    }
+
+    @FXML public void handleBalance() {
+        removePushListener();
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new BalanceView(stage, username).show();
+    }
+
+    @FXML public void handleNotification() {
+        removePushListener();
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
+
+    @FXML public void handleHome() {
+        removePushListener();
+        Stage stage = (Stage) historyList.getScene().getWindow();
+        new AuctionListView(stage, username).show();
+    }
+
     @FXML
     private void handleBack() {
+        removePushListener();
         Stage stage = (Stage) historyList.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }
 
     private static class HistoryCell extends ListCell<BidHistoryEntry> {
-        private final HBox      card       = new HBox(14);
-        private final StackPane iconWrap   = new StackPane();
-        private final Label     iconLabel  = new Label();
-        private final VBox      content    = new VBox(3);
-        private final HBox      titleRow   = new HBox(8);
-        private final Label     itemName   = new Label();
-        private final Label     badge      = new Label();
-        private final Label     detail     = new Label();
-        private final HBox      bottomRow  = new HBox(12);
-        private final Label     timeLabel  = new Label();
-        private final Label     priceLabel = new Label();
+        private final HBox card = new HBox(14);
+        private final StackPane iconWrap = new StackPane();
+        private final Label iconLabel = new Label();
+        private final VBox content = new VBox(3);
+        private final HBox titleRow = new HBox(8);
+        private final Label itemName = new Label();
+        private final Label badge = new Label();
+        private final Label detail = new Label();
+        private final HBox bottomRow = new HBox(12);
+        private final Label timeLabel = new Label();
+        private final Label priceLabel = new Label();
 
         HistoryCell() {
             iconWrap.setPrefSize(44, 44);
@@ -191,7 +353,10 @@ public class BidHistoryController implements Initializable {
         protected void updateItem(BidHistoryEntry entry, boolean empty) {
             super.updateItem(entry, empty);
             setStyle("-fx-background-color: transparent; -fx-padding: 0;");
-            if (empty || entry == null) { setGraphic(null); return; }
+            if (empty || entry == null) {
+                setGraphic(null);
+                return;
+            }
 
             boolean win = "WIN".equalsIgnoreCase(entry.getResult());
 
@@ -229,5 +394,29 @@ public class BidHistoryController implements Initializable {
             setGraphic(outer);
             setText(null);
         }
+    }
+    @FXML
+    public void handleGoBalance() {
+        removePushListener();
+        Stage s = getStage();
+        if (s != null) new BalanceView(s, username).show();
+    }
+
+    @FXML
+    public void handleSellerDashboard() {
+        removePushListener();
+        Stage s = getStage();
+        if (s != null) new SellerView(s, username).show();
+    }
+
+    @FXML
+    public void handleGoNotification() {
+        removePushListener();
+        Stage s = getStage();
+        if (s != null) new NotificationView(s, username).show();
+    }
+    private Stage getStage() {
+        try { return (Stage) historyList.getScene().getWindow(); }
+        catch (Exception e) { return null; }
     }
 }

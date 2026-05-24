@@ -157,7 +157,12 @@ public class NotificationController implements Initializable {
                     if (target != null) {
                         new BidView(stage, target.getId(), target.getItemName(),
                                 String.valueOf(target.getCurrentPrice()),
-                                target.getStatus(), username, target.getEndTime()).show();
+                                target.getStatus(), username, target.getEndTime(),
+                                target.getImageUrl() != null ? target.getImageUrl() : "",
+                                target.getDescription() != null ? target.getDescription() : "",
+                                target.getItemType() != null ? target.getItemType() : "",
+                                target.getStartingPrice(),
+                                target.getSellerId() != null ? target.getSellerId() : "").show();
                     } else {
                         new AuctionListView(stage, username).show();
                     }
@@ -308,11 +313,34 @@ public class NotificationController implements Initializable {
                 subtitleTxt = extractDetail(msg, null);
                 showBid = item.getAuctionId() != null;
 
-            } else if (msg.contains("thắng") || msg.contains("Winner") || msg.contains("🎉")) {
+                // FIX: tách rõ thông báo người THẮNG (có 🎉 hoặc "Chúc mừng")
+                // khỏi thông báo phiên kết thúc chứa "Người chiến thắng: X" (người THUA đọc)
+            } else if (msg.contains("💰") && msg.contains("đã kết thúc")) {
+                // FIX BUG 3: Noti cho seller khi phiên bán thành công
+                iconTxt = "💰"; iconBg = "#DBEAFE"; borderColor = "#3B82F6";
+                titleTxt = "Phiên bán thành công";
+                subtitleTxt = extractDetail(msg, "Phiên");
+                showBid = false;
+
+            } else if (msg.contains("🎉") || msg.contains("Chúc mừng")) {
                 iconTxt = "★"; iconBg = "#FEF3C7"; borderColor = "#F59E0B";
                 titleTxt = "Chúc mừng! Bạn đã thắng";
                 subtitleTxt = extractDetail(msg, "phiên");
                 showBid = false;
+
+            } else if (msg.contains("không thắng") || msg.contains("Người chiến thắng")
+                    || msg.contains("đã kết thúc") || msg.contains("kết thúc.")) {
+                // Phiên kết thúc — người thua hoặc người theo dõi
+                iconTxt = "◉"; iconBg = "#F3F4F6"; borderColor = "#E5E7EB";
+                titleTxt = "Phiên kết thúc";
+                subtitleTxt = extractDetail(msg, null);
+                showBid = false;
+
+            } else if (msg.contains("🔨") || msg.contains("giá mới")) {
+                iconTxt = "🔨"; iconBg = "#EDE9FE"; borderColor = "#8B5CF6";
+                titleTxt = "Giá mới trong phiên";
+                subtitleTxt = extractDetail(msg, null);
+                showBid = item.getAuctionId() != null;
 
             } else if (msg.contains("Hoàn") || msg.contains("REFUND")
                     || msg.contains("nạp") || msg.contains("VNĐ")) {

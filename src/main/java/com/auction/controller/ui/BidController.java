@@ -12,10 +12,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javafx.stage.Modality;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean; // FIX Bug2a: guard loadHistory
 import java.util.function.Consumer;
 
 import javafx.animation.KeyFrame;
@@ -60,34 +62,40 @@ public class BidController implements Initializable {
     @FXML private VBox       descriptionBox;
     @FXML private Label      messageLabel;
     @FXML private Label      descriptionLabel;
+    @FXML private Label      minBidLabel;
 
-    // ── MỚI: Chi tiết sản phẩm toggle ────────────────────────────────────────
     @FXML private Button toggleDetailBtn;
     @FXML private VBox   productDetailPanel;
     @FXML private Label  detailItemType;
     @FXML private Label  detailStartPrice;
     @FXML private Label  detailSeller;
-    // ── Số dư ví ──────────────────────────────────────────────────────────────
-    @FXML private Label balanceLabel;
-    // ─────────────────────────────────────────────────────────────────────────
+    @FXML private Label  balanceLabel;
 
     private String auctionId;
     private String username;
     private long   endTime;
     private double currentPriceValue = 0;
 
-    // MỚI: lưu thêm để ghi BidHistory
     private String itemTypeCached     = "";
     private double startingPriceCached = 0;
+    private String imageUrlCached     = "";
+    private String descriptionCached  = "";
+    private String sellerIdCached     = "";
 
     private Consumer<String> pushListener;
 
-    private static final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache
+    private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache
             = new ConcurrentHashMap<>();
 
     private ObservableList<HistoryEntry> historyItems;
     private Timeline snipingTimeline;
     private Timeline countdownTimeline;
+    private Timeline priceRefreshTimeline;
+
+    // FIX Bug2a: guard để không chạy 2 loadHistory thread cùng lúc
+    private final AtomicBoolean historyLoading = new AtomicBoolean(false);
+    // FIX: nếu bị skip do đang loading, đánh dấu để reload lại sau khi xong
+    private final AtomicBoolean pendingHistoryReload = new AtomicBoolean(false);
 
     // ── HistoryEntry DTO ─────────────────────────────────────────────────────
     public static class HistoryEntry {
@@ -181,13 +189,11 @@ public class BidController implements Initializable {
 
     // ── Setup ────────────────────────────────────────────────────────────────
 
-    /** Backward-compat (gọi từ BidView không có itemType/startingPrice/sellerId) */
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime) {
         setData(auctionId, itemName, currentPrice, status, username, endTime, "", "", "", 0, "");
     }
 
-    /** Backward-compat có imageUrl + description */
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime,
                         String imageUrl, String description) {
@@ -195,7 +201,6 @@ public class BidController implements Initializable {
                 imageUrl, description, "", 0, "");
     }
 
-    /** Full setData với itemType, startingPrice, sellerId (MỚI) */
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime,
                         String imageUrl, String description,
@@ -205,6 +210,9 @@ public class BidController implements Initializable {
         this.endTime            = endTime;
         this.itemTypeCached     = itemType  != null ? itemType  : "";
         this.startingPriceCached = startingPrice;
+        this.imageUrlCached     = imageUrl  != null ? imageUrl  : "";
+        this.descriptionCached  = description != null ? description : "";
+        this.sellerIdCached     = sellerId  != null ? sellerId  : "";
 
         ToastManager.init(rootPane);
 
@@ -220,7 +228,6 @@ public class BidController implements Initializable {
 
         updateBidSuggestion(currentPriceValue);
 
-        // itemTypeLabel (badge trên ảnh)
         if (itemTypeLabel != null && !itemTypeCached.isEmpty()) {
             String displayType = switch (itemTypeCached) {
                 case "Art"         -> "🎨 Nghệ thuật";
@@ -231,39 +238,30 @@ public class BidController implements Initializable {
             itemTypeLabel.setText(displayType);
         }
 
-        // sellerLabel
         if (sellerLabel != null && sellerId != null && !sellerId.isEmpty()) {
             sellerLabel.setText(sellerId);
         }
 
-        // FIX: nếu imageUrl trống nhưng description là URL → dùng description làm ảnh
         System.out.println("[BidView] imageUrl=" + imageUrl);
         System.out.println("[BidView] description=" + description);
         String resolvedImageUrl = (imageUrl != null && !imageUrl.isEmpty()) ? imageUrl
                 : (description != null && (description.startsWith("http")
                 || description.startsWith("data:image"))) ? description : "";
         String resolvedDescription = (resolvedImageUrl.equals(description)) ? "" : description;
-        System.out.println("[BidView] resolvedImageUrl=" + resolvedImageUrl);
 
-        // Ảnh — hỗ trợ cả URL lẫn base64 data:image/...
         if (!resolvedImageUrl.isEmpty() && productImage != null) {
             final String finalImageUrl = resolvedImageUrl;
             new Thread(() -> {
                 try {
                     javafx.scene.image.Image img;
                     if (finalImageUrl.startsWith("data:image")) {
-                        // base64 — decode thành byte array rồi load
                         String base64 = finalImageUrl.substring(finalImageUrl.indexOf(",") + 1);
                         byte[] bytes = java.util.Base64.getDecoder().decode(base64);
-                        img = new javafx.scene.image.Image(
-                                new java.io.ByteArrayInputStream(bytes));
+                        img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
                     } else {
-                        // URL — fetch bytes thủ công để tránh giới hạn SSL/redirect của JavaFX Image
                         java.net.URL url = new java.net.URL(finalImageUrl);
-                        java.net.HttpURLConnection conn =
-                                (java.net.HttpURLConnection) url.openConnection();
-                        conn.setRequestProperty("User-Agent",
-                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
                         conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
                         conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
                         conn.setRequestProperty("Referer", url.getProtocol() + "://" + url.getHost());
@@ -271,15 +269,10 @@ public class BidController implements Initializable {
                         conn.setConnectTimeout(8000);
                         conn.setReadTimeout(8000);
                         conn.connect();
-                        int code = conn.getResponseCode();
-                        System.out.println("[BidView] HTTP " + code + " for image");
                         try (java.io.InputStream is = conn.getInputStream()) {
                             byte[] bytes = is.readAllBytes();
-                            img = new javafx.scene.image.Image(
-                                    new java.io.ByteArrayInputStream(bytes));
-                        } finally {
-                            conn.disconnect();
-                        }
+                            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
+                        } finally { conn.disconnect(); }
                     }
                     final javafx.scene.image.Image finalImg = img;
                     if (!finalImg.isError()) {
@@ -292,8 +285,6 @@ public class BidController implements Initializable {
                                 imagePlaceholder.setManaged(false);
                             }
                         });
-                    } else {
-                        System.err.println("Ảnh lỗi: " + finalImg.getException());
                     }
                 } catch (Exception e) {
                     System.err.println("Không load được ảnh: " + e.getMessage());
@@ -301,7 +292,6 @@ public class BidController implements Initializable {
             }).start();
         }
 
-        // Mô tả — chỉ hiện nếu không phải URL hoặc base64
         if (resolvedDescription != null && !resolvedDescription.isEmpty()
                 && !resolvedDescription.startsWith("http")
                 && !resolvedDescription.startsWith("data:image")) {
@@ -312,7 +302,6 @@ public class BidController implements Initializable {
             }
         }
 
-        // Panel chi tiết SP (MỚI)
         if (detailItemType != null) {
             String displayType = switch (itemTypeCached) {
                 case "Art"         -> "🎨 Nghệ thuật";
@@ -335,20 +324,107 @@ public class BidController implements Initializable {
         bidHistoryList.setItems(historyItems);
         bidHistoryList.setCellFactory(lv -> new HistoryCell());
 
-        startCountdown();
-        loadHistory();
         registerPushListener();
+        startCountdown();
+        startPriceRefresh();
+        loadBalance();
+        loadHistory();
+
+        if ("FINISHED".equalsIgnoreCase(status) || "PAID".equalsIgnoreCase(status)) {
+            Platform.runLater(() -> {
+                statusLabel.setText("FINISHED");
+                if (countdownTimeline != null) countdownTimeline.stop();
+                if (countdownLabel != null) {
+                    countdownLabel.setText("⏰ Hết giờ!");
+                    countdownLabel.setStyle(
+                            "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+                }
+                checkWinnerFromHistory();
+            });
+        }
+
+        // FIX Bug1b: nếu phiên đã CANCELED khi mở lại → dừng hết ngay, không poll nữa
+        if ("CANCELED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
+            Platform.runLater(this::handleCancelledState);
+        }
+    }
+
+    private void checkWinnerFromHistory() {
+        new Thread(() -> {
+            String response = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+            if (response == null || response.startsWith("ERROR")) {
+                Platform.runLater(this::checkWinnerFromHistoryCache); return;
+            }
+            if (!response.startsWith(Protocol.RES_HISTORY)) {
+                Platform.runLater(this::checkWinnerFromHistoryCache); return;
+            }
+            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+            if (parts.length < 3 || parts[2].trim().isEmpty() || parts[2].trim().equals("[]")) {
+                Platform.runLater(() -> showInfo("Phiên kết thúc - không có người đặt giá.")); return;
+            }
+            try {
+                com.google.gson.JsonArray array =
+                        com.google.gson.JsonParser.parseString(parts[2].trim()).getAsJsonArray();
+                if (array.size() == 0) {
+                    Platform.runLater(() -> showInfo("Phiên kết thúc - không có người đặt giá.")); return;
+                }
+                com.google.gson.JsonObject lastBid = array.get(array.size() - 1).getAsJsonObject();
+                String winnerName = "---";
+                if (lastBid.has("bidder") && lastBid.get("bidder").isJsonObject()) {
+                    com.google.gson.JsonObject bidderObj = lastBid.get("bidder").getAsJsonObject();
+                    if (bidderObj.has("username")) winnerName = bidderObj.get("username").getAsString();
+                }
+                final String finalWinner = winnerName;
+                Platform.runLater(() -> {
+                    historyItems.clear();
+                    for (int i = array.size() - 1; i >= 0; i--) {
+                        com.google.gson.JsonObject obj = array.get(i).getAsJsonObject();
+                        String bidder = "---";
+                        if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
+                            com.google.gson.JsonObject bo = obj.get("bidder").getAsJsonObject();
+                            if (bo.has("username")) bidder = bo.get("username").getAsString();
+                        }
+                        double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
+                        boolean isMe = bidder.equals(username);
+                        boolean isLeading = (i == array.size() - 1);
+                        historyItems.add(new HistoryEntry(bidder, amount, isMe, isLeading));
+                    }
+                    if (finalWinner.equals(username)) {
+                        showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+                        NotificationManager.getInstance().add(
+                                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+                    } else {
+                        showInfo("Phiên kết thúc. Người chiến thắng: " + finalWinner);
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Lỗi parse history khi check winner: " + e.getMessage());
+                Platform.runLater(this::checkWinnerFromHistoryCache);
+            }
+        }, "check-winner-thread").start();
+    }
+
+    private void checkWinnerFromHistoryCache() {
+        if (historyItems == null || historyItems.isEmpty()) { showInfo("Phiên đã kết thúc."); return; }
+        HistoryEntry leading = historyItems.get(0);
+        if (leading.isMe) {
+            showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+            NotificationManager.getInstance().add(
+                    "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+        } else {
+            showInfo("Phiên kết thúc. Người chiến thắng: " + leading.bidder);
+        }
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {}
 
-    // ── Load số dư ví ────────────────────────────────────────────────────────
+    // ── Load số dư ──────────────────────────────────────────────────────────
     private void loadBalance() {
         if (balanceLabel == null) return;
         new Thread(() -> {
-            String res = ServerConnection.getInstance()
-                    .sendAndReceive(Protocol.CMD_GET_BALANCE);
+            String res = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
             Platform.runLater(() -> {
                 if (res != null && res.startsWith(Protocol.RES_BALANCE_INFO)) {
                     String[] p = res.split("\\|", -1);
@@ -356,17 +432,12 @@ public class BidController implements Initializable {
                     try {
                         double v = Double.parseDouble(amt);
                         balanceLabel.setText(String.format("%,.0f VNĐ", v));
-                    } catch (NumberFormatException e) {
-                        balanceLabel.setText(amt + " VNĐ");
-                    }
-                } else {
-                    balanceLabel.setText("---");
-                }
+                    } catch (NumberFormatException e) { balanceLabel.setText(amt + " VNĐ"); }
+                } else { balanceLabel.setText("---"); }
             });
         }, "bid-balance-thread").start();
     }
 
-    // ── Toggle chi tiết SP (MỚI) ─────────────────────────────────────────────
     @FXML
     private void handleToggleDetail() {
         if (productDetailPanel == null) return;
@@ -374,14 +445,13 @@ public class BidController implements Initializable {
         productDetailPanel.setVisible(show);
         productDetailPanel.setManaged(show);
         if (toggleDetailBtn != null) {
-            toggleDetailBtn.setText(show
-                    ? "▲ Ẩn chi tiết sản phẩm"
-                    : "▼ Xem chi tiết sản phẩm");
+            toggleDetailBtn.setText(show ? "▲ Ẩn chi tiết sản phẩm" : "▼ Xem chi tiết sản phẩm");
         }
     }
 
     // ── Push Listener ────────────────────────────────────────────────────────
     private void registerPushListener() {
+        removePushListener();
         pushListener = this::handleServerPush;
         ServerConnection.getInstance().addPushListener(pushListener);
     }
@@ -393,6 +463,20 @@ public class BidController implements Initializable {
 
         switch (parts[0]) {
 
+            case Protocol.NOTI_BALANCE_CHANGED:
+                if (parts.length >= 2) {
+                    String newBal = parts[1];
+                    Platform.runLater(() -> {
+                        if (balanceLabel != null) {
+                            try {
+                                double v = Double.parseDouble(newBal);
+                                balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    });
+                }
+                break;
+
             case Protocol.NOTI_BID_UPDATE:
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newPrice = parts[2];
@@ -401,13 +485,22 @@ public class BidController implements Initializable {
                         try { currentPriceValue = Double.parseDouble(newPrice); }
                         catch (Exception ignored) {}
                         currentPriceLabel.setText(formatPrice(newPrice));
-                        loadHistory();
-                        loadBalance(); // refresh số dư ngay sau khi đặt giá thành công
                         updateBidSuggestion(currentPriceValue);
                         if (!bidder.equals(username)) {
                             showWarning(bidder + " vừa đặt " + formatPrice(newPrice));
                         }
+                        // FIX: cập nhật history TRỰC TIẾP từ push data
+                        // KHÔNG gọi loadHistory() → tránh sendAndReceive contention khi auto-bid liên tục
+                        double amt = currentPriceValue;
+                        boolean isMe = bidder.equals(username);
+                        // Đánh dấu entry cũ không còn dẫn đầu
+                        if (!historyItems.isEmpty()) {
+                            HistoryEntry old = historyItems.get(0);
+                            historyItems.set(0, new HistoryEntry(old.bidder, old.amount, old.isMe, false));
+                        }
+                        historyItems.add(0, new HistoryEntry(bidder, amt, isMe, true));
                     });
+                    // Balance đã được cập nhật qua NOTI_BALANCE_CHANGED → không cần gọi loadBalance()
                 }
                 break;
 
@@ -419,8 +512,7 @@ public class BidController implements Initializable {
                         this.endTime = newEndTime;
                         Platform.runLater(() -> showSnipingAlert(count));
                         NotificationManager.getInstance().add(
-                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count,
-                                "auction", auctionId);
+                                "⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
                     } catch (NumberFormatException ignored) {}
                 }
                 break;
@@ -429,20 +521,41 @@ public class BidController implements Initializable {
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String newBidder = parts[2];
                     String newAmt    = parts[3];
-                    Platform.runLater(() ->
-                            showWarning("Bị vượt giá bởi " + newBidder + "! Giá mới: " + formatPrice(newAmt)));
+                    Platform.runLater(() -> {
+                        try {
+                            double amt = Double.parseDouble(newAmt);
+                            // Cập nhật giá ngay lập tức
+                            currentPriceValue = amt;
+                            currentPriceLabel.setText(formatPrice(newAmt));
+                            updateBidSuggestion(amt);
+                            // Chỉ append nếu NOTI_BID_UPDATE chưa append entry này rồi
+                            boolean alreadyAppended = !historyItems.isEmpty()
+                                    && historyItems.get(0).bidder.equals(newBidder)
+                                    && historyItems.get(0).amount == amt;
+                            if (!alreadyAppended) {
+                                if (!historyItems.isEmpty()) {
+                                    HistoryEntry prev = historyItems.get(0);
+                                    historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+                                }
+                                historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
+                            }
+                        } catch (NumberFormatException ignored) {}
+                        showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
+                    });
                     NotificationManager.getInstance().add(
                             "⚠️ Bị vượt giá trong phiên " + auctionId + " — Giá mới: " + formatPrice(newAmt),
                             "auction", auctionId);
                 }
                 break;
 
+            // FIX Bug2c: guard auctionId cho NOTI_REFUND
             case Protocol.NOTI_REFUND:
                 if (parts.length >= 4 && parts[1].equals(auctionId)) {
                     String refundAmt = parts[2];
                     String newBal    = parts[3];
+                    // FIX: toast cố định, số tiền chi tiết chỉ vào NotificationManager
                     Platform.runLater(() ->
-                            showInfo("Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal)));
+                            showInfo("💰 Hoàn tiền vào ví"));
                     NotificationManager.getInstance().add(
                             "Hoàn " + formatPrice(refundAmt) + " → Số dư: " + formatPrice(newBal),
                             "balance", auctionId);
@@ -450,36 +563,79 @@ public class BidController implements Initializable {
                 break;
 
             case Protocol.RES_END_SUCCESS:
+                if (parts.length >= 2 && !parts[1].equals(auctionId)) break;
                 Platform.runLater(() -> {
                     statusLabel.setText("FINISHED");
                     stopSnipingCountdown();
                     if (countdownTimeline != null) countdownTimeline.stop();
+                    // FIX Bug1b: dừng priceRefresh khi phiên kết thúc
+                    if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
                     if (countdownLabel != null) {
                         countdownLabel.setText("⏰ Hết giờ!");
                         countdownLabel.setStyle(
                                 "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
                     }
-                    String detail  = parts.length >= 3 ? parts[2] : "";
-                    boolean isWin  = detail.contains("Winner:" + username);
-
-
-
-
-                    if (isWin) {
-                        showSuccess("Bạn đã thắng phiên đấu giá!");
-                        NotificationManager.getInstance().add(
-                                "🎉 Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
-                    } else if (detail.contains("No winner")) {
+                    String detail = parts.length >= 3 ? parts[2] : "";
+                    if (detail.contains("No winner")) {
                         showInfo("Phiên kết thúc - không có người thắng.");
+                        NotificationManager.getInstance().add(
+                                "⚠️ Phiên " + auctionId + " kết thúc. Không có người thắng.", "auction", auctionId);
                     } else {
-                        showInfo("Phiên đã kết thúc. Bạn không thắng lần này.");
+                        boolean isWin = detail.contains("Winner:" + username)
+                                || detail.contains("Winner: " + username);
+                        if (isWin) {
+                            showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+                            NotificationManager.getInstance().add(
+                                    "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+                        } else {
+                            String winnerName = "";
+                            if (detail.contains("Winner: ")) { winnerName = detail.substring(detail.indexOf("Winner: ") + 8).trim(); }
+                            else if (detail.contains("Winner:")) { winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim(); }
+                            int wSep = winnerName.indexOf("|"); if (wSep >= 0) winnerName = winnerName.substring(0, wSep).trim();
+                            String winnerDisplay = winnerName.isEmpty() ? "---" : winnerName;
+                            showInfo("Phiên kết thúc. Người chiến thắng: " + winnerDisplay);
+                            NotificationManager.getInstance().add(
+                                    "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerDisplay,
+                                    "auction", auctionId);
+                        }
                     }
                 });
                 removePushListener();
                 break;
 
+            case Protocol.NOTI_AUCTION_CANCELLED:
+                // FIX Bug1b: dừng TẤT CẢ timer khi nhận cancel, không để priceRefresh restart gì cả
+                if (parts.length >= 2) {
+                    String msg = parts[1];
+                    Platform.runLater(() -> {
+                        handleCancelledState();
+                        showWarning("❌ " + msg);
+                    });
+                    NotificationManager.getInstance().add(
+                            "❌ Phiên " + auctionId + " bị Admin hủy. Tiền đã được hoàn.",
+                            "auction", auctionId);
+                }
+                removePushListener();
+                break;
+
             default:
                 break;
+        }
+    }
+
+    /**
+     * FIX Bug1b: Tập trung logic khi phiên bị hủy — dừng mọi timer,
+     * cập nhật UI. Dùng chung cho cả push realtime và khi mở lại màn đã CANCELED.
+     */
+    private void handleCancelledState() {
+        stopSnipingCountdown();
+        if (countdownTimeline   != null) countdownTimeline.stop();
+        if (priceRefreshTimeline != null) priceRefreshTimeline.stop(); // FIX: không restart
+        if (statusLabel  != null) statusLabel.setText("CANCELED");
+        if (countdownLabel != null) {
+            countdownLabel.setText("❌ Bị hủy!");
+            countdownLabel.setStyle(
+                    "-fx-text-fill: #888888; -fx-font-weight: bold; -fx-font-size: 28px;");
         }
     }
 
@@ -507,8 +663,22 @@ public class BidController implements Initializable {
     }
 
     private void updateBidSuggestion(double price) {
-        long suggested = (long)(price + 1_000_000);
-        bidAmountField.setPromptText("Gợi ý: " + String.format("%,d", suggested));
+        long minIncrement = getMinimumIncrement(price);
+        long minBid = (long) price + minIncrement;
+        if (bidAmountField != null) {
+            bidAmountField.setPromptText(String.format("%,d", minBid));
+        }
+        if (minBidLabel != null) {
+            minBidLabel.setText("💡 Giá tối thiểu: " + String.format("%,d VNĐ", minBid));
+        }
+    }
+
+    /** Mirror AuctionValidator.getMinimumIncrement */
+    private long getMinimumIncrement(double price) {
+        if (price < 1_000_000)  return 50_000;
+        if (price < 5_000_000)  return 100_000;
+        if (price < 10_000_000) return 250_000;
+        return 500_000;
     }
 
     // ── Countdown ────────────────────────────────────────────────────────────
@@ -559,19 +729,26 @@ public class BidController implements Initializable {
 
     // ── History ──────────────────────────────────────────────────────────────
     private void loadHistory() {
+        // FIX Bug2a: nếu đang có thread load rồi thì đánh dấu pending, không bỏ qua hẳn
+        if (!historyLoading.compareAndSet(false, true)) {
+            pendingHistoryReload.set(true); // sẽ reload lại sau khi thread hiện tại xong
+            return;
+        }
+        pendingHistoryReload.set(false);
+
         new Thread(() -> {
-            String response = ServerConnection.getInstance().sendAndReceive(
-                    Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
-            if (response == null || response.startsWith("ERROR")) return;
-            if (!response.startsWith(Protocol.RES_HISTORY)) return;
-
-            String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-            if (parts.length < 3) return;
-
-            String json = parts[2].trim();
-            if (json.isEmpty() || json.equals("[]")) return;
-
             try {
+                String response = ServerConnection.getInstance().sendAndReceive(
+                        Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+                if (response == null || response.startsWith("ERROR")) return;
+                if (!response.startsWith(Protocol.RES_HISTORY)) return;
+
+                String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
+                if (parts.length < 3) return;
+
+                String json = parts[2].trim();
+                if (json.isEmpty() || json.equals("[]")) return;
+
                 JsonArray array = JsonParser.parseString(json).getAsJsonArray();
                 Platform.runLater(() -> {
                     historyItems.clear();
@@ -580,9 +757,7 @@ public class BidController implements Initializable {
                         String bidder = "---";
                         if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
                             JsonObject bidderObj = obj.get("bidder").getAsJsonObject();
-                            if (bidderObj.has("username")) {
-                                bidder = bidderObj.get("username").getAsString();
-                            }
+                            if (bidderObj.has("username")) bidder = bidderObj.get("username").getAsString();
                         }
                         double amount    = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
                         boolean isMe      = bidder.equals(username);
@@ -592,6 +767,12 @@ public class BidController implements Initializable {
                 });
             } catch (Exception e) {
                 System.err.println("Lỗi parse history: " + e.getMessage());
+            } finally {
+                historyLoading.set(false);
+                // FIX: nếu có pending (bị skip lúc auto-bid liên tục) → reload thêm 1 lần
+                if (pendingHistoryReload.compareAndSet(true, false)) {
+                    loadHistory();
+                }
             }
         }).start();
     }
@@ -622,8 +803,12 @@ public class BidController implements Initializable {
                             updateBidSuggestion(newPrice);
                         } catch (NumberFormatException ignored) {}
                     }
-                    loadHistory();
-                    loadBalance(); // refresh số dư ngay sau khi đặt giá thành công
+                    // Append history ngay — bidder bị exclude khỏi NOTI_BID_UPDATE
+                    if (!historyItems.isEmpty()) {
+                        HistoryEntry prev = historyItems.get(0);
+                        historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+                    }
+                    historyItems.add(0, new HistoryEntry(username, currentPriceValue, true, true));
                 } else {
                     showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
                 }
@@ -636,7 +821,8 @@ public class BidController implements Initializable {
         stopAll();
         Stage stage = (Stage) bidAmountField.getScene().getWindow();
         new AutoBidView(stage, auctionId, itemNameLabel.getText(),
-                currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
+                currentPriceLabel.getText(), statusLabel.getText(), username, endTime,
+                imageUrlCached, descriptionCached, itemTypeCached, startingPriceCached, sellerIdCached).show();
     }
 
     @FXML
@@ -650,16 +836,87 @@ public class BidController implements Initializable {
 
     @FXML
     private void handleViewChart() {
-        stopAll();
-        Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        new BidChartView(stage, auctionId, itemNameLabel.getText(),
-                currentPriceLabel.getText(), statusLabel.getText(), username, endTime).show();
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/auction/views/fxml/BidChartView.fxml"));
+            javafx.scene.Parent root = loader.load();
+            com.auction.controller.ui.BidChartController chartCtrl = loader.getController();
+            chartCtrl.setData(auctionId, itemNameLabel.getText(),
+                    currentPriceLabel.getText(), statusLabel.getText(), username, endTime);
+            javafx.stage.Stage chartStage = new javafx.stage.Stage();
+            chartStage.setTitle("Biểu đồ giá - " + itemNameLabel.getText());
+            chartStage.setScene(new javafx.scene.Scene(root, 700, 450));
+            chartStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            chartStage.initOwner((Stage) bidAmountField.getScene().getWindow());
+            chartStage.setResizable(true);
+            chartStage.show();
+        } catch (Exception e) {
+            System.err.println("Lỗi mở chart: " + e.getMessage());
+        }
+    }
+
+    private void startPriceRefresh() {
+        if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
+        priceRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(2), e -> {
+            new Thread(() -> {
+                String resp = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
+                if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS)) return;
+                String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
+                try {
+                    com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(json).getAsJsonArray();
+                    for (com.google.gson.JsonElement el : arr) {
+                        com.google.gson.JsonObject obj = el.getAsJsonObject();
+                        if (obj.has("id") && auctionId.equals(obj.get("id").getAsString())) {
+                            double price  = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
+                            String status = obj.has("status") ? obj.get("status").getAsString() : "";
+                            Platform.runLater(() -> {
+                                if (price > currentPriceValue) {
+                                    currentPriceValue = price;
+                                    currentPriceLabel.setText(String.format("%,.0f VNĐ", price));
+                                    updateBidSuggestion(price);
+                                    // Auto-bid của mình thắng → không nhận NOTI_BID_UPDATE
+                                    // Dùng poll này làm trigger sync history
+                                    loadHistory();
+                                }
+                                if (statusLabel != null && !status.isEmpty()) {
+                                    statusLabel.setText(status);
+                                }
+                                // FIX Bug1b: nếu poll thấy phiên đã CANCELED → dừng hết ngay
+                                if ("CANCELED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
+                                    if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
+                                    handleCancelledState();
+                                }
+                            });
+                            break;
+                        }
+                    }
+                    // FIX Bug1b: nếu phiên không còn trong list (đã bị xóa/cancel) → dừng poll
+                    boolean found = false;
+                    for (com.google.gson.JsonElement el : arr) {
+                        if (el.getAsJsonObject().has("id")
+                                && auctionId.equals(el.getAsJsonObject().get("id").getAsString())) {
+                            found = true; break;
+                        }
+                    }
+                    if (!found) {
+                        Platform.runLater(() -> {
+                            if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
+                        });
+                    }
+                } catch (Exception ex) {
+                    System.err.println("[BidView] Lỗi poll giá: " + ex.getMessage());
+                }
+            }, "price-refresh-thread").start();
+        }));
+        priceRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        priceRefreshTimeline.play();
     }
 
     private void stopAll() {
         removePushListener();
         stopSnipingCountdown();
-        if (countdownTimeline != null) countdownTimeline.stop();
+        if (countdownTimeline    != null) countdownTimeline.stop();
+        if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

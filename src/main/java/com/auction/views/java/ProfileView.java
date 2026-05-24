@@ -22,9 +22,21 @@ public class ProfileView {
             Parent root = loader.load();
             ProfileController controller = loader.getController();
             controller.setUsername(username);
+            boolean wasMaximized = stage.isMaximized();
+            double prevW = stage.getScene() != null ? stage.getScene().getWidth() : 0;
+            double prevH = stage.getScene() != null ? stage.getScene().getHeight() : 0;
             stage.setTitle("Hồ sơ cá nhân - 1388AUCTION");
-            stage.setScene(new Scene(root));
+            stage.setScene(prevW > 100 ? new Scene(root, prevW, prevH) : new Scene(root));
             stage.show();
+            if (wasMaximized) {
+                stage.setMaximized(true);
+            }
+            // Bind root tự stretch theo kích thước scene
+            if (root instanceof javafx.scene.layout.Region) {
+                javafx.scene.layout.Region regionRoot = (javafx.scene.layout.Region) root;
+                regionRoot.prefWidthProperty().bind(stage.getScene().widthProperty());
+                regionRoot.prefHeightProperty().bind(stage.getScene().heightProperty());
+            }
         } catch (Exception e) {
             System.err.println("Lỗi load ProfileView: " + e.getMessage());
             e.printStackTrace();

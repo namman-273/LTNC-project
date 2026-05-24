@@ -214,7 +214,10 @@ public class Auction extends Entity {
   }
 
   // --- LOGIC PHIÊN ĐẤU GIÁ ---
-  private double getMinimumIncrement(double price) {
+  /**
+ * lấy giá sàn.
+ */
+  public double getMinimumIncrement(double price) {
     if (validator == null) {
       restoreTransients();
     }

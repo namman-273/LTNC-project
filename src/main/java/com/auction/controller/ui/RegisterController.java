@@ -1,10 +1,9 @@
 package com.auction.controller.ui;
 
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.ComboBox;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -22,13 +21,41 @@ public class RegisterController implements Initializable {
     @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmPasswordField;
-    @FXML private ComboBox<String> roleComboBox;
+    @FXML private Button btnBidder;
+    @FXML private Button btnSeller;
     @FXML private Label messageLabel;
+
+    private String selectedRole = "BIDDER";
+
+    private static final String STYLE_ACTIVE =
+            "-fx-background-color: #1D4ED8; -fx-text-fill: white;" +
+                    "-fx-font-size: 12px; -fx-font-weight: bold;" +
+                    "-fx-background-radius: 10; -fx-cursor: hand;" +
+                    "-fx-border-color: #3B82F6; -fx-border-radius: 10; -fx-border-width: 2;";
+
+    private static final String STYLE_INACTIVE =
+            "-fx-background-color: transparent; -fx-text-fill: #94A3B8;" +
+                    "-fx-font-size: 12px; -fx-font-weight: bold;" +
+                    "-fx-background-radius: 10; -fx-cursor: hand;" +
+                    "-fx-border-color: #334155; -fx-border-radius: 10; -fx-border-width: 2;";
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        roleComboBox.setItems(FXCollections.observableArrayList("BIDDER", "SELLER"));
-        roleComboBox.getSelectionModel().selectFirst();
+        btnBidder.setStyle(STYLE_ACTIVE);
+        btnSeller.setStyle(STYLE_INACTIVE);
+    }
+
+    @FXML
+    private void handleRoleSelect(javafx.event.ActionEvent e) {
+        if (e.getSource() == btnBidder) {
+            selectedRole = "BIDDER";
+            btnBidder.setStyle(STYLE_ACTIVE);
+            btnSeller.setStyle(STYLE_INACTIVE);
+        } else {
+            selectedRole = "SELLER";
+            btnSeller.setStyle(STYLE_ACTIVE);
+            btnBidder.setStyle(STYLE_INACTIVE);
+        }
     }
 
     @FXML
@@ -37,7 +64,6 @@ public class RegisterController implements Initializable {
         String email           = emailField != null ? emailField.getText().trim() : "";
         String password        = passwordField.getText().trim();
         String confirmPassword = confirmPasswordField.getText().trim();
-        String role            = roleComboBox.getValue();
 
         if (!password.equals(confirmPassword)) {
             showError("Mật khẩu xác nhận không khớp!");
@@ -53,24 +79,17 @@ public class RegisterController implements Initializable {
                 return;
             }
 
-            // BE expect: REGISTER|username|password|role|email (5 parts)
             String response = conn.sendAndReceive(
                     Protocol.CMD_REGISTER + Protocol.SEPARATOR
                             + username + Protocol.SEPARATOR
                             + password + Protocol.SEPARATOR
-                            + role     + Protocol.SEPARATOR
+                            + selectedRole + Protocol.SEPARATOR
                             + email
             );
-            System.out.println("Server trả về: " + response);
 
             Platform.runLater(() -> {
-                if (response == null) {
-                    showError("Mất kết nối server!");
-                    return;
-                }
-
+                if (response == null) { showError("Mất kết nối server!"); return; }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
-
                 if (response.startsWith(Protocol.RES_REGISTER_SUCCESS)) {
                     String msg = parts.length > 1 ? parts[1] : "Đăng ký thành công!";
                     showSuccess(msg + " Đang chuyển về đăng nhập...");
@@ -81,13 +100,10 @@ public class RegisterController implements Initializable {
                                 Stage stage = (Stage) usernameField.getScene().getWindow();
                                 new LoginView(stage).show();
                             });
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
+                        } catch (InterruptedException ex) { Thread.currentThread().interrupt(); }
                     }).start();
                 } else {
-                    String errorMsg = parts.length > 1 ? parts[1] : "Đăng ký thất bại!";
-                    showError(errorMsg);
+                    showError(parts.length > 1 ? parts[1] : "Đăng ký thất bại!");
                 }
             });
         }).start();

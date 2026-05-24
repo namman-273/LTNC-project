@@ -51,7 +51,13 @@ public class AutoBidProcessor {
         top = second; // Đổi mục tiêu sang ng thứ hai
       }
 
-      double nextPrice = auction.getCurrentPrice() + top.getbidStep();
+      // 1. Lấy bước giá tối thiểu của hệ thống tại mức giá hiện tại
+      double minSystemIncrement = auction.getMinimumIncrement(auction.getCurrentPrice());
+
+      // 2. Chốt bước giá thực tế: Phải lớn hơn hoặc bằng mức tối thiểu của hệ thống
+      double effectiveStep = Math.max(top.getbidStep(), minSystemIncrement);
+      //3. Tính giá tiếp theo
+      double nextPrice = auction.getCurrentPrice() + effectiveStep;;
       // 4. Kiểm tra ngân sách tối đa của bot (Max Bid)
       if (nextPrice <= top.getMaxBid()) {
         User user = UserManager.getInstance().findUserByUsername(top.getBidderId());

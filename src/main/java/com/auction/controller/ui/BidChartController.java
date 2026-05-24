@@ -3,6 +3,7 @@ package com.auction.controller.ui;
 import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
 import com.auction.views.java.BidView;
+import com.auction.util.ui.ToastManager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -17,6 +18,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 public class BidChartController implements Initializable {
@@ -34,6 +36,25 @@ public class BidChartController implements Initializable {
     private long endTime;
     private Consumer<String> pushListener;
 
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[Toast] Init failed: " + e.getMessage());
+            }
+        });
+    }
     public void setData(String auctionId, String itemName, String currentPrice,
                         String status, String username, long endTime) {
         this.auctionId    = auctionId;
@@ -42,6 +63,7 @@ public class BidChartController implements Initializable {
         this.status       = status;
         this.username     = username;
         this.endTime      = endTime;
+        initToastManager(titleLabel);
         titleLabel.setText("Biểu đồ giá - " + itemName);
         loadChartData();
         registerPushListener();
@@ -55,8 +77,7 @@ public class BidChartController implements Initializable {
 
     /**
      * FIX: Parse thủ công bằng JsonParser thay vì gson.fromJson(BidTransaction[].class).
-     * BidTransaction chứa User object lồng nhau — Gson không deserialize được đúng
-     * → amount bị 0 → chart trống. Giờ chỉ lấy đúng field "amount".
+     * Chỉ lấy 20 lần bid gần nhất để tránh chart bị cram.
      */
     private void loadChartData() {
         new Thread(() -> {
@@ -73,13 +94,18 @@ public class BidChartController implements Initializable {
                 JsonArray array = JsonParser.parseString(parts[2].trim()).getAsJsonArray();
                 if (array.size() == 0) return;
 
-                XYChart.Series<Number, Number> series = new XYChart.Series<>();
-                series.setName("Giá đặt");
+                // Giới hạn 20 lần bid gần nhất
+                final int MAX_POINTS = 20;
+                int startIdx = Math.max(0, array.size() - MAX_POINTS);
 
-                for (int i = 0; i < array.size(); i++) {
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                series.setName("Giá đặt (20 lần gần nhất)");
+
+                int displayIdx = 1;
+                for (int i = startIdx; i < array.size(); i++) {
                     JsonObject obj = array.get(i).getAsJsonObject();
                     double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
-                    final int idx = i + 1;
+                    final int idx = displayIdx++;
                     series.getData().add(new XYChart.Data<>(idx, amount));
                 }
 
@@ -102,7 +128,10 @@ public class BidChartController implements Initializable {
                 if (parts.length >= 3 && parts[1].equals(auctionId)) {
                     try {
                         double newPrice = Double.parseDouble(parts[2]);
-                        Platform.runLater(() -> appendPoint(newPrice));
+                        Platform.runLater(() -> {
+                            appendPoint(newPrice);
+                            ToastManager.show(ToastManager.Type.INFO, "🔨 Giá mới: " + String.format("%,.0f VNĐ", newPrice));
+                        });
                     } catch (NumberFormatException ignored) {}
                 }
             }
@@ -123,7 +152,8 @@ public class BidChartController implements Initializable {
             ServerConnection.getInstance().removePushListener(pushListener);
             pushListener = null;
         }
+        // Chart mở dưới dạng popup → chỉ cần đóng stage này
         Stage stage = (Stage) bidChart.getScene().getWindow();
-        new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime).show();
+        stage.close();
     }
 }
