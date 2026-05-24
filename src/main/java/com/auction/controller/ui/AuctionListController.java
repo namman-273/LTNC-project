@@ -207,15 +207,20 @@ public class AuctionListController implements Initializable {
         case Protocol.RES_END_SUCCESS: {
           String auctionId = parts.length >= 2 ? parts[1] : "";
           String detail    = parts.length >= 3 ? parts[2] : "";
-          boolean isWin = detail.contains("Winner:" + username)
-                  || detail.contains("Winner: " + username);
+          boolean isWin = (detail.contains("Winner:" + username)
+                  || detail.contains("Winner: " + username))
+                  && !"SELLER".equalsIgnoreCase(SessionManager.getInstance().getRole())
+                  && !"ADMIN".equalsIgnoreCase(SessionManager.getInstance().getRole());
           if (isWin) {
             String msg = "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId;
             NotificationManager.getInstance().add(msg, "auction", auctionId);
             Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, msg));
           } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
             String winnerName = extractWinner(detail);
-            String msg = "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerName;
+            boolean isSeller = "SELLER".equalsIgnoreCase(SessionManager.getInstance().getRole());
+            String msg = isSeller
+                    ? "🏆 Phiên đấu giá " + auctionId + " của bạn đã kết thúc."
+                    : "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerName;
             NotificationManager.getInstance().add(msg, "auction", auctionId);
             Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
           } else if (!auctionId.isEmpty()) {
