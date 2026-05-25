@@ -1,7 +1,6 @@
 package com.auction.controller.command;
 
 import com.auction.controller.network.ClientHandler;
-import com.auction.controller.network.ConnectionManager;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
@@ -28,9 +27,5 @@ public class EndAuctionCommand implements ClientCommand {
     client.sendMessage(Protocol.RES_ADMIN_END_SUCCESS + Protocol.SEPARATOR
         + "Đã đóng phiên " + auctionId
         + ". Người dẫn đầu đã được hoàn tiền nếu phiên còn thời gian.");
-    // Broadcast cho tất cả client để cập nhật danh sách
-    String broadcast = Protocol.NOTI_AUCTION_CANCELLED + Protocol.SEPARATOR
-        + auctionId + Protocol.SEPARATOR + "Phiên đã bị Admin đóng sớm";
-    ConnectionManager.getInstance().broadcastToAll(broadcast);
   }
 }

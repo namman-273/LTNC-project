@@ -1,7 +1,6 @@
 package com.auction.controller.command;
 
 import com.auction.controller.network.ClientHandler;
-import com.auction.controller.network.ConnectionManager;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
@@ -28,10 +27,6 @@ public class DeleteAuctionCommand implements ClientCommand {
     if (deleted) {
       client.sendMessage(Protocol.RES_DELETE_SUCCESS + Protocol.SEPARATOR
           + "Đã xóa phiên " + auctionId);
-      // Broadcast cho tất cả client đang online để cập nhật danh sách
-      String broadcast = Protocol.NOTI_AUCTION_CANCELLED + Protocol.SEPARATOR
-          + auctionId + Protocol.SEPARATOR + "Phiên đã bị Admin xóa";
-      ConnectionManager.getInstance().broadcastToAll(broadcast);
     } else {
       client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR
           + "Không tìm thấy phiên hoặc xóa thất bại!");

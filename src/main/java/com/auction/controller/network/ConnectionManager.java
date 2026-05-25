@@ -64,14 +64,4 @@ public class ConnectionManager {
     return false;
   }
 
-  /**
-   * Broadcast thông báo tới tất cả user đang online.
-   * Dùng khi xóa/đóng phiên để tất cả client cập nhật danh sách.
-   */
-  public void broadcastToAll(String message) {
-    for (ClientHandler handler : activeConnections.values()) {
-      handler.sendMessage(message);
-    }
-  }
-
 }
