@@ -53,8 +53,7 @@ public class ConnectionManager {
   /**
    * Gửi thông báo trực tiếp đến user theo username.
    * Không cần qua observer pattern.
-   * 
-   * @return true nếu gửi thành công, false nếu user không online
+   * true nếu gửi thành công, false nếu user không online.
    */
   public boolean sendDirectMessage(String username, String message) {
     ClientHandler handler = activeConnections.get(username);

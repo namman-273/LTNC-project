@@ -13,6 +13,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
+/**
+ *  * kết nối với clienthandler.
+ *  
+ */
 public class ServerConnection {
 
   private static final String HOST = "localhost";
@@ -46,6 +50,10 @@ public class ServerConnection {
     this.port = PORT;
   }
 
+  /**
+   *  * Singleton.
+   *  
+   */
   public static ServerConnection getInstance() {
     if (instance == null) {
       synchronized (ServerConnection.class) {
@@ -59,6 +67,10 @@ public class ServerConnection {
 
   // ─── 1. QUẢN LÝ KẾT NỐI (Dùng connectionLock) ─────────────────────────
 
+  /**
+   *  * kết nối.
+   *  
+   */
   public boolean connect() {
     connectionLock.lock();
     try {
@@ -83,6 +95,10 @@ public class ServerConnection {
     }
   }
 
+  /**
+   *  * kết nối lại.
+   *  
+   */
   public boolean connectWithRetry() {
     for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
       System.out.println("Đang kết nối server... (lần " + attempt + "/" + MAX_RETRY + ")");
@@ -101,6 +117,10 @@ public class ServerConnection {
     return false;
   }
 
+  /**
+   *  * bỏ kết nối.
+   *  
+   */
   public void disconnect() {
     connectionLock.lock();
     try {
@@ -132,7 +152,7 @@ public class ServerConnection {
   // ─── 2. GIAO TIẾP MẠNG (Dùng requestLock) ─────────────────────────────
 
   /**
-   * Gửi và nhận đồng bộ (Chỉ có requestLock, không hold connectionLock)
+   * Gửi và nhận đồng bộ (Chỉ có requestLock, không hold connectionLock).
    */
   public String sendAndReceive(String message) {
     // Nếu mất kết nối thì thử connect ngay từ đầu
@@ -142,7 +162,7 @@ public class ServerConnection {
 
     requestLock.lock();
     try {
-      // FIX LỖI "DỌN RÁC NHẦM": Dọn đúng 1 lần duy nhất ở đây
+      // Dọn đúng 1 lần duy nhất ở đây
       responseQueue.clear();
       return doSendAndReceive(message, true);
     } finally {
@@ -242,6 +262,10 @@ public class ServerConnection {
         || header.equals(Protocol.RES_END_SUCCESS);
   }
 
+  /**
+   *  * cài nghe tin push.
+   *  
+   */
   public void addPushListener(Consumer<String> listener) {
     if (listener != null && !pushListeners.contains(listener)) {
       pushListeners.add(listener);

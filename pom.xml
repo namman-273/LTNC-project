@@ -22,7 +22,6 @@
         <jacoco.version>0.8.12</jacoco.version>
         <javafx.version>17.0.8</javafx.version>
         <junit.version>5.10.2</junit.version>
-        <!-- [FIX] Nâng lên 3.2.5 — phiên bản mới nhất, hỗ trợ JUnit 5 tốt hơn -->
         <surefire.version>3.2.5</surefire.version>
         <!-- Ngưỡng coverage tối thiểu: 60% instruction coverage -->
         <jacoco.minimum.coverage>0.60</jacoco.minimum.coverage>
@@ -89,9 +88,6 @@
     <build>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-            <resource>
                 <directory>src/main/java</directory>
                 <includes>
                     <include>**/*.fxml</include>
@@ -154,10 +150,6 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <!--
-                        google_checks.xml được bundled sẵn trong jar checkstyle.
-                        Không cần file checkstyle.xml tự viết nữa.
-                    -->
                     <configLocation>google_checks.xml</configLocation>
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
@@ -169,13 +161,11 @@
                     <linkXRef>false</linkXRef>
                     <!-- Bỏ qua file generated, test và JavaFX controller/view -->
                     <excludes>
-                        **/generated/**/*,
                         **/*Test.java,
                         **/*Tests.java,
                         **/views/**/*,
                         **/controller/ui/**,
-                        **/MainApp.java,
-                        **/Main.java
+                        **/MainApp.java
                     </excludes>
                 </configuration>
                 <executions>
@@ -238,7 +228,7 @@
                             -->
                             <excludes>
                                 <exclude>com/auction/MainApp.class</exclude>
-                                <exclude>Main.class</exclude>
+                                <exclude>util/ui/**</exclude>
                                 <exclude>com/auction/views/**</exclude>
                                 <exclude>com/auction/controller/ui/**</exclude>
                             </excludes>
@@ -263,7 +253,7 @@
             </plugin>
 
             <!--
-                [THÊM MỚI] 6. MAVEN SHADE PLUGIN: đóng gói fat JAR có thể chạy bằng
+                 6. MAVEN SHADE PLUGIN: đóng gói fat JAR có thể chạy bằng
                 "java -jar AuctionSystem-server.jar" — không cần cài Maven trên máy khác.
                 Thực tế dự án cần build 2 JAR (server + client), cấu hình ở đây
                 là cho Server; Client sẽ chạy qua mvn javafx:run.

@@ -50,13 +50,11 @@ public class AuctionEndHandler {
 
   /**
    * Xử lý kết thúc auction với tùy chọn forced by Admin.
-   * 
    * LOGIC TRẠNG THÁI:
    * - Admin đóng sớm: CANCELED (không có winner, chỉ refund)
    * - Kết thúc bình thường + có winner: PAID (có thanh toán)
    * - Kết thúc bình thường + không có winner: FINISHED (không có giao dịch)
-   * 
-   * @param forcedByAdmin true nếu Admin đóng sớm, false nếu tự động
+   * forcedByAdmin true nếu Admin đóng sớm, false nếu tự động.
    */
   private void endAuction(String auctionId, boolean forcedByAdmin) {
     Auction auction = auctionRepository.findById(auctionId);
