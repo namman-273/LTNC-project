@@ -26,15 +26,13 @@ public class AutoBidProcessor {
       return;
     }
 
-    // 1. GIẢI QUYẾT TRUY CẬP: Lấy Validator thông qua Factory (vì hàm của Auction
-    // đang để private)
+    // 1. GIẢI QUYẾT TRUY CẬP: Lấy Validator thông qua Factory 
     AuctionValidator validator = AuctionHelperFactory.getInstance().createValidator();
 
     double currentPrice = auction.getCurrentPrice();
     double minIncrement = validator.getMinimumIncrement(currentPrice);
 
     // 2. THANH LỌC TẬN GỐC: Xóa sạch các Bot rác đã hết ngân sách ở mọi ngóc ngách
-    // trong Queue (O(N))
     queue.removeIf(bot -> (currentPrice + minIncrement > bot.getMaxBid()));
 
     if (queue.isEmpty()) {
@@ -46,7 +44,7 @@ public class AutoBidProcessor {
         : auction.getBidHistory().get(auction.getBidHistory().size() - 1)
             .getBidder().getId(); // Trực tiếp dùng getId() từ Entity kế thừa
 
-    // Lấy Winner tiềm năng nhất ra (Thằng đứng đầu Heap thỏa mãn MaxBid cao nhất +
+    // Lấy Winner tiềm năng nhất ra ( đứng đầu Heap thỏa mãn MaxBid cao nhất +
     // Đăng ký trước)
     AutoBid top = queue.poll();
     double finalPrice;
@@ -67,7 +65,7 @@ public class AutoBidProcessor {
       double effectiveStep = Math.max(top.getbidStep(), minIncrement);
 
       if (top.getMaxBid() == second.getMaxBid()) {
-        // LUẬT TIE-BREAKER: 2 Bot trùng giá trần -> Thằng 'top' ăn nhờ lợi thế thời
+        // LUẬT TIE-BREAKER: 2 Bot trùng giá trần ->  'top' ăn nhờ lợi thế thời
         // gian (timestamp nhỏ hơn)
         // Đẩy giá lên thẳng mức Trần tối đa của đối thủ để loại bỏ cuộc chơi ngay lập
         // tức
