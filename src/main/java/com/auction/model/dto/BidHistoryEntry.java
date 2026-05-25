@@ -2,6 +2,10 @@ package com.auction.model.dto;
 
 import java.io.Serializable;
 
+/**
+ *  * gửi đi dữ liệu đấu giá.
+ *  
+ */
 public class BidHistoryEntry implements Serializable {
   private static final long serialVersionUID = 1L;
   private String auctionId;
@@ -10,7 +14,12 @@ public class BidHistoryEntry implements Serializable {
   private String result; //
   private String endTime;
 
-  public BidHistoryEntry(String auctionId, String itemName, double finalPrice, String result, String endTime) {
+  /**
+   *  * constructor.
+   *  
+   */
+  public BidHistoryEntry(String auctionId, String itemName,
+      double finalPrice, String result, String endTime) {
     this.auctionId = auctionId;
     this.itemName = itemName;
     this.finalPrice = finalPrice;
