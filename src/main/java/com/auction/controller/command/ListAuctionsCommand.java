@@ -1,6 +1,7 @@
 package com.auction.controller.command;
 
 import com.auction.controller.network.ClientHandler;
+import com.auction.model.enums.AuctionStatus;
 import com.auction.model.dto.AuctionRow;
 import com.auction.model.entities.Auction;
 import com.auction.network.protocol.Protocol;
@@ -16,7 +17,10 @@ public class ListAuctionsCommand implements ClientCommand {
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     List<AuctionRow> dtoList = new ArrayList<>();
     for (Auction a : auctionService.getAllAuctions()) {
-      dtoList.add(new AuctionRow(a));
+      // Chỉ trả về phiên đang mở — bỏ qua FINISHED, PAID, CANCELED
+      if (a.getStatus() == AuctionStatus.OPEN) {
+        dtoList.add(new AuctionRow(a));
+      }
     }
     // Gọi client.gson để parse JSON
     client.sendMessage(Protocol.RES_LIST_SUCCESS
