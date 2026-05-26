@@ -563,17 +563,22 @@ public class AuctionListController implements Initializable {
             img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), 
             reqW, reqH, true, true);
           } else {
-            java.net.URL url = new java.net.URL(finalImgUrl);
+            java.net.URL url = java.net.URI.create(finalImgUrl).toURL();
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setRequestProperty("Accept", "image/*,*/*");
             conn.setInstanceFollowRedirects(true);
-            conn.setConnectTimeout(6000); conn.setReadTimeout(6000);
+            conn.setConnectTimeout(6000); 
+            conn.setReadTimeout(6000);
             conn.connect();
             try (java.io.InputStream is = conn.getInputStream()) {
               byte[] bytes = is.readAllBytes();
-              img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), reqW, reqH, true, true);
-            } finally { conn.disconnect(); }
+              img = new javafx.scene.image.Image(
+                  new java.io.ByteArrayInputStream(bytes), 
+                reqW, reqH, true, true);
+            } finally {
+              conn.disconnect();
+            }
           }
           if (!img.isError()) {
             final javafx.scene.image.Image finalImg = img;
@@ -613,7 +618,8 @@ public class AuctionListController implements Initializable {
     btnDetail.setOnAction(e -> openBidView(row));
 
     VBox card = new VBox(8, badge, iconNode, name, priceLabel, price, btnDetail);
-    card.setPrefWidth(215); card.setMinHeight(265);
+    card.setPrefWidth(215); 
+    card.setMinHeight(265);
     card.setStyle(
             "-fx-background-color: #0B1120;" 
             +
