@@ -88,7 +88,9 @@ public class AuctionListController implements Initializable {
 
   public void setUsername(String username) {
     this.username = username;
-    if (welcomeLabel != null) welcomeLabel.setText("Xin chào, " + username + "!"); 
+    if (welcomeLabel != null) { 
+      welcomeLabel.setText("Xin chào, " + username + "!"); 
+    }
     String role = SessionManager.getInstance().getRole();
     if (adminButton != null) {
       adminButton.setVisible("ADMIN".equalsIgnoreCase(role));
@@ -126,7 +128,9 @@ public class AuctionListController implements Initializable {
             .addListener((javafx.collections.ListChangeListener<Object>) c -> updateNotifBadge());
     updateNotifBadge(); // init badge khi mở
     Platform.runLater(() -> {
-      if (rootBox != null) ToastManager.init(rootBox);
+      if (rootBox != null) {
+        ToastManager.init(rootBox);
+      }
     });
   }
 
@@ -305,10 +309,16 @@ public class AuctionListController implements Initializable {
   }
 
   private String extractWinner(String detail) {
-    if (detail == null) return "N/A";
+    if (detail == null) { 
+      return "N/A";
+    }
     int idx = detail.indexOf("Winner:");
-    if (idx < 0) idx = detail.indexOf("Winner: ");
-    if (idx < 0) return "N/A";
+    if (idx < 0) {
+      idx = detail.indexOf("Winner: ");
+    }
+    if (idx < 0) {
+      return "N/A";
+    }
     String rest = detail.substring(idx + 7).trim();
     int end = rest.indexOf("|");
     return end > 0 ? rest.substring(0, end).trim() : rest.trim();
@@ -317,7 +327,9 @@ public class AuctionListController implements Initializable {
   // ── Load data ─────────────────────────────────────────────────────────────
   private void loadFromServer() {
     // FIX Bug2b: nếu đang load rồi thì bỏ qua request mới
-    if (!listLoading.compareAndSet(false, true)) return;
+    if (!listLoading.compareAndSet(false, true)) {
+      return;
+    }
 
     setStatusBar("Đang tải danh sách phiên...");
     new Thread(() -> {
@@ -374,7 +386,9 @@ public class AuctionListController implements Initializable {
   // ── Search ────────────────────────────────────────────────────────────────
   @FXML
   private void handleSearch(KeyEvent e) {
-    if (searchField == null) return;
+    if (searchField == null) {
+      return;
+    }
     String keyword = searchField.getText().trim().toLowerCase();
     if (keyword.isEmpty()) { applyFilter(); return; }
     List<AuctionRow> filtered = currentRows.stream()
@@ -409,11 +423,17 @@ public class AuctionListController implements Initializable {
             btnFilterElec, btnFilterVehicle, btnFilterOther);
     typeButtons.forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
     clicked.setStyle(FILTER_ACTIVE_STYLE);
-    if (clicked == btnFilterArt)     activeTypeFilter = "Art";
-    else if (clicked == btnFilterElec)    activeTypeFilter = "Electronics";
-    else if (clicked == btnFilterVehicle) activeTypeFilter = "Vehicle";
-    else if (clicked == btnFilterOther)   activeTypeFilter = "OTHER";
-    else                                  activeTypeFilter = "ALL";
+    if (clicked == btnFilterArt) {
+      activeTypeFilter = "Art";
+    } else if (clicked == btnFilterElec) {
+      activeTypeFilter = "Electronics";
+    } else if (clicked == btnFilterVehicle) {
+      activeTypeFilter = "Vehicle";
+    } else if (clicked == btnFilterOther) {
+      activeTypeFilter = "OTHER";
+    } else {
+      activeTypeFilter = "ALL";
+    }
     applyFilter();
   }
 
@@ -423,10 +443,15 @@ public class AuctionListController implements Initializable {
     List<Button> priceButtons = List.of(btnPriceAll, btnPriceUnder5, btnPriceMid, btnPriceOver50);
     priceButtons.forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
     clicked.setStyle(FILTER_ACTIVE_STYLE);
-    if (clicked == btnPriceUnder5)  activePriceFilter = "UNDER5";
-    else if (clicked == btnPriceMid)     activePriceFilter = "MID";
-    else if (clicked == btnPriceOver50)  activePriceFilter = "OVER50";
-    else                                 activePriceFilter = "ALL";
+    if (clicked == btnPriceUnder5) {
+      activePriceFilter = "UNDER5";
+    } else if (clicked == btnPriceMid) {
+      activePriceFilter = "MID";
+    } else if (clicked == btnPriceOver50) {
+      activePriceFilter = "OVER50";
+    } else {
+      activePriceFilter = "ALL";
+    }
     applyFilter();
   }
 
