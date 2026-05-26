@@ -177,6 +177,7 @@ public class BidHistoryController implements Initializable {
           try {
             Thread.sleep(2000);
           } catch (InterruptedException ignored) {
+            ignored.printStackTrace();
           }
           loadFromServer();
         }).start();
@@ -268,16 +269,21 @@ public class BidHistoryController implements Initializable {
     long loses = total - wins;
     String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
 
-    if (totalLabel != null)
+    if (totalLabel != null) {
       totalLabel.setText(String.valueOf(total));
-    if (winLabel != null)
+    }
+    if (winLabel != null) {
       winLabel.setText(String.valueOf(wins));
-    if (loseLabel != null)
+    }
+    if (loseLabel != null) {
       loseLabel.setText(String.valueOf(loses));
-    if (rateLabel != null)
+    }
+    if (rateLabel != null) {
       rateLabel.setText(rate);
-    if (subtitleLabel != null)
+    }
+    if (subtitleLabel != null) {
       subtitleLabel.setText(total + " phiên đã tham gia");
+    }
   }
 
   @FXML
