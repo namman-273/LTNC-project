@@ -149,7 +149,8 @@ public class SellerController implements Initializable {
         javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(10);
         row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
-        row.setStyle("-fx-background-color: white; -fx-background-radius: 10;" +
+        row.setStyle("-fx-background-color: white; -fx-background-radius: 10;" 
+            +
             "-fx-border-color: #F3F4F6; -fx-border-radius: 10; -fx-border-width: 0.5;");
 
         // Số thứ tự
@@ -183,8 +184,9 @@ public class SellerController implements Initializable {
 
     auctionTable.getSelectionModel().selectedItemProperty().addListener(
         (obs, oldVal, newVal) -> {
-          if (newVal != null)
+          if (newVal != null) {
             loadHistory(newVal.getId(), newVal.getItemName());
+          }
         });
 
     loadMyAuctions();
@@ -204,8 +206,9 @@ public class SellerController implements Initializable {
   private void handleServerPush(String message) {
     System.out.println("[DEBUG SellerController] Received push: " + message);
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     switch (parts[0]) {
       case Protocol.NOTI_BID_UPDATE:
@@ -312,8 +315,9 @@ public class SellerController implements Initializable {
                 && username.equals(r.getSellerId()));
         Platform.runLater(() -> {
           loadMyAuctions();
-          if (isMine)
+          if (isMine) {
             showNotification(title, body);
+          }
         });
       }
     }).start();
@@ -332,8 +336,9 @@ public class SellerController implements Initializable {
       String res = ServerConnection.getInstance()
           .sendAndReceive(Protocol.CMD_GET_BALANCE);
       Platform.runLater(() -> {
-        if (balanceLabel == null)
+        if (balanceLabel == null) {
           return;
+        }
         if (res != null && res.startsWith(Protocol.RES_BALANCE_INFO)) {
           String[] p = res.split("\\|", -1);
           String amt = p.length >= 2 ? p[1] : "---";
@@ -388,23 +393,29 @@ public class SellerController implements Initializable {
 
           Platform.runLater(() -> {
             auctionData.setAll(data);
-            if (statsLabel != null)
+            if (statsLabel != null) {
               statsLabel.setText("(" + data.size() + " phiên)");
-            if (statTotal != null)
+            }
+            if (statTotal != null) {
               statTotal.setText(String.valueOf(data.size()));
-            if (statOpen != null)
+            }
+            if (statOpen != null) {
               statOpen.setText(String.valueOf(open));
-            if (statFinished != null)
+            }
+            if (statFinished != null) {
               statFinished.setText(String.valueOf(finished));
-            if (statRevenue != null)
+            }
+            if (statRevenue != null) {
               statRevenue.setText(
                   revenue > 0 ? String.format("%,.0f VNĐ", revenue) : "---");
+            }
           });
         }
       } else {
         Platform.runLater(() -> {
-          if (statsLabel != null)
+          if (statsLabel != null) {
             statsLabel.setText("Lỗi tải dữ liệu");
+          }
         });
       }
     }).start();
@@ -485,16 +496,18 @@ public class SellerController implements Initializable {
       ServerConnection.getInstance().removePushListener(pushListener);
       pushListener = null;
     }
-    if (autoRefreshTimeline != null)
+    if (autoRefreshTimeline != null) {
       autoRefreshTimeline.stop();
+    }
     Stage stage = (Stage) auctionTable.getScene().getWindow();
     new AuctionListView(stage, username).show();
   }
 
   public void setUsername(String username) {
     this.username = username;
-    if (welcomeLabel != null)
+    if (welcomeLabel != null) {
       welcomeLabel.setText("Xin chào, " + username + "!");
+    }
   }
 
   @FXML
@@ -527,8 +540,9 @@ public class SellerController implements Initializable {
       ServerConnection.getInstance().removePushListener(pushListener);
       pushListener = null;
     }
-    if (autoRefreshTimeline != null)
+    if (autoRefreshTimeline != null) {
       autoRefreshTimeline.stop();
+    }
     ServerConnection.getInstance().disconnect();
     SessionManager.getInstance().clear();
     Stage stage = (Stage) auctionTable.getScene().getWindow();

@@ -33,14 +33,20 @@ public class RegisterController implements Initializable {
 
   private String selectedRole = "BIDDER";
 
-  private static final String STYLE_ACTIVE = "-fx-background-color: #1D4ED8; -fx-text-fill: white;" +
-      "-fx-font-size: 12px; -fx-font-weight: bold;" +
-      "-fx-background-radius: 10; -fx-cursor: hand;" +
+  private static final String STYLE_ACTIVE = "-fx-background-color: #1D4ED8; -fx-text-fill: white;" 
+      +
+      "-fx-font-size: 12px; -fx-font-weight: bold;" 
+      +
+      "-fx-background-radius: 10; -fx-cursor: hand;" 
+      +
       "-fx-border-color: #3B82F6; -fx-border-radius: 10; -fx-border-width: 2;";
 
-  private static final String STYLE_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #94A3B8;" +
-      "-fx-font-size: 12px; -fx-font-weight: bold;" +
-      "-fx-background-radius: 10; -fx-cursor: hand;" +
+  private static final String STYLE_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #94A3B8;" 
+      +
+      "-fx-font-size: 12px; -fx-font-weight: bold;" 
+      +
+      "-fx-background-radius: 10; -fx-cursor: hand;" 
+      +
       "-fx-border-color: #334155; -fx-border-radius: 10; -fx-border-width: 2;";
 
   @Override

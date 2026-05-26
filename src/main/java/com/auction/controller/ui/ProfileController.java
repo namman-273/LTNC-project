@@ -120,6 +120,7 @@ public class ProfileController implements Initializable {
               balanceLabel.setText(String.format("Số dư: %,.0f VNĐ", b));
             }
           } catch (NumberFormatException ignored) {
+            ignored.printStackTrace();
           }
         });
       }
