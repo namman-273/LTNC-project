@@ -103,7 +103,8 @@ public class BidController implements Initializable {
 
   private Consumer<String> pushListener;
 
-  private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache = 
+      new ConcurrentHashMap<>();
 
   private ObservableList<HistoryEntry> historyItems;
   private Timeline snipingTimeline;
@@ -172,13 +173,16 @@ public class BidController implements Initializable {
       avatar.setText(initials);
 
       if (entry.isMe) {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
+        avatar.setStyle(avatar.getStyle()
+            + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
         setStyle("-fx-background-color: #F0F7FF; -fx-background-radius: 10;");
       } else if (entry.isLeading) {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;");
+        avatar.setStyle(avatar.getStyle() 
+            + "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;");
         setStyle("-fx-background-color: #F0FFF4; -fx-background-radius: 10;");
       } else {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280;");
+        avatar.setStyle(avatar.getStyle() 
+            + "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280;");
         setStyle("-fx-background-color: transparent;");
       }
 
@@ -284,7 +288,7 @@ public class BidController implements Initializable {
             byte[] bytes = java.util.Base64.getDecoder().decode(base64);
             img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes));
           } else {
-            java.net.URL url = new java.net.URL(finalImageUrl);
+            java.net.URL url = java.net.URI.create(finalImageUrl).toURL();
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
