@@ -243,7 +243,8 @@ public class ProfileController implements Initializable {
 
   // ── Refresh thống kê local ────────────────────────────────────────────────
   private void refreshStats() {
-    java.util.List<BidHistoryEntry> entries = BidHistoryManager.getInstance().getHistoryForUser(username);
+    java.util.List<BidHistoryEntry> entries = 
+        BidHistoryManager.getInstance().getHistoryForUser(username);
     long total = entries.size();
     long wins = entries.stream()
         .filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
@@ -281,7 +282,9 @@ public class ProfileController implements Initializable {
         if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
           showMessage("✅ Cập nhật email thành công!", true);
         } else {
-          showMessage("❌ " + (res != null ? res.replace("ERROR|", "") : "Không kết nối được server"), false);
+          showMessage("❌ " 
+              + 
+              (res != null ? res.replace("ERROR|", "") : "Không kết nối được server"), false);
         }
       });
     }, "update-email-thread").start();
