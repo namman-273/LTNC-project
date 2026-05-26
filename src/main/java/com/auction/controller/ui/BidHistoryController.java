@@ -425,21 +425,29 @@ public class BidHistoryController implements Initializable {
 
       if (win) {
         badge.setText("Thắng");
-        badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" +
-            "-fx-background-radius: 12; -fx-padding: 2 8;" +
+        badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" 
+            +
+            "-fx-background-radius: 12; -fx-padding: 2 8;" 
+            +
             "-fx-background-color: #D1FAE5; -fx-text-fill: #15803D;");
         priceLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #15803D;");
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 12;" +
-            "-fx-border-color: transparent transparent transparent #22C55E;" +
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 12;" 
+            +
+            "-fx-border-color: transparent transparent transparent #22C55E;" 
+            +
             "-fx-border-width: 0 0 0 4; -fx-border-radius: 0 12 12 0;");
       } else {
         badge.setText("Thua");
-        badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" +
-            "-fx-background-radius: 12; -fx-padding: 2 8;" +
+        badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" 
+            +
+            "-fx-background-radius: 12; -fx-padding: 2 8;" 
+            +
             "-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;");
         priceLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #6B7280;");
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 12;" +
-            "-fx-border-color: transparent transparent transparent #EF4444;" +
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 12;" 
+            +
+            "-fx-border-color: transparent transparent transparent #EF4444;" 
+            +
             "-fx-border-width: 0 0 0 4; -fx-border-radius: 0 12 12 0;");
       }
 
