@@ -50,11 +50,16 @@ public class NotificationController implements Initializable {
   private String username;
   private String activeTab = "all";
 
-  private static final String TAB_ACTIVE = "-fx-background-color: #111827; -fx-text-fill: white; " +
-      "-fx-font-weight: bold; -fx-background-radius: 20; " +
+  private static final String TAB_ACTIVE = "-fx-background-color: #111827; -fx-text-fill: white; " 
+      +
+      "-fx-font-weight: bold; -fx-background-radius: 20; " 
+      +
       "-fx-padding: 7 18; -fx-cursor: hand; -fx-font-size: 12px;";
-  private static final String TAB_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #6B7280; " +
-      "-fx-background-radius: 20; -fx-padding: 7 18; " +
+  private static final String TAB_INACTIVE = 
+      "-fx-background-color: transparent; -fx-text-fill: #6B7280; " 
+      +
+      "-fx-background-radius: 20; -fx-padding: 7 18; " 
+      +
       "-fx-cursor: hand; -fx-font-size: 12px;";
 
   public void setUsername(String u) {
@@ -65,15 +70,18 @@ public class NotificationController implements Initializable {
   public void initialize(URL url, ResourceBundle rb) {
     notificationList.setCellFactory(lv -> new NotificationCell());
     // Ẩn scrollbar ngang
-    notificationList.setStyle(notificationList.getStyle() +
-        "-fx-background-color: #F5F6FA; -fx-border-color: transparent;" +
+    notificationList.setStyle(notificationList.getStyle() 
+        +
+        "-fx-background-color: #F5F6FA; -fx-border-color: transparent;" 
+        +
         "-fx-background-insets: 0; -fx-padding: 12 14 12 14;");
 
     applyTab("all");
     updateCount();
 
     NotificationManager.getInstance().getObservableItems()
-        .addListener((javafx.collections.ListChangeListener<NotificationItem>) c -> Platform.runLater(() -> {
+        .addListener((javafx.collections.ListChangeListener<NotificationItem>) c ->
+        Platform.runLater(() -> {
           updateCount();
           applyTab(activeTab);
         }));
@@ -166,15 +174,17 @@ public class NotificationController implements Initializable {
   }
 
   private void openBidView(String auctionId) {
-    if (auctionId == null || auctionId.isEmpty())
+    if (auctionId == null || auctionId.isEmpty()) {
       return;
+    }
     Stage stage = (Stage) notificationList.getScene().getWindow();
     new Thread(() -> {
       try {
         String resp = ServerConnection.getInstance()
             .sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
-        if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS))
+        if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS)) {
           return;
+        }
         String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
         Gson gson = new Gson();
         Type listType = new TypeToken<List<AuctionRow>>() {
@@ -241,8 +251,10 @@ public class NotificationController implements Initializable {
       title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #111827;");
 
       newBadge.setStyle(
-          "-fx-background-color: #EA580C; -fx-text-fill: white;" +
-              "-fx-font-size: 10px; -fx-font-weight: bold;" +
+          "-fx-background-color: #EA580C; -fx-text-fill: white;" 
+          +
+              "-fx-font-size: 10px; -fx-font-weight: bold;" 
+              +
               "-fx-background-radius: 12; -fx-padding: 2 8;");
 
       subtitle.setWrapText(true);
@@ -253,26 +265,32 @@ public class NotificationController implements Initializable {
 
       // ── Bid button ──
       bidBtn.setStyle(
-          "-fx-background-color: #EA6C0A; -fx-text-fill: white;" +
-              "-fx-font-size: 11px; -fx-font-weight: bold;" +
-              "-fx-background-radius: 16; -fx-padding: 5 16; -fx-cursor: hand;" +
+          "-fx-background-color: #EA6C0A; -fx-text-fill: white;" 
+          +
+              "-fx-font-size: 11px; -fx-font-weight: bold;" 
+              +
+              "-fx-background-radius: 16; -fx-padding: 5 16; -fx-cursor: hand;" 
+              +
               "-fx-effect: dropshadow(gaussian, rgba(234,108,10,0.3), 6, 0, 0, 2);");
       bidBtn.setOnAction(e -> {
         NotificationItem item = getItem();
-        if (item == null)
+        if (item == null) {
           return;
+        }
         item.markRead();
         openBidView(item.getAuctionId());
       });
 
       // ── Delete button ──
       delBtn.setStyle(
-          "-fx-background-color: transparent; -fx-text-fill: #D1D5DB;" +
+          "-fx-background-color: transparent; -fx-text-fill: #D1D5DB;" 
+          +
               "-fx-font-size: 15px; -fx-cursor: hand; -fx-padding: 0 2;");
       delBtn.setOnAction(e -> {
         NotificationItem item = getItem();
-        if (item == null)
+        if (item == null) {
           return;
+        }
         NotificationManager.getInstance().remove(item);
         updateCount();
         applyTab(activeTab);
@@ -300,8 +318,9 @@ public class NotificationController implements Initializable {
       // ── Click card → mark read ──
       card.setOnMouseClicked(e -> {
         NotificationItem item = getItem();
-        if (item == null)
+        if (item == null) {
           return;
+        }
         if (!item.isRead()) {
           item.markRead();
           updateCount();
@@ -324,13 +343,16 @@ public class NotificationController implements Initializable {
         return;
       }
 
-      boolean unread = !item.isRead();
+      final boolean unread = !item.isRead();
       String msg = item.getMessage();
 
       // ── Classify ──────────────────────────────────────────────────
-      String iconTxt, iconBg, borderColor;
+      String iconTxt;
+      String iconBg;
+      String borderColor;
       boolean showBid;
-      String titleTxt, subtitleTxt;
+      String titleTxt;
+      String subtitleTxt;
 
       if (msg.contains("vượt giá") || msg.contains("OUTBID")) {
         iconTxt = "✕";
@@ -422,16 +444,19 @@ public class NotificationController implements Initializable {
 
       // ── Apply values ──────────────────────────────────────────────
       iconLabel.setText(iconTxt);
-      iconLabel.setStyle("-fx-font-size: 17px; -fx-font-weight: bold;" +
+      iconLabel.setStyle("-fx-font-size: 17px; -fx-font-weight: bold;" 
+          +
           (iconTxt.length() == 1 && !iconTxt.matches("[★◉⏰]")
               ? "-fx-text-fill: " + borderColor + ";"
               : "-fx-text-fill: " + borderColor + ";"));
       iconWrap.setStyle(
-          "-fx-background-color: " + iconBg + ";" +
+          "-fx-background-color: " + iconBg + ";" 
+          +
               "-fx-background-radius: 23;");
 
       title.setText(titleTxt);
-      title.setStyle("-fx-font-size: 13px; -fx-text-fill: #111827;" +
+      title.setStyle("-fx-font-size: 13px; -fx-text-fill: #111827;" 
+          +
           (unread ? "-fx-font-weight: bold;" : "-fx-font-weight: normal;"));
 
       subtitle.setText(subtitleTxt);
@@ -446,12 +471,18 @@ public class NotificationController implements Initializable {
           ? "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.09), 10, 0, 0, 3);"
           : "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 6, 0, 0, 2);";
       card.setStyle(
-          "-fx-background-color: white;" +
-              "-fx-background-radius: 14;" +
-              "-fx-border-color: transparent transparent transparent " + borderColor + ";" +
-              "-fx-border-width: 0 0 0 4;" +
-              "-fx-border-radius: 0 14 14 0;" +
-              "-fx-background-insets: 0;" +
+          "-fx-background-color: white;" 
+          +
+              "-fx-background-radius: 14;" 
+              +
+              "-fx-border-color: transparent transparent transparent " + borderColor + ";" 
+              +
+              "-fx-border-width: 0 0 0 4;" 
+              +
+              "-fx-border-radius: 0 14 14 0;" 
+              +
+              "-fx-background-insets: 0;" 
+              +
               shadow);
 
       // ── Action row ────────────────────────────────────────────────
