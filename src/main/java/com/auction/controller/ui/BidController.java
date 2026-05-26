@@ -671,9 +671,9 @@ public class BidController implements Initializable {
               } else if (detail.contains("Winner:")) {
                 winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim();
               }
-              int wSep = winnerName.indexOf("|");
-              if (wSep >= 0) {
-                winnerName = winnerName.substring(0, wSep).trim();
+              int wsep = winnerName.indexOf("|");
+              if (wsep >= 0) {
+                winnerName = winnerName.substring(0, wsep).trim();
               }
               String winnerDisplay = winnerName.isEmpty() ? "---" : winnerName;
               showInfo("Phiên kết thúc. Người chiến thắng: " + winnerDisplay);
@@ -957,9 +957,12 @@ public class BidController implements Initializable {
   private void handleAutoBid() {
     stopAll();
     Stage stage = (Stage) bidAmountField.getScene().getWindow();
-    new AutoBidView(stage, auctionId, itemNameLabel.getText(),
-        currentPriceLabel.getText(), statusLabel.getText(), username, endTime,
-        imageUrlCached, descriptionCached, itemTypeCached, startingPriceCached, sellerIdCached).show();
+    new AutoBidView(
+      stage, auctionId, itemNameLabel.getText(),
+      currentPriceLabel.getText(), statusLabel.getText(),
+      username, endTime,
+      imageUrlCached, descriptionCached, itemTypeCached, startingPriceCached, sellerIdCached
+    ).show();
   }
 
   @FXML
@@ -1004,7 +1007,8 @@ public class BidController implements Initializable {
         }
         String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
         try {
-          com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(json).getAsJsonArray();
+          com.google.gson.JsonArray arr = com.google.gson.JsonParser
+          .parseString(json).getAsJsonArray();
           for (com.google.gson.JsonElement el : arr) {
             com.google.gson.JsonObject obj = el.getAsJsonObject();
             if (obj.has("id") && auctionId.equals(obj.get("id").getAsString())) {
