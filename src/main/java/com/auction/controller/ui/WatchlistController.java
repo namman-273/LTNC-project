@@ -473,6 +473,27 @@ public class WatchlistController implements Initializable {
                     }
                     break;
 
+                case Protocol.NOTI_AUCTION_CANCELLED:
+                    // Format: AUCTION_CANCELLED|auctionId|reason
+                    // Chỉ hiện nếu user đang watch phiên đó
+                    if (parts.length >= 3) {
+                        String cancelledId = parts[1];
+                        String reason      = parts[2];
+                        if (watchedAuctionIds.contains(cancelledId)) {
+                            NotificationManager.getInstance().add(
+                                    "❌ Phiên " + cancelledId + " bị Admin hủy: " + reason,
+                                    "auction", cancelledId);
+                            Platform.runLater(() -> {
+                                watchedAuctionIds.remove(cancelledId);
+                                currentData.removeIf(r -> r.getId().equals(cancelledId));
+                                updateCards(currentData);
+                                ToastManager.show(ToastManager.Type.WARNING,
+                                        "❌ Phiên " + cancelledId + " bị Admin hủy");
+                            });
+                        }
+                    }
+                    break;
+
                 default:
                     break;
             }

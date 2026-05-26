@@ -97,11 +97,23 @@ public class AdminDashboardController implements Initializable {
                 // Giữ case này ở đây sẽ KHÔNG BAO GIỜ fire và gây nhầm lẫn.
 
                 case Protocol.NOTI_AUCTION_CANCELLED -> {
-                    // Broadcast khi admin cancel → cập nhật cho tất cả màn hình khác
-                    String detail = parts.length >= 2 ? parts[1] : "Phiên đã bị hủy";
+                    // Format: AUCTION_CANCELLED|auctionId|reason
+                    String cancelledId = parts.length >= 2 ? parts[1] : "";
+                    String detail      = parts.length >= 3 ? parts[2] : "Phiên đã bị hủy";
                     Platform.runLater(() -> {
-                        showMessage("🚫 " + detail, "gray");
-                        loadFromServer();
+                        // Xóa ngay khỏi table mà không cần round-trip server
+                        if (!cancelledId.isEmpty() && auctionTable.getItems() != null) {
+                            auctionTable.getItems().removeIf(r -> cancelledId.equals(r.getId()));
+                            // Cập nhật stat labels
+                            long openCount     = auctionTable.getItems().stream()
+                                    .filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus())).count();
+                            long finishedCount = auctionTable.getItems().stream()
+                                    .filter(r -> "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
+                            if (statTotalLabel    != null) statTotalLabel.setText(String.valueOf(auctionTable.getItems().size()));
+                            if (statOpenLabel     != null) statOpenLabel.setText(String.valueOf(openCount));
+                            if (statFinishedLabel != null) statFinishedLabel.setText(String.valueOf(finishedCount));
+                        }
+                        showMessage("🚫 Phiên " + cancelledId + " bị hủy: " + detail, "gray");
                     });
                 }
                 default -> {}
@@ -250,7 +262,7 @@ public class AdminDashboardController implements Initializable {
     @FXML
     private void startAutoRefresh() {
         autoRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(10), e -> loadFromServer()));
+                new KeyFrame(Duration.seconds(3), e -> loadFromServer()));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
     }

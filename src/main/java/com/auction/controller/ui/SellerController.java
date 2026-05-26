@@ -242,38 +242,27 @@ public class SellerController implements Initializable {
 
             case Protocol.NOTI_AUCTION_CANCELLED:
                 // Format: AUCTION_CANCELLED|auctionId|reason
-                // Admin end hoặc delete phiên — chỉ hiển thị nếu phiên đó thuộc seller này.
+                // Admin end sớm HOẶC admin delete phiên
                 if (parts.length >= 3) {
                     String auctionId = parts[1];
                     String reason    = parts[2];
-                    loadMyAuctionsThenNotifyCancel(auctionId, reason);
+                    Platform.runLater(() -> {
+                        // Kiểm tra ngay trong auctionData (đã load sẵn) — không cần round-trip
+                        boolean wasMine = auctionData != null && auctionData.stream()
+                                .anyMatch(r -> r.getId().equals(auctionId));
+                        loadMyAuctions();
+                        if (wasMine) {
+                            NotificationManager.getInstance().add(
+                                    "⚠️ Phiên " + auctionId + " của bạn bị Admin hủy: " + reason,
+                                    "system", auctionId);
+                        }
+                    });
                 }
                 break;
 
             default:
                 break;
         }
-    }
-
-    /** Reload data rồi notify seller nếu phiên bị hủy/xóa là của họ. */
-    private void loadMyAuctionsThenNotifyCancel(String auctionId, String reason) {
-        new Thread(() -> {
-            // Phiên đã bị xóa nên LIST_AUCTIONS sẽ không còn thấy nó —
-            // dùng GET_BID_HISTORY để check ownership, hoặc đơn giản là
-            // dùng username đang login so với sellerId lưu trong auctionData.
-            // Cách đơn giản nhất: reload bảng trước, nếu phiên biến mất khỏi
-            // myAuctions thì hiện thông báo.
-            Platform.runLater(() -> {
-                boolean wasMine = auctionData != null && auctionData.stream()
-                        .anyMatch(r -> r.getId().equals(auctionId));
-                loadMyAuctions();
-                if (wasMine) {
-                    showNotification("⚠️ Phiên bị Admin hủy",
-                            "Phiên " + auctionId + " của bạn đã bị Admin hủy.\n"
-                                    + "Lý do: " + reason);
-                }
-            });
-        }).start();
     }
 
     /** Reload data trước, sau đó chỉ notify nếu auctionId thực sự thuộc seller này. */
