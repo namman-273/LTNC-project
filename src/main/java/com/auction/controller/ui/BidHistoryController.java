@@ -462,24 +462,27 @@ public class BidHistoryController implements Initializable {
   public void handleGoBalance() {
     removePushListener();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new BalanceView(s, username).show();
+    }
   }
 
   @FXML
   public void handleSellerDashboard() {
     removePushListener();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new SellerView(s, username).show();
+    }
   }
 
   @FXML
   public void handleGoNotification() {
     removePushListener();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new NotificationView(s, username).show();
+    }
   }
 
   private Stage getStage() {
