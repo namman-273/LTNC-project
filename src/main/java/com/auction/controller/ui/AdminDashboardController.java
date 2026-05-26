@@ -1,16 +1,20 @@
 package com.auction.controller.ui;
 
 import com.auction.model.dto.AuctionRow;
-import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
+import com.auction.network.protocol.Protocol;
+import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.CreateAuctionView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -20,15 +24,10 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.StackPane;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-
-import com.auction.util.ui.NotificationManager;
-import com.auction.util.ui.ToastManager;
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
+import javafx.util.Duration;
 
 public class AdminDashboardController implements Initializable {
 
