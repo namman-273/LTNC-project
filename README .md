@@ -328,7 +328,6 @@ cd LTNC-project
 mvn package -DskipTests
 ```
 
-> 💡 **Chạy unit test + coverage**: dùng `mvn verify` (hoặc `mvn test` để chỉ chạy test). Báo cáo JaCoCo HTML sẽ được sinh tại `target/site/jacoco/index.html`.
 
 ### Bước 2 – Chạy Server
 

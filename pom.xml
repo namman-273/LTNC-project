@@ -164,7 +164,6 @@
                         **/*Test.java,
                         **/*Tests.java,
                         **/views/**/*,
-                        **/controller/ui/**,
                         **/MainApp.java
                     </excludes>
                 </configuration>
