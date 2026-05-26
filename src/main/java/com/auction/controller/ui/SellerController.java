@@ -172,6 +172,7 @@ public class SellerController implements Initializable {
     }
 
     private void handleServerPush(String message) {
+        System.out.println("[DEBUG SellerController] Received push: " + message);
         String[] parts = message.split("\\" + Protocol.SEPARATOR);
         if (parts.length == 0) return;
 
@@ -241,18 +242,17 @@ public class SellerController implements Initializable {
                 break;
 
             case Protocol.NOTI_AUCTION_CANCELLED:
-                // Format: AUCTION_CANCELLED|auctionId|detail
-                // Seller nhận broadcast này khi admin end sớm hoặc delete phiên
-                if (parts.length >= 2) {
-                    String auctionId = parts[1];
-                    String detail = parts.length >= 3 ? parts[2] : "Phiên đã bị Admin hủy";
-                    // Check isMine TRƯỚC khi reload (tránh race condition auctionData chưa update)
-                    boolean isMine = auctionData != null && auctionData.stream()
-                            .anyMatch(r -> r.getId().equals(auctionId));
+                // Format: AUCTION_CANCELLED|auctionId|reason
+                if (parts.length >= 3) {
+                    final String cancelledId = parts[1];
+                    final String reason = parts[2];
                     Platform.runLater(() -> {
+                        boolean wasMine = auctionData != null && auctionData.stream()
+                                .anyMatch(r -> r.getId().equals(cancelledId));
                         loadMyAuctions();
-                        if (isMine) {
-                            showNotification("❌ Phiên bị hủy", detail + "\nMã phiên: " + auctionId);
+                        if (wasMine) {
+                            showNotification("⚠️ Phiên của bạn: " + reason,
+                                    "Phiên " + cancelledId + ".\nLý do: " + reason);
                         }
                     });
                 }

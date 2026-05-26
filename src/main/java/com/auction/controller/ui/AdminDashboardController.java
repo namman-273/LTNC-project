@@ -20,9 +20,12 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -83,6 +86,26 @@ public class AdminDashboardController implements Initializable {
         loadFromServer();
         startAutoRefresh();
         registerPushListener(); // FIX: đăng ký nhận broadcast từ server
+        initToastManager(auctionTable);
+    }
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[AdminToast] Init failed: " + e.getMessage());
+            }
+        });
     }
 
     // FIX 2 — AdminDashboardController.java (xóa dead code, thêm NOTI_AUCTION_CANCELLED)
@@ -97,11 +120,23 @@ public class AdminDashboardController implements Initializable {
                 // Giữ case này ở đây sẽ KHÔNG BAO GIỜ fire và gây nhầm lẫn.
 
                 case Protocol.NOTI_AUCTION_CANCELLED -> {
-                    // Broadcast khi admin cancel → cập nhật cho tất cả màn hình khác
-                    String detail = parts.length >= 2 ? parts[1] : "Phiên đã bị hủy";
+                    // Format: AUCTION_CANCELLED|auctionId|reason
+                    String cancelledId = parts.length >= 2 ? parts[1] : "";
+                    String detail      = parts.length >= 3 ? parts[2] : "Phiên đã bị hủy";
                     Platform.runLater(() -> {
-                        showMessage("🚫 " + detail, "gray");
-                        loadFromServer();
+                        // Xóa ngay khỏi table mà không cần round-trip server
+                        if (!cancelledId.isEmpty() && auctionTable.getItems() != null) {
+                            auctionTable.getItems().removeIf(r -> cancelledId.equals(r.getId()));
+                            // Cập nhật stat labels
+                            long openCount     = auctionTable.getItems().stream()
+                                    .filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus())).count();
+                            long finishedCount = auctionTable.getItems().stream()
+                                    .filter(r -> "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
+                            if (statTotalLabel    != null) statTotalLabel.setText(String.valueOf(auctionTable.getItems().size()));
+                            if (statOpenLabel     != null) statOpenLabel.setText(String.valueOf(openCount));
+                            if (statFinishedLabel != null) statFinishedLabel.setText(String.valueOf(finishedCount));
+                        }
+                        showMessage("🚫 Phiên " + cancelledId + " bị hủy: " + detail, "gray");
                     });
                 }
                 default -> {}
@@ -188,19 +223,27 @@ public class AdminDashboardController implements Initializable {
         if (selected == null) {
             showMessage("Vui lòng chọn một phiên để kết thúc!", "red"); return;
         }
+        final String endAuctionId   = selected.getId();
+        final String endAuctionName = selected.getItemName();
         showMessage("Đang kết thúc phiên...", "orange");
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
-                    Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + selected.getId());
+                    Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + endAuctionId);
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
-                String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 // RES_ADMIN_END_SUCCESS là direct response (1-1), KHÔNG phải push
                 // → nó đi qua responseQueue → sendAndReceive nhận đúng, không timeout
                 if (response.startsWith(Protocol.RES_ADMIN_END_SUCCESS)) {
-                    showMessage("✅ " + (parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!"), "green");
+                    showMessage("✅ Đã đóng phiên " + endAuctionName, "green");
+                    NotificationManager.getInstance().add(
+                            "⚠️ [Admin] Đã đóng sớm phiên: " + endAuctionName + " (" + endAuctionId + ")",
+                            "system", endAuctionId);
+                    ToastManager.show(ToastManager.Type.SUCCESS, "✅ Đã đóng phiên " + endAuctionName);
                 } else {
-                    showMessage("❌ " + (parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!"), "red");
+                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                    String msg = parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!";
+                    showMessage("❌ " + msg, "red");
+                    ToastManager.show(ToastManager.Type.DANGER, "❌ " + msg);
                 }
                 loadFromServer();
             });
@@ -224,17 +267,25 @@ public class AdminDashboardController implements Initializable {
         java.util.Optional<javafx.scene.control.ButtonType> result = confirm.showAndWait();
         if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK) return;
 
+        final String delAuctionId   = selected.getId();
+        final String delAuctionName = selected.getItemName();
         showMessage("Đang xóa phiên...", "orange");
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
-                    Protocol.CMD_DELETE_AUCTION + Protocol.SEPARATOR + selected.getId());
+                    Protocol.CMD_DELETE_AUCTION + Protocol.SEPARATOR + delAuctionId);
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
-                String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_DELETE_SUCCESS)) {
-                    showMessage("✅ " + (parts.length > 1 ? parts[1] : "Xóa phiên thành công!"), "green");
+                    showMessage("✅ Đã xóa phiên " + delAuctionName, "green");
+                    NotificationManager.getInstance().add(
+                            "🗑️ [Admin] Đã xóa phiên: " + delAuctionName + " (" + delAuctionId + ")",
+                            "system", delAuctionId);
+                    ToastManager.show(ToastManager.Type.SUCCESS, "🗑️ Đã xóa phiên " + delAuctionName);
                 } else {
-                    showMessage("❌ " + (parts.length > 1 ? parts[1] : "Xóa phiên thất bại!"), "red");
+                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
+                    String msg = parts.length > 1 ? parts[1] : "Xóa phiên thất bại!";
+                    showMessage("❌ " + msg, "red");
+                    ToastManager.show(ToastManager.Type.DANGER, "❌ " + msg);
                 }
                 loadFromServer();
             });
@@ -250,7 +301,7 @@ public class AdminDashboardController implements Initializable {
     @FXML
     private void startAutoRefresh() {
         autoRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(10), e -> loadFromServer()));
+                new KeyFrame(Duration.seconds(3), e -> loadFromServer()));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
     }

@@ -246,21 +246,19 @@ public class AuctionListController implements Initializable {
         // FIX Bug1a: xóa phiên bị cancel khỏi list thay vì chỉ loadFromServer
         case Protocol.NOTI_AUCTION_CANCELLED: {
           String cancelledId = parts.length >= 2 ? parts[1] : "";
-          // parts[1] có thể là message dạng "Phiên X đã bị hủy..."
-          // server cần gửi auctionId riêng ở parts[1], detail ở parts[2]
-          // Nếu format là NOTI_AUCTION_CANCELLED|auctionId|detail thì dùng parts[1]
-          // Nếu format là NOTI_AUCTION_CANCELLED|message thì parse từ message
+          String reason = parts.length >= 3 ? parts[2] : "Admin hủy";
           final String finalCancelledId = cancelledId;
+          final String finalReason = reason;
           Platform.runLater(() -> {
             // FIX Bug1a: xóa trực tiếp khỏi currentRows và re-render, không cần round-trip server
             currentRows.removeIf(r -> r.getId().equals(finalCancelledId));
             applyFilter();
-            setStatusBar("❌ Phiên " + finalCancelledId + " đã bị Admin hủy.");
+            setStatusBar("❌ Phiên " + finalCancelledId + ": " + finalReason);
             NotificationManager.getInstance().add(
-                    "❌ Phiên " + finalCancelledId + " bị Admin hủy. Tiền đã được hoàn.",
+                    "❌ Phiên " + finalCancelledId + ": " + finalReason + ". Tiền đã được hoàn.",
                     "auction", finalCancelledId);
             ToastManager.show(ToastManager.Type.WARNING,
-                    "❌ Phiên " + finalCancelledId + " đã bị hủy");
+                    "❌ Phiên " + finalCancelledId + ": " + finalReason);
           });
           break;
         }
