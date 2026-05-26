@@ -71,6 +71,7 @@ public class AutoBidController implements Initializable {
         minIncrementHintLabel.setText("💡 Bước tối thiểu: " + String.format("%,d VNĐ", minStep));
       }
     } catch (NumberFormatException ignored) {
+      ignored.printStackTrace();
     }
 
     // FIX: lắng nghe push ngay cả khi đang ở màn AutoBid
@@ -96,8 +97,9 @@ public class AutoBidController implements Initializable {
 
   private void handleServerPush(String message) {
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     switch (parts[0]) {
 
@@ -115,8 +117,9 @@ public class AutoBidController implements Initializable {
 
       // FIX: nhận kết quả phiên ngay khi đang ở màn AutoBid
       case Protocol.RES_END_SUCCESS:
-        if (parts.length >= 2 && !parts[1].equals(auctionId))
+        if (parts.length >= 2 && !parts[1].equals(auctionId)) {
           break;
+        }
         String detail = parts.length >= 3 ? parts[2] : "";
         boolean isWin = detail.contains("Winner:" + username)
             || detail.contains("Winner: " + username);
@@ -136,8 +139,9 @@ public class AutoBidController implements Initializable {
               winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim();
             }
             int sep = winnerName.indexOf("|");
-            if (sep >= 0)
+            if (sep >= 0) {
               winnerName = winnerName.substring(0, sep).trim();
+            }
             showMessage("Phiên kết thúc. Người chiến thắng: "
                 + (winnerName.isEmpty() ? "---" : winnerName), "orange");
             NotificationManager.getInstance().add(
@@ -151,10 +155,10 @@ public class AutoBidController implements Initializable {
       case Protocol.NOTI_AUCTION_CANCELLED:
         if (parts.length >= 2 && parts[1].contains(auctionId)) {
           String cancelMsg = parts[1];
-          Platform.runLater(() -> showMessage("\u274c " + cancelMsg, "gray"));
+          Platform.runLater(() -> showMessage("❌ " + cancelMsg, "gray"));
           NotificationManager.getInstance().add(
-              "\u274c Phi\u00ean " + auctionId
-                  + " b\u1ecb Admin h\u1ee7y. Ti\u1ec1n \u0111\u00e3 \u0111\u01b0\u1ee3c ho\u00e0n.",
+              "❌ Phiên " + auctionId
+              + " bị Admin hủy. Tiền đã được hoàn.",
               "auction", auctionId);
         }
         removePushListener();
@@ -181,7 +185,8 @@ public class AutoBidController implements Initializable {
         return;
       }
       if (maxBidVal <= price) {
-        showMessage("❌ Giá tối đa phải lớn hơn giá hiện tại: " + String.format("%,d VNĐ", (long) price), "red");
+        showMessage("❌ Giá tối đa phải lớn hơn giá hiện tại: " 
+            + String.format("%,d VNĐ", (long) price), "red");
         return;
       }
     } catch (NumberFormatException e) {
@@ -241,12 +246,15 @@ public class AutoBidController implements Initializable {
 
   /** Mirror AuctionValidator.getMinimumIncrement */
   private long getMinimumIncrement(double price) {
-    if (price < 1_000_000)
+    if (price < 1_000_000) {
       return 50_000;
-    if (price < 5_000_000)
+    }
+    if (price < 5_000_000) {
       return 100_000;
-    if (price < 10_000_000)
+    }
+    if (price < 10_000_000) {
       return 250_000;
+    }
     return 500_000;
   }
 
