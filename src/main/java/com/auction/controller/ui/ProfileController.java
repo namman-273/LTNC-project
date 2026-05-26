@@ -1,14 +1,16 @@
 package com.auction.controller.ui;
 
+import com.auction.model.dto.BidHistoryEntry;
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
-import com.auction.model.dto.BidHistoryEntry;
 import com.auction.util.core.SessionManager;
+import com.auction.util.ui.ToastManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.BidHistoryView;
-import com.auction.util.ui.ToastManager;
-
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -19,10 +21,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
 
 public class ProfileController implements Initializable {
 
