@@ -77,13 +77,10 @@ public class BidHistoryController implements Initializable {
       "-fx-padding: 6 18; -fx-cursor: hand; -fx-font-size: 12px; " 
       +
       "-fx-border-color: transparent;";
-  private static final String TAB_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #6B7280; " 
-      +
-      "-fx-background-radius: 20; -fx-padding: 6 18; " 
-      +
-      "-fx-cursor: hand; -fx-font-size: 12px; " 
-      +
-      "-fx-border-color: #E5E7EB; -fx-border-radius: 20; -fx-border-width: 1;";
+  private static final String TAB_INACTIVE = "-fx-background-color: transparent;"
+      + " -fx-text-fill: #6B7280; -fx-background-radius: 20; -fx-padding: 6 18;"
+      + " -fx-cursor: hand; -fx-font-size: 12px;"
+      + " -fx-border-color: #E5E7EB; -fx-border-radius: 20; -fx-border-width: 1;";
 
   private final Gson gson = new GsonBuilder().create();
 
@@ -380,7 +377,8 @@ public class BidHistoryController implements Initializable {
 
       itemName.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #111827;");
       itemName.setMaxWidth(280);
-      badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 2 8;");
+      badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;"
+          + " -fx-background-radius: 12; -fx-padding: 2 8;");
       detail.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
       timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
       priceLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
