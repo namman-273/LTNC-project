@@ -90,17 +90,20 @@ public class BidChartController implements Initializable {
           Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
       System.out.println("Chart history: " + response);
 
-      if (response == null || !response.startsWith(Protocol.RES_HISTORY))
+      if (response == null || !response.startsWith(Protocol.RES_HISTORY)) {
         return;
+      }
 
       String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-      if (parts.length < 3 || parts[2].trim().equals("[]"))
+      if (parts.length < 3 || parts[2].trim().equals("[]")) {
         return;
+      }
 
       try {
         JsonArray array = JsonParser.parseString(parts[2].trim()).getAsJsonArray();
-        if (array.size() == 0)
+        if (array.size() == 0) {
           return;
+        }
 
         // Giới hạn 20 lần bid gần nhất
         final int MAX_POINTS = 20;
@@ -149,8 +152,9 @@ public class BidChartController implements Initializable {
   }
 
   private void appendPoint(double price) {
-    if (bidChart.getData().isEmpty())
+    if (bidChart.getData().isEmpty()) {
       return;
+    }
     XYChart.Series<Number, Number> series = bidChart.getData().get(0);
     int nextIndex = series.getData().size() + 1;
     series.getData().add(new XYChart.Data<>(nextIndex, price));
