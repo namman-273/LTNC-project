@@ -103,14 +103,18 @@ public class WatchlistController implements Initializable {
   public void initialize(URL url, ResourceBundle rb) {
     registerBalancePushListener();
     // Giữ columns để controller không crash khi table ẩn
-    if (idCol != null)
+    if (idCol != null) {
       idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
-    if (nameCol != null)
+    }
+    if (nameCol != null) {
       nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-    if (priceCol != null)
+    }
+    if (priceCol != null) {
       priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPriceFormatted"));
-    if (statusCol != null)
+    }
+    if (statusCol != null) {
       statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+    }
   }
 
   private void loadWatchlist() {
@@ -559,8 +563,9 @@ public class WatchlistController implements Initializable {
   }
 
   private void loadBalance() {
-    if (balanceLabel == null)
+    if (balanceLabel == null) {
       return;
+    }
     new Thread(() -> {
       String res = com.auction.network.client.ServerConnection.getInstance()
           .sendAndReceive(com.auction.network.protocol.Protocol.CMD_GET_BALANCE);
@@ -599,10 +604,12 @@ public class WatchlistController implements Initializable {
 
   private Stage getStage() {
     try {
-      if (watchlistCards != null)
+      if (watchlistCards != null) {
         return (Stage) watchlistCards.getScene().getWindow();
-      if (watchlistTable != null)
+      }
+      if (watchlistTable != null) {
         return (Stage) watchlistTable.getScene().getWindow();
+      }
     } catch (Exception ignored) {
     }
     return null;
