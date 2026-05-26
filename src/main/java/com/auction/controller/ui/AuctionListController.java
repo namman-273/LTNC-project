@@ -88,7 +88,7 @@ public class AuctionListController implements Initializable {
 
   public void setUsername(String username) {
     this.username = username;
-    if (welcomeLabel != null) welcomeLabel.setText("Xin chào, " + username + "!");
+    if (welcomeLabel != null) welcomeLabel.setText("Xin chào, " + username + "!"); 
     String role = SessionManager.getInstance().getRole();
     if (adminButton != null) {
       adminButton.setVisible("ADMIN".equalsIgnoreCase(role));
@@ -385,15 +385,21 @@ public class AuctionListController implements Initializable {
   }
 
   private static final String FILTER_ACTIVE_STYLE =
-          "-fx-background-color: rgba(59,130,246,0.3); -fx-text-fill: #93C5FD;" +
-                  "-fx-font-size: 11px; -fx-font-weight: bold;" +
-                  "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;" +
+          "-fx-background-color: rgba(59,130,246,0.3); -fx-text-fill: #93C5FD;" 
+          +
+                  "-fx-font-size: 11px; -fx-font-weight: bold;" 
+                  +
+                  "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;" 
+                  +
                   "-fx-border-color: #3B82F6; -fx-border-radius: 8; -fx-border-width: 1;";
 
   private static final String FILTER_INACTIVE_STYLE =
-          "-fx-background-color: transparent; -fx-text-fill: #64748B;" +
-                  "-fx-font-size: 11px; -fx-background-radius: 8; -fx-cursor: hand;" +
-                  "-fx-padding: 0 12; -fx-border-color: #1E3A5F;" +
+          "-fx-background-color: transparent; -fx-text-fill: #64748B;" 
+          +
+                  "-fx-font-size: 11px; -fx-background-radius: 8; -fx-cursor: hand;" 
+                  +
+                  "-fx-padding: 0 12; -fx-border-color: #1E3A5F;" 
+                  +
                   "-fx-border-radius: 8; -fx-border-width: 1;";
 
   @FXML
@@ -474,9 +480,12 @@ public class AuctionListController implements Initializable {
     };
     Label badge = new Label("RUNNING".equals(row.getStatus()) ? "🔴 LIVE" : "⬤ " + row.getStatus());
     badge.setStyle(
-            "-fx-background-color: " + statusColor + "22;" +
-                    "-fx-text-fill: " + statusColor + ";" +
-                    "-fx-font-size: 10px; -fx-font-weight: bold;" +
+            "-fx-background-color: " + statusColor + "22;" 
+            +
+                    "-fx-text-fill: " + statusColor + ";" 
+                    +
+                    "-fx-font-size: 10px; -fx-font-weight: bold;" 
+                    +
                     "-fx-background-radius: 6; -fx-padding: 3 8;");
 
     String typeIcon = switch (row.getItemType() != null ? row.getItemType() : "") {
@@ -554,17 +563,22 @@ public class AuctionListController implements Initializable {
     Button btnDetail = new Button("👁 Xem chi tiết");
     btnDetail.setPrefWidth(185);
     btnDetail.setStyle(
-            "-fx-background-color: #1565C0; -fx-text-fill: white;" +
-                    "-fx-font-size: 11px; -fx-font-weight: bold;" +
+            "-fx-background-color: #1565C0; -fx-text-fill: white;" 
+            +
+                    "-fx-font-size: 11px; -fx-font-weight: bold;" 
+                    +
                     "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 0;");
     btnDetail.setOnAction(e -> openBidView(row));
 
     VBox card = new VBox(8, badge, iconNode, name, priceLabel, price, btnDetail);
     card.setPrefWidth(215); card.setMinHeight(265);
     card.setStyle(
-            "-fx-background-color: #0B1120;" +
-                    "-fx-background-radius: 14;" +
-                    "-fx-border-color: #1E3A5F; -fx-border-radius: 14; -fx-border-width: 1;" +
+            "-fx-background-color: #0B1120;" 
+            +
+                    "-fx-background-radius: 14;" 
+                    +
+                    "-fx-border-color: #1E3A5F; -fx-border-radius: 14; -fx-border-width: 1;" 
+                    +
                     "-fx-padding: 14; -fx-cursor: hand;");
     card.setOnMouseClicked(e -> {
       auctionGrid.getChildren().forEach(n -> {
