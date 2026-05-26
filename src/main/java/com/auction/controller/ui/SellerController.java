@@ -77,7 +77,8 @@ public class SellerController implements Initializable {
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
+          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx)
+            -> java.time.LocalDateTime
               .parse(json.getAsString()))
       .create();
 
@@ -129,7 +130,9 @@ public class SellerController implements Initializable {
           return;
         }
 
-        if (item.equals("Đang tải...") || item.equals("Chưa có lịch sử đặt giá.") || item.equals("Lỗi tải lịch sử.")) {
+        if (item.equals("Đang tải...") 
+            || item.equals("Chưa có lịch sử đặt giá.") 
+            || item.equals("Lỗi tải lịch sử.")) {
           setText(null);
           javafx.scene.control.Label lbl = new javafx.scene.control.Label(item);
           lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-padding: 8 0;");
@@ -140,11 +143,11 @@ public class SellerController implements Initializable {
 
         // Parse "1. Duong → 7,000,000 VNĐ"
         String[] parts = item.split("\\.", 2);
-        String num = parts.length > 0 ? parts[0].trim() : "";
-        String rest = parts.length > 1 ? parts[1].trim() : item;
+        final String num    = parts.length > 0 ? parts[0].trim() : "";
+        String rest         = parts.length > 1 ? parts[1].trim() : item;
         String[] arrowParts = rest.split("→", 2);
-        String bidder = arrowParts.length > 0 ? arrowParts[0].trim() : rest;
-        String price = arrowParts.length > 1 ? arrowParts[1].trim() : "";
+        final String bidder = arrowParts.length > 0 ? arrowParts[0].trim() : rest;
+        final String price  = arrowParts.length > 1 ? arrowParts[1].trim() : "";
 
         javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(10);
         row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -251,6 +254,7 @@ public class SellerController implements Initializable {
               try {
                 balanceLabel.setText(String.format("%,.0f VNĐ", Double.parseDouble(newBalance)));
               } catch (NumberFormatException ignored) {
+                ignored.printStackTrace();
               }
             }
             // Format số tiền nhận - loại bỏ dấu + nếu có
