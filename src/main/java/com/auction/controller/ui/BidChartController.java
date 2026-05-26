@@ -1,9 +1,9 @@
 package com.auction.controller.ui;
 
-import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
-import com.auction.views.java.BidView;
+import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.ToastManager;
+import com.auction.views.java.BidView;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
