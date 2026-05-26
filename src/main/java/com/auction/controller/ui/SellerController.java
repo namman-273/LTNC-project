@@ -240,6 +240,24 @@ public class SellerController implements Initializable {
                 }
                 break;
 
+            case Protocol.NOTI_AUCTION_CANCELLED:
+                // Format: AUCTION_CANCELLED|auctionId|detail
+                // Seller nhận broadcast này khi admin end sớm hoặc delete phiên
+                if (parts.length >= 2) {
+                    String auctionId = parts[1];
+                    String detail = parts.length >= 3 ? parts[2] : "Phiên đã bị Admin hủy";
+                    // Check isMine TRƯỚC khi reload (tránh race condition auctionData chưa update)
+                    boolean isMine = auctionData != null && auctionData.stream()
+                            .anyMatch(r -> r.getId().equals(auctionId));
+                    Platform.runLater(() -> {
+                        loadMyAuctions();
+                        if (isMine) {
+                            showNotification("❌ Phiên bị hủy", detail + "\nMã phiên: " + auctionId);
+                        }
+                    });
+                }
+                break;
+
             default:
                 break;
         }
