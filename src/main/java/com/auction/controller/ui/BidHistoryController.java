@@ -409,8 +409,6 @@ public class BidHistoryController implements Initializable {
         return;
       }
 
-      boolean win = "WIN".equalsIgnoreCase(entry.getResult());
-
       // Icon mặc định vì BidHistoryEntry không có itemType
       iconLabel.setText("📦");
       iconWrap.setStyle("-fx-background-color: #F3F4F6; -fx-background-radius: 22;");
@@ -420,6 +418,7 @@ public class BidHistoryController implements Initializable {
       timeLabel.setText(entry.getEndTime() != null ? entry.getEndTime() : "");
       priceLabel.setText(String.format("%,.0f VNĐ", entry.getFinalPrice()));
 
+      boolean win = "WIN".equalsIgnoreCase(entry.getResult());
       if (win) {
         badge.setText("Thắng");
         badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;" 
