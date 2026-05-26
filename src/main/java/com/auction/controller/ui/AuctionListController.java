@@ -524,27 +524,32 @@ public class AuctionListController implements Initializable {
     String imgUrl = row.getImageUrl();
     if (imgUrl != null && !imgUrl.isEmpty()) {
       javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView();
-      imgView.setFitWidth(187); imgView.setFitHeight(120);
-      imgView.setPreserveRatio(true); imgView.setSmooth(true);
+      imgView.setFitWidth(187);
+      imgView.setFitHeight(120);
+      imgView.setPreserveRatio(true);
+      imgView.setSmooth(true);
       javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(187, 120);
-      clip.setArcWidth(10); clip.setArcHeight(10);
+      clip.setArcWidth(10);
+      clip.setArcHeight(10);
       imgView.setClip(clip);
       Label placeholderIcon = new Label(typeIcon);
       placeholderIcon.setStyle("-fx-font-size: 40px;");
       javafx.scene.layout.StackPane imgContainer =
               new javafx.scene.layout.StackPane(placeholderIcon, imgView);
-      imgContainer.setPrefWidth(187); imgContainer.setPrefHeight(120);
+      imgContainer.setPrefWidth(187);
+      imgContainer.setPrefHeight(120);
       imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");
       iconNode = imgContainer;
       final String finalImgUrl = imgUrl;
       new Thread(() -> {
         try {
           javafx.scene.image.Image img;
-          final double REQ_W = 187, REQ_H = 120;
+          final double reqW = 187;
+          final double reqH = 120;
           if (finalImgUrl.startsWith("data:image")) {
             String base64 = finalImgUrl.substring(finalImgUrl.indexOf(",") + 1);
             byte[] bytes = java.util.Base64.getDecoder().decode(base64);
-            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), REQ_W, REQ_H, true, true);
+            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), reqW, reqH, true, true);
           } else {
             java.net.URL url = new java.net.URL(finalImgUrl);
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
@@ -555,7 +560,7 @@ public class AuctionListController implements Initializable {
             conn.connect();
             try (java.io.InputStream is = conn.getInputStream()) {
               byte[] bytes = is.readAllBytes();
-              img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), REQ_W, REQ_H, true, true);
+              img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), reqW, reqH, true, true);
             } finally { conn.disconnect(); }
           }
           if (!img.isError()) {
