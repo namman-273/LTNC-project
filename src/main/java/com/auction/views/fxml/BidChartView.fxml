@@ -37,14 +37,14 @@
                           -fx-border-radius: 12;
                           -fx-border-width: 1;
                           -fx-padding: 10;">
-            <xAxis>
-                <NumberAxis fx:id="xAxis" label="Lần đặt giá" autoRanging="true"
+            <axisX>
+                <NumberAxis fx:id="axisX" label="Lần đặt giá" autoRanging="true"
                             style="-fx-tick-label-fill: #64748B; -fx-minor-tick-visible: false;"/>
-            </xAxis>
-            <yAxis>
-                <NumberAxis fx:id="yAxis" label="Giá (VND)" autoRanging="true"
+            </axisX>
+            <axisY>
+                <NumberAxis fx:id="axisY" label="Giá (VND)" autoRanging="true"
                             style="-fx-tick-label-fill: #64748B; -fx-minor-tick-visible: false;"/>
-            </yAxis>
+            </axisY>
         </LineChart>
     </VBox>
 

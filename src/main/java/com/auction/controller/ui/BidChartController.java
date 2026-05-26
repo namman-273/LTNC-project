@@ -26,9 +26,9 @@ public class BidChartController implements Initializable {
   @FXML
   private LineChart<Number, Number> bidChart;
   @FXML
-  private NumberAxis xAxis;
+  private NumberAxis axisX;
   @FXML
-  private NumberAxis yAxis;
+  private NumberAxis axisY;
   @FXML
   private Label titleLabel;
 
@@ -75,8 +75,8 @@ public class BidChartController implements Initializable {
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-    xAxis.setLabel("Lần đặt giá");
-    yAxis.setLabel("Giá (VNĐ)");
+    axisX.setLabel("Lần đặt giá");
+    axisY.setLabel("Giá (VNĐ)");
   }
 
   /**
