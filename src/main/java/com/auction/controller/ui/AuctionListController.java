@@ -600,7 +600,8 @@ public class AuctionListController implements Initializable {
     }
 
     Label name = new Label(row.getItemName());
-    name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0; -fx-wrap-text: true;");
+    name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;"
+        + " -fx-text-fill: #E2E8F0; -fx-wrap-text: true;");
     name.setMaxWidth(185);
     Label priceLabel = new Label("Giá hiện tại");
     priceLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: #475569;");
@@ -631,10 +632,12 @@ public class AuctionListController implements Initializable {
     card.setOnMouseClicked(e -> {
       auctionGrid.getChildren().forEach(n -> {
         if (n instanceof VBox v) {
-          v.setStyle(v.getStyle().replace("-fx-background-color: #162236;", "-fx-background-color: #0B1120;"));
+          v.setStyle(v.getStyle().replace(
+              "-fx-background-color: #162236;", "-fx-background-color: #0B1120;"));
         }
       });
-      card.setStyle(card.getStyle().replace("-fx-background-color: #0B1120;", "-fx-background-color: #162236;"));
+      card.setStyle(card.getStyle().replace(
+          "-fx-background-color: #0B1120;", "-fx-background-color: #162236;"));
       selectedRow = row;
     });
     return card;
@@ -654,30 +657,40 @@ public class AuctionListController implements Initializable {
   // ── Watchlist ─────────────────────────────────────────────────────────────
   @FXML
   public void handleWatch() {
-    if (selectedRow == null) { setStatusBar("⚠️ Vui lòng click vào một phiên trước!"); return; }
+    if (selectedRow == null) {
+      setStatusBar("⚠ Vui lòng click vào một phiên trước!");
+      return;
+    }
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
               Protocol.CMD_WATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
           setStatusBar("✅ Đã theo dõi phiên!");
-          AlertUtil.showSuccess("Theo dõi thành công", "✅ Đang theo dõi: " + selectedRow.getItemName());
-        } else { setStatusBar("❌ Theo dõi thất bại!"); }
+          AlertUtil.showSuccess(
+              "Theo dõi thành công", "✅ Đang theo dõi: " + selectedRow.getItemName());
+        } else {
+          setStatusBar("❌ Theo dõi thất bại!");
+        }
       });
     }).start();
   }
 
   @FXML
   public void handleUnwatch() {
-    if (selectedRow == null) { setStatusBar("⚠️ Vui lòng click vào một phiên trước!"); return; }
+    if (selectedRow == null) {
+      setStatusBar("⚠ Vui lòng click vào một phiên trước!");
+      return;
+    }
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
               Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
           setStatusBar("✅ Đã bỏ theo dõi!");
+        } else {
+          setStatusBar("❌ Bỏ theo dõi thất bại!");
         }
-        else setStatusBar("❌ Bỏ theo dõi thất bại!");
       });
     }).start();
   }
@@ -691,12 +704,20 @@ public class AuctionListController implements Initializable {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  private void setStatusBar(String msg) { if (statusBarLabel != null) {
+  private void setStatusBar(String msg) {
+    if (statusBarLabel != null) {
       statusBarLabel.setText(msg);
-    } }
+    } 
+  }
 
-  @FXML public void handleRefresh() { loadFromServer(); }
-  public void refreshList()         { loadFromServer(); }
+  @FXML
+  public void handleRefresh() {
+    loadFromServer();
+  }
+  
+  public void refreshList() {
+    loadFromServer();
+  }
 
   private void startAutoRefreshTimeline() {
     autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(8), e -> loadFromServer()));
@@ -705,7 +726,10 @@ public class AuctionListController implements Initializable {
   }
 
   private void stopAutoRefresh() {
-    if (autoRefreshTimeline != null) { autoRefreshTimeline.stop(); autoRefreshTimeline = null; }
+    if (autoRefreshTimeline != null) { 
+      autoRefreshTimeline.stop();
+      autoRefreshTimeline = null; 
+    }
   }
 
   @FXML
@@ -754,9 +778,11 @@ public class AuctionListController implements Initializable {
               balanceLabel.setText(amt + " VNĐ");
             }
           }
-        } else { if (balanceLabel != null) {
+        } else {
+          if (balanceLabel != null) {
             balanceLabel.setText("---");
-          } }
+          }
+        }
       });
     }, "auctionlist-balance-thread").start();
   }
