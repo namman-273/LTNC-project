@@ -7,9 +7,12 @@ import com.auction.util.ui.NotificationManager;
 import com.auction.util.ui.NotificationManager.NotificationItem;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.BidView;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.util.List;
+import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -28,11 +31,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
-import java.lang.reflect.Type;
-import java.net.URL;
-import java.util.List;
-import java.util.ResourceBundle;
 
 public class NotificationController implements Initializable {
 
