@@ -151,8 +151,9 @@ public class WatchlistController implements Initializable {
         // BUG FIX 2: Cập nhật watchedAuctionIds sau khi load xong
         // để push listener có thể check ngay lập tức
         watchedAuctionIds.clear();
-        for (AuctionRow row : data)
+        for (AuctionRow row : data) {
           watchedAuctionIds.add(row.getId());
+        }
         if (watchlistTable != null) {
           watchlistTable.setItems(data);
         }
@@ -168,19 +169,23 @@ public class WatchlistController implements Initializable {
   }
 
   private void updateCards(ObservableList<AuctionRow> data) {
-    if (watchlistCards == null)
+    if (watchlistCards == null) {
       return;
+    }
     watchlistCards.getChildren().clear();
 
     long open = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
     long finished = data.stream().filter(r -> "FINISHED".equals(r.getStatus())).count();
 
-    if (totalCountLabel != null)
+    if (totalCountLabel != null) {
       totalCountLabel.setText(String.valueOf(data.size()));
-    if (openCountLabel != null)
+    }
+    if (openCountLabel != null) {
       openCountLabel.setText(String.valueOf(open));
-    if (finishedCountLabel != null)
+    }
+    if (finishedCountLabel != null) {
       finishedCountLabel.setText(String.valueOf(finished));
+    }
 
     if (data.isEmpty()) {
       VBox empty = new VBox();
@@ -265,8 +270,9 @@ public class WatchlistController implements Initializable {
         + "-fx-border-color: #DBEAFE; -fx-border-radius: 6; -fx-border-width: 1;"
         + "-fx-background-radius: 6; -fx-padding: 4 10;");
     btnSelect.setOnAction(e -> {
-      if (watchlistTable != null)
+      if (watchlistTable != null) {
         watchlistTable.getSelectionModel().select(row);
+      }
       highlightSelected(row);
     });
 
@@ -279,8 +285,9 @@ public class WatchlistController implements Initializable {
     VBox.setMargin(card, new Insets(0, 0, 8, 0));
 
     card.setOnMouseClicked(e -> {
-      if (watchlistTable != null)
+      if (watchlistTable != null) {
         watchlistTable.getSelectionModel().select(row);
+      }
       highlightSelected(row);
     });
 
@@ -288,8 +295,9 @@ public class WatchlistController implements Initializable {
   }
 
   private void highlightSelected(AuctionRow selected) {
-    if (watchlistCards == null)
+    if (watchlistCards == null) {
       return;
+    }
     watchlistCards.getChildren().forEach(node -> {
       if (node instanceof HBox) {
         HBox card = (HBox) node;
@@ -451,13 +459,15 @@ public class WatchlistController implements Initializable {
   @FXML
   private void registerBalancePushListener() {
     // Chỉ đăng ký 1 lần, tránh duplicate listener
-    if (balancePushListener != null)
+    if (balancePushListener != null) {
       return;
+    }
 
     balancePushListener = message -> {
       String[] parts = message.split("\\|");
-      if (parts.length == 0)
+      if (parts.length == 0) {
         return;
+      }
 
       switch (parts[0]) {
         case Protocol.NOTI_BALANCE_CHANGED:
@@ -577,15 +587,18 @@ public class WatchlistController implements Initializable {
           String amt = p.length >= 2 ? p[1] : "---";
           try {
             double v = Double.parseDouble(amt);
-            if (balanceLabel != null)
+            if (balanceLabel != null) {
               balanceLabel.setText(String.format("%,.0f VNĐ", v));
+            }
           } catch (NumberFormatException e) {
-            if (balanceLabel != null)
+            if (balanceLabel != null) {
               balanceLabel.setText(amt + " VNĐ");
+            }
           }
         } else {
-          if (balanceLabel != null)
+          if (balanceLabel != null) {
             balanceLabel.setText("---");
+          }
         }
       });
     }, "watchlist-balance-thread").start();
@@ -593,15 +606,17 @@ public class WatchlistController implements Initializable {
 
   public void handleGoBalance() {
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new BalanceView(s, username).show();
+    }
   }
 
   @FXML
   public void handleGoNotification() {
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new NotificationView(s, username).show();
+    }
   }
 
   private Stage getStage() {
