@@ -23,6 +23,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -210,9 +212,16 @@ public class AdminDashboardController implements Initializable {
                 // RES_ADMIN_END_SUCCESS là direct response (1-1), KHÔNG phải push
                 // → nó đi qua responseQueue → sendAndReceive nhận đúng, không timeout
                 if (response.startsWith(Protocol.RES_ADMIN_END_SUCCESS)) {
-                    showMessage("✅ " + (parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!"), "green");
+                    String msg = parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!";
+                    showMessage("✅ " + msg, "green");
+                    NotificationManager.getInstance().add(
+                            "✅ [Admin] Đã đóng phiên " + selected.getId() + ". " + msg,
+                            "system", selected.getId());
+                    ToastManager.show(ToastManager.Type.SUCCESS, "✅ Đã đóng phiên " + selected.getId());
                 } else {
-                    showMessage("❌ " + (parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!"), "red");
+                    String msg = parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!";
+                    showMessage("❌ " + msg, "red");
+                    ToastManager.show(ToastManager.Type.DANGER, "❌ " + msg);
                 }
                 loadFromServer();
             });
@@ -244,9 +253,16 @@ public class AdminDashboardController implements Initializable {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_DELETE_SUCCESS)) {
-                    showMessage("✅ " + (parts.length > 1 ? parts[1] : "Xóa phiên thành công!"), "green");
+                    String msg = parts.length > 1 ? parts[1] : "Xóa phiên thành công!";
+                    showMessage("✅ " + msg, "green");
+                    NotificationManager.getInstance().add(
+                            "🗑️ [Admin] Đã xóa phiên " + selected.getId() + ". " + msg,
+                            "system", selected.getId());
+                    ToastManager.show(ToastManager.Type.SUCCESS, "🗑️ Đã xóa phiên " + selected.getId());
                 } else {
-                    showMessage("❌ " + (parts.length > 1 ? parts[1] : "Xóa phiên thất bại!"), "red");
+                    String msg = parts.length > 1 ? parts[1] : "Xóa phiên thất bại!";
+                    showMessage("❌ " + msg, "red");
+                    ToastManager.show(ToastManager.Type.DANGER, "❌ " + msg);
                 }
                 loadFromServer();
             });
