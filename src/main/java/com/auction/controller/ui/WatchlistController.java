@@ -153,8 +153,9 @@ public class WatchlistController implements Initializable {
         watchedAuctionIds.clear();
         for (AuctionRow row : data)
           watchedAuctionIds.add(row.getId());
-        if (watchlistTable != null)
+        if (watchlistTable != null) {
           watchlistTable.setItems(data);
+        }
         updateCards(data);
 
         if (data.isEmpty()) {

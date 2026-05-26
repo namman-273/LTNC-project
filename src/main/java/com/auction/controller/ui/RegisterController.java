@@ -41,7 +41,8 @@ public class RegisterController implements Initializable {
       +
       "-fx-border-color: #3B82F6; -fx-border-radius: 10; -fx-border-width: 2;";
 
-  private static final String STYLE_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #94A3B8;" 
+  private static final String STYLE_INACTIVE = 
+      "-fx-background-color: transparent; -fx-text-fill: #94A3B8;" 
       +
       "-fx-font-size: 12px; -fx-font-weight: bold;" 
       +
