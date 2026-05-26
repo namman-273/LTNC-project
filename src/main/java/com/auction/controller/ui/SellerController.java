@@ -242,12 +242,11 @@ public class SellerController implements Initializable {
 
             case Protocol.NOTI_AUCTION_CANCELLED:
                 // Format: AUCTION_CANCELLED|auctionId|reason
-                // Admin end sớm HOẶC admin delete phiên
+                // broadcastToAll → tất cả client đều nhận, chỉ hiện nếu phiên thuộc seller này
                 if (parts.length >= 3) {
-                    String auctionId = parts[1];
-                    String reason    = parts[2];
+                    final String auctionId = parts[1];
+                    final String reason    = parts[2];
                     Platform.runLater(() -> {
-                        // Kiểm tra ngay trong auctionData (đã load sẵn) — không cần round-trip
                         boolean wasMine = auctionData != null && auctionData.stream()
                                 .anyMatch(r -> r.getId().equals(auctionId));
                         loadMyAuctions();
