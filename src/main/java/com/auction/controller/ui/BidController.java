@@ -253,6 +253,7 @@ public class BidController implements Initializable {
       currentPriceValue = Double.parseDouble(
           currentPrice.replace(",", "").replace(" VND", "").replace(" VNĐ", "").trim());
     } catch (NumberFormatException ignored) {
+      // Price string format is invalid; keep currentPriceValue at default 0
     }
 
     updateBidSuggestion(currentPriceValue);
@@ -290,7 +291,9 @@ public class BidController implements Initializable {
           } else {
             java.net.URL url = java.net.URI.create(finalImageUrl).toURL();
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            conn.setRequestProperty(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
             conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
             conn.setRequestProperty("Referer", url.getProtocol() + "://" + url.getHost());
@@ -326,8 +329,9 @@ public class BidController implements Initializable {
     if (resolvedDescription != null && !resolvedDescription.isEmpty()
         && !resolvedDescription.startsWith("http")
         && !resolvedDescription.startsWith("data:image")) {
-      if (descriptionLabel != null)
+      if (descriptionLabel != null) {
         descriptionLabel.setText(resolvedDescription);
+      }
       if (descriptionBox != null) {
         descriptionBox.setVisible(true);
         descriptionBox.setManaged(true);
@@ -366,8 +370,9 @@ public class BidController implements Initializable {
     if ("FINISHED".equalsIgnoreCase(status) || "PAID".equalsIgnoreCase(status)) {
       Platform.runLater(() -> {
         statusLabel.setText("FINISHED");
-        if (countdownTimeline != null)
+        if (countdownTimeline != null) {
           countdownTimeline.stop();
+        }
         if (countdownLabel != null) {
           countdownLabel.setText("⏰ Hết giờ!");
           countdownLabel.setStyle(
@@ -401,7 +406,8 @@ public class BidController implements Initializable {
         return;
       }
       try {
-        com.google.gson.JsonArray array = com.google.gson.JsonParser.parseString(parts[2].trim()).getAsJsonArray();
+        com.google.gson.JsonArray array = 
+            com.google.gson.JsonParser.parseString(parts[2].trim()).getAsJsonArray();
         if (array.size() == 0) {
           Platform.runLater(() -> showInfo("Phiên kết thúc - không có người đặt giá."));
           return;
@@ -410,8 +416,9 @@ public class BidController implements Initializable {
         String winnerName = "---";
         if (lastBid.has("bidder") && lastBid.get("bidder").isJsonObject()) {
           com.google.gson.JsonObject bidderObj = lastBid.get("bidder").getAsJsonObject();
-          if (bidderObj.has("username"))
+          if (bidderObj.has("username")) {
             winnerName = bidderObj.get("username").getAsString();
+          }
         }
         final String finalWinner = winnerName;
         Platform.runLater(() -> {
@@ -421,8 +428,9 @@ public class BidController implements Initializable {
             String bidder = "---";
             if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
               com.google.gson.JsonObject bo = obj.get("bidder").getAsJsonObject();
-              if (bo.has("username"))
+              if (bo.has("username")) {
                 bidder = bo.get("username").getAsString();
+              } 
             }
             double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
             boolean isMe = bidder.equals(username);
@@ -465,8 +473,9 @@ public class BidController implements Initializable {
 
   // ── Load số dư ──────────────────────────────────────────────────────────
   private void loadBalance() {
-    if (balanceLabel == null)
+    if (balanceLabel == null) {
       return;
+    }
     new Thread(() -> {
       String res = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
       Platform.runLater(() -> {
@@ -488,8 +497,9 @@ public class BidController implements Initializable {
 
   @FXML
   private void handleToggleDetail() {
-    if (productDetailPanel == null)
+    if (productDetailPanel == null) {
       return;
+    } 
     boolean show = !productDetailPanel.isVisible();
     productDetailPanel.setVisible(show);
     productDetailPanel.setManaged(show);
@@ -508,8 +518,9 @@ public class BidController implements Initializable {
   private void handleServerPush(String message) {
     System.out.println("PUSH RECEIVED: " + message);
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     switch (parts[0]) {
 
@@ -619,16 +630,19 @@ public class BidController implements Initializable {
         break;
 
       case Protocol.RES_END_SUCCESS:
-        if (parts.length >= 2 && !parts[1].equals(auctionId))
+        if (parts.length >= 2 && !parts[1].equals(auctionId)) {
           break;
+        }
         Platform.runLater(() -> {
           statusLabel.setText("FINISHED");
           stopSnipingCountdown();
-          if (countdownTimeline != null)
+          if (countdownTimeline != null) {
             countdownTimeline.stop();
+          }
           // FIX Bug1b: dừng priceRefresh khi phiên kết thúc
-          if (priceRefreshTimeline != null)
+          if (priceRefreshTimeline != null) {
             priceRefreshTimeline.stop();
+          }
           if (countdownLabel != null) {
             countdownLabel.setText("⏰ Hết giờ!");
             countdownLabel.setStyle(
@@ -654,8 +668,9 @@ public class BidController implements Initializable {
                 winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim();
               }
               int wSep = winnerName.indexOf("|");
-              if (wSep >= 0)
+              if (wSep >= 0) {
                 winnerName = winnerName.substring(0, wSep).trim();
+              }
               String winnerDisplay = winnerName.isEmpty() ? "---" : winnerName;
               showInfo("Phiên kết thúc. Người chiến thắng: " + winnerDisplay);
               NotificationManager.getInstance().add(
@@ -693,12 +708,15 @@ public class BidController implements Initializable {
    */
   private void handleCancelledState() {
     stopSnipingCountdown();
-    if (countdownTimeline != null)
+    if (countdownTimeline != null) {
       countdownTimeline.stop();
-    if (priceRefreshTimeline != null)
+    }
+    if (priceRefreshTimeline != null) {
       priceRefreshTimeline.stop(); // FIX: không restart
-    if (statusLabel != null)
+    }  
+    if (statusLabel != null) {
       statusLabel.setText("CANCELED");
+    }
     if (countdownLabel != null) {
       countdownLabel.setText("❌ Bị hủy!");
       countdownLabel.setStyle(
@@ -753,23 +771,28 @@ public class BidController implements Initializable {
 
   /** Mirror AuctionValidator.getMinimumIncrement */
   private long getMinimumIncrement(double price) {
-    if (price < 1_000_000)
+    if (price < 1_000_000) {
       return 50_000;
-    if (price < 5_000_000)
+    }
+    if (price < 5_000_000) {
       return 100_000;
-    if (price < 10_000_000)
+    }
+    if (price < 10_000_000) {
       return 250_000;
+    }
     return 500_000;
   }
 
   // ── Countdown ────────────────────────────────────────────────────────────
   private void startCountdown() {
-    if (countdownTimeline != null)
+    if (countdownTimeline != null) {
       countdownTimeline.stop();
+    }
     countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
       long remaining = endTime - System.currentTimeMillis();
-      if (countdownLabel == null)
+      if (countdownLabel == null) {
         return;
+      }
       if (remaining <= 0) {
         countdownLabel.setText("⏰ Hết giờ!");
         countdownLabel.setStyle(
@@ -791,15 +814,17 @@ public class BidController implements Initializable {
 
   // ── Sniping ──────────────────────────────────────────────────────────────
   private void showSnipingAlert(String extensionCount) {
-    if (snipingBox == null)
+    if (snipingBox == null) {
       return;
+    }
     snipingBox.setVisible(true);
     snipingBox.setManaged(true);
     snipingCountLabel.setText("Lần gia hạn thứ: " + extensionCount);
     snipingCountdownLabel.setText("⏱ +2 phút vừa được cộng thêm!");
     showWarning("Phiên gia hạn lần " + extensionCount + " (+2 phút)");
-    if (snipingTimeline != null)
+    if (snipingTimeline != null) {
       snipingTimeline.stop();
+    }
     snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> stopSnipingAlert()));
     snipingTimeline.setCycleCount(1);
     snipingTimeline.play();
@@ -833,18 +858,22 @@ public class BidController implements Initializable {
       try {
         String response = ServerConnection.getInstance().sendAndReceive(
             Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
-        if (response == null || response.startsWith("ERROR"))
+        if (response == null || response.startsWith("ERROR")) {
           return;
-        if (!response.startsWith(Protocol.RES_HISTORY))
+        }
+        if (!response.startsWith(Protocol.RES_HISTORY)) {
           return;
+        }
 
         String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-        if (parts.length < 3)
+        if (parts.length < 3) {
           return;
+        }
 
         String json = parts[2].trim();
-        if (json.isEmpty() || json.equals("[]"))
+        if (json.isEmpty() || json.equals("[]")) {
           return;
+        }
 
         JsonArray array = JsonParser.parseString(json).getAsJsonArray();
         Platform.runLater(() -> {
@@ -854,8 +883,9 @@ public class BidController implements Initializable {
             String bidder = "---";
             if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
               JsonObject bidderObj = obj.get("bidder").getAsJsonObject();
-              if (bidderObj.has("username"))
+              if (bidderObj.has("username")) {
                 bidder = bidderObj.get("username").getAsString();
+              }
             }
             double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
             boolean isMe = bidder.equals(username);
@@ -959,13 +989,15 @@ public class BidController implements Initializable {
   }
 
   private void startPriceRefresh() {
-    if (priceRefreshTimeline != null)
+    if (priceRefreshTimeline != null) {
       priceRefreshTimeline.stop();
+    }
     priceRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(2), e -> {
       new Thread(() -> {
         String resp = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
-        if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS))
+        if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS)) {
           return;
+        }
         String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
         try {
           com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(json).getAsJsonArray();
@@ -988,8 +1020,9 @@ public class BidController implements Initializable {
                 }
                 // FIX Bug1b: nếu poll thấy phiên đã CANCELED → dừng hết ngay
                 if ("CANCELED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
-                  if (priceRefreshTimeline != null)
+                  if (priceRefreshTimeline != null) {
                     priceRefreshTimeline.stop();
+                  }
                   handleCancelledState();
                 }
               });
@@ -1007,8 +1040,9 @@ public class BidController implements Initializable {
           }
           if (!found) {
             Platform.runLater(() -> {
-              if (priceRefreshTimeline != null)
+              if (priceRefreshTimeline != null) {
                 priceRefreshTimeline.stop();
+              }
             });
           }
         } catch (Exception ex) {
@@ -1023,10 +1057,12 @@ public class BidController implements Initializable {
   private void stopAll() {
     removePushListener();
     stopSnipingCountdown();
-    if (countdownTimeline != null)
+    if (countdownTimeline != null) {
       countdownTimeline.stop();
-    if (priceRefreshTimeline != null)
+    }
+    if (priceRefreshTimeline != null) {
       priceRefreshTimeline.stop();
+    }
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -1034,8 +1070,9 @@ public class BidController implements Initializable {
     try {
       double val = Double.parseDouble(raw.replace(",", "")
           .replace(" VND", "").replace(" VNĐ", "").trim());
-      if (val > 999_000_000_000.0 || val < 0)
+      if (val > 999_000_000_000.0 || val < 0) {
         return "N/A";
+      }
       return String.format("%,.0f VNĐ", val);
     } catch (NumberFormatException e) {
       return raw;
