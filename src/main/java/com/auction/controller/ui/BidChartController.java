@@ -106,8 +106,8 @@ public class BidChartController implements Initializable {
         }
 
         // Giới hạn 20 lần bid gần nhất
-        final int MAX_POINTS = 20;
-        int startIdx = Math.max(0, array.size() - MAX_POINTS);
+        final int maxPoints = 20;
+        int startIdx = Math.max(0, array.size() - maxPoints);
 
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
         series.setName("Giá đặt (20 lần gần nhất)");
@@ -141,9 +141,11 @@ public class BidChartController implements Initializable {
             double newPrice = Double.parseDouble(parts[2]);
             Platform.runLater(() -> {
               appendPoint(newPrice);
-              ToastManager.show(ToastManager.Type.INFO, "🔨 Giá mới: " + String.format("%,.0f VNĐ", newPrice));
+              ToastManager.show(ToastManager.Type.INFO, "🔨 Giá mới: " 
+                  + String.format("%,.0f VNĐ", newPrice));
             });
           } catch (NumberFormatException ignored) {
+            ignored.printStackTrace();
           }
         }
       }
