@@ -253,7 +253,7 @@ public class BidController implements Initializable {
       currentPriceValue = Double.parseDouble(
           currentPrice.replace(",", "").replace(" VND", "").replace(" VNĐ", "").trim());
     } catch (NumberFormatException ignored) {
-      // Price string format is invalid; keep currentPriceValue at default 0
+      ignored.printStackTrace();
     }
 
     updateBidSuggestion(currentPriceValue);
@@ -533,7 +533,7 @@ public class BidController implements Initializable {
                 double v = Double.parseDouble(newBal);
                 balanceLabel.setText(String.format("%,.0f VNĐ", v));
               } catch (NumberFormatException ignored) {
-                // Balance value is not a valid number; skip update
+                ignored.printStackTrace();
               }
             }
           });
@@ -548,7 +548,7 @@ public class BidController implements Initializable {
             try {
               currentPriceValue = Double.parseDouble(newPrice);
             } catch (Exception ignored) {
-              // Price parsing failed; keep previous value
+              ignored.printStackTrace();
             }
             currentPriceLabel.setText(formatPrice(newPrice));
             updateBidSuggestion(currentPriceValue);
@@ -582,7 +582,7 @@ public class BidController implements Initializable {
             NotificationManager.getInstance().add(
                 "⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
           } catch (NumberFormatException ignored) {
-            // Extension count is not a valid number; skip snipe alert update
+            ignored.printStackTrace();
           }
         }
         break;
@@ -610,7 +610,7 @@ public class BidController implements Initializable {
                 historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
               }
             } catch (NumberFormatException ignored) {
-              // New bid amount is not a valid number; skip history update
+              ignored.printStackTrace();
             }
             showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
           });
@@ -809,8 +809,10 @@ public class BidController implements Initializable {
       long seconds = (remaining % 60_000) / 1_000;
       countdownLabel.setText(String.format("%02d : %02d : %02d", hours, minutes, seconds));
       countdownLabel.setStyle(remaining < 300_000
-          ? "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;"
-          : "-fx-text-fill: #1565C0; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;");
+          ? "-fx-text-fill: #E65100; -fx-font-weight: bold;"
+          + " -fx-font-size: 28px; -fx-font-family: monospace;"
+          : "-fx-text-fill: #1565C0; -fx-font-weight: bold;"
+          + " -fx-font-size: 28px; -fx-font-family: monospace;");
     }));
     countdownTimeline.setCycleCount(Timeline.INDEFINITE);
     countdownTimeline.play();
@@ -938,6 +940,7 @@ public class BidController implements Initializable {
               currentPriceLabel.setText(formatPrice(String.valueOf(newPrice)));
               updateBidSuggestion(newPrice);
             } catch (NumberFormatException ignored) {
+              ignored.printStackTrace();
             }
           }
           // Append history ngay — bidder bị exclude khỏi NOTI_BID_UPDATE
@@ -1008,7 +1011,7 @@ public class BidController implements Initializable {
         String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
         try {
           com.google.gson.JsonArray arr = com.google.gson.JsonParser
-          .parseString(json).getAsJsonArray();
+              .parseString(json).getAsJsonArray();
           for (com.google.gson.JsonElement el : arr) {
             com.google.gson.JsonObject obj = el.getAsJsonObject();
             if (obj.has("id") && auctionId.equals(obj.get("id").getAsString())) {
