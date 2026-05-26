@@ -4,17 +4,23 @@ import com.auction.model.dto.BidHistoryEntry;
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.bidhistorymanager.BidHistoryManager;
-import com.auction.views.java.AuctionListView;
-import com.auction.views.java.ProfileView;
-import com.auction.views.java.WatchlistView;
-import com.auction.views.java.BalanceView;
-import com.auction.views.java.NotificationView;
-import com.auction.views.java.SellerView;
 import com.auction.util.core.SessionManager;
 import com.auction.util.ui.ToastManager;
+import com.auction.views.java.AuctionListView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.NotificationView;
+import com.auction.views.java.ProfileView;
+import com.auction.views.java.SellerView;
+import com.auction.views.java.WatchlistView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -31,13 +37,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import java.lang.reflect.Type;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
-
-import java.util.function.Consumer;
 
 public class BidHistoryController implements Initializable {
 
