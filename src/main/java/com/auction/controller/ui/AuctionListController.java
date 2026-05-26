@@ -110,10 +110,12 @@ public class AuctionListController implements Initializable {
     }
     boolean isBidder = !"SELLER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role);
     if (watchlistButton != null) {
-      watchlistButton.setVisible(isBidder); watchlistButton.setManaged(isBidder);
+      watchlistButton.setVisible(isBidder); 
+      watchlistButton.setManaged(isBidder);
     }
     if (watchlistIconButton != null) {
-      watchlistIconButton.setVisible(isBidder); watchlistIconButton.setManaged(isBidder);
+      watchlistIconButton.setVisible(isBidder); 
+      watchlistIconButton.setManaged(isBidder);
     }
   }
 
@@ -178,7 +180,9 @@ public class AuctionListController implements Initializable {
                 try {
                   double v = Double.parseDouble(newBal);
                   balanceLabel.setText(String.format("%,.0f VNĐ", v));
-                } catch (NumberFormatException e) { balanceLabel.setText(newBal + " VNĐ"); }
+                } catch (NumberFormatException e) { 
+                  balanceLabel.setText(newBal + " VNĐ"); 
+                }
               }
               String msg = "🎉 Phiên " + auctionId + " đã kết thúc! Nhận " + delta + " VNĐ";
               NotificationManager.getInstance().add(msg, "auction", auctionId);
@@ -192,7 +196,9 @@ public class AuctionListController implements Initializable {
                 try {
                   double v = Double.parseDouble(newBal);
                   balanceLabel.setText(String.format("%,.0f VNĐ", v));
-                } catch (NumberFormatException e) { balanceLabel.setText(newBal + " VNĐ"); }
+                } catch (NumberFormatException e) { 
+                  balanceLabel.setText(newBal + " VNĐ"); 
+                }
               }
             });
           }
@@ -288,7 +294,8 @@ public class AuctionListController implements Initializable {
             String detailMsg = "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví";
             NotificationManager.getInstance().add(detailMsg, "balance", auctionId);
             // FIX: toast cố định để dedup hoạt động, chi tiết vào NotificationManager
-            Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, "💰 Hoàn tiền vào ví"));
+            Platform.runLater(() -> 
+                ToastManager.show(ToastManager.Type.SUCCESS, "💰 Hoàn tiền vào ví"));
             loadBalance();
           }
           break;
@@ -390,7 +397,10 @@ public class AuctionListController implements Initializable {
       return;
     }
     String keyword = searchField.getText().trim().toLowerCase();
-    if (keyword.isEmpty()) { applyFilter(); return; }
+    if (keyword.isEmpty()) {
+      applyFilter();
+      return;
+    }
     List<AuctionRow> filtered = currentRows.stream()
             .filter(r -> r.getItemName().toLowerCase().contains(keyword)
                     || r.getId().toLowerCase().contains(keyword))
@@ -474,7 +484,8 @@ public class AuctionListController implements Initializable {
             })
             .filter(r -> switch (activePriceFilter) {
               case "UNDER5" -> r.getCurrentPrice() < 5_000_000;
-              case "MID"    -> r.getCurrentPrice() >= 5_000_000 && r.getCurrentPrice() <= 50_000_000;
+              case "MID"    -> r.getCurrentPrice() >= 5_000_000 
+              && r.getCurrentPrice() <= 50_000_000;
               case "OVER50" -> r.getCurrentPrice() > 50_000_000;
               default       -> true;
             })
@@ -549,7 +560,8 @@ public class AuctionListController implements Initializable {
           if (finalImgUrl.startsWith("data:image")) {
             String base64 = finalImgUrl.substring(finalImgUrl.indexOf(",") + 1);
             byte[] bytes = java.util.Base64.getDecoder().decode(base64);
-            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), reqW, reqH, true, true);
+            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), 
+            reqW, reqH, true, true);
           } else {
             java.net.URL url = new java.net.URL(finalImgUrl);
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
@@ -656,8 +668,9 @@ public class AuctionListController implements Initializable {
       String response = ServerConnection.getInstance().sendAndReceive(
               Protocol.CMD_UNWATCH + Protocol.SEPARATOR + selectedRow.getId());
       Platform.runLater(() -> {
-        if (response != null && response.startsWith(Protocol.RES_UNWATCH_SUCCESS))
+        if (response != null && response.startsWith(Protocol.RES_UNWATCH_SUCCESS)) {
           setStatusBar("✅ Đã bỏ theo dõi!");
+        }
         else setStatusBar("❌ Bỏ theo dõi thất bại!");
       });
     }).start();
@@ -672,7 +685,9 @@ public class AuctionListController implements Initializable {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  private void setStatusBar(String msg) { if (statusBarLabel != null) statusBarLabel.setText(msg); }
+  private void setStatusBar(String msg) { if (statusBarLabel != null) {
+      statusBarLabel.setText(msg);
+    } }
 
   @FXML public void handleRefresh() { loadFromServer(); }
   public void refreshList()         { loadFromServer(); }
