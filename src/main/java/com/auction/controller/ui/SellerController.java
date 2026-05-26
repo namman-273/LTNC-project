@@ -6,6 +6,10 @@ import com.auction.util.ui.NotificationManager;
 import com.auction.network.client.ServerConnection;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
+import com.auction.views.java.BidHistoryView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.ProfileView;
+import com.auction.views.java.NotificationView;
 import com.auction.views.java.CreateAuctionView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -35,6 +39,7 @@ import javafx.stage.Stage;
 public class SellerController implements Initializable {
 
     @FXML private Label welcomeLabel;
+    @FXML private Label balanceLabel;
     @FXML private Label statsLabel;
     @FXML private Label statTotal;
     @FXML private Label statOpen;
@@ -153,6 +158,7 @@ public class SellerController implements Initializable {
         );
 
         loadMyAuctions();
+        loadBalance();
         registerPushListener();
     }
 
@@ -171,44 +177,137 @@ public class SellerController implements Initializable {
 
         switch (parts[0]) {
             case Protocol.NOTI_BID_UPDATE:
+                // Format: BID_UPDATE|auctionId|newPrice|bidder
+                // FIX: Bỏ check isMine qua auctionData — race condition (data load async).
+                // Dùng loadMyAuctions() để kiểm tra sau khi data về rồi mới notify.
                 if (parts.length >= 4) {
                     String auctionId = parts[1];
                     String newPrice  = parts[2];
                     String bidder    = parts[3];
-                    boolean isMine = auctionData.stream()
-                            .anyMatch(a -> a.getId().equals(auctionId));
-                    if (isMine) {
-                        Platform.runLater(() -> {
-                            loadMyAuctions();
-                            showNotification("🔔 Có bid mới!",
-                                    bidder + " vừa đặt giá "
-                                            + String.format("%,.0f VNĐ", Double.parseDouble(newPrice))
-                                            + " tại phiên: " + auctionId);
-                        });
-                    }
+                    Platform.runLater(() -> {
+                        // Sau khi reload mới check auctionId có thuộc seller không
+                        loadMyAuctionsThenNotify(auctionId,
+                                "🔔 Có bid mới tại phiên: " + auctionId,
+                                bidder + " vừa đặt giá "
+                                        + formatPrice(newPrice)
+                                        + " tại phiên: " + auctionId);
+                    });
                 }
                 break;
 
-            case Protocol.RES_END_SUCCESS:
-                if (parts.length >= 3) {
+            // RES_END_SUCCESS KHÔNG thêm vào đây vì BE gửi qua Observer pattern —
+            // seller không phải observer nên message này không bao giờ tới FE seller.
+            // Thay vào đó dùng BALANCE_CHANGED (BE gửi trực tiếp qua ConnectionManager)
+            // làm tín hiệu phiên kết thúc có người thắng.
+
+            case Protocol.NOTI_BALANCE_CHANGED:
+                // Format: BALANCE_CHANGED|auctionId|newBalance|+amount
+                // Đây là message DUY NHẤT BE gửi thẳng cho seller qua ConnectionManager.
+                // Bug 2 fix: gộp 2 alert thành 1 để không lặp; sửa tiêu đề đúng với seller;
+                // fix format số tiền nhận (delta có thể có dấu + ở đầu, cần parse đúng).
+                if (parts.length >= 4) {
                     String auctionId = parts[1];
-                    boolean isMine = auctionData.stream()
-                            .anyMatch(a -> a.getId().equals(auctionId));
-                    if (isMine) {
-                        String detail = parts.length > 2 ? parts[2] : "";
-                        Platform.runLater(() -> {
-                            loadMyAuctions();
-                            showNotification("🎉 Phiên đấu giá kết thúc!",
-                                    "Phiên " + auctionId + " đã kết thúc!\n"
-                                            + detail + "\nTiền đã được chuyển vào tài khoản.");
-                        });
-                    }
+                    String newBalance = parts[2];
+                    String delta = parts[3];
+                    Platform.runLater(() -> {
+                        loadMyAuctions();
+                        // Cập nhật balance label ngay lập tức
+                        if (balanceLabel != null) {
+                            try {
+                                balanceLabel.setText(String.format("%,.0f VNĐ", Double.parseDouble(newBalance)));
+                            } catch (NumberFormatException ignored) {}
+                        }
+                        // Format số tiền nhận - loại bỏ dấu + nếu có
+                        String deltaClean = delta.startsWith("+") ? delta.substring(1) : delta;
+                        String deltaFormatted;
+                        String balanceFormatted;
+                        try {
+                            deltaFormatted = String.format("%,.0f VNĐ", Double.parseDouble(deltaClean));
+                        } catch (NumberFormatException e) {
+                            deltaFormatted = deltaClean + " VNĐ";
+                        }
+                        try {
+                            balanceFormatted = String.format("%,.0f VNĐ", Double.parseDouble(newBalance));
+                        } catch (NumberFormatException e) {
+                            balanceFormatted = newBalance + " VNĐ";
+                        }
+                        // Gộp 1 thông báo duy nhất, tiêu đề phù hợp với seller
+                        showNotification("💰 Tiền đã về tài khoản!",
+                                "Phiên " + auctionId + " đã kết thúc thành công.\n"
+                                        + "Số tiền nhận: " + deltaFormatted + "\n"
+                                        + "Số dư mới: " + balanceFormatted);
+                    });
+                }
+                break;
+
+            case Protocol.NOTI_AUCTION_CANCELLED:
+                // Format: AUCTION_CANCELLED|auctionId|detail
+                // Seller nhận broadcast này khi admin end sớm hoặc delete phiên
+                if (parts.length >= 2) {
+                    String auctionId = parts[1];
+                    String detail = parts.length >= 3 ? parts[2] : "Phiên đã bị Admin hủy";
+                    // Check isMine TRƯỚC khi reload (tránh race condition auctionData chưa update)
+                    boolean isMine = auctionData != null && auctionData.stream()
+                            .anyMatch(r -> r.getId().equals(auctionId));
+                    Platform.runLater(() -> {
+                        loadMyAuctions();
+                        if (isMine) {
+                            showNotification("❌ Phiên bị hủy", detail + "\nMã phiên: " + auctionId);
+                        }
+                    });
                 }
                 break;
 
             default:
                 break;
         }
+    }
+
+    /** Reload data trước, sau đó chỉ notify nếu auctionId thực sự thuộc seller này. */
+    private void loadMyAuctionsThenNotify(String auctionId, String title, String body) {
+        new Thread(() -> {
+            String response = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
+            if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
+                String json = response.substring(Protocol.RES_LIST_SUCCESS.length()
+                        + Protocol.SEPARATOR.length());
+                com.auction.model.dto.AuctionRow[] rows = gson.fromJson(json,
+                        com.auction.model.dto.AuctionRow[].class);
+                boolean isMine = rows != null && java.util.Arrays.stream(rows)
+                        .anyMatch(r -> r.getId().equals(auctionId)
+                                && username.equals(r.getSellerId()));
+                Platform.runLater(() -> {
+                    loadMyAuctions();
+                    if (isMine) showNotification(title, body);
+                });
+            }
+        }).start();
+    }
+
+    private String formatPrice(String raw) {
+        try { return String.format("%,.0f VNĐ", Double.parseDouble(raw)); }
+        catch (NumberFormatException e) { return raw + " VNĐ"; }
+    }
+
+    private void loadBalance() {
+        new Thread(() -> {
+            String res = ServerConnection.getInstance()
+                    .sendAndReceive(Protocol.CMD_GET_BALANCE);
+            Platform.runLater(() -> {
+                if (balanceLabel == null) return;
+                if (res != null && res.startsWith(Protocol.RES_BALANCE_INFO)) {
+                    String[] p = res.split("\\|", -1);
+                    String amt = p.length >= 2 ? p[1] : "---";
+                    try {
+                        balanceLabel.setText(String.format("%,.0f VNĐ", Double.parseDouble(amt)));
+                    } catch (NumberFormatException e) {
+                        balanceLabel.setText(amt + " VNĐ");
+                    }
+                } else {
+                    balanceLabel.setText("---");
+                }
+            });
+        }, "seller-balance-thread").start();
     }
 
     private void showNotification(String title, String message) {
@@ -350,5 +449,42 @@ public class SellerController implements Initializable {
         this.username = username;
         if (welcomeLabel != null)
             welcomeLabel.setText("Xin chào, " + username + "!");
+    }
+
+    @FXML
+    public void handleBidHistory() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new BidHistoryView(stage, username).show();
+    }
+
+    @FXML
+    public void handleBalance() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new BalanceView(stage, username).show();
+    }
+
+    @FXML
+    public void handleProfile() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new ProfileView(stage, username).show();
+    }
+
+    @FXML
+    public void handleNotification() {
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
+
+    @FXML
+    public void handleLogout() {
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
+        if (autoRefreshTimeline != null) autoRefreshTimeline.stop();
+        ServerConnection.getInstance().disconnect();
+        SessionManager.getInstance().clear();
+        Stage stage = (Stage) auctionTable.getScene().getWindow();
+        new com.auction.views.java.LoginView(stage).show();
     }
 }

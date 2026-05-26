@@ -108,9 +108,20 @@
         <VBox spacing="6">
             <Label text="Vai trò"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94A3B8;"/>
-            <ComboBox fx:id="roleComboBox" promptText="Chọn vai trò của bạn"
-                      prefWidth="356" prefHeight="42"
-                      styleClass="combo-box"/>
+            <HBox spacing="10">
+                <Button fx:id="btnBidder" text="&#x1F64B; Người đấu giá" onAction="#handleRoleSelect"
+                        prefHeight="42" prefWidth="170"
+                        style="-fx-background-color: #1D4ED8; -fx-text-fill: white;
+                               -fx-font-size: 12px; -fx-font-weight: bold;
+                               -fx-background-radius: 10; -fx-cursor: hand;
+                               -fx-border-color: #3B82F6; -fx-border-radius: 10; -fx-border-width: 2;"/>
+                <Button fx:id="btnSeller" text="&#x1F3EA; Người bán" onAction="#handleRoleSelect"
+                        prefHeight="42" prefWidth="170"
+                        style="-fx-background-color: transparent; -fx-text-fill: #94A3B8;
+                               -fx-font-size: 12px; -fx-font-weight: bold;
+                               -fx-background-radius: 10; -fx-cursor: hand;
+                               -fx-border-color: #334155; -fx-border-radius: 10; -fx-border-width: 2;"/>
+            </HBox>
         </VBox>
 
         <!-- Message -->

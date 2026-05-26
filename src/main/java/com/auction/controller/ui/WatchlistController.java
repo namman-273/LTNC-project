@@ -4,7 +4,13 @@ import com.auction.model.dto.AuctionRow;
 import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
 import com.auction.views.java.AuctionListView;
+import com.auction.views.java.ProfileView;
+import com.auction.views.java.BidHistoryView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.NotificationView;
 import com.auction.views.java.BidView;
+import com.auction.util.ui.NotificationManager;
+import com.auction.util.ui.ToastManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.animation.KeyFrame;
@@ -23,6 +29,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -43,7 +50,9 @@ public class WatchlistController implements Initializable {
     @FXML private Label openCountLabel;
     @FXML private Label finishedCountLabel;
 
+    @FXML private Label balanceLabel;
     private String username;
+    private java.util.function.Consumer<String> balancePushListener;
     private ObservableList<AuctionRow> currentData = FXCollections.observableArrayList();
     private Timeline autoRefreshTimeline;
 
@@ -55,12 +64,34 @@ public class WatchlistController implements Initializable {
 
     public void setUsername(String username) {
         this.username = username;
+        initToastManager(watchlistCards);
         loadWatchlist();
+        loadBalance();
         startAutoRefresh();
+    }
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[WatchlistToast] Init failed: " + e.getMessage());
+            }
+        });
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        registerBalancePushListener();
         // Giữ columns để controller không crash khi table ẩn
         if (idCol != null)     idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         if (nameCol != null)   nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
@@ -97,6 +128,10 @@ public class WatchlistController implements Initializable {
                 }
 
                 currentData.setAll(data);
+                // BUG FIX 2: Cập nhật watchedAuctionIds sau khi load xong
+                // để push listener có thể check ngay lập tức
+                watchedAuctionIds.clear();
+                for (AuctionRow row : data) watchedAuctionIds.add(row.getId());
                 if (watchlistTable != null) watchlistTable.setItems(data);
                 updateCards(data);
 
@@ -170,6 +205,20 @@ public class WatchlistController implements Initializable {
         status.setStyle("-fx-font-size: 11px; -fx-font-weight: bold;"
                 + "-fx-background-color: " + badgeBg + "; -fx-text-fill: " + badgeFg + ";"
                 + "-fx-background-radius: 20; -fx-padding: 3 10;");
+
+        // Bug 5: Badge gia hạn - hiển thị số lần gia hạn nếu có
+        int extCount = extensionCountMap.getOrDefault(row.getId(), 0);
+        Label extBadge = null;
+        if (extCount > 0) {
+            extBadge = new Label("⏱ Gia hạn " + extCount + "/3");
+            extBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;"
+                    + "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309;"
+                    + "-fx-background-radius: 20; -fx-padding: 2 8;");
+            VBox info2 = new VBox(3, name, price, extBadge);
+            info2.setStyle(info.getStyle() != null ? info.getStyle() : "");
+            HBox.setHgrow(info2, Priority.ALWAYS);
+            info.getChildren().add(extBadge);
+        }
 
         // Nút Chọn (để select vào table ẩn — phục vụ handleViewDetail/handleUnwatch)
         Button btnSelect = new Button("Chọn");
@@ -252,6 +301,8 @@ public class WatchlistController implements Initializable {
             showMessage("⚠️ Vui lòng chọn một phiên trước!", "#D97706");
             return;
         }
+        // FIX BUG 2: Remove listener trước khi vào BidView để BidController không bị duplicate noti
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) (watchlistCards != null
                 ? watchlistCards.getScene().getWindow()
                 : watchlistTable.getScene().getWindow());
@@ -274,9 +325,49 @@ public class WatchlistController implements Initializable {
         }
     }
 
+
+    // FIX BUG 2: Gỡ push listener khi rời màn hình để tránh lặp noti watcher
+    private void removePushListener() {
+        if (balancePushListener != null) {
+            com.auction.network.client.ServerConnection.getInstance()
+                    .removePushListener(balancePushListener);
+            balancePushListener = null;
+        }
+    }
+
+    @FXML public void handleProfile() {
+        removePushListener(); stopAutoRefresh();
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new ProfileView(stage, username).show();
+    }
+
+    @FXML public void handleBidHistory() {
+        removePushListener(); stopAutoRefresh();
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new BidHistoryView(stage, username).show();
+    }
+
+    @FXML public void handleBalance() {
+        removePushListener(); stopAutoRefresh();
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new BalanceView(stage, username).show();
+    }
+
+    @FXML public void handleNotification() {
+        removePushListener(); stopAutoRefresh();
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new NotificationView(stage, username).show();
+    }
+
+    @FXML public void handleHome() {
+        removePushListener(); stopAutoRefresh();
+        Stage stage = (Stage) watchlistCards.getScene().getWindow();
+        new AuctionListView(stage, username).show();
+    }
+
     @FXML
     public void handleBack() {
-        stopAutoRefresh();
+        removePushListener(); stopAutoRefresh();
         Stage stage = (Stage) (watchlistCards != null
                 ? watchlistCards.getScene().getWindow()
                 : watchlistTable.getScene().getWindow());
@@ -288,5 +379,146 @@ public class WatchlistController implements Initializable {
             messageLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 12px;");
             messageLabel.setText(msg);
         }
+    }
+    // BUG FIX 2: Dùng Set riêng để track watchedIds, tránh race condition với currentData
+    private final java.util.Set<String> watchedAuctionIds =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    // Bug 5: Track số lần gia hạn per auctionId để hiển thị cho watcher
+    private final java.util.Map<String, Integer> extensionCountMap =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    @FXML
+    private void registerBalancePushListener() {
+        // Chỉ đăng ký 1 lần, tránh duplicate listener
+        if (balancePushListener != null) return;
+
+        balancePushListener = message -> {
+            String[] parts = message.split("\\|");
+            if (parts.length == 0) return;
+
+            switch (parts[0]) {
+                case Protocol.NOTI_BALANCE_CHANGED:
+                    if (parts.length >= 3) {
+                        String newBal = parts[2];
+                        javafx.application.Platform.runLater(() -> {
+                            if (balanceLabel != null) {
+                                try {
+                                    double v = Double.parseDouble(newBal);
+                                    balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                                } catch (NumberFormatException e) {
+                                    balanceLabel.setText(newBal + " VNĐ");
+                                }
+                            }
+                        });
+                    }
+                    break;
+
+                case Protocol.NOTI_BID_UPDATE:
+                    // BUG FIX 2: check watchedAuctionIds thay vì currentData
+                    // để tránh race condition khi loadWatchlist() chạy async
+                    if (parts.length >= 4) {
+                        String auctionId = parts[1];
+                        String amount    = parts[2];
+                        String bidder    = parts[3];
+                        if (watchedAuctionIds.contains(auctionId)) {
+                            try {
+                                double amt = Double.parseDouble(amount);
+                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": "
+                                        + String.format("%,.0f VNĐ", amt)
+                                        + " (bởi " + bidder + ")";
+                                NotificationManager.getInstance().add(msg, "auction", auctionId);
+                                Platform.runLater(() ->
+                                        ToastManager.show(ToastManager.Type.INFO,
+                                                "Giá mới: " + String.format("%,.0f VNĐ", amt) + " – " + bidder));
+                            } catch (NumberFormatException e) {
+                                String msg = "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ";
+                                NotificationManager.getInstance().add(msg, "auction", auctionId);
+                                Platform.runLater(() ->
+                                        ToastManager.show(ToastManager.Type.INFO, "Giá mới: " + amount + " VNĐ"));
+                            }
+                            // Reload watchlist để cập nhật giá mới
+                            Platform.runLater(this::loadWatchlist);
+                        }
+                    }
+                    break;
+
+                // FIX Bug3: RES_END_SUCCESS là direct response (1-1), KHÔNG phải broadcast push.
+                // Dùng nó trong push listener sẽ bị lặp vì server gửi cùng message cho cả
+                // responseQueue lẫn pushChannel → popup hiện 2 lần.
+                // Giải pháp: xóa case này khỏi push listener hoàn toàn.
+                // Watcher vẫn biết phiên kết thúc qua NOTI_BID_UPDATE (status thay đổi)
+                // và autoRefresh mỗi 10s sẽ reload danh sách.
+                // case Protocol.RES_END_SUCCESS: → ĐÃ XÓA CỐ TÌNH
+
+                case Protocol.NOTI_SNIPING_UPDATE:
+                    // Hiển thị thông báo gia hạn thời gian cho Watcher
+                    // Format: SNIPING_UPDATE|auctionId|newEndTime|extensionCount
+                    if (parts.length >= 4) {
+                        String auctionId = parts[1];
+                        String count     = parts[3];
+                        if (watchedAuctionIds.contains(auctionId)) {
+                            NotificationManager.getInstance().add(
+                                    "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)",
+                                    "auction", auctionId);
+                            // Bug 5: cập nhật map và reload cards để hiện số lần gia hạn
+                            try {
+                                extensionCountMap.put(auctionId, Integer.parseInt(count));
+                            } catch (NumberFormatException ignored) {}
+                            Platform.runLater(() -> {
+                                ToastManager.show(ToastManager.Type.WARNING,
+                                        "⏱ Phiên " + auctionId + " gia hạn lần " + count + " (+2 phút)");
+                                updateCards(currentData);
+                            });
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        };
+        com.auction.network.client.ServerConnection.getInstance().addPushListener(balancePushListener);
+    }
+
+
+
+    private void loadBalance() {
+        if (balanceLabel == null) return;
+        new Thread(() -> {
+            String res = com.auction.network.client.ServerConnection.getInstance()
+                    .sendAndReceive(com.auction.network.protocol.Protocol.CMD_GET_BALANCE);
+            javafx.application.Platform.runLater(() -> {
+                if (res != null && res.startsWith(com.auction.network.protocol.Protocol.RES_BALANCE_INFO)) {
+                    String[] p = res.split("\\|", -1);
+                    String amt = p.length >= 2 ? p[1] : "---";
+                    try {
+                        double v = Double.parseDouble(amt);
+                        if (balanceLabel != null) balanceLabel.setText(String.format("%,.0f VNĐ", v));
+                    } catch (NumberFormatException e) {
+                        if (balanceLabel != null) balanceLabel.setText(amt + " VNĐ");
+                    }
+                } else {
+                    if (balanceLabel != null) balanceLabel.setText("---");
+                }
+            });
+        }, "watchlist-balance-thread").start();
+    }
+
+    public void handleGoBalance() {
+        Stage s = getStage();
+        if (s != null) new BalanceView(s, username).show();
+    }
+
+    @FXML
+    public void handleGoNotification() {
+        Stage s = getStage();
+        if (s != null) new NotificationView(s, username).show();
+    }
+    private Stage getStage() {
+        try {
+            if (watchlistCards != null) return (Stage) watchlistCards.getScene().getWindow();
+            if (watchlistTable != null) return (Stage) watchlistTable.getScene().getWindow();
+        } catch (Exception ignored) {}
+        return null;
     }
 }

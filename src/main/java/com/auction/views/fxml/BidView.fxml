@@ -182,7 +182,8 @@
                             <Label text="Giá hiện tại"
                                    style="-fx-font-size: 11px; -fx-text-fill: #475569;"/>
                             <Label fx:id="currentPriceLabel" text="---"
-                                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"
+                                   wrapText="true" maxWidth="160"/>
                         </VBox>
                         <!-- Số dư ví -->
                         <VBox spacing="4" HBox.hgrow="ALWAYS"
@@ -220,10 +221,12 @@
                         <VBox spacing="6">
                             <Label text="Nhập giá của bạn (VND):"
                                    style="-fx-font-size: 12px; -fx-text-fill: #64748B;"/>
-                            <TextField fx:id="bidAmountField" promptText="Gợi ý: 1,050,000"
+                            <TextField fx:id="bidAmountField" promptText="Nhập giá..."
                                        prefHeight="44"
                                        styleClass="text-field-modern"
                                        style="-fx-font-size: 14px;"/>
+                            <Label fx:id="minBidLabel" text=""
+                                   style="-fx-font-size: 11px; -fx-text-fill: #38BDF8;"/>
                             <Label text="Giá đặt phải cao hơn giá hiện tại"
                                    style="-fx-font-size: 11px; -fx-text-fill: #334155;"/>
                         </VBox>

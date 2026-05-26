@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -176,7 +177,7 @@
                 </HBox>
             </VBox>
 
-            <!-- THỐNG KÊ 2x2 -->
+            <!-- THỐNG KÊ 2x2 — dùng ColumnConstraints thay prefWidth cứng -->
             <VBox spacing="0"
                   style="-fx-background-color: #0B1120; -fx-background-radius: 14;
                          -fx-border-color: #1E3A5F; -fx-border-radius: 14; -fx-border-width: 1;">
@@ -184,36 +185,41 @@
                     <Label text="Thống kê hoạt động"
                            style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;"/>
                 </HBox>
-                <GridPane>
+                <GridPane hgap="0" vgap="0" maxWidth="Infinity">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+
                     <VBox alignment="CENTER" spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0"
-                          style="-fx-padding: 14 0;
+                          style="-fx-padding: 16 0;
                                  -fx-border-color: #1E3A5F #1E3A5F #1E3A5F transparent;
-                                 -fx-border-width: 1;" prefWidth="240">
+                                 -fx-border-width: 1;">
                         <Label fx:id="statTotal" text="0"
                                style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
                         <Label text="Phiên đã tham gia"
                                style="-fx-font-size: 10px; -fx-text-fill: #475569;"/>
                     </VBox>
                     <VBox alignment="CENTER" spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0"
-                          style="-fx-padding: 14 0;
+                          style="-fx-padding: 16 0;
                                  -fx-border-color: #1E3A5F transparent #1E3A5F transparent;
-                                 -fx-border-width: 1;" prefWidth="240">
+                                 -fx-border-width: 1;">
                         <Label fx:id="statWin" text="0"
                                style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #34D399;"/>
                         <Label text="Phiên đã thắng"
                                style="-fx-font-size: 10px; -fx-text-fill: #475569;"/>
                     </VBox>
                     <VBox alignment="CENTER" spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1"
-                          style="-fx-padding: 14 0;
+                          style="-fx-padding: 16 0;
                                  -fx-border-color: transparent #1E3A5F transparent transparent;
-                                 -fx-border-width: 1;" prefWidth="240">
+                                 -fx-border-width: 1;">
                         <Label fx:id="statWatchlist" text="0"
                                style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #FBBF24;"/>
-                        <Label text="Watchlist"
+                        <Label text="Đang theo dõi"
                                style="-fx-font-size: 10px; -fx-text-fill: #475569;"/>
                     </VBox>
                     <VBox alignment="CENTER" spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1"
-                          style="-fx-padding: 14 0;" prefWidth="240">
+                          style="-fx-padding: 16 0;">
                         <Label fx:id="statRate" text="0%"
                                style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #A78BFA;"/>
                         <Label text="Tỉ lệ thắng"

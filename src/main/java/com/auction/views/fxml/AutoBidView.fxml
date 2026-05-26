@@ -72,6 +72,8 @@
                            promptText="Nhập bước tăng..."
                            prefHeight="42"
                            styleClass="text-field-modern"/>
+                <Label fx:id="minIncrementHintLabel" text=""
+                       style="-fx-font-size: 11px; -fx-text-fill: #60A5FA;"/>
             </VBox>
 
             <Label text="&#x1F4A1; Hệ thống sẽ tự động đặt giá thay bạn khi có người đặt cao hơn, cho đến khi đạt giá tối đa."

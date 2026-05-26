@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.Button?>
@@ -9,64 +10,150 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns:fx="http://javafx.com/fxml"
+<HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.AdminDashboardController"
-      prefWidth="750" prefHeight="580" spacing="15"
+      prefWidth="1100" prefHeight="700" spacing="0"
       stylesheets="@/com/auction/views/style/style.css"
-      style="-fx-background-color: #f0f2f5;">
-    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+      style="-fx-background-color: #0F172A;">
 
-    <HBox alignment="CENTER_LEFT" spacing="10"
-          style="-fx-background-color: linear-gradient(to right, #b71c1c, #e53935);
-                 -fx-background-radius: 10;
-                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);"
-          prefHeight="60">
-        <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
-        <Button text="← Quay lại" onAction="#handleBack"
-                style="-fx-background-color: white; -fx-text-fill: #e53935;
-                       -fx-font-weight: bold; -fx-background-radius: 5;"/>
-        <Label text="⚙️ ADMIN DASHBOARD"
-               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-        <HBox HBox.hgrow="ALWAYS"/>
-        style="-fx-background-color: white; -fx-text-fill: #e53935;
-        -fx-font-weight: bold; -fx-background-radius: 5;"/>
-    </HBox>
+    <!-- ══ SIDEBAR ══════════════════════════════════════════════════════════ -->
+    <VBox prefWidth="220" spacing="0"
+          style="-fx-background-color: #0B1120;
+                 -fx-border-color: transparent #1E3A5F transparent transparent;
+                 -fx-border-width: 1;">
 
-    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS" styleClass="table-view">
-        <columns>
-            <TableColumn fx:id="idCol" text="ID" prefWidth="200"/>
-            <TableColumn fx:id="nameCol" text="Tên sản phẩm" prefWidth="180"/>
-            <TableColumn fx:id="priceCol" text="Giá hiện tại" prefWidth="150"/>
-            <TableColumn fx:id="statusCol" text="Trạng thái" prefWidth="100"/>
-        </columns>
-    </TableView>
+        <!-- Logo -->
+        <HBox alignment="CENTER_LEFT" spacing="10"
+              style="-fx-padding: 18 16;
+                     -fx-border-color: transparent transparent #1E3A5F transparent;
+                     -fx-border-width: 1;">
+            <Label text="&#x2699;"
+                   style="-fx-font-size: 20px; -fx-text-fill: #F87171;
+                          -fx-effect: dropshadow(gaussian,rgba(248,113,113,0.7),8,0,0,0);"/>
+            <VBox spacing="1">
+                <Label text="1388AUCTION"
+                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+                <Label text="Admin Dashboard"
+                       style="-fx-font-size: 9px; -fx-text-fill: #475569;"/>
+            </VBox>
+        </HBox>
 
-    <Label fx:id="messageLabel" text="" style="-fx-font-size: 12px; -fx-min-height: 18px;"/>
+        <!-- Nav -->
+        <VBox spacing="2" style="-fx-padding: 12 10;" VBox.vgrow="ALWAYS">
+            <Button text="&#x2190;  Quay lại" onAction="#handleBack"
+                    prefWidth="200" prefHeight="40"
+                    style="-fx-background-color: transparent; -fx-text-fill: #64748B;
+                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
+            <Button text="&#x2699;  Quản lý phiên"
+                    prefWidth="200" prefHeight="40"
+                    style="-fx-background-color: rgba(248,113,113,0.16); -fx-text-fill: #F87171;
+                           -fx-font-size: 13px; -fx-font-weight: bold;
+                           -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
+                           -fx-border-color: transparent transparent transparent #F87171;
+                           -fx-border-width: 0 0 0 3;"/>
+            <Region VBox.vgrow="ALWAYS"/>
+            <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
+                          -fx-min-height: 1; -fx-max-height: 1;" prefWidth="200"/>
+            <Button text="&#x1F6AA;  Đăng xuất" onAction="#handleBack"
+                    prefWidth="200" prefHeight="38"
+                    style="-fx-background-color: rgba(248,113,113,0.12); -fx-text-fill: #F87171;
+                           -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
+                           -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
+                           -fx-border-color: rgba(248,113,113,0.25); -fx-border-radius: 10; -fx-border-width: 1;"/>
+        </VBox>
+    </VBox>
 
-    <!-- DEPOSIT / BALANCE -->
-    <HBox spacing="10" alignment="CENTER_LEFT"
-          style="-fx-background-color: white; -fx-padding: 12; -fx-background-radius: 8;
-                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
-        <Label text="💰 Nạp tiền:"
-               style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #333;"/>
-        <TextField fx:id="depositUsernameField" promptText="Username..."
-                   prefHeight="34" prefWidth="120"/>
-        <TextField fx:id="depositAmountField" promptText="Số tiền (VND)..."
-                   prefHeight="34" prefWidth="150"/>
-        <Button text="💰 Nạp" onAction="#handleDeposit"
-                prefHeight="34" prefWidth="80"
-                styleClass="btn-success"/>
-        <Label fx:id="balanceLabel" text="Số dư: ---"
-               style="-fx-font-size: 12px; -fx-text-fill: #1565C0; -fx-font-weight: bold;"/>
-    </HBox>
+    <!-- ══ MAIN CONTENT ════════════════════════════════════════════════════ -->
+    <VBox HBox.hgrow="ALWAYS" spacing="0" style="-fx-background-color: #0F172A;">
 
-    <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button text="🗑 Xóa phiên" onAction="#handleDeleteAuction"
-                prefHeight="38" prefWidth="160" styleClass="btn-danger"/>
-        <Button text="🔴 Kết thúc phiên" onAction="#handleEndAuction"
-                prefHeight="38" prefWidth="160" styleClass="btn-danger"/>
-        <Button text="➕ Tạo phiên mới" onAction="#handleCreateAuction"
-                prefHeight="38" prefWidth="160" styleClass="btn-primary"/>
-    </HBox>
+        <!-- TOPBAR -->
+        <HBox alignment="CENTER_LEFT" spacing="12"
+              style="-fx-background-color: #0B1120;
+                     -fx-padding: 0 24; -fx-pref-height: 60;
+                     -fx-border-color: transparent transparent #1E3A5F transparent;
+                     -fx-border-width: 1;">
+            <Label text="&#x2699;&#xFE0F; Admin Dashboard"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+        </HBox>
 
-</VBox>
+        <!-- STATS BAR -->
+        <HBox spacing="0"
+              style="-fx-background-color: #0B1120;
+                     -fx-border-color: transparent transparent #1E3A5F transparent;
+                     -fx-border-width: 1; -fx-pref-height: 80;">
+            <VBox alignment="CENTER" HBox.hgrow="ALWAYS" spacing="4"
+                  style="-fx-border-color: transparent #1E3A5F transparent transparent; -fx-border-width: 1;">
+                <Label fx:id="statTotalLabel" text="0"
+                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
+                <Label text="Tổng phiên"
+                       style="-fx-font-size: 11px; -fx-text-fill: #64748B;"/>
+            </VBox>
+            <VBox alignment="CENTER" HBox.hgrow="ALWAYS" spacing="4"
+                  style="-fx-border-color: transparent #1E3A5F transparent transparent; -fx-border-width: 1;">
+                <Label fx:id="statOpenLabel" text="0"
+                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #34D399;"/>
+                <Label text="Đang mở"
+                       style="-fx-font-size: 11px; -fx-text-fill: #64748B;"/>
+            </VBox>
+            <VBox alignment="CENTER" HBox.hgrow="ALWAYS" spacing="4">
+                <Label fx:id="statFinishedLabel" text="0"
+                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #F87171;"/>
+                <Label text="Đã kết thúc"
+                       style="-fx-font-size: 11px; -fx-text-fill: #64748B;"/>
+            </VBox>
+        </HBox>
+
+        <!-- TABLE AREA -->
+        <VBox HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+              style="-fx-padding: 20 24 0 24;">
+
+            <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS"
+                       style="-fx-background-color: #0B1120; -fx-border-color: #1E3A5F;
+                              -fx-border-radius: 10; -fx-background-radius: 10;
+                              -fx-table-cell-border-color: #1E3A5F;">
+                <columns>
+                    <TableColumn fx:id="idCol"     text="ID Phiên"     prefWidth="220"/>
+                    <TableColumn fx:id="nameCol"   text="Tên sản phẩm" prefWidth="200"/>
+                    <TableColumn fx:id="priceCol"  text="Giá hiện tại" prefWidth="160"/>
+                    <TableColumn fx:id="statusCol" text="Trạng thái"   prefWidth="120"/>
+                </columns>
+            </TableView>
+
+            <Label fx:id="messageLabel" text=""
+                   style="-fx-font-size: 12px; -fx-text-fill: #64748B; -fx-padding: 6 0 0 0;"/>
+        </VBox>
+
+        <!-- ACTION BAR -->
+        <VBox spacing="10" style="-fx-padding: 16 24 20 24;
+                                   -fx-background-color: #0B1120;
+                                   -fx-border-color: #1E3A5F transparent transparent transparent;
+                                   -fx-border-width: 1;
+                                   -fx-margin: 16 0 0 0;">
+
+            <!-- Action buttons row -->
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Button text="&#x1F534; Kết thúc phiên" onAction="#handleEndAuction"
+                        prefHeight="36" prefWidth="160"
+                        style="-fx-background-color: rgba(245,158,11,0.15); -fx-text-fill: #FBBF24;
+                               -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 8;
+                               -fx-border-color: rgba(245,158,11,0.4); -fx-border-radius: 8;
+                               -fx-border-width: 1; -fx-cursor: hand;"/>
+                <Button text="&#x1F5D1; Xóa phiên" onAction="#handleDeleteAuction"
+                        prefHeight="36" prefWidth="140"
+                        style="-fx-background-color: rgba(220,38,38,0.15); -fx-text-fill: #F87171;
+                               -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 8;
+                               -fx-border-color: rgba(220,38,38,0.4); -fx-border-radius: 8;
+                               -fx-border-width: 1; -fx-cursor: hand;"/>
+                <Button text="&#x2795; Tạo phiên mới" onAction="#handleCreateAuction"
+                        prefHeight="36" prefWidth="160"
+                        style="-fx-background-color: linear-gradient(to right,#1D4ED8,#3B82F6);
+                               -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;
+                               -fx-background-radius: 8; -fx-cursor: hand;
+                               -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.5),8,0,0,2);"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</HBox>

@@ -25,6 +25,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public class AdminDashboardController implements Initializable {
 
@@ -35,11 +36,17 @@ public class AdminDashboardController implements Initializable {
     @FXML private TableColumn<AuctionRow, String> statusCol;
     @FXML private Label     messageLabel;
     @FXML private Label     balanceLabel;
+    @FXML private Label     statTotalLabel;
+    @FXML private Label     statOpenLabel;
+    @FXML private Label     statFinishedLabel;
     @FXML private TextField depositAmountField;
     @FXML private TextField depositUsernameField;
 
     private String   username;
     private Timeline autoRefreshTimeline;
+
+    // FIX: Giữ reference để có thể removePushListener khi thoát màn hình
+    private Consumer<String> pushListener;
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(java.time.LocalDateTime.class,
@@ -75,9 +82,34 @@ public class AdminDashboardController implements Initializable {
 
         loadFromServer();
         startAutoRefresh();
+        registerPushListener(); // FIX: đăng ký nhận broadcast từ server
     }
 
-    // ── Load danh sách phiên ─────────────────────────────────────────────────
+    // FIX 2 — AdminDashboardController.java (xóa dead code, thêm NOTI_AUCTION_CANCELLED)
+    private void registerPushListener() {
+        pushListener = message -> {
+            String[] parts = message.split("\\|");
+            String header  = parts[0];
+            switch (header) {
+                // ĐÃ XÓA case RES_ADMIN_END_SUCCESS:
+                // RES_ADMIN_END_SUCCESS KHÔNG phải push → nó vào responseQueue
+                // và được handleEndAuction() xử lý qua sendAndReceive bình thường.
+                // Giữ case này ở đây sẽ KHÔNG BAO GIỜ fire và gây nhầm lẫn.
+
+                case Protocol.NOTI_AUCTION_CANCELLED -> {
+                    // Broadcast khi admin cancel → cập nhật cho tất cả màn hình khác
+                    String detail = parts.length >= 2 ? parts[1] : "Phiên đã bị hủy";
+                    Platform.runLater(() -> {
+                        showMessage("🚫 " + detail, "gray");
+                        loadFromServer();
+                    });
+                }
+                default -> {}
+            }
+        };
+        ServerConnection.getInstance().addPushListener(pushListener);
+    }
+
     public void loadFromServer() {
         showMessage("Đang tải danh sách...", "gray");
 
@@ -94,10 +126,14 @@ public class AdminDashboardController implements Initializable {
                 if (rows != null) data.addAll(rows);
             }
 
-            // FIX: bỏ dòng new AuctionRow(5 tham số) — để TableView tự hiện placeholder khi rỗng
             final ObservableList<AuctionRow> finalData = data;
             Platform.runLater(() -> {
                 auctionTable.setItems(finalData);
+                long openCount     = finalData.stream().filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus())).count();
+                long finishedCount = finalData.stream().filter(r -> "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
+                if (statTotalLabel    != null) statTotalLabel.setText(String.valueOf(finalData.size()));
+                if (statOpenLabel     != null) statOpenLabel.setText(String.valueOf(openCount));
+                if (statFinishedLabel != null) statFinishedLabel.setText(String.valueOf(finishedCount));
                 showMessage(finalData.isEmpty()
                         ? "ℹ️ Chưa có phiên nào."
                         : "✅ Tải xong " + finalData.size() + " phiên.", "gray");
@@ -105,7 +141,6 @@ public class AdminDashboardController implements Initializable {
         }).start();
     }
 
-    // ── Deposit / Balance ────────────────────────────────────────────────────
     @FXML
     public void handleDeposit() {
         String amount = depositAmountField != null
@@ -145,7 +180,6 @@ public class AdminDashboardController implements Initializable {
         }).start();
     }
 
-    // ── Auction Management ───────────────────────────────────────────────────
     @FXML public void handleRefresh() { loadFromServer(); }
 
     @FXML
@@ -161,7 +195,9 @@ public class AdminDashboardController implements Initializable {
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
                 String[] parts = response.split("\\" + Protocol.SEPARATOR);
-                if (response.startsWith(Protocol.RES_END_SUCCESS)) {
+                // RES_ADMIN_END_SUCCESS là direct response (1-1), KHÔNG phải push
+                // → nó đi qua responseQueue → sendAndReceive nhận đúng, không timeout
+                if (response.startsWith(Protocol.RES_ADMIN_END_SUCCESS)) {
                     showMessage("✅ " + (parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!"), "green");
                 } else {
                     showMessage("❌ " + (parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!"), "red");
@@ -225,6 +261,11 @@ public class AdminDashboardController implements Initializable {
 
     public void handleBack() {
         stopAutoRefresh();
+        // FIX: dọn dẹp pushListener để tránh memory leak và callback sau khi thoát
+        if (pushListener != null) {
+            ServerConnection.getInstance().removePushListener(pushListener);
+            pushListener = null;
+        }
         Stage stage = (Stage) auctionTable.getScene().getWindow();
         new AuctionListView(stage, username).show();
     }

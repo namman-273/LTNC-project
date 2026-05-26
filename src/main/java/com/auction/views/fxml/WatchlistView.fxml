@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
-<?import javafx.geometry.Insets?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.controller.ui.WatchlistController"
@@ -17,49 +14,62 @@
       stylesheets="@../style/style.css"
       style="-fx-background-color: #0F172A;">
 
-    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════════ -->
+    <!-- SIDEBAR -->
     <VBox prefWidth="220" spacing="0"
           style="-fx-background-color: #0B1120;
                  -fx-border-color: transparent #1E3A5F transparent transparent;
                  -fx-border-width: 1;">
-
         <HBox alignment="CENTER_LEFT" spacing="10"
-              style="-fx-padding: 20 16;
+              style="-fx-padding: 18 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1;">
-            <Label text="🏛" style="-fx-font-size: 22px;"/>
+            <Label text="&#x1F3DB;"
+                   style="-fx-font-size: 20px;
+                          -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;
+                          -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.7),8,0,0,0);"/>
             <VBox spacing="1">
                 <Label text="1388AUCTION"
-                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;"/>
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #93C5FD;
+                              -fx-effect: dropshadow(gaussian,rgba(59,130,246,0.5),4,0,0,0);"/>
                 <Label text="Hệ thống đấu giá"
-                       style="-fx-font-size: 9px; -fx-text-fill: #334155;"/>
+                       style="-fx-font-size: 9px; -fx-text-fill: #475569;"/>
             </VBox>
         </HBox>
-
         <VBox alignment="CENTER" spacing="6"
               style="-fx-padding: 14 16 12 16;
                      -fx-border-color: transparent transparent #1E3A5F transparent;
                      -fx-border-width: 1; -fx-background-color: rgba(30,45,69,0.5);">
-            <Label text="👤"
+            <Label text="&#x1F464;"
                    style="-fx-font-size: 28px; -fx-background-color: #1E3A5F;
                           -fx-background-radius: 26; -fx-padding: 7 11;"/>
+            <!-- Số dư ví -->
+            <HBox alignment="CENTER" spacing="6"
+                  style="-fx-background-color: rgba(5,150,105,0.12); -fx-background-radius: 10;
+                         -fx-border-color: #1E3A5F; -fx-border-radius: 10; -fx-border-width: 1;
+                         -fx-padding: 7 10; -fx-cursor: hand;"
+                  onMouseClicked="#handleGoBalance">
+                <Label text="💰" style="-fx-font-size: 13px;"/>
+                <VBox spacing="1" alignment="CENTER_LEFT">
+                    <Label text="Số dư ví"
+                           style="-fx-font-size: 9px; -fx-text-fill: #475569;"/>
+                    <Label fx:id="balanceLabel" text="---"
+                           style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #34D399;
+                                  -fx-wrap-text: true;" maxWidth="170"/>
+                </VBox>
+            </HBox>
         </VBox>
-
         <VBox spacing="2" style="-fx-padding: 12 10;" VBox.vgrow="ALWAYS">
-
-            <Button text="🏠  Trang chủ" onAction="#handleBack"
+            <Button text="&#x1F3E0;  Trang chủ" onAction="#handleHome"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
-            <Button text="📜  Lịch sử đấu giá" onAction="#handleBack"
+            <Button text="&#x1F4DC;  Lịch sử đấu giá" onAction="#handleBidHistory"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
-            <Button text="⭐  Watchlist"
+            <Button text="&#x2B50;  Danh sách theo dõi"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: rgba(59,130,246,0.16); -fx-text-fill: #60A5FA;
                            -fx-font-size: 13px; -fx-font-weight: bold;
@@ -67,19 +77,15 @@
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
                            -fx-border-color: transparent transparent transparent #3B82F6;
                            -fx-border-width: 0 0 0 3;"/>
-
-            <Button text="👤  Hồ sơ cá nhân" onAction="#handleBack"
+            <Button text="&#x1F464;  Hồ sơ cá nhân" onAction="#handleProfile"
                     prefWidth="200" prefHeight="40"
                     style="-fx-background-color: transparent; -fx-text-fill: #64748B;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
                            -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;"/>
-
             <Region VBox.vgrow="ALWAYS"/>
-
             <Label style="-fx-border-color: #1E3A5F; -fx-border-width: 1 0 0 0;
                           -fx-min-height: 1; -fx-max-height: 1;" prefWidth="200"/>
-
-            <Button text="🚪  Đăng xuất" onAction="#handleBack"
+            <Button text="&#x1F6AA;  Đăng xuất" onAction="#handleBack"
                     prefWidth="200" prefHeight="38"
                     style="-fx-background-color: transparent; -fx-text-fill: #F87171;
                            -fx-font-size: 13px; -fx-background-radius: 10; -fx-cursor: hand;
@@ -87,11 +93,10 @@
         </VBox>
     </VBox>
 
-    <!-- ══ MAIN CONTENT ═══════════════════════════════════════════════════════ -->
-    <VBox HBox.hgrow="ALWAYS" spacing="0"
-          style="-fx-background-color: #0F172A;">
+    <!-- MAIN CONTENT -->
+    <VBox HBox.hgrow="ALWAYS" spacing="0" style="-fx-background-color: #0F172A;">
 
-        <!-- HEADER -->
+        <!-- HEADER — không có icon ví/chuông -->
         <HBox alignment="CENTER_LEFT" spacing="12"
               style="-fx-background-color: #0B1120;
                      -fx-padding: 0 24; -fx-pref-height: 56;
@@ -99,35 +104,30 @@
                      -fx-border-width: 1;">
             <Button text="← Quay lại" onAction="#handleBack"
                     styleClass="btn-ghost" style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
-            <Label text="⭐ Watchlist của tôi"
+            <Label text="&#x2B50; Danh sách theo dõi của tôi"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <!-- Icon buttons for Ví tiền and Thông báo -->
-            <StackPane onMouseClicked="#handleBack" style="-fx-cursor: hand;">
-                <Button text="&#x1F4B0;" onAction="#handleBack"
-                        prefHeight="34" prefWidth="34"
-                        style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #60A5FA;
-                               -fx-font-size: 16px;
-                               -fx-background-radius: 17; -fx-cursor: hand;
-                               -fx-border-color: #2563EB; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
-            </StackPane>
-            <StackPane onMouseClicked="#handleBack" style="-fx-cursor: hand;">
-                <Button text="&#x1F514;" onAction="#handleBack"
-                        prefHeight="34" prefWidth="34"
-                        style="-fx-background-color: rgba(30,58,95,0.85); -fx-text-fill: #FBBF24;
-                               -fx-font-size: 16px;
-                               -fx-background-radius: 17; -fx-cursor: hand;
-                               -fx-border-color: #92400E; -fx-border-radius: 17; -fx-border-width: 1.5;"/>
-                <Label fx:id="notifBadge" text="3"
-                       style="-fx-background-color: #EF4444; -fx-text-fill: white;
-                              -fx-font-size: 9px; -fx-font-weight: bold;
-                              -fx-background-radius: 8; -fx-padding: 1 4;
-                              -fx-min-width: 16; -fx-min-height: 16;"
-                       StackPane.alignment="TOP_RIGHT"
-                       translateX="2" translateY="-2"/>
-            </StackPane>
-            <Button text="🔄 Làm mới" onAction="#handleRefresh"
-                    styleClass="btn-ghost" style="-fx-font-size: 12px; -fx-padding: 6 14;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <HBox onMouseClicked="#handleGoBalance" alignment="CENTER"
+                  prefHeight="36" prefWidth="36"
+                  style="-fx-background-color: rgba(96,165,250,0.12); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: rgba(59,130,246,0.3); -fx-border-radius: 18;
+                         -fx-border-width: 1;
+                         -fx-effect: dropshadow(gaussian,rgba(96,165,250,0.2),6,0,0,0);">
+                <Label text="&#x1F4B0;"
+                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                              -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
+            </HBox>
+            <HBox onMouseClicked="#handleGoNotification" alignment="CENTER"
+                  prefHeight="36" prefWidth="36"
+                  style="-fx-background-color: rgba(251,191,36,0.12); -fx-background-radius: 18;
+                         -fx-cursor: hand; -fx-border-color: rgba(251,191,36,0.3); -fx-border-radius: 18;
+                         -fx-border-width: 1;
+                         -fx-effect: dropshadow(gaussian,rgba(251,191,36,0.2),6,0,0,0);">
+                <Label text="&#x1F514;"
+                       style="-fx-font-size: 16px; -fx-text-fill: white;
+                              -fx-font-family: 'Segoe UI Emoji','Apple Color Emoji',sans-serif;"/>
+            </HBox>
         </HBox>
 
         <!-- STATS BAR -->
@@ -183,16 +183,14 @@
 
         <!-- BOTTOM BUTTONS -->
         <HBox spacing="10" alignment="CENTER_RIGHT"
-              style="-fx-padding: 12 20;
-                     -fx-background-color: #0B1120;
+              style="-fx-padding: 12 20; -fx-background-color: #0B1120;
                      -fx-border-color: #1E3A5F transparent transparent transparent;
                      -fx-border-width: 1;">
-            <Button text="❌ Bỏ theo dõi" onAction="#handleUnwatch"
+            <Button text="✕ Bỏ theo dõi" onAction="#handleUnwatch"
                     prefHeight="36" prefWidth="140" styleClass="btn-danger"/>
-            <Button text="👁 Xem chi tiết" onAction="#handleViewDetail"
+            <Button text="&#x1F441; Xem chi tiết" onAction="#handleViewDetail"
                     prefHeight="36" prefWidth="140" styleClass="btn-success"/>
         </HBox>
 
     </VBox>
-
 </HBox>
