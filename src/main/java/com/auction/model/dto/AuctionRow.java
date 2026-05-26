@@ -3,8 +3,8 @@ package com.auction.model.dto;
 import com.auction.model.entities.Auction;
 
 /**
-   * dto gui xuong
-   */
+ * dto gui xuong.
+ */
 public class AuctionRow {
   private final String id;
   private final String itemName;

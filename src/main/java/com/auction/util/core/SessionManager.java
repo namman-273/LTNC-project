@@ -2,6 +2,10 @@ package com.auction.util.core;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ *  * cung cấp ttin login.
+ *  
+ */
 public class SessionManager {
 
   private String username;
@@ -51,6 +55,10 @@ public class SessionManager {
     }
   }
 
+  /**
+   *  * .
+   *  
+   */
   public String getPassword() {
     readLock.lock();
     try {
@@ -60,6 +68,10 @@ public class SessionManager {
     }
   }
 
+  /**
+   *  * .
+   *  
+   */
   public String getRole() {
     readLock.lock();
     try {

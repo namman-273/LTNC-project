@@ -4,7 +4,10 @@ import com.auction.controller.network.ClientHandler;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
-// EndAuctionCommand.java — đổi RES_END_SUCCESS → RES_ADMIN_END_SUCCESS
+/**
+ *  * kết thúc phiên sớm.
+ *  
+ */
 public class EndAuctionCommand implements ClientCommand {
   @Override
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
@@ -21,9 +24,6 @@ public class EndAuctionCommand implements ClientCommand {
     String auctionId = parts[1];
     auctionService.endAuctionByAdmin(auctionId);
 
-    // Dùng RES_ADMIN_END_SUCCESS thay vì RES_END_SUCCESS
-    // RES_END_SUCCESS là push (broadcast tới bidders), không phải response cho
-    // admin
     client.sendMessage(Protocol.RES_ADMIN_END_SUCCESS + Protocol.SEPARATOR
         + "Đã đóng phiên " + auctionId
         + ". Người dẫn đầu đã được hoàn tiền nếu phiên còn thời gian.");
