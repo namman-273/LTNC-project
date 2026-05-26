@@ -1,12 +1,12 @@
 package com.auction.controller.ui;
 
 import com.auction.model.dto.AuctionRow;
+import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
+import com.auction.util.core.SessionManager;
 import com.auction.util.ui.AlertUtil;
 import com.auction.util.ui.NotificationManager;
 import com.auction.util.ui.ToastManager;
-import com.auction.network.client.ServerConnection;
-import com.auction.util.core.SessionManager;
 import com.auction.views.java.AdminDashboardView;
 import com.auction.views.java.BalanceView;
 import com.auction.views.java.BidHistoryView;
@@ -19,7 +19,6 @@ import com.auction.views.java.SellerView;
 import com.auction.views.java.WatchlistView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicBoolean; // FIX Bug2b: throttle loadFromServer
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
