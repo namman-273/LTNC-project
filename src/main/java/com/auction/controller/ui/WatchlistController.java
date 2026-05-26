@@ -1,18 +1,20 @@
 package com.auction.controller.ui;
 
 import com.auction.model.dto.AuctionRow;
-import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
-import com.auction.views.java.AuctionListView;
-import com.auction.views.java.ProfileView;
-import com.auction.views.java.BidHistoryView;
-import com.auction.views.java.BalanceView;
-import com.auction.views.java.NotificationView;
-import com.auction.views.java.BidView;
+import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.NotificationManager;
 import com.auction.util.ui.ToastManager;
+import com.auction.views.java.AuctionListView;
+import com.auction.views.java.BalanceView;
+import com.auction.views.java.BidHistoryView;
+import com.auction.views.java.BidView;
+import com.auction.views.java.NotificationView;
+import com.auction.views.java.ProfileView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.net.URL;
+import java.util.ResourceBundle;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -33,9 +35,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
-import java.net.URL;
-import java.util.ResourceBundle;
 
 public class WatchlistController implements Initializable {
 
