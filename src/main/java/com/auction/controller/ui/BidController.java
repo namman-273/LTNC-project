@@ -533,6 +533,7 @@ public class BidController implements Initializable {
                 double v = Double.parseDouble(newBal);
                 balanceLabel.setText(String.format("%,.0f VNĐ", v));
               } catch (NumberFormatException ignored) {
+                // Balance value is not a valid number; skip update
               }
             }
           });
@@ -547,6 +548,7 @@ public class BidController implements Initializable {
             try {
               currentPriceValue = Double.parseDouble(newPrice);
             } catch (Exception ignored) {
+              // Price parsing failed; keep previous value
             }
             currentPriceLabel.setText(formatPrice(newPrice));
             updateBidSuggestion(currentPriceValue);
@@ -580,6 +582,7 @@ public class BidController implements Initializable {
             NotificationManager.getInstance().add(
                 "⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
           } catch (NumberFormatException ignored) {
+            // Extension count is not a valid number; skip snipe alert update
           }
         }
         break;
@@ -607,6 +610,7 @@ public class BidController implements Initializable {
                 historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
               }
             } catch (NumberFormatException ignored) {
+              // New bid amount is not a valid number; skip history update
             }
             showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
           });
