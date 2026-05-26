@@ -202,23 +202,24 @@ public class AdminDashboardController implements Initializable {
         if (selected == null) {
             showMessage("Vui lòng chọn một phiên để kết thúc!", "red"); return;
         }
+        final String endAuctionId   = selected.getId();
+        final String endAuctionName = selected.getItemName();
         showMessage("Đang kết thúc phiên...", "orange");
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
-                    Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + selected.getId());
+                    Protocol.CMD_END_AUCTION + Protocol.SEPARATOR + endAuctionId);
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
-                String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 // RES_ADMIN_END_SUCCESS là direct response (1-1), KHÔNG phải push
                 // → nó đi qua responseQueue → sendAndReceive nhận đúng, không timeout
                 if (response.startsWith(Protocol.RES_ADMIN_END_SUCCESS)) {
-                    String msg = parts.length > 1 ? parts[1] : "Kết thúc phiên thành công!";
-                    showMessage("✅ " + msg, "green");
+                    showMessage("✅ Đã đóng phiên " + endAuctionName, "green");
                     NotificationManager.getInstance().add(
-                            "✅ [Admin] Đã đóng phiên " + selected.getId() + ". " + msg,
-                            "system", selected.getId());
-                    ToastManager.show(ToastManager.Type.SUCCESS, "✅ Đã đóng phiên " + selected.getId());
+                            "⚠️ [Admin] Đã đóng sớm phiên: " + endAuctionName + " (" + endAuctionId + ")",
+                            "system", endAuctionId);
+                    ToastManager.show(ToastManager.Type.SUCCESS, "✅ Đã đóng phiên " + endAuctionName);
                 } else {
+                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
                     String msg = parts.length > 1 ? parts[1] : "Lỗi kết thúc phiên!";
                     showMessage("❌ " + msg, "red");
                     ToastManager.show(ToastManager.Type.DANGER, "❌ " + msg);
@@ -245,21 +246,22 @@ public class AdminDashboardController implements Initializable {
         java.util.Optional<javafx.scene.control.ButtonType> result = confirm.showAndWait();
         if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK) return;
 
+        final String delAuctionId   = selected.getId();
+        final String delAuctionName = selected.getItemName();
         showMessage("Đang xóa phiên...", "orange");
         new Thread(() -> {
             String response = ServerConnection.getInstance().sendAndReceive(
-                    Protocol.CMD_DELETE_AUCTION + Protocol.SEPARATOR + selected.getId());
+                    Protocol.CMD_DELETE_AUCTION + Protocol.SEPARATOR + delAuctionId);
             Platform.runLater(() -> {
                 if (response == null) { showMessage("Mất kết nối server!", "red"); return; }
-                String[] parts = response.split("\\" + Protocol.SEPARATOR);
                 if (response.startsWith(Protocol.RES_DELETE_SUCCESS)) {
-                    String msg = parts.length > 1 ? parts[1] : "Xóa phiên thành công!";
-                    showMessage("✅ " + msg, "green");
+                    showMessage("✅ Đã xóa phiên " + delAuctionName, "green");
                     NotificationManager.getInstance().add(
-                            "🗑️ [Admin] Đã xóa phiên " + selected.getId() + ". " + msg,
-                            "system", selected.getId());
-                    ToastManager.show(ToastManager.Type.SUCCESS, "🗑️ Đã xóa phiên " + selected.getId());
+                            "🗑️ [Admin] Đã xóa phiên: " + delAuctionName + " (" + delAuctionId + ")",
+                            "system", delAuctionId);
+                    ToastManager.show(ToastManager.Type.SUCCESS, "🗑️ Đã xóa phiên " + delAuctionName);
                 } else {
+                    String[] parts = response.split("\\" + Protocol.SEPARATOR);
                     String msg = parts.length > 1 ? parts[1] : "Xóa phiên thất bại!";
                     showMessage("❌ " + msg, "red");
                     ToastManager.show(ToastManager.Type.DANGER, "❌ " + msg);
