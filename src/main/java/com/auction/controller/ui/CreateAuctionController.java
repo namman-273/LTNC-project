@@ -1,5 +1,10 @@
 package com.auction.controller.ui;
 
+import com.auction.network.client.ServerConnection;
+import com.auction.network.protocol.Protocol;
+import com.auction.views.java.AuctionListView;
+import java.net.URL;
+import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -9,12 +14,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import com.auction.network.protocol.Protocol;
-import com.auction.network.client.ServerConnection;
-import com.auction.views.java.AuctionListView;
-
-import java.net.URL;
-import java.util.ResourceBundle;
 
 public class CreateAuctionController implements Initializable {
 
@@ -47,8 +46,9 @@ public class CreateAuctionController implements Initializable {
     typeComboBox.setConverter(new javafx.util.StringConverter<String>() {
       @Override
       public String toString(String s) {
-        if (s == null)
+        if (s == null) {
           return "";
+        }
         return switch (s) {
           case "ART" -> "🎨 Nghệ thuật";
           case "ELECTRONICS" -> "⚡ Điện tử";
