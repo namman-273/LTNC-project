@@ -67,10 +67,12 @@ public class WatchlistController implements Initializable {
   private Timeline autoRefreshTimeline;
 
   private final Gson gson = new GsonBuilder()
-      .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
-              .parse(json.getAsString()))
-      .create();
+        .registerTypeAdapter(
+                java.time.LocalDateTime.class,
+                (com.google.gson.JsonDeserializer<java.time.LocalDateTime>)
+                        (json, type, ctx) -> java.time.LocalDateTime
+                                .parse(json.getAsString()))
+        .create();
 
   public void setUsername(String username) {
     this.username = username;
@@ -227,7 +229,8 @@ public class WatchlistController implements Initializable {
 
     // Status badge
     Label status = new Label(row.getStatus());
-    String badgeBg, badgeFg;
+    String badgeBg;
+    String badgeFg;
     switch (row.getStatus()) {
       case "OPEN":
         badgeBg = "#D1FAE5";
@@ -454,7 +457,8 @@ public class WatchlistController implements Initializable {
   private final java.util.Set<String> watchedAuctionIds = java.util.Collections
       .synchronizedSet(new java.util.HashSet<>());
   // Bug 5: Track số lần gia hạn per auctionId để hiển thị cho watcher
-  private final java.util.Map<String, Integer> extensionCountMap = new java.util.concurrent.ConcurrentHashMap<>();
+  private final java.util.Map<String, Integer> extensionCountMap = 
+      new java.util.concurrent.ConcurrentHashMap<>();
 
   @FXML
   private void registerBalancePushListener() {
@@ -505,7 +509,8 @@ public class WatchlistController implements Initializable {
               } catch (NumberFormatException e) {
                 String msg = "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ";
                 NotificationManager.getInstance().add(msg, "auction", auctionId);
-                Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, "Giá mới: " + amount + " VNĐ"));
+                Platform.runLater(() -> 
+                    ToastManager.show(ToastManager.Type.INFO, "Giá mới: " + amount + " VNĐ"));
               }
               // Reload watchlist để cập nhật giá mới
               Platform.runLater(this::loadWatchlist);
@@ -536,6 +541,7 @@ public class WatchlistController implements Initializable {
               try {
                 extensionCountMap.put(auctionId, Integer.parseInt(count));
               } catch (NumberFormatException ignored) {
+                ignored.printStackTrace();
               }
               Platform.runLater(() -> {
                 ToastManager.show(ToastManager.Type.WARNING,
@@ -628,6 +634,7 @@ public class WatchlistController implements Initializable {
         return (Stage) watchlistTable.getScene().getWindow();
       }
     } catch (Exception ignored) {
+      ignored.printStackTrace();
     }
     return null;
   }
