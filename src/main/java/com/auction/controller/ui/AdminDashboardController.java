@@ -63,10 +63,12 @@ public class AdminDashboardController implements Initializable {
   private Consumer<String> pushListener;
 
   private final Gson gson = new GsonBuilder()
-      .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
-              .parse(json.getAsString()))
-      .create();
+      .registerTypeAdapter(
+                java.time.LocalDateTime.class,
+                (com.google.gson.JsonDeserializer<java.time.LocalDateTime>)
+                        (json, type, ctx) ->
+                                java.time.LocalDateTime.parse(json.getAsString()))
+        .create();
 
   public void setUsername(String username) {
     this.username = username;
@@ -145,15 +147,22 @@ public class AdminDashboardController implements Initializable {
               auctionTable.getItems().removeIf(r -> cancelledId.equals(r.getId()));
               // Cập nhật stat labels
               long openCount = auctionTable.getItems().stream()
-                  .filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus())).count();
+                  .filter(r -> "OPEN".equals(r.getStatus())
+                  || "RUNNING".equals(r.getStatus()))
+                  .count();
               long finishedCount = auctionTable.getItems().stream()
-                  .filter(r -> "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
-              if (statTotalLabel != null)
+                  .filter(r -> "FINISHED".equals(r.getStatus())
+                   || "PAID".equals(r.getStatus()))
+                  .count();
+              if (statTotalLabel != null) {
                 statTotalLabel.setText(String.valueOf(auctionTable.getItems().size()));
-              if (statOpenLabel != null)
+              }
+              if (statOpenLabel != null) {
                 statOpenLabel.setText(String.valueOf(openCount));
-              if (statFinishedLabel != null)
+              }
+              if (statFinishedLabel != null) {
                 statFinishedLabel.setText(String.valueOf(finishedCount));
+              }
             }
             showMessage("🚫 Phiên " + cancelledId + " bị hủy: " + detail, "gray");
           });
@@ -178,23 +187,29 @@ public class AdminDashboardController implements Initializable {
         String json = response.substring(
             Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
         AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-        if (rows != null)
+        if (rows != null) {
           data.addAll(rows);
+        }
       }
 
       final ObservableList<AuctionRow> finalData = data;
       Platform.runLater(() -> {
         auctionTable.setItems(finalData);
-        long openCount = finalData.stream().filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus()))
+        long openCount = finalData.stream()
+            .filter(r -> "OPEN".equals(r.getStatus())
+                || "RUNNING".equals(r.getStatus()))
             .count();
         long finishedCount = finalData.stream()
             .filter(r -> "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
-        if (statTotalLabel != null)
+        if (statTotalLabel != null) {
           statTotalLabel.setText(String.valueOf(finalData.size()));
-        if (statOpenLabel != null)
+        }
+        if (statOpenLabel != null) {
           statOpenLabel.setText(String.valueOf(openCount));
-        if (statFinishedLabel != null)
+        }
+        if (statFinishedLabel != null) {
           statFinishedLabel.setText(String.valueOf(finishedCount));
+        }
         showMessage(finalData.isEmpty()
             ? "ℹ️ Chưa có phiên nào."
             : "✅ Tải xong " + finalData.size() + " phiên.", "gray");
@@ -219,8 +234,9 @@ public class AdminDashboardController implements Initializable {
         String[] parts = response.split("\\" + Protocol.SEPARATOR);
         if (response.startsWith(Protocol.RES_DEPOSIT_SUCCESS)) {
           showMessage("✅ " + (parts.length > 2 ? parts[2] : "Nạp tiền thành công!"), "green");
-          if (depositAmountField != null)
+          if (depositAmountField != null) {
             depositAmountField.clear();
+          }
           loadBalance();
         } else {
           showMessage("❌ " + (parts.length > 1 ? parts[1] : "Nạp tiền thất bại!"), "red");
@@ -233,15 +249,18 @@ public class AdminDashboardController implements Initializable {
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
       Platform.runLater(() -> {
-        if (response == null)
+        if (response == null) {
           return;
+        }
         String[] parts = response.split("\\" + Protocol.SEPARATOR);
         if (response.startsWith(Protocol.RES_BALANCE_INFO) && parts.length > 1) {
           try {
-            if (balanceLabel != null)
+            if (balanceLabel != null) {
               balanceLabel.setText("Số dư: " + String.format("%,.0f VNĐ",
                   Double.parseDouble(parts[1])));
+            }
           } catch (NumberFormatException ignored) {
+            ignored.printStackTrace();
           }
         }
       });
@@ -306,8 +325,9 @@ public class AdminDashboardController implements Initializable {
         + selected.getItemName() + "?\nHành động này không thể hoàn tác!");
 
     java.util.Optional<javafx.scene.control.ButtonType> result = confirm.showAndWait();
-    if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK)
+    if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK) {
       return;
+    }
 
     final String delAuctionId = selected.getId();
     final String delAuctionName = selected.getItemName();
