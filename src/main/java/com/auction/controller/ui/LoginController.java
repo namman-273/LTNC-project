@@ -1,12 +1,11 @@
 package com.auction.controller.ui;
 
-import com.auction.network.protocol.Protocol;
-import com.auction.util.ui.AlertUtil;
 import com.auction.network.client.ServerConnection;
+import com.auction.network.protocol.Protocol;
 import com.auction.util.core.SessionManager;
+import com.auction.util.ui.AlertUtil;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.RegisterView;
-
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
