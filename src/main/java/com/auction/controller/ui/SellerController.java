@@ -251,8 +251,8 @@ public class SellerController implements Initializable {
                                 .anyMatch(r -> r.getId().equals(cancelledId));
                         loadMyAuctions();
                         if (wasMine) {
-                            showNotification("⚠️ Phiên của bạn bị Admin hủy",
-                                    "Phiên " + cancelledId + " đã bị Admin hủy.\nLý do: " + reason);
+                            showNotification("⚠️ Phiên của bạn: " + reason,
+                                    "Phiên " + cancelledId + ".\nLý do: " + reason);
                         }
                     });
                 }

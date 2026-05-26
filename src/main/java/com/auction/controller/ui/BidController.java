@@ -606,14 +606,13 @@ public class BidController implements Initializable {
             case Protocol.NOTI_AUCTION_CANCELLED:
                 // FIX Bug1b: dừng TẤT CẢ timer khi nhận cancel, không để priceRefresh restart gì cả
                 if (parts.length >= 2) {
-                    String msg = parts[1];
+                    String reason = parts.length >= 3 ? parts[2] : "Admin hủy";
+                    String notiMsg = "❌ Phiên " + auctionId + " " + reason + ". Tiền đã được hoàn.";
                     Platform.runLater(() -> {
                         handleCancelledState();
-                        showWarning("❌ " + msg);
+                        showWarning("❌ " + reason);
                     });
-                    NotificationManager.getInstance().add(
-                            "❌ Phiên " + auctionId + " bị Admin hủy. Tiền đã được hoàn.",
-                            "auction", auctionId);
+                    NotificationManager.getInstance().add(notiMsg, "auction", auctionId);
                 }
                 removePushListener();
                 break;

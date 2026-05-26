@@ -481,14 +481,14 @@ public class WatchlistController implements Initializable {
                         String reason      = parts[2];
                         if (watchedAuctionIds.contains(cancelledId)) {
                             NotificationManager.getInstance().add(
-                                    "❌ Phiên " + cancelledId + " bị Admin hủy: " + reason,
+                                    "❌ Phiên " + cancelledId + ": " + reason + ". Tiền đã được hoàn.",
                                     "auction", cancelledId);
                             Platform.runLater(() -> {
                                 watchedAuctionIds.remove(cancelledId);
                                 currentData.removeIf(r -> r.getId().equals(cancelledId));
                                 updateCards(currentData);
                                 ToastManager.show(ToastManager.Type.WARNING,
-                                        "❌ Phiên " + cancelledId + " bị Admin hủy");
+                                        "❌ Phiên " + cancelledId + ": " + reason);
                             });
                         }
                     }
