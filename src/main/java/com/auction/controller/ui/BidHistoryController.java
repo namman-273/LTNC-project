@@ -301,8 +301,9 @@ public class BidHistoryController implements Initializable {
   }
 
   private void loadBalance() {
-    if (balanceLabel == null)
+    if (balanceLabel == null) {
       return;
+    }
     new Thread(() -> {
       String res = ServerConnection.getInstance()
           .sendAndReceive(Protocol.CMD_GET_BALANCE);
@@ -312,15 +313,18 @@ public class BidHistoryController implements Initializable {
           String amt = p.length >= 2 ? p[1] : "---";
           try {
             double v = Double.parseDouble(amt);
-            if (balanceLabel != null)
+            if (balanceLabel != null) {
               balanceLabel.setText(String.format("%,.0f VNĐ", v));
+            }
           } catch (NumberFormatException e) {
-            if (balanceLabel != null)
+            if (balanceLabel != null) {
               balanceLabel.setText(amt + " VNĐ");
+            }
           }
         } else {
-          if (balanceLabel != null)
+          if (balanceLabel != null) {
             balanceLabel.setText("---");
+          }
         }
       });
     }, "bidhistory-balance-thread").start();
