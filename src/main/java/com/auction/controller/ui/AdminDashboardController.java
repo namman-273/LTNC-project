@@ -20,6 +20,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
@@ -85,6 +86,26 @@ public class AdminDashboardController implements Initializable {
         loadFromServer();
         startAutoRefresh();
         registerPushListener(); // FIX: đăng ký nhận broadcast từ server
+        initToastManager(auctionTable);
+    }
+
+    private void initToastManager(javafx.scene.Node anchor) {
+        Platform.runLater(() -> {
+            try {
+                javafx.scene.Parent root = anchor.getScene().getRoot();
+                if (root instanceof StackPane) {
+                    ToastManager.init((StackPane) root);
+                } else {
+                    javafx.scene.Scene scene = anchor.getScene();
+                    StackPane overlay = new StackPane();
+                    overlay.getChildren().add(root);
+                    scene.setRoot(overlay);
+                    ToastManager.init(overlay);
+                }
+            } catch (Exception e) {
+                System.err.println("[AdminToast] Init failed: " + e.getMessage());
+            }
+        });
     }
 
     // FIX 2 — AdminDashboardController.java (xóa dead code, thêm NOTI_AUCTION_CANCELLED)
