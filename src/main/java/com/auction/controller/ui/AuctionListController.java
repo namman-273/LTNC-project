@@ -714,7 +714,9 @@ public class AuctionListController implements Initializable {
 
   @FXML
   private void loadBalance() {
-    if (balanceLabel == null) return;
+    if (balanceLabel == null) {
+      return;
+    }
     new Thread(() -> {
       String res = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
       Platform.runLater(() -> {
@@ -723,11 +725,17 @@ public class AuctionListController implements Initializable {
           String amt = p.length >= 2 ? p[1] : "---";
           try {
             double v = Double.parseDouble(amt);
-            if (balanceLabel != null) balanceLabel.setText(String.format("%,.0f VNĐ", v));
+            if (balanceLabel != null) {
+              balanceLabel.setText(String.format("%,.0f VNĐ", v));
+            }
           } catch (NumberFormatException e) {
-            if (balanceLabel != null) balanceLabel.setText(amt + " VNĐ");
+            if (balanceLabel != null) {
+              balanceLabel.setText(amt + " VNĐ");
+            }
           }
-        } else { if (balanceLabel != null) balanceLabel.setText("---"); }
+        } else { if (balanceLabel != null) {
+            balanceLabel.setText("---");
+          } }
       });
     }, "auctionlist-balance-thread").start();
   }
@@ -738,7 +746,9 @@ public class AuctionListController implements Initializable {
   }
 
   private void updateNotifBadge() {
-    if (notifBadge == null) return;
+    if (notifBadge == null) {
+      return;
+    }
     long count = NotificationManager.getInstance().unreadCount();
     Platform.runLater(() -> {
       if (count > 0) {
