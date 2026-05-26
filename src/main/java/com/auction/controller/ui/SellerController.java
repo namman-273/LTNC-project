@@ -1,16 +1,16 @@
 package com.auction.controller.ui;
 
 import com.auction.model.dto.AuctionRow;
-import com.auction.network.protocol.Protocol;
-import com.auction.util.ui.NotificationManager;
 import com.auction.network.client.ServerConnection;
+import com.auction.network.protocol.Protocol;
 import com.auction.util.core.SessionManager;
+import com.auction.util.ui.NotificationManager;
 import com.auction.views.java.AuctionListView;
-import com.auction.views.java.BidHistoryView;
 import com.auction.views.java.BalanceView;
-import com.auction.views.java.ProfileView;
-import com.auction.views.java.NotificationView;
+import com.auction.views.java.BidHistoryView;
 import com.auction.views.java.CreateAuctionView;
+import com.auction.views.java.NotificationView;
+import com.auction.views.java.ProfileView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -22,7 +22,6 @@ import java.util.function.Consumer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -35,6 +34,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class SellerController implements Initializable {
 
