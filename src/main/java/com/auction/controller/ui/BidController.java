@@ -1,18 +1,14 @@
 package com.auction.controller.ui;
 
+import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.NotificationManager;
 import com.auction.util.ui.ToastManager;
-import com.auction.network.client.ServerConnection;
-import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.AutoBidView;
-import com.auction.views.java.BidChartView;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import javafx.stage.Modality;
 
 import java.net.URL;
 import java.util.ResourceBundle;
