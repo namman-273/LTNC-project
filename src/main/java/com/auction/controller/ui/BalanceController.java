@@ -1,14 +1,17 @@
 package com.auction.controller.ui;
 
-import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
-import com.auction.views.java.AuctionListView;
+import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.ToastManager;
-
+import com.auction.views.java.AuctionListView;
+import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -19,17 +22,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
-import java.net.URL;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
+import javafx.util.Duration;
 
 public class BalanceController implements Initializable {
 
