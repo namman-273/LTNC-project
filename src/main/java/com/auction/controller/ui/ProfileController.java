@@ -14,7 +14,6 @@ import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -117,8 +116,9 @@ public class ProfileController implements Initializable {
         Platform.runLater(() -> {
           try {
             double b = Double.parseDouble(newBal);
-            if (balanceLabel != null)
+            if (balanceLabel != null) {
               balanceLabel.setText(String.format("Số dư: %,.0f VNĐ", b));
+            }
           } catch (NumberFormatException ignored) {
           }
         });
@@ -136,8 +136,9 @@ public class ProfileController implements Initializable {
 
   // ── Load toàn bộ profile ─────────────────────────────────────────────────
   private void loadProfile() {
-    if (username == null || username.isEmpty())
+    if (username == null || username.isEmpty()) {
       return;
+    }
 
     // 1. Avatar + username (local, không cần server)
     String initials = username.substring(0, Math.min(2, username.length())).toUpperCase();
@@ -166,8 +167,9 @@ public class ProfileController implements Initializable {
           String joinDate = p.length >= 6 ? p[5] : "";
 
           Platform.runLater(() -> {
-            if (emailField != null)
+            if (emailField != null) {
               emailField.setText(email);
+            }
 
             try {
               double b = Double.parseDouble(balance);
@@ -189,8 +191,9 @@ public class ProfileController implements Initializable {
           String json = p.length >= 2 ? p[1] : "[]";
           long count = json.chars().filter(c -> c == '{').count();
           Platform.runLater(() -> {
-            if (statWatchlist != null)
+            if (statWatchlist != null) {
               statWatchlist.setText(String.valueOf(count));
+            }
           });
         }
 
@@ -202,29 +205,36 @@ public class ProfileController implements Initializable {
 
   // ── Role style ────────────────────────────────────────────────────────────
   private void applyRole(String role) {
-    if (role == null)
+    if (role == null) {
       return;
+    }
     roleLabel.setText(role);
     switch (role) {
       case "ADMIN" -> {
         roleDetailLabel.setText("Quản trị viên (Admin)");
         roleLabel.setStyle(
-            "-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;" +
-                "-fx-font-size: 11px; -fx-font-weight: bold;" +
+            "-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;" 
+            +
+                "-fx-font-size: 11px; -fx-font-weight: bold;" 
+                +
                 "-fx-background-radius: 12; -fx-padding: 3 10;");
       }
       case "SELLER" -> {
         roleDetailLabel.setText("Người bán (Seller)");
         roleLabel.setStyle(
-            "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;" +
-                "-fx-font-size: 11px; -fx-font-weight: bold;" +
+            "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;" 
+            +
+                "-fx-font-size: 11px; -fx-font-weight: bold;" 
+                +
                 "-fx-background-radius: 12; -fx-padding: 3 10;");
       }
       default -> {
         roleDetailLabel.setText("Người đấu giá (Bidder)");
         roleLabel.setStyle(
-            "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;" +
-                "-fx-font-size: 11px; -fx-font-weight: bold;" +
+            "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;" 
+            +
+                "-fx-font-size: 11px; -fx-font-weight: bold;" 
+                +
                 "-fx-background-radius: 12; -fx-padding: 3 10;");
       }
     }
@@ -239,12 +249,15 @@ public class ProfileController implements Initializable {
     String rate = total > 0
         ? String.format("%.0f%%", wins * 100.0 / total)
         : "0%";
-    if (statTotal != null)
+    if (statTotal != null) {
       statTotal.setText(String.valueOf(total));
-    if (statWin != null)
+    }
+    if (statWin != null) {
       statWin.setText(String.valueOf(wins));
-    if (statRate != null)
+    }
+    if (statRate != null) {
       statRate.setText(rate);
+    }
   }
 
   // ── Cập nhật email ────────────────────────────────────────────────────────
@@ -276,19 +289,23 @@ public class ProfileController implements Initializable {
   // ── Toggle panel đổi mật khẩu (MỚI) ─────────────────────────────────────
   @FXML
   private void handleChangePassword() {
-    if (passwordPanel == null)
+    if (passwordPanel == null) {
       return;
+    }
     boolean show = !passwordPanel.isVisible();
     passwordPanel.setVisible(show);
     passwordPanel.setManaged(show);
     // Xóa field khi đóng lại
     if (!show) {
-      if (oldPasswordField != null)
+      if (oldPasswordField != null) {
         oldPasswordField.clear();
-      if (newPasswordField != null)
+      }
+      if (newPasswordField != null) {
         newPasswordField.clear();
-      if (confirmPasswordField != null)
+      }
+      if (confirmPasswordField != null) {
         confirmPasswordField.clear();
+      }
       messageLabel.setText("");
     }
   }
@@ -296,8 +313,9 @@ public class ProfileController implements Initializable {
   // ── Xác nhận đổi mật khẩu (MỚI) ─────────────────────────────────────────
   @FXML
   private void handleConfirmChangePassword() {
-    if (oldPasswordField == null || newPasswordField == null || confirmPasswordField == null)
+    if (oldPasswordField == null || newPasswordField == null || confirmPasswordField == null) {
       return;
+    }
 
     String oldPass = oldPasswordField.getText().trim();
     String newPass = newPasswordField.getText().trim();
@@ -358,8 +376,9 @@ public class ProfileController implements Initializable {
 
   // ── Helper ───────────────────────────────────────────────────────────────
   private void showMessage(String msg, boolean success) {
-    if (messageLabel == null)
+    if (messageLabel == null) {
       return;
+    }
     messageLabel.setText(msg);
     messageLabel.setStyle(success
         ? "-fx-font-size: 12px; -fx-text-fill: #22C55E;"
