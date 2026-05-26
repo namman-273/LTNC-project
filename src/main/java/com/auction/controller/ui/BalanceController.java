@@ -44,8 +44,10 @@ public class BalanceController implements Initializable {
 
   private String username;
   // Dùng static để giữ lịch sử giao dịch khi quay lại màn hình
-  private static final ObservableList<TransactionItem> transactions = FXCollections.observableArrayList();
-  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+  private static final ObservableList<TransactionItem> transactions = 
+      FXCollections.observableArrayList();
+  private static final DateTimeFormatter FORMATTER = 
+      DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
   private Timeline autoRefreshTimeline;
   private Consumer<String> pushListener; // FIX: lắng nghe balance thay đổi realtime
 
@@ -86,7 +88,9 @@ public class BalanceController implements Initializable {
       amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
       typeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #475569;");
       timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #475569;");
-      statusBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 1 7;");
+      statusBadge.setStyle(
+          "-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 1 7;"
+      );
 
       bottomRow.setAlignment(Pos.CENTER_LEFT);
       bottomRow.getChildren().addAll(typeLabel, timeLabel, statusBadge);
@@ -127,7 +131,8 @@ public class BalanceController implements Initializable {
       timeLabel.setText(item.time + "  •  ");
 
       statusBadge.setText(item.success ? "✓ Thành công" : "✗ Thất bại");
-      statusBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 1 7; " 
+      statusBadge.setStyle(
+          "-fx-font-size: 10px; -fx-font-weight: bold;-fx-background-radius: 10; -fx-padding: 1 7;" 
           +
           "-fx-background-color: " 
           + (item.success ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)") + "; " 
@@ -205,7 +210,8 @@ public class BalanceController implements Initializable {
           try {
             double balance = Double.parseDouble(parts[1]);
             balanceLabel.setText(String.format("%,.0f VNĐ", balance));
-            balanceLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
+            balanceLabel.setStyle(
+                "-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
           } catch (NumberFormatException e) {
             balanceLabel.setText(parts[1]);
           }
@@ -241,14 +247,18 @@ public class BalanceController implements Initializable {
   private void registerPushListener() {
     pushListener = message -> {
       String[] parts = message.split("\\|");
-      if (parts.length >= 2 && com.auction.network.protocol.Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
+      if (parts.length >= 2 
+          && 
+          com.auction.network.protocol.Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
         String newBal = parts[1];
         Platform.runLater(() -> {
           try {
             double v = Double.parseDouble(newBal);
             balanceLabel.setText(String.format("%,.0f VNĐ", v));
-            balanceLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
+            balanceLabel.setStyle(
+                "-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
           } catch (NumberFormatException ignored) {
+            ignored.printStackTrace();
           }
         });
       }
@@ -291,6 +301,7 @@ public class BalanceController implements Initializable {
                 "+" + String.format("%,.0f VNĐ", amt),
                 "Nạp tiền", time, true));
           } catch (NumberFormatException ignored) {
+            ignored.printStackTrace();
           }
           loadBalance();
         } else {
@@ -302,6 +313,7 @@ public class BalanceController implements Initializable {
                 String.format("%,.0f VNĐ", amt),
                 "Nạp tiền", time, false));
           } catch (NumberFormatException ignored) {
+            ignored.printStackTrace();
           }
         }
       });
