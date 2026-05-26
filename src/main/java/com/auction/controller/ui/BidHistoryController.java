@@ -71,13 +71,19 @@ public class BidHistoryController implements Initializable {
   private List<BidHistoryEntry> allEntries = new ArrayList<>();
   private Consumer<String> pushListener;
 
-  private static final String TAB_ACTIVE = "-fx-background-color: #111827; -fx-text-fill: white; " +
-      "-fx-font-weight: bold; -fx-background-radius: 20; " +
-      "-fx-padding: 6 18; -fx-cursor: hand; -fx-font-size: 12px; " +
+  private static final String TAB_ACTIVE = "-fx-background-color: #111827; -fx-text-fill: white; " 
+      +
+      "-fx-font-weight: bold; -fx-background-radius: 20; " 
+      +
+      "-fx-padding: 6 18; -fx-cursor: hand; -fx-font-size: 12px; " 
+      +
       "-fx-border-color: transparent;";
-  private static final String TAB_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #6B7280; " +
-      "-fx-background-radius: 20; -fx-padding: 6 18; " +
-      "-fx-cursor: hand; -fx-font-size: 12px; " +
+  private static final String TAB_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #6B7280; " 
+      +
+      "-fx-background-radius: 20; -fx-padding: 6 18; " 
+      +
+      "-fx-cursor: hand; -fx-font-size: 12px; " 
+      +
       "-fx-border-color: #E5E7EB; -fx-border-radius: 20; -fx-border-width: 1;";
 
   private final Gson gson = new GsonBuilder().create();
