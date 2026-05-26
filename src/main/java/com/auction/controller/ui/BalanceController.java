@@ -79,7 +79,8 @@ public class BalanceController implements Initializable {
       iconLabel.setStyle("-fx-font-size: 20px;");
       iconLabel.setPrefSize(36, 36);
       iconLabel.setAlignment(Pos.CENTER);
-      iconLabel.setStyle("-fx-font-size: 20px; -fx-background-radius: 18;" +
+      iconLabel.setStyle("-fx-font-size: 20px; -fx-background-radius: 18;" 
+          +
           "-fx-min-width: 36; -fx-min-height: 36; -fx-alignment: CENTER;");
 
       amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
@@ -110,27 +111,39 @@ public class BalanceController implements Initializable {
       }
 
       iconLabel.setText(item.success ? "💳" : "❌");
-      iconLabel.setStyle("-fx-font-size: 18px; -fx-background-color: " +
-          (item.success ? "rgba(59,130,246,0.15)" : "rgba(248,113,113,0.12)") +
-          "; -fx-background-radius: 18;" +
+      iconLabel.setStyle("-fx-font-size: 18px; -fx-background-color: " 
+          +
+          (item.success ? "rgba(59,130,246,0.15)" : "rgba(248,113,113,0.12)") 
+          +
+          "; -fx-background-radius: 18;" 
+          +
           "-fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;");
 
       amountLabel.setText(item.amount);
-      amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " +
+      amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " 
+          +
           (item.success ? "#60A5FA" : "#F87171") + ";");
       typeLabel.setText(item.type + "  •  ");
       timeLabel.setText(item.time + "  •  ");
 
       statusBadge.setText(item.success ? "✓ Thành công" : "✗ Thất bại");
-      statusBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 1 7; " +
-          "-fx-background-color: " + (item.success ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)") + "; " +
+      statusBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 1 7; " 
+          +
+          "-fx-background-color: " 
+          + (item.success ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)") + "; " 
+          +
           "-fx-text-fill: " + (item.success ? "#34D399" : "#F87171") + ";");
 
-      card.setStyle("-fx-background-color: " +
-          (item.success ? "rgba(59,130,246,0.06)" : "rgba(30,42,64,0.5)") +
-          "; -fx-background-radius: 12;" +
-          "-fx-border-color: transparent transparent transparent " +
-          (item.success ? "#3B82F6" : "#EF4444") +
+      card.setStyle("-fx-background-color: " 
+          +
+          (item.success ? "rgba(59,130,246,0.06)" : "rgba(30,42,64,0.5)") 
+          +
+          "; -fx-background-radius: 12;" 
+          +
+          "-fx-border-color: transparent transparent transparent " 
+          +
+          (item.success ? "#3B82F6" : "#EF4444") 
+          +
           "; -fx-border-width: 0 0 0 3; -fx-border-radius: 0 12 12 0;");
 
       VBox outer = new VBox(card);

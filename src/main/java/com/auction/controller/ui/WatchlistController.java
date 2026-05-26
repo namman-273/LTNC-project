@@ -137,8 +137,9 @@ public class WatchlistController implements Initializable {
           String json = response.substring(
               Protocol.RES_WATCHLIST.length() + Protocol.SEPARATOR.length());
           AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-          if (rows != null)
+          if (rows != null) {
             data.addAll(rows);
+          }
         } else {
           String[] parts = response.split("\\" + Protocol.SEPARATOR);
           String msg = parts.length > 1 ? parts[1] : "Lỗi tải watchlist!";
