@@ -1,19 +1,18 @@
 package com.auction.controller.ui;
 
-import com.auction.network.protocol.Protocol;
 import com.auction.network.client.ServerConnection;
+import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.NotificationManager;
 import com.auction.views.java.BidView;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
 
 public class AutoBidController implements Initializable {
 
