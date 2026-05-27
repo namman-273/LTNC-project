@@ -432,3 +432,10 @@ Cửa sổ đăng nhập sẽ hiện ra. Để chạy nhiều client cùng lúc,
 | 27 | **Auto-Save dữ liệu** – `AutoSaveScheduler` + `DirtyFlagTracker` định kỳ ghi `.dat` |
 
 ---
+
+## Báo cáo & Video demo
+
+| Nội dung | Link |
+|---|---|
+| Báo cáo PDF | [Xem báo cáo](https://drive.google.com/file/d/17WOzZ34HddMsGmz3yICag0Q89ragLNtM/view?usp=drive_link) |
+| Video demo | [Xem video](https://link-to-video) |
