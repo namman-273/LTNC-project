@@ -35,16 +35,6 @@ import javafx.stage.Stage;
 /**
  * Controller màn thông báo.
  *
- * <p>
- * SOLID áp dụng:
- * <ul>
- * <li>SRP — {@link NotificationCellStyle} tách riêng logic phân loại style của
- * mỗi
- * item khỏi vòng lặp updateItem, giúp cell chỉ còn apply dữ liệu.</li>
- * <li>OCP — để thêm loại thông báo mới chỉ cần thêm 1 case vào
- * {@link NotificationCellStyle#from(NotificationItem)}, không sửa cell.</li>
- * <li>DRY — không còn bản copy initToastManager (extends BaseController).</li>
- * </ul>
  */
 public class NotificationController extends BaseController implements Initializable {
 

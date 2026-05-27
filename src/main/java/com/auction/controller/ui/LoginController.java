@@ -14,16 +14,19 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-public class LoginController {
+/**
+ * Controller xử lý luồng đăng nhập.
+ *
+ *
+ */
+public class LoginController extends BaseController {
 
-  @FXML
-  private TextField usernameField;
-  @FXML
-  private PasswordField passwordField;
-  @FXML
-  private Label errorLabel;
-  @FXML
-  private Button loginButton;
+  @FXML private TextField     usernameField;
+  @FXML private PasswordField passwordField;
+  @FXML private Label         errorLabel;
+  @FXML private Button        loginButton;
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   @FXML
   private void handleLogin() {
@@ -40,7 +43,7 @@ public class LoginController {
       if (!conn.connectWithRetry()) {
         Platform.runLater(() -> {
           setLoading(false);
-          showError("Không thể kết nối server sau nhiều lần thử!");
+          showMessage("Không thể kết nối server sau nhiều lần thử!", false);
           AlertUtil.showError("Mất kết nối",
               "Không thể kết nối đến server!\nVui lòng kiểm tra server đang chạy chưa.");
         });
@@ -54,25 +57,25 @@ public class LoginController {
         setLoading(false);
 
         if (response == null || response.startsWith("ERROR|Mất kết nối")) {
-          showError("Mất kết nối server!");
+          showMessage("Mất kết nối server!", false);
           AlertUtil.showError("Mất kết nối", "Mất kết nối khi đăng nhập. Vui lòng thử lại.");
           return;
         }
 
         String[] parts = response.split("\\" + Protocol.SEPARATOR);
         if (response.startsWith(Protocol.RES_LOGIN_SUCCESS)) {
-          String role = parts.length > 1 ? parts[1].trim() : "BIDDER";
+          String role     = parts.length > 1 ? parts[1].trim() : "BIDDER";
           String greeting = parts.length > 2 ? parts[2].trim() : "";
           SessionManager.getInstance().setSession(username, password, role);
-          showSuccess(greeting);
+          showMessage(greeting, true);
           Stage stage = (Stage) usernameField.getScene().getWindow();
           new AuctionListView(stage, username).show();
         } else {
           String errorMsg = parts.length > 1 ? parts[1] : "Đăng nhập thất bại!";
-          showError(errorMsg);
+          showMessage(errorMsg, false);
         }
       });
-    }).start();
+    }, "login-thread").start();
   }
 
   @FXML
@@ -81,6 +84,12 @@ public class LoginController {
     new RegisterView(stage).show();
   }
 
+  // ── UI helpers ─────────────────────────────────────────────────────────────
+
+  /**
+   * Quản lý trạng thái loading — tách biệt với showMessage vì cần style "gray"
+   * riêng cho label trong khi chờ kết nối (không phải error hay success).
+   */
   private void setLoading(boolean loading) {
     usernameField.setDisable(loading);
     passwordField.setDisable(loading);
@@ -96,13 +105,11 @@ public class LoginController {
     }
   }
 
-  private void showError(String msg) {
-    errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
-    errorLabel.setText(msg);
-  }
-
-  private void showSuccess(String msg) {
-    errorLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
+  /** SRP: một điểm duy nhất hiển thị kết quả thao tác. */
+  private void showMessage(String msg, boolean success) {
+    errorLabel.setStyle(success
+        ? "-fx-text-fill: green; -fx-font-size: 12px;"
+        : "-fx-text-fill: red;   -fx-font-size: 12px;");
     errorLabel.setText(msg);
   }
 }

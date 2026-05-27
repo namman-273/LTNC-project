@@ -14,13 +14,7 @@ import java.util.function.Consumer;
 /**
  * Base controller chứa các hàm dùng chung cho toàn bộ controller trong package ui.
  *
- * <p>Giải quyết các vi phạm SOLID:
- * <ul>
- *   <li>SRP — tách biệt hạ tầng (toast, push listener, balance) ra khỏi logic nghiệp vụ.</li>
- *   <li>DRY — loại bỏ 6+ bản copy giống hệt nhau của initToastManager,
- *             removePushListener và loadBalance.</li>
- *   <li>OCP — controller con chỉ override những gì khác biệt, không sửa base.</li>
- * </ul>
+ * 
  */
 public abstract class BaseController {
 

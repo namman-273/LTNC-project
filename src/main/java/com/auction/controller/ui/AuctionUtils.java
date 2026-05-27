@@ -3,26 +3,6 @@ package com.auction.controller.ui;
 /**
  * Tiện ích tĩnh dùng chung cho các controller đấu giá.
  *
- * <p>
- * Trước khi refactor, các hàm này bị copy-paste vào nhiều controller:
- * <ul>
- * <li>{@link #getMinimumIncrement} — copy trong BidController VÀ
- * AutoBidController.</li>
- * <li>{@link #extractWinner} — copy trong AuctionListController, BidController,
- * AutoBidController (3 phiên bản hơi khác nhau).</li>
- * <li>{@link #formatPrice(String)} — copy trong BidController,
- * SellerController,
- * AuctionListController (viết inline).</li>
- * </ul>
- *
- * <p>
- * Nguyên tắc SOLID áp dụng:
- * <ul>
- * <li>SRP — class chỉ chứa các tiện ích thuần túy, không giữ state.</li>
- * <li>DRY — một nguồn sự thật duy nhất cho mỗi thuật toán.</li>
- * <li>OCP — thêm rule mới cho getMinimumIncrement chỉ cần sửa đây, không đụng
- * controller.</li>
- * </ul>
  */
 public final class AuctionUtils {
 
