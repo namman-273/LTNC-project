@@ -2,7 +2,6 @@ package com.auction.controller.ui;
 
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
-import com.auction.util.ui.ToastManager;
 import com.auction.views.java.AuctionListView;
 import java.net.URL;
 import java.time.LocalDateTime;
