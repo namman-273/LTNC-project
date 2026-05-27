@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.auction.model.entities.user.User;
 import com.auction.util.exception.AuthenticationException;
 
-import java.lang.reflect.Field;
 import com.auction.service.usermanger.UserManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

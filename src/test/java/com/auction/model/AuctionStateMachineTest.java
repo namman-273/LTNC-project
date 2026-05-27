@@ -10,8 +10,6 @@ import com.auction.model.entities.user.Bidder;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuctionClosedException;
-
-import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
  

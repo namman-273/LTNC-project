@@ -22,7 +22,6 @@ import com.auction.controller.command.UnwatchCommand;
 import com.auction.controller.command.WatchCommand;
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.Auction;
-import com.auction.model.entities.item.Electronics;
 import com.auction.model.entities.user.Admin;
 import com.auction.model.entities.user.Bidder;
 import com.auction.model.entities.user.Seller;
@@ -30,12 +29,10 @@ import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
-import com.auction.util.core.SecurityUtils;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
