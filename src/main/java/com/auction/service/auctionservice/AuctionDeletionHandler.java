@@ -1,0 +1,80 @@
+package com.auction.service.auctionservice;
+
+import com.auction.controller.network.ConnectionManager;
+import com.auction.model.entities.Auction;
+import com.auction.network.protocol.Protocol;
+
+/**
+ * Service xử lý logic xóa auction (Admin only).
+ * Tuân thủ Single Responsibility Principle.
+ * 
+ * Các bước xử lý:
+ * 1. Kiểm tra auction tồn tại
+ * 2. Hoàn tiền cho người dẫn đầu (nếu có)
+ * 3. Broadcast thông báo xóa đến tất cả users
+ * 4. Xóa khỏi watchlist của tất cả users
+ * 5. Đóng auction và xóa khỏi repository
+ * 6. Mark dirty để save data
+ */
+public class AuctionDeletionHandler {
+
+  private final AuctionRepository auctionRepository;
+  private final PaymentProcessor paymentProcessor;
+  private final AuctionDataPersistenceService persistenceService;
+
+  /**
+   * Constructor với dependency injection.
+   */
+  public AuctionDeletionHandler(
+      AuctionRepository auctionRepository,
+      PaymentProcessor paymentProcessor,
+      AuctionDataPersistenceService persistenceService) {
+    this.auctionRepository = auctionRepository;
+    this.paymentProcessor = paymentProcessor;
+    this.persistenceService = persistenceService;
+  }
+
+  /**
+   * Xóa auction - chỉ Admin mới được phép.
+   * 
+   * @param auctionId ID của auction cần xóa
+   * @return true nếu xóa thành công, false nếu auction không tồn tại
+   */
+  public boolean deleteAuction(String auctionId) {
+    Auction auction = auctionRepository.findById(auctionId);
+
+    // Kiểm tra auction có tồn tại không
+    if (auction == null) {
+      System.err.println("[DELETE ERROR] Auction không tồn tại: " + auctionId);
+      return false;
+    }
+
+    // Synchronized để đảm bảo thread-safe
+    synchronized (auction) {
+      // Bước 1: Hoàn tiền cho người dẫn đầu (nếu có)
+      paymentProcessor.processRefund(auction);
+
+      paymentProcessor.processRefund(auction);
+      String cancelMsg = Protocol.NOTI_AUCTION_CANCELLED
+          + Protocol.SEPARATOR
+          + auctionId
+          + Protocol.SEPARATOR
+          + "Phiên đã bị Admin xóa";
+      ConnectionManager.getInstance().broadcastToAll(cancelMsg);
+
+      // Bước 2: Đóng auction (release observers và resources)
+      auction.closeAuction();
+
+      // Bước 3: Xóa khỏi repository
+      auctionRepository.remove(auctionId);
+
+      // Bước 4: Đánh dấu cần save data
+      persistenceService.markAuctionsDirty();
+
+      // Log kết quả
+      System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
+
+      return true;
+    }
+  }
+}
