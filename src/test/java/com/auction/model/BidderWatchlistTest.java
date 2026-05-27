@@ -19,8 +19,7 @@ import org.junit.jupiter.api.Test;
  */
 public class BidderWatchlistTest {
 
-    private static final long DURATION = 9999L;
-    private static final double PRICE = 500.0;
+    
 
     private Bidder bidder;
     private AuctionService service;

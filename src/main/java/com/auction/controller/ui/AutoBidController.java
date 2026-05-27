@@ -6,7 +6,6 @@ import com.auction.util.ui.NotificationManager;
 import com.auction.views.java.BidView;
 import java.net.URL;
 import java.util.ResourceBundle;
-import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -14,7 +13,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-public class AutoBidController implements Initializable {
+public class AutoBidController extends BaseController implements Initializable {
 
   @FXML
   private Label titleLabel;
@@ -36,16 +35,12 @@ public class AutoBidController implements Initializable {
   private String username;
   private long endTime;
 
-  // FIX: lưu đủ thông tin để truyền lại BidView khi back
   private String imageUrl = "";
   private String description = "";
   private String itemType = "";
   private double startingPrice = 0;
   private String sellerId = "";
 
-  private Consumer<String> pushListener;
-
-  /** Được gọi từ AutoBidView — truyền đủ thông tin sản phẩm */
   public void setData(String auctionId, String itemName, String currentPrice,
       String status, String username, long endTime,
       String imageUrl, String description,
@@ -61,12 +56,12 @@ public class AutoBidController implements Initializable {
     this.itemType = itemType != null ? itemType : "";
     this.startingPrice = startingPrice;
     this.sellerId = sellerId != null ? sellerId : "";
+
     titleLabel.setText("🤖 Auto-Bid - " + itemName);
 
-    // Hiện gợi ý bước tăng tối thiểu dựa trên giá hiện tại
     try {
       double price = Double.parseDouble(currentPrice.replaceAll("[^0-9.]", ""));
-      long minStep = getMinimumIncrement(price);
+      long minStep = AuctionUtils.getMinimumIncrement(price); // AuctionUtils — loại bỏ bản copy
       if (minIncrementHintLabel != null) {
         minIncrementHintLabel.setText("💡 Bước tối thiểu: " + String.format("%,d VNĐ", minStep));
       }
@@ -74,8 +69,7 @@ public class AutoBidController implements Initializable {
       ignored.printStackTrace();
     }
 
-    // FIX: lắng nghe push ngay cả khi đang ở màn AutoBid
-    registerPushListener();
+    registerPushListener(this::handleServerPush); // BaseController
   }
 
   @Override
@@ -83,23 +77,10 @@ public class AutoBidController implements Initializable {
   }
 
   // ── Push Listener ────────────────────────────────────────────────────────
-  private void registerPushListener() {
-    pushListener = this::handleServerPush;
-    ServerConnection.getInstance().addPushListener(pushListener);
-  }
-
-  private void removePushListener() {
-    if (pushListener != null) {
-      ServerConnection.getInstance().removePushListener(pushListener);
-      pushListener = null;
-    }
-  }
-
   private void handleServerPush(String message) {
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0) {
+    if (parts.length == 0)
       return;
-    }
 
     switch (parts[0]) {
 
@@ -107,19 +88,17 @@ public class AutoBidController implements Initializable {
         // Không có balanceLabel ở màn này nhưng không bỏ lỡ event
         break;
 
-      // FIX Lỗi 2: cập nhật currentPrice khi nhận NOTI_BID_UPDATE,
-      // để khi handleBack() truyền về BidView giá luôn là mới nhất
       case Protocol.NOTI_BID_UPDATE:
+        // Cập nhật currentPrice để khi handleBack() truyền về BidView giá luôn là mới
+        // nhất
         if (parts.length >= 3 && parts[1].equals(auctionId)) {
-          this.currentPrice = parts[2]; // cập nhật cache currentPrice
+          this.currentPrice = parts[2];
         }
         break;
 
-      // FIX: nhận kết quả phiên ngay khi đang ở màn AutoBid
       case Protocol.RES_END_SUCCESS:
-        if (parts.length >= 2 && !parts[1].equals(auctionId)) {
+        if (parts.length >= 2 && !parts[1].equals(auctionId))
           break;
-        }
         String detail = parts.length >= 3 ? parts[2] : "";
         boolean isWin = detail.contains("Winner:" + username)
             || detail.contains("Winner: " + username);
@@ -129,27 +108,16 @@ public class AutoBidController implements Initializable {
           } else if (isWin) {
             showMessage("🎉 Auto-bid đã giúp bạn thắng phiên!", "green");
             NotificationManager.getInstance().add(
-                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId,
-                "auction", auctionId);
+                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
           } else {
-            String winnerName = "";
-            if (detail.contains("Winner: ")) {
-              winnerName = detail.substring(detail.indexOf("Winner: ") + 8).trim();
-            } else if (detail.contains("Winner:")) {
-              winnerName = detail.substring(detail.indexOf("Winner:") + 7).trim();
-            }
-            int sep = winnerName.indexOf("|");
-            if (sep >= 0) {
-              winnerName = winnerName.substring(0, sep).trim();
-            }
-            showMessage("Phiên kết thúc. Người chiến thắng: "
-                + (winnerName.isEmpty() ? "---" : winnerName), "orange");
+            String winnerName = AuctionUtils.extractWinner(detail); // AuctionUtils
+            String name = "N/A".equals(winnerName) ? "---" : winnerName;
+            showMessage("Phiên kết thúc. Người chiến thắng: " + name, "orange");
             NotificationManager.getInstance().add(
-                "⚠️ Phiên " + auctionId + " kết thúc. Bạn không thắng.",
-                "auction", auctionId);
+                "⚠️ Phiên " + auctionId + " kết thúc. Bạn không thắng.", "auction", auctionId);
           }
         });
-        removePushListener();
+        removePushListener(); // BaseController
         break;
 
       case Protocol.NOTI_AUCTION_CANCELLED:
@@ -157,11 +125,9 @@ public class AutoBidController implements Initializable {
           String cancelMsg = parts[1];
           Platform.runLater(() -> showMessage("❌ " + cancelMsg, "gray"));
           NotificationManager.getInstance().add(
-              "❌ Phiên " + auctionId
-              + " bị Admin hủy. Tiền đã được hoàn.",
-              "auction", auctionId);
+              "❌ Phiên " + auctionId + " bị Admin hủy. Tiền đã được hoàn.", "auction", auctionId);
         }
-        removePushListener();
+        removePushListener(); // BaseController
         break;
 
       default:
@@ -174,18 +140,17 @@ public class AutoBidController implements Initializable {
     String maxBid = maxBidField.getText().trim();
     String increment = incrementField.getText().trim();
 
-    // Validate FE trước khi gửi
     try {
       double maxBidVal = Double.parseDouble(maxBid);
       double incVal = Double.parseDouble(increment);
       double price = Double.parseDouble(currentPrice.replaceAll("[^0-9.]", ""));
-      long minStep = getMinimumIncrement(price);
+      long minStep = AuctionUtils.getMinimumIncrement(price); // AuctionUtils
       if (incVal < minStep) {
         showMessage("❌ Bước tăng tối thiểu: " + String.format("%,d VNĐ", minStep), "red");
         return;
       }
       if (maxBidVal <= price) {
-        showMessage("❌ Giá tối đa phải lớn hơn giá hiện tại: " 
+        showMessage("❌ Giá tối đa phải lớn hơn giá hiện tại: "
             + String.format("%,d VNĐ", (long) price), "red");
         return;
       }
@@ -195,14 +160,12 @@ public class AutoBidController implements Initializable {
     }
 
     new Thread(() -> {
-      ServerConnection conn = ServerConnection.getInstance();
-      String response = conn.sendAndReceive(
+      String response = ServerConnection.getInstance().sendAndReceive(
           Protocol.CMD_ADD_AUTO_BID + Protocol.SEPARATOR
               + auctionId + Protocol.SEPARATOR
               + maxBid + Protocol.SEPARATOR
               + increment);
       System.out.println("AutoBid response: " + response);
-
       Platform.runLater(() -> {
         if (response == null) {
           showMessage("Mất kết nối server!", "red");
@@ -224,8 +187,7 @@ public class AutoBidController implements Initializable {
           maxBidField.clear();
           incrementField.clear();
         } else {
-          String msg = parts.length > 1 ? parts[1] : "Đặt auto-bid thất bại!";
-          showMessage("❌ " + msg, "red");
+          showMessage("❌ " + (parts.length > 1 ? parts[1] : "Đặt auto-bid thất bại!"), "red");
         }
       });
     }).start();
@@ -233,29 +195,12 @@ public class AutoBidController implements Initializable {
 
   @FXML
   private void handleBack() {
-    // FIX Lỗi 3: remove listener TRƯỚC KHI show BidView để
-    // BidView.registerPushListener()
-    // không bị duplicate với listener của AutoBidController còn sót lại
-    removePushListener();
-    // FIX Lỗi 2: truyền currentPrice đã được cập nhật từ NOTI_BID_UPDATE
-    // để BidView hiển thị đúng giá mới nhất ngay khi quay về
+    // Remove listener TRƯỚC KHI show BidView để tránh duplicate listener
+    removePushListener(); // BaseController
     Stage stage = (Stage) titleLabel.getScene().getWindow();
+    // Truyền currentPrice đã được cập nhật từ NOTI_BID_UPDATE
     new BidView(stage, auctionId, itemName, currentPrice, status, username, endTime,
         imageUrl, description, itemType, startingPrice, sellerId).show();
-  }
-
-  /** Mirror AuctionValidator.getMinimumIncrement */
-  private long getMinimumIncrement(double price) {
-    if (price < 1_000_000) {
-      return 50_000;
-    }
-    if (price < 5_000_000) {
-      return 100_000;
-    }
-    if (price < 10_000_000) {
-      return 250_000;
-    }
-    return 500_000;
   }
 
   private void showMessage(String msg, String color) {

@@ -14,7 +14,6 @@ import com.auction.model.entities.user.Seller;
 import com.auction.model.entities.user.User;
 import com.auction.util.exception.AuthenticationException;
 
-import java.lang.reflect.Field;
 import com.auction.service.usermanger.UserManager;
 import java.util.HashMap;
 import java.util.Map;

@@ -1,10 +1,8 @@
 package com.auction.service.auctionservice;
 
-import com.auction.controller.network.ConnectionManager;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Item;
 import com.auction.model.observer.Observer;
-import com.auction.network.protocol.Protocol;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -28,6 +26,7 @@ public class AuctionService implements Serializable {
   private final AuctionNotificationService notificationService;
   private final WatchlistService watchlistService;
   private transient AuctionEndHandler endHandler;
+  private final AuctionDeletionHandler deletionHandler;
 
   // Data persistence service
   private final AuctionDataPersistenceService persistenceService;
@@ -44,6 +43,8 @@ public class AuctionService implements Serializable {
     this.persistenceService = new AuctionDataPersistenceService();
     this.endHandler = new AuctionEndHandler(auctionRepository, scheduler,
         paymentProcessor, notificationService, persistenceService);
+    this.deletionHandler = new AuctionDeletionHandler(auctionRepository,
+        paymentProcessor, persistenceService);
   }
 
   /**
@@ -223,28 +224,10 @@ public class AuctionService implements Serializable {
 
   /**
    * Xóa phiên đấu giá - chỉ Admin.
+   * Delegate logic xóa cho AuctionDeletionHandler (SRP).
    */
   public boolean deleteAuction(String auctionId) {
-    Auction auction = auctionRepository.findById(auctionId);
-    if (auction == null) {
-      return false;
-    }
-    paymentProcessor.processRefund(auction);
-    String cancelMsg = Protocol.NOTI_AUCTION_CANCELLED
-        + Protocol.SEPARATOR
-        + auctionId
-        + Protocol.SEPARATOR
-        + "Phiên đã bị Admin xóa";
-    ConnectionManager.getInstance().broadcastToAll(cancelMsg);
-
-    auction.closeAuction();
-    auctionRepository.remove(auctionId);
-
-    // Đánh dấu cần save
-    persistenceService.markAuctionsDirty();
-
-    System.out.println("[ADMIN] Đã xóa phiên: " + auctionId);
-    return true;
+    return deletionHandler.deleteAuction(auctionId);
   }
 
   /**

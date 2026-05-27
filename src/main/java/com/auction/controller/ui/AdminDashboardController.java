@@ -11,7 +11,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.net.URL;
 import java.util.ResourceBundle;
-import java.util.function.Consumer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -25,11 +24,10 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-public class AdminDashboardController implements Initializable {
+public class AdminDashboardController extends BaseController implements Initializable {
 
   @FXML
   private TableView<AuctionRow> auctionTable;
@@ -59,20 +57,15 @@ public class AdminDashboardController implements Initializable {
   private String username;
   private Timeline autoRefreshTimeline;
 
-  // FIX: Giữ reference để có thể removePushListener khi thoát màn hình
-  private Consumer<String> pushListener;
-
   private final Gson gson = new GsonBuilder()
-      .registerTypeAdapter(
-                java.time.LocalDateTime.class,
-                (com.google.gson.JsonDeserializer<java.time.LocalDateTime>)
-                        (json, type, ctx) ->
-                                java.time.LocalDateTime.parse(json.getAsString()))
-        .create();
+      .registerTypeAdapter(java.time.LocalDateTime.class,
+          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
+              .parse(json.getAsString()))
+      .create();
 
   public void setUsername(String username) {
     this.username = username;
-    loadBalance();
+    loadBalanceWithPrefix(balanceLabel, "Số dư: "); // BaseController
   }
 
   @Override
@@ -102,114 +95,46 @@ public class AdminDashboardController implements Initializable {
 
     loadFromServer();
     startAutoRefresh();
-    registerPushListener(); // FIX: đăng ký nhận broadcast từ server
-    initToastManager(auctionTable);
+    registerPushListener(this::handlePushMessage); // BaseController — loại bỏ bản copy
+    initToastManager(auctionTable); // BaseController — loại bỏ bản copy
   }
 
-  private void initToastManager(javafx.scene.Node anchor) {
-    Platform.runLater(() -> {
-      try {
-        javafx.scene.Parent root = anchor.getScene().getRoot();
-        if (root instanceof StackPane) {
-          ToastManager.init((StackPane) root);
-        } else {
-          javafx.scene.Scene scene = anchor.getScene();
-          StackPane overlay = new StackPane();
-          overlay.getChildren().add(root);
-          scene.setRoot(overlay);
-          ToastManager.init(overlay);
-        }
-      } catch (Exception e) {
-        System.err.println("[AdminToast] Init failed: " + e.getMessage());
-      }
-    });
-  }
+  // ── Push Listener ─────────────────────────────────────────────────────────
+  private void handlePushMessage(String message) {
+    String[] parts = message.split("\\|");
+    if (parts.length == 0)
+      return;
 
-  // FIX 2 — AdminDashboardController.java (xóa dead code, thêm
-  // NOTI_AUCTION_CANCELLED)
-  private void registerPushListener() {
-    pushListener = message -> {
-      String[] parts = message.split("\\|");
-      String header = parts[0];
-      switch (header) {
-        // ĐÃ XÓA case RES_ADMIN_END_SUCCESS:
-        // RES_ADMIN_END_SUCCESS KHÔNG phải push → nó vào responseQueue
-        // và được handleEndAuction() xử lý qua sendAndReceive bình thường.
-        // Giữ case này ở đây sẽ KHÔNG BAO GIỜ fire và gây nhầm lẫn.
-
-        case Protocol.NOTI_AUCTION_CANCELLED -> {
-          // Format: AUCTION_CANCELLED|auctionId|reason
-          String cancelledId = parts.length >= 2 ? parts[1] : "";
-          String detail = parts.length >= 3 ? parts[2] : "Phiên đã bị hủy";
-          Platform.runLater(() -> {
-            // Xóa ngay khỏi table mà không cần round-trip server
-            if (!cancelledId.isEmpty() && auctionTable.getItems() != null) {
-              auctionTable.getItems().removeIf(r -> cancelledId.equals(r.getId()));
-              // Cập nhật stat labels
-              long openCount = auctionTable.getItems().stream()
-                  .filter(r -> "OPEN".equals(r.getStatus())
-                  || "RUNNING".equals(r.getStatus()))
-                  .count();
-              long finishedCount = auctionTable.getItems().stream()
-                  .filter(r -> "FINISHED".equals(r.getStatus())
-                   || "PAID".equals(r.getStatus()))
-                  .count();
-              if (statTotalLabel != null) {
-                statTotalLabel.setText(String.valueOf(auctionTable.getItems().size()));
-              }
-              if (statOpenLabel != null) {
-                statOpenLabel.setText(String.valueOf(openCount));
-              }
-              if (statFinishedLabel != null) {
-                statFinishedLabel.setText(String.valueOf(finishedCount));
-              }
-            }
-            showMessage("🚫 Phiên " + cancelledId + " bị hủy: " + detail, "gray");
-          });
+    if (Protocol.NOTI_AUCTION_CANCELLED.equals(parts[0])) {
+      String cancelledId = parts.length >= 2 ? parts[1] : "";
+      String detail = parts.length >= 3 ? parts[2] : "Phiên đã bị hủy";
+      Platform.runLater(() -> {
+        if (!cancelledId.isEmpty() && auctionTable.getItems() != null) {
+          auctionTable.getItems().removeIf(r -> cancelledId.equals(r.getId()));
+          updateStatLabels(auctionTable.getItems());
         }
-        default -> {
-        }
-      }
-    };
-    ServerConnection.getInstance().addPushListener(pushListener);
+        showMessage("🚫 Phiên " + cancelledId + " bị hủy: " + detail, "gray");
+      });
+    }
   }
 
   public void loadFromServer() {
     showMessage("Đang tải danh sách...", "gray");
-
     new Thread(() -> {
-      ServerConnection conn = ServerConnection.getInstance();
-      String response = conn.sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
-
+      String response = ServerConnection.getInstance()
+          .sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
       ObservableList<AuctionRow> data = FXCollections.observableArrayList();
-
       if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
         String json = response.substring(
             Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
         AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-        if (rows != null) {
+        if (rows != null)
           data.addAll(rows);
-        }
       }
-
       final ObservableList<AuctionRow> finalData = data;
       Platform.runLater(() -> {
         auctionTable.setItems(finalData);
-        long openCount = finalData.stream()
-            .filter(r -> "OPEN".equals(r.getStatus())
-                || "RUNNING".equals(r.getStatus()))
-            .count();
-        long finishedCount = finalData.stream()
-            .filter(r -> "FINISHED".equals(r.getStatus()) || "PAID".equals(r.getStatus())).count();
-        if (statTotalLabel != null) {
-          statTotalLabel.setText(String.valueOf(finalData.size()));
-        }
-        if (statOpenLabel != null) {
-          statOpenLabel.setText(String.valueOf(openCount));
-        }
-        if (statFinishedLabel != null) {
-          statFinishedLabel.setText(String.valueOf(finishedCount));
-        }
+        updateStatLabels(finalData);
         showMessage(finalData.isEmpty()
             ? "ℹ️ Chưa có phiên nào."
             : "✅ Tải xong " + finalData.size() + " phiên.", "gray");
@@ -217,12 +142,25 @@ public class AdminDashboardController implements Initializable {
     }).start();
   }
 
+  /** SRP: tách riêng việc cập nhật stat labels. */
+  private void updateStatLabels(ObservableList<AuctionRow> items) {
+    long openCount = items.stream()
+        .filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus()))
+        .count();
+    long finishedCount = items.stream()
+        .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())) // AuctionUtils
+        .count();
+    if (statTotalLabel != null)
+      statTotalLabel.setText(String.valueOf(items.size()));
+    if (statOpenLabel != null)
+      statOpenLabel.setText(String.valueOf(openCount));
+    if (statFinishedLabel != null)
+      statFinishedLabel.setText(String.valueOf(finishedCount));
+  }
+
   @FXML
   public void handleDeposit() {
-    String amount = depositAmountField != null
-        ? depositAmountField.getText().trim()
-        : "";
-
+    String amount = depositAmountField != null ? depositAmountField.getText().trim() : "";
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
           Protocol.CMD_DEPOSIT + Protocol.SEPARATOR + amount);
@@ -234,34 +172,11 @@ public class AdminDashboardController implements Initializable {
         String[] parts = response.split("\\" + Protocol.SEPARATOR);
         if (response.startsWith(Protocol.RES_DEPOSIT_SUCCESS)) {
           showMessage("✅ " + (parts.length > 2 ? parts[2] : "Nạp tiền thành công!"), "green");
-          if (depositAmountField != null) {
+          if (depositAmountField != null)
             depositAmountField.clear();
-          }
-          loadBalance();
+          loadBalanceWithPrefix(balanceLabel, "Số dư: "); // BaseController
         } else {
           showMessage("❌ " + (parts.length > 1 ? parts[1] : "Nạp tiền thất bại!"), "red");
-        }
-      });
-    }).start();
-  }
-
-  private void loadBalance() {
-    new Thread(() -> {
-      String response = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
-      Platform.runLater(() -> {
-        if (response == null) {
-          return;
-        }
-        String[] parts = response.split("\\" + Protocol.SEPARATOR);
-        if (response.startsWith(Protocol.RES_BALANCE_INFO) && parts.length > 1) {
-          try {
-            if (balanceLabel != null) {
-              balanceLabel.setText("Số dư: " + String.format("%,.0f VNĐ",
-                  Double.parseDouble(parts[1])));
-            }
-          } catch (NumberFormatException ignored) {
-            ignored.printStackTrace();
-          }
         }
       });
     }).start();
@@ -290,8 +205,6 @@ public class AdminDashboardController implements Initializable {
           showMessage("Mất kết nối server!", "red");
           return;
         }
-        // RES_ADMIN_END_SUCCESS là direct response (1-1), KHÔNG phải push
-        // → nó đi qua responseQueue → sendAndReceive nhận đúng, không timeout
         if (response.startsWith(Protocol.RES_ADMIN_END_SUCCESS)) {
           showMessage("✅ Đã đóng phiên " + endAuctionName, "green");
           NotificationManager.getInstance().add(
@@ -323,11 +236,9 @@ public class AdminDashboardController implements Initializable {
     confirm.setHeaderText(null);
     confirm.setContentText("Bạn có chắc muốn xóa phiên:\n"
         + selected.getItemName() + "?\nHành động này không thể hoàn tác!");
-
     java.util.Optional<javafx.scene.control.ButtonType> result = confirm.showAndWait();
-    if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK) {
+    if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK)
       return;
-    }
 
     final String delAuctionId = selected.getId();
     final String delAuctionName = selected.getItemName();
@@ -365,8 +276,7 @@ public class AdminDashboardController implements Initializable {
 
   @FXML
   private void startAutoRefresh() {
-    autoRefreshTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(3), e -> loadFromServer()));
+    autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(3), e -> loadFromServer()));
     autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
     autoRefreshTimeline.play();
   }
@@ -380,11 +290,7 @@ public class AdminDashboardController implements Initializable {
 
   public void handleBack() {
     stopAutoRefresh();
-    // FIX: dọn dẹp pushListener để tránh memory leak và callback sau khi thoát
-    if (pushListener != null) {
-      ServerConnection.getInstance().removePushListener(pushListener);
-      pushListener = null;
-    }
+    removePushListener(); // BaseController — trước đây inline, không extract ra method
     Stage stage = (Stage) auctionTable.getScene().getWindow();
     new AuctionListView(stage, username).show();
   }

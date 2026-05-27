@@ -2,13 +2,11 @@ package com.auction.controller.ui;
 
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
-import com.auction.util.ui.ToastManager;
 import com.auction.views.java.AuctionListView;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
-import java.util.function.Consumer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -24,12 +22,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-public class BalanceController implements Initializable {
+public class BalanceController extends BaseController implements Initializable {
 
   @FXML
   private Label balanceLabel;
@@ -43,13 +40,9 @@ public class BalanceController implements Initializable {
   private ListView<TransactionItem> transactionList;
 
   private String username;
-  // Dùng static để giữ lịch sử giao dịch khi quay lại màn hình
-  private static final ObservableList<TransactionItem> transactions = 
-      FXCollections.observableArrayList();
-  private static final DateTimeFormatter FORMATTER = 
-      DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+  private static final ObservableList<TransactionItem> transactions = FXCollections.observableArrayList();
+  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
   private Timeline autoRefreshTimeline;
-  private Consumer<String> pushListener; // FIX: lắng nghe balance thay đổi realtime
 
   // ── Transaction DTO ───────────────────────────────────────────────────────
   public static class TransactionItem {
@@ -66,7 +59,7 @@ public class BalanceController implements Initializable {
     }
   }
 
-  // ── Custom Cell — giống style BidHistory ──────────────────────────────────
+  // ── Custom Cell ──────────────────────────────────────────────────────────
   private static class TransactionCell extends ListCell<TransactionItem> {
     private final HBox card = new HBox(12);
     private final Label iconLabel = new Label();
@@ -78,29 +71,22 @@ public class BalanceController implements Initializable {
     private final Label statusBadge = new Label();
 
     TransactionCell() {
-      iconLabel.setStyle("-fx-font-size: 20px;");
       iconLabel.setPrefSize(36, 36);
       iconLabel.setAlignment(Pos.CENTER);
-      iconLabel.setStyle("-fx-font-size: 20px; -fx-background-radius: 18;" 
-          +
-          "-fx-min-width: 36; -fx-min-height: 36; -fx-alignment: CENTER;");
-
+      iconLabel.setStyle("-fx-font-size: 20px; -fx-background-radius: 18;"
+          + "-fx-min-width: 36; -fx-min-height: 36; -fx-alignment: CENTER;");
       amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
       typeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #475569;");
       timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #475569;");
-      statusBadge.setStyle(
-          "-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 1 7;"
-      );
-
+      statusBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;"
+          + "-fx-background-radius: 10; -fx-padding: 1 7;");
       bottomRow.setAlignment(Pos.CENTER_LEFT);
       bottomRow.getChildren().addAll(typeLabel, timeLabel, statusBadge);
       content.getChildren().addAll(amountLabel, bottomRow);
       HBox.setHgrow(content, Priority.ALWAYS);
-
       card.setAlignment(Pos.CENTER_LEFT);
       card.setPadding(new Insets(12, 14, 12, 14));
       card.getChildren().addAll(iconLabel, content);
-
       setStyle("-fx-background-color: transparent; -fx-padding: 0;");
       setText(null);
     }
@@ -115,41 +101,27 @@ public class BalanceController implements Initializable {
       }
 
       iconLabel.setText(item.success ? "💳" : "❌");
-      iconLabel.setStyle("-fx-font-size: 18px; -fx-background-color: " 
-          +
-          (item.success ? "rgba(59,130,246,0.15)" : "rgba(248,113,113,0.12)") 
-          +
-          "; -fx-background-radius: 18;" 
-          +
-          "-fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;");
-
+      iconLabel.setStyle("-fx-font-size: 18px; -fx-background-color: "
+          + (item.success ? "rgba(59,130,246,0.15)" : "rgba(248,113,113,0.12)")
+          + "; -fx-background-radius: 18;"
+          + "-fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;");
       amountLabel.setText(item.amount);
-      amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " 
-          +
-          (item.success ? "#60A5FA" : "#F87171") + ";");
+      amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: "
+          + (item.success ? "#60A5FA" : "#F87171") + ";");
       typeLabel.setText(item.type + "  •  ");
       timeLabel.setText(item.time + "  •  ");
-
       statusBadge.setText(item.success ? "✓ Thành công" : "✗ Thất bại");
-      statusBadge.setStyle(
-          "-fx-font-size: 10px; -fx-font-weight: bold;-fx-background-radius: 10; -fx-padding: 1 7;" 
-          +
-          "-fx-background-color: " 
-          + (item.success ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)") + "; " 
-          +
-          "-fx-text-fill: " + (item.success ? "#34D399" : "#F87171") + ";");
-
-      card.setStyle("-fx-background-color: " 
-          +
-          (item.success ? "rgba(59,130,246,0.06)" : "rgba(30,42,64,0.5)") 
-          +
-          "; -fx-background-radius: 12;" 
-          +
-          "-fx-border-color: transparent transparent transparent " 
-          +
-          (item.success ? "#3B82F6" : "#EF4444") 
-          +
-          "; -fx-border-width: 0 0 0 3; -fx-border-radius: 0 12 12 0;");
+      statusBadge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;"
+          + "-fx-background-radius: 10; -fx-padding: 1 7;"
+          + "-fx-background-color: "
+          + (item.success ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)") + "; "
+          + "-fx-text-fill: " + (item.success ? "#34D399" : "#F87171") + ";");
+      card.setStyle("-fx-background-color: "
+          + (item.success ? "rgba(59,130,246,0.06)" : "rgba(30,42,64,0.5)")
+          + "; -fx-background-radius: 12;"
+          + "-fx-border-color: transparent transparent transparent "
+          + (item.success ? "#3B82F6" : "#EF4444")
+          + "; -fx-border-width: 0 0 0 3; -fx-border-radius: 0 12 12 0;");
 
       VBox outer = new VBox(card);
       outer.setPadding(new Insets(0, 0, 7, 0));
@@ -160,32 +132,14 @@ public class BalanceController implements Initializable {
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-  private void initToastManager(javafx.scene.Node anchor) {
-    Platform.runLater(() -> {
-      try {
-        javafx.scene.Parent root = anchor.getScene().getRoot();
-        if (root instanceof StackPane) {
-          ToastManager.init((StackPane) root);
-        } else {
-          javafx.scene.Scene scene = anchor.getScene();
-          StackPane overlay = new StackPane();
-          overlay.getChildren().add(root);
-          scene.setRoot(overlay);
-          ToastManager.init(overlay);
-        }
-      } catch (Exception e) {
-        System.err.println("[Toast] Init failed: " + e.getMessage());
-      }
-    });
-  }
-
   public void setUsername(String username) {
-    initToastManager(balanceLabel);
+    initToastManager(balanceLabel); // BaseController — loại bỏ bản copy
     this.username = username;
     usernameLabel.setText("Tài khoản: " + username);
-    loadBalance();
+    loadBalanceInternal();
     startAutoRefresh();
-    registerPushListener(); // FIX
+    // Lắng nghe NOTI_BALANCE_CHANGED để cập nhật ngay thay vì chờ poll 10 giây
+    registerPushListener(this::handlePushMessage); // BaseController
   }
 
   @Override
@@ -196,8 +150,10 @@ public class BalanceController implements Initializable {
     }
   }
 
-  // ── Load số dư ────────────────────────────────────────────────────────────
-  private void loadBalance() {
+  // ── Load số dư (dùng nội bộ vì cần set style riêng) ─────────────────────
+  // BaseController.loadBalance chỉ set text; BalanceController cần set thêm
+  // font-size 26px + text-fill → override bằng method riêng.
+  private void loadBalanceInternal() {
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
       Platform.runLater(() -> {
@@ -210,8 +166,7 @@ public class BalanceController implements Initializable {
           try {
             double balance = Double.parseDouble(parts[1]);
             balanceLabel.setText(String.format("%,.0f VNĐ", balance));
-            balanceLabel.setStyle(
-                "-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
+            balanceLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
           } catch (NumberFormatException e) {
             balanceLabel.setText(parts[1]);
           }
@@ -222,7 +177,24 @@ public class BalanceController implements Initializable {
     }).start();
   }
 
-  // FIX: nút quick amount chỉ fill vào field, KHÔNG nạp luôn
+  // ── Push ──────────────────────────────────────────────────────────────────
+  private void handlePushMessage(String message) {
+    String[] parts = message.split("\\|");
+    if (parts.length >= 2 && Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
+      String newBal = parts[1];
+      Platform.runLater(() -> {
+        try {
+          double v = Double.parseDouble(newBal);
+          balanceLabel.setText(String.format("%,.0f VNĐ", v));
+          balanceLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
+        } catch (NumberFormatException ignored) {
+          ignored.printStackTrace();
+        }
+      });
+    }
+  }
+
+  // ── Quick-fill buttons ────────────────────────────────────────────────────
   @FXML
   private void handleQuick100K() {
     depositAmountField.setText("100000");
@@ -241,36 +213,6 @@ public class BalanceController implements Initializable {
   @FXML
   private void handleQuick5M() {
     depositAmountField.setText("5000000");
-  }
-
-  // FIX: lắng nghe NOTI_BALANCE_CHANGED để cập nhật ngay thay vì chờ poll 10 giây
-  private void registerPushListener() {
-    pushListener = message -> {
-      String[] parts = message.split("\\|");
-      if (parts.length >= 2 
-          && 
-          com.auction.network.protocol.Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
-        String newBal = parts[1];
-        Platform.runLater(() -> {
-          try {
-            double v = Double.parseDouble(newBal);
-            balanceLabel.setText(String.format("%,.0f VNĐ", v));
-            balanceLabel.setStyle(
-                "-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
-          } catch (NumberFormatException ignored) {
-            ignored.printStackTrace();
-          }
-        });
-      }
-    };
-    ServerConnection.getInstance().addPushListener(pushListener);
-  }
-
-  private void removePushListener() {
-    if (pushListener != null) {
-      ServerConnection.getInstance().removePushListener(pushListener);
-      pushListener = null;
-    }
   }
 
   @FXML
@@ -298,20 +240,18 @@ public class BalanceController implements Initializable {
           try {
             double amt = Double.parseDouble(amount);
             transactions.add(0, new TransactionItem(
-                "+" + String.format("%,.0f VNĐ", amt),
-                "Nạp tiền", time, true));
+                "+" + String.format("%,.0f VNĐ", amt), "Nạp tiền", time, true));
           } catch (NumberFormatException ignored) {
             ignored.printStackTrace();
           }
-          loadBalance();
+          loadBalanceInternal();
         } else {
           String msg = parts.length > 1 ? parts[1] : "Nạp tiền thất bại!";
           showMessage("❌ " + msg, "red");
           try {
             double amt = Double.parseDouble(amount);
             transactions.add(0, new TransactionItem(
-                String.format("%,.0f VNĐ", amt),
-                "Nạp tiền", time, false));
+                String.format("%,.0f VNĐ", amt), "Nạp tiền", time, false));
           } catch (NumberFormatException ignored) {
             ignored.printStackTrace();
           }
@@ -322,12 +262,13 @@ public class BalanceController implements Initializable {
 
   @FXML
   private void handleRefresh() {
-    loadBalance();
+    loadBalanceInternal();
   }
 
   @FXML
   private void startAutoRefresh() {
-    autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(10), e -> loadBalance()));
+    autoRefreshTimeline = new Timeline(
+        new KeyFrame(Duration.seconds(10), e -> loadBalanceInternal()));
     autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
     autoRefreshTimeline.play();
   }
@@ -342,7 +283,7 @@ public class BalanceController implements Initializable {
   @FXML
   private void handleBack() {
     stopAutoRefresh();
-    removePushListener(); // FIX
+    removePushListener(); // BaseController
     Stage stage = (Stage) balanceLabel.getScene().getWindow();
     new AuctionListView(stage, username).show();
   }

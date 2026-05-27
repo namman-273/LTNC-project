@@ -227,7 +227,7 @@
                             -->
                             <excludes>
                                 <exclude>com/auction/MainApp.class</exclude>
-                                <exclude>util/ui/**</exclude>
+                                <exclude>com/auction/util/ui/**</exclude>
                                 <exclude>com/auction/views/**</exclude>
                                 <exclude>com/auction/controller/ui/**</exclude>
                             </excludes>

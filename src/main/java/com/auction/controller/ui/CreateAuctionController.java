@@ -15,7 +15,10 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-public class CreateAuctionController implements Initializable {
+/**
+ * Controller xử lý luồng tạo phiên đấu giá mới.
+ */
+public class CreateAuctionController extends BaseController implements Initializable {
 
   @FXML
   private ComboBox<String> typeComboBox;
@@ -38,17 +41,18 @@ public class CreateAuctionController implements Initializable {
     this.username = username;
   }
 
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
+
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     typeComboBox.setItems(FXCollections.observableArrayList(
         "ART", "ELECTRONICS", "VEHICLE", "OTHER"));
-    // Đổi cách hiển thị sang tiếng Việt để tránh chọn nhầm
+    // Hiển thị nhãn tiếng Việt để tránh chọn nhầm
     typeComboBox.setConverter(new javafx.util.StringConverter<String>() {
       @Override
       public String toString(String s) {
-        if (s == null) {
+        if (s == null)
           return "";
-        }
         return switch (s) {
           case "ART" -> "🎨 Nghệ thuật";
           case "ELECTRONICS" -> "⚡ Điện tử";
@@ -65,6 +69,8 @@ public class CreateAuctionController implements Initializable {
     typeComboBox.getSelectionModel().selectFirst();
   }
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   @FXML
   private void handleCreate() {
     String type = typeComboBox.getValue();
@@ -79,7 +85,7 @@ public class CreateAuctionController implements Initializable {
     new Thread(() -> {
       ServerConnection conn = ServerConnection.getInstance();
       if (!conn.isConnected()) {
-        Platform.runLater(() -> showError("Mất kết nối server!"));
+        Platform.runLater(() -> showMessage("Mất kết nối server!", false));
         return;
       }
 
@@ -95,15 +101,14 @@ public class CreateAuctionController implements Initializable {
 
       Platform.runLater(() -> {
         if (response == null) {
-          showError("Mất kết nối server!");
+          showMessage("Mất kết nối server!", false);
           return;
         }
 
         String[] parts = response.split("\\" + Protocol.SEPARATOR);
-
         if (response.startsWith(Protocol.RES_SUCCESS)) {
           String msg = parts.length > 1 ? parts[1] : "Tạo phiên thành công!";
-          showSuccess(msg + " Đang chuyển về danh sách...");
+          showMessage(msg + " Đang chuyển về danh sách...", true);
           new Thread(() -> {
             try {
               Thread.sleep(1500);
@@ -114,13 +119,13 @@ public class CreateAuctionController implements Initializable {
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
             }
-          }).start();
+          }, "create-auction-navigate-thread").start();
         } else {
           String errorMsg = parts.length > 1 ? parts[1] : "Tạo phiên thất bại!";
-          showError(errorMsg);
+          showMessage(errorMsg, false);
         }
       });
-    }).start();
+    }, "create-auction-thread").start();
   }
 
   @FXML
@@ -129,13 +134,13 @@ public class CreateAuctionController implements Initializable {
     new AuctionListView(stage, username).show();
   }
 
-  private void showError(String msg) {
-    messageLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
-    messageLabel.setText(msg);
-  }
+  // ── UI helper ──────────────────────────────────────────────────────────────
 
-  private void showSuccess(String msg) {
-    messageLabel.setStyle("-fx-text-fill: green; -fx-font-size: 12px;");
+  /** SRP: một điểm duy nhất hiển thị kết quả thao tác. */
+  private void showMessage(String msg, boolean success) {
+    messageLabel.setStyle(success
+        ? "-fx-text-fill: green; -fx-font-size: 12px;"
+        : "-fx-text-fill: red;   -fx-font-size: 12px;");
     messageLabel.setText(msg);
   }
 }
