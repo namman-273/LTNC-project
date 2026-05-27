@@ -1,10 +1,8 @@
 package com.auction.service.auctionservice;
 
-import com.auction.controller.network.ConnectionManager;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Item;
 import com.auction.model.observer.Observer;
-import com.auction.network.protocol.Protocol;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
