@@ -161,8 +161,8 @@ public class BidController extends BaseController implements Initializable {
       }
 
       String initials = entry.bidder.length() >= 2
-          ? entry.bidder.substring(0, 2).toUpperCase()
-          : entry.bidder.toUpperCase();
+              ? entry.bidder.substring(0, 2).toUpperCase()
+              : entry.bidder.toUpperCase();
       avatar.setText(initials);
 
       if (entry.isMe) {
@@ -182,14 +182,14 @@ public class BidController extends BaseController implements Initializable {
       if (entry.isLeading && entry.isMe) {
         badge.setText("Lượt của bạn");
         badge.setStyle("-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;"
-            + "-fx-background-radius: 6; -fx-padding: 1 7;"
-            + "-fx-font-size: 10px; -fx-font-weight: bold;");
+                + "-fx-background-radius: 6; -fx-padding: 1 7;"
+                + "-fx-font-size: 10px; -fx-font-weight: bold;");
         badge.setVisible(true);
       } else if (entry.isLeading) {
         badge.setText("Đang dẫn đầu");
         badge.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;"
-            + "-fx-background-radius: 6; -fx-padding: 1 7;"
-            + "-fx-font-size: 10px; -fx-font-weight: bold;");
+                + "-fx-background-radius: 6; -fx-padding: 1 7;"
+                + "-fx-font-size: 10px; -fx-font-weight: bold;");
         badge.setVisible(true);
       } else {
         badge.setText("");
@@ -198,7 +198,7 @@ public class BidController extends BaseController implements Initializable {
 
       priceLabel.setText(AuctionUtils.formatPrice(entry.amount));
       priceLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;"
-          + (entry.isLeading ? "-fx-text-fill: #1D4ED8;" : "-fx-text-fill: #374151;"));
+              + (entry.isLeading ? "-fx-text-fill: #1D4ED8;" : "-fx-text-fill: #374151;"));
 
       setGraphic(root);
       setText(null);
@@ -208,20 +208,20 @@ public class BidController extends BaseController implements Initializable {
   // ── Setup ────────────────────────────────────────────────────────────────
 
   public void setData(String auctionId, String itemName, String currentPrice,
-      String status, String username, long endTime) {
+                      String status, String username, long endTime) {
     setData(auctionId, itemName, currentPrice, status, username, endTime, "", "", "", 0, "");
   }
 
   public void setData(String auctionId, String itemName, String currentPrice,
-      String status, String username, long endTime, String imageUrl, String description) {
+                      String status, String username, long endTime, String imageUrl, String description) {
     setData(auctionId, itemName, currentPrice, status, username, endTime,
-        imageUrl, description, "", 0, "");
+            imageUrl, description, "", 0, "");
   }
 
   public void setData(String auctionId, String itemName, String currentPrice,
-      String status, String username, long endTime,
-      String imageUrl, String description,
-      String itemType, double startingPrice, String sellerId) {
+                      String status, String username, long endTime,
+                      String imageUrl, String description,
+                      String itemType, double startingPrice, String sellerId) {
     this.auctionId = auctionId;
     this.username = username;
     this.endTime = endTime;
@@ -240,7 +240,7 @@ public class BidController extends BaseController implements Initializable {
 
     try {
       currentPriceValue = Double.parseDouble(
-          currentPrice.replace(",", "").replace(" VND", "").replace(" VNĐ", "").trim());
+              currentPrice.replace(",", "").replace(" VND", "").replace(" VNĐ", "").trim());
     } catch (NumberFormatException ignored) {
       ignored.printStackTrace();
     }
@@ -259,7 +259,7 @@ public class BidController extends BaseController implements Initializable {
     System.out.println("[BidView] description=" + description);
 
     String resolvedImageUrl = (imageUrl != null && !imageUrl.isEmpty()) ? imageUrl
-        : (description != null && (description.startsWith("http")
+            : (description != null && (description.startsWith("http")
             || description.startsWith("data:image"))) ? description : "";
     String resolvedDescription = (resolvedImageUrl.equals(description)) ? "" : description;
 
@@ -268,8 +268,8 @@ public class BidController extends BaseController implements Initializable {
     }
 
     if (resolvedDescription != null && !resolvedDescription.isEmpty()
-        && !resolvedDescription.startsWith("http")
-        && !resolvedDescription.startsWith("data:image")) {
+            && !resolvedDescription.startsWith("http")
+            && !resolvedDescription.startsWith("data:image")) {
       if (descriptionLabel != null)
         descriptionLabel.setText(resolvedDescription);
       if (descriptionBox != null) {
@@ -338,7 +338,7 @@ public class BidController extends BaseController implements Initializable {
           java.net.URL url = java.net.URI.create(finalImageUrl).toURL();
           java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
           conn.setRequestProperty("User-Agent",
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
           conn.setRequestProperty("Accept", "image/webp,image/apng,image/*,*/*");
           conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
           conn.setRequestProperty("Referer", url.getProtocol() + "://" + url.getHost());
@@ -374,9 +374,9 @@ public class BidController extends BaseController implements Initializable {
   private void checkWinnerFromHistory() {
     new Thread(() -> {
       String response = ServerConnection.getInstance()
-          .sendAndReceive(Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+              .sendAndReceive(Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
       if (response == null || response.startsWith("ERROR")
-          || !response.startsWith(Protocol.RES_HISTORY)) {
+              || !response.startsWith(Protocol.RES_HISTORY)) {
         Platform.runLater(this::checkWinnerFromHistoryCache);
         return;
       }
@@ -406,7 +406,7 @@ public class BidController extends BaseController implements Initializable {
           if (winnerName.equals(username)) {
             showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
             NotificationManager.getInstance().add(
-                "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+                    "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
           } else {
             showInfo("Phiên kết thúc. Người chiến thắng: " + winnerName);
           }
@@ -437,7 +437,7 @@ public class BidController extends BaseController implements Initializable {
     if (leading.isMe) {
       showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
       NotificationManager.getInstance().add(
-          "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+              "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
     } else {
       showInfo("Phiên kết thúc. Người chiến thắng: " + leading.bidder);
     }
@@ -460,160 +460,177 @@ public class BidController extends BaseController implements Initializable {
   }
 
   // ── Push Listener ────────────────────────────────────────────────────────
+  // Dispatcher đơn giản: chỉ route, không chứa logic.
+  // OCP: thêm message type mới → thêm method handler mới, không sửa method này.
   private void handleServerPush(String message) {
     System.out.println("PUSH RECEIVED: " + message);
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0)
-      return;
+    if (parts.length == 0) return;
 
     switch (parts[0]) {
+      case Protocol.NOTI_BALANCE_CHANGED  -> onBalanceChanged(parts);
+      case Protocol.NOTI_BID_UPDATE       -> onBidUpdate(parts);
+      case Protocol.NOTI_SNIPING_UPDATE   -> onSnipingUpdate(parts);
+      case Protocol.NOTI_OUTBID           -> onOutbid(parts);
+      case Protocol.NOTI_REFUND           -> onRefund(parts);
+      case Protocol.RES_END_SUCCESS       -> onAuctionEnded(parts);
+      case Protocol.NOTI_AUCTION_CANCELLED -> onAuctionCancelled(parts);
+      default -> { /* unknown message, bỏ qua */ }
+    }
+  }
 
-      case Protocol.NOTI_BALANCE_CHANGED:
-        if (parts.length >= 2) {
-          String newBal = parts[1];
-          Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, newBal)); // BaseController
+  // Mỗi method dưới đây chỉ xử lý đúng 1 loại event (SRP).
+
+  private void onBalanceChanged(String[] parts) {
+    if (parts.length < 2) return;
+    String newBal = parts[1];
+    Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, newBal));
+  }
+
+  private void onBidUpdate(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId)) return;
+    String newPrice = parts[2];
+    String bidder = parts[3];
+    Platform.runLater(() -> {
+      updateCurrentPrice(newPrice);
+      if (!bidder.equals(username)) {
+        showWarning(bidder + " vừa đặt " + AuctionUtils.formatPrice(newPrice));
+        // Chỉ thêm vào history khi là người khác bid.
+        // Nếu là chính mình: handleBid() đã thêm rồi, tránh lặp.
+        prependHistoryEntry(bidder, currentPriceValue, false);
+      }
+    });
+  }
+
+  private void onSnipingUpdate(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId)) return;
+    try {
+      this.endTime = Long.parseLong(parts[2]);
+      String count = parts[3];
+      Platform.runLater(() -> showSnipingAlert(count));
+      NotificationManager.getInstance().add(
+              "⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
+    } catch (NumberFormatException ignored) {
+      ignored.printStackTrace();
+    }
+  }
+
+  private void onOutbid(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId)) return;
+    String newBidder = parts[2];
+    String newAmt = parts[3];
+    Platform.runLater(() -> {
+      try {
+        double amt = Double.parseDouble(newAmt);
+        currentPriceValue = amt;
+        currentPriceLabel.setText(AuctionUtils.formatPrice(newAmt));
+        updateBidSuggestion(amt);
+        boolean alreadyAppended = !historyItems.isEmpty()
+                && historyItems.get(0).bidder.equals(newBidder)
+                && historyItems.get(0).amount == amt;
+        if (!alreadyAppended) {
+          prependHistoryEntry(newBidder, amt, false);
         }
-        break;
+      } catch (NumberFormatException ignored) {
+        ignored.printStackTrace();
+      }
+      showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
+    });
+    NotificationManager.getInstance().add(
+            "⚠️ Bị vượt giá trong phiên " + auctionId
+                    + " — Giá mới: " + AuctionUtils.formatPrice(newAmt),
+            "auction", auctionId);
+  }
 
-      case Protocol.NOTI_BID_UPDATE:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String newPrice = parts[2];
-          String bidder = parts[3];
-          Platform.runLater(() -> {
-            try {
-              currentPriceValue = Double.parseDouble(newPrice);
-            } catch (Exception ignored) {
-              ignored.printStackTrace();
-            }
-            currentPriceLabel.setText(AuctionUtils.formatPrice(newPrice));
-            updateBidSuggestion(currentPriceValue);
-            if (!bidder.equals(username)) {
-              showWarning(bidder + " vừa đặt " + AuctionUtils.formatPrice(newPrice));
-            }
-            double amt = currentPriceValue;
-            boolean isMe = bidder.equals(username);
-            if (!historyItems.isEmpty()) {
-              HistoryEntry old = historyItems.get(0);
-              historyItems.set(0, new HistoryEntry(old.bidder, old.amount, old.isMe, false));
-            }
-            historyItems.add(0, new HistoryEntry(bidder, amt, isMe, true));
-          });
-        }
-        break;
+  private void onRefund(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId)) return;
+    String refundAmt = parts[2];
+    String newBal = parts[3];
+    Platform.runLater(() -> showInfo("💰 Hoàn tiền vào ví"));
+    NotificationManager.getInstance().add(
+            "Hoàn " + AuctionUtils.formatPrice(refundAmt)
+                    + " → Số dư: " + AuctionUtils.formatPrice(newBal),
+            "balance", auctionId);
+  }
 
-      case Protocol.NOTI_SNIPING_UPDATE:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String count = parts[3];
-          try {
-            long newEndTime = Long.parseLong(parts[2]);
-            this.endTime = newEndTime;
-            Platform.runLater(() -> showSnipingAlert(count));
-            NotificationManager.getInstance().add(
-                "⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
-          } catch (NumberFormatException ignored) {
-            ignored.printStackTrace();
-          }
-        }
-        break;
+  private void onAuctionEnded(String[] parts) {
+    if (parts.length >= 2 && !parts[1].equals(auctionId)) return;
+    String detail = parts.length >= 3 ? parts[2] : "";
+    Platform.runLater(() -> {
+      markAuctionFinished();
+      notifyAuctionEndResult(detail);
+    });
+    removePushListener();
+  }
 
-      case Protocol.NOTI_OUTBID:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String newBidder = parts[2];
-          String newAmt = parts[3];
-          Platform.runLater(() -> {
-            try {
-              double amt = Double.parseDouble(newAmt);
-              currentPriceValue = amt;
-              currentPriceLabel.setText(AuctionUtils.formatPrice(newAmt));
-              updateBidSuggestion(amt);
-              boolean alreadyAppended = !historyItems.isEmpty()
-                  && historyItems.get(0).bidder.equals(newBidder)
-                  && historyItems.get(0).amount == amt;
-              if (!alreadyAppended) {
-                if (!historyItems.isEmpty()) {
-                  HistoryEntry prev = historyItems.get(0);
-                  historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
-                }
-                historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
-              }
-            } catch (NumberFormatException ignored) {
-              ignored.printStackTrace();
-            }
-            showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
-          });
-          NotificationManager.getInstance().add(
-              "⚠️ Bị vượt giá trong phiên " + auctionId
-                  + " — Giá mới: " + AuctionUtils.formatPrice(newAmt),
+  private void onAuctionCancelled(String[] parts) {
+    if (parts.length < 2) return;
+    String reason = parts.length >= 3 ? parts[2] : "Admin hủy";
+    Platform.runLater(() -> {
+      handleCancelledState();
+      showWarning("❌ " + reason);
+    });
+    NotificationManager.getInstance().add(
+            "❌ Phiên " + auctionId + " " + reason + ". Tiền đã được hoàn.",
+            "auction", auctionId);
+    removePushListener();
+  }
+
+  // ── Shared UI helpers (tránh lặp code trong các handler) ─────────────────
+
+  /** Cập nhật currentPriceValue và UI label + gợi ý giá tối thiểu. */
+  private void updateCurrentPrice(String rawPrice) {
+    try {
+      currentPriceValue = Double.parseDouble(rawPrice);
+    } catch (NumberFormatException ignored) {
+      ignored.printStackTrace();
+    }
+    currentPriceLabel.setText(AuctionUtils.formatPrice(rawPrice));
+    updateBidSuggestion(currentPriceValue);
+  }
+
+  /** Thêm 1 entry mới lên đầu historyItems, đẩy entry trước xuống non-leading. */
+  private void prependHistoryEntry(String bidder, double amount, boolean isMe) {
+    if (!historyItems.isEmpty()) {
+      HistoryEntry prev = historyItems.get(0);
+      historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+    }
+    historyItems.add(0, new HistoryEntry(bidder, amount, isMe, true));
+  }
+
+  /** Cập nhật UI khi phiên kết thúc bình thường. */
+  private void markAuctionFinished() {
+    statusLabel.setText("FINISHED");
+    stopSnipingCountdown();
+    if (countdownTimeline != null) countdownTimeline.stop();
+    if (priceRefreshTimeline != null) priceRefreshTimeline.stop();
+    if (countdownLabel != null) {
+      countdownLabel.setText("⏰ Hết giờ!");
+      countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+    }
+  }
+
+  /** Hiển thị thông báo thắng/thua/không có winner sau khi phiên kết thúc. */
+  private void notifyAuctionEndResult(String detail) {
+    if (detail.contains("No winner")) {
+      showInfo("Phiên kết thúc - không có người thắng.");
+      NotificationManager.getInstance().add(
+              "⚠️ Phiên " + auctionId + " kết thúc. Không có người thắng.", "auction", auctionId);
+      return;
+    }
+    boolean isWin = detail.contains("Winner:" + username)
+            || detail.contains("Winner: " + username);
+    if (isWin) {
+      showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+      NotificationManager.getInstance().add(
+              "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+    } else {
+      String winnerDisplay = AuctionUtils.extractWinner(detail);
+      String name = "N/A".equals(winnerDisplay) ? "---" : winnerDisplay;
+      showInfo("Phiên kết thúc. Người chiến thắng: " + name);
+      NotificationManager.getInstance().add(
+              "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + name,
               "auction", auctionId);
-        }
-        break;
-
-      case Protocol.NOTI_REFUND:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String refundAmt = parts[2];
-          String newBal = parts[3];
-          Platform.runLater(() -> showInfo("💰 Hoàn tiền vào ví"));
-          NotificationManager.getInstance().add(
-              "Hoàn " + AuctionUtils.formatPrice(refundAmt)
-                  + " → Số dư: " + AuctionUtils.formatPrice(newBal),
-              "balance", auctionId);
-        }
-        break;
-
-      case Protocol.RES_END_SUCCESS:
-        if (parts.length >= 2 && !parts[1].equals(auctionId))
-          break;
-        Platform.runLater(() -> {
-          statusLabel.setText("FINISHED");
-          stopSnipingCountdown();
-          if (countdownTimeline != null)
-            countdownTimeline.stop();
-          if (priceRefreshTimeline != null)
-            priceRefreshTimeline.stop();
-          if (countdownLabel != null) {
-            countdownLabel.setText("⏰ Hết giờ!");
-            countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
-          }
-          String detail = parts.length >= 3 ? parts[2] : "";
-          if (detail.contains("No winner")) {
-            showInfo("Phiên kết thúc - không có người thắng.");
-            NotificationManager.getInstance().add(
-                "⚠️ Phiên " + auctionId + " kết thúc. Không có người thắng.", "auction", auctionId);
-          } else {
-            boolean isWin = detail.contains("Winner:" + username)
-                || detail.contains("Winner: " + username);
-            if (isWin) {
-              showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
-              NotificationManager.getInstance().add(
-                  "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
-            } else {
-              String winnerDisplay = AuctionUtils.extractWinner(detail); // AuctionUtils
-              String name = "N/A".equals(winnerDisplay) ? "---" : winnerDisplay;
-              showInfo("Phiên kết thúc. Người chiến thắng: " + name);
-              NotificationManager.getInstance().add(
-                  "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + name,
-                  "auction", auctionId);
-            }
-          }
-        });
-        removePushListener(); // BaseController
-        break;
-
-      case Protocol.NOTI_AUCTION_CANCELLED:
-        if (parts.length >= 2) {
-          String reason = parts.length >= 3 ? parts[2] : "Admin hủy";
-          String notiMsg = "❌ Phiên " + auctionId + " " + reason + ". Tiền đã được hoàn.";
-          Platform.runLater(() -> {
-            handleCancelledState();
-            showWarning("❌ " + reason);
-          });
-          NotificationManager.getInstance().add(notiMsg, "auction", auctionId);
-        }
-        removePushListener(); // BaseController
-        break;
-
-      default:
-        break;
     }
   }
 
@@ -651,7 +668,7 @@ public class BidController extends BaseController implements Initializable {
     try {
       String current = bidAmountField.getText().trim();
       double base = current.isEmpty() ? currentPriceValue
-          : Double.parseDouble(current.replace(",", "").replace(" VND", "").trim());
+              : Double.parseDouble(current.replace(",", "").replace(" VND", "").trim());
       bidAmountField.setText(String.valueOf((long) (base + amount)));
     } catch (NumberFormatException ignored) {
       bidAmountField.setText(String.valueOf((long) (currentPriceValue + amount)));
@@ -688,8 +705,8 @@ public class BidController extends BaseController implements Initializable {
       long seconds = (remaining % 60_000) / 1_000;
       countdownLabel.setText(String.format("%02d : %02d : %02d", hours, minutes, seconds));
       countdownLabel.setStyle(remaining < 300_000
-          ? "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;"
-          : "-fx-text-fill: #1565C0; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;");
+              ? "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;"
+              : "-fx-text-fill: #1565C0; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;");
     }));
     countdownTimeline.setCycleCount(Timeline.INDEFINITE);
     countdownTimeline.play();
@@ -737,9 +754,9 @@ public class BidController extends BaseController implements Initializable {
     new Thread(() -> {
       try {
         String response = ServerConnection.getInstance().sendAndReceive(
-            Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+                Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
         if (response == null || response.startsWith("ERROR")
-            || !response.startsWith(Protocol.RES_HISTORY))
+                || !response.startsWith(Protocol.RES_HISTORY))
           return;
 
         String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
@@ -783,7 +800,7 @@ public class BidController extends BaseController implements Initializable {
     }
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
-          Protocol.CMD_BID + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amountStr);
+              Protocol.CMD_BID + Protocol.SEPARATOR + auctionId + Protocol.SEPARATOR + amountStr);
       Platform.runLater(() -> {
         if (response == null || response.startsWith("ERROR|Mất kết nối")) {
           showError("Mất kết nối server!");
@@ -803,11 +820,7 @@ public class BidController extends BaseController implements Initializable {
               ignored.printStackTrace();
             }
           }
-          if (!historyItems.isEmpty()) {
-            HistoryEntry prev = historyItems.get(0);
-            historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
-          }
-          historyItems.add(0, new HistoryEntry(username, currentPriceValue, true, true));
+          prependHistoryEntry(username, currentPriceValue, true);
         } else {
           showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
         }
@@ -820,10 +833,10 @@ public class BidController extends BaseController implements Initializable {
     stopAll();
     Stage stage = (Stage) bidAmountField.getScene().getWindow();
     new AutoBidView(stage, auctionId, itemNameLabel.getText(),
-        currentPriceLabel.getText(), statusLabel.getText(),
-        username, endTime,
-        imageUrlCached, descriptionCached, itemTypeCached, startingPriceCached, sellerIdCached)
-        .show();
+            currentPriceLabel.getText(), statusLabel.getText(),
+            username, endTime,
+            imageUrlCached, descriptionCached, itemTypeCached, startingPriceCached, sellerIdCached)
+            .show();
   }
 
   @FXML
@@ -839,11 +852,11 @@ public class BidController extends BaseController implements Initializable {
   private void handleViewChart() {
     try {
       javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-          getClass().getResource("/com/auction/views/fxml/BidChartView.fxml"));
+              getClass().getResource("/com/auction/views/fxml/BidChartView.fxml"));
       javafx.scene.Parent root = loader.load();
       BidChartController chartCtrl = loader.getController();
       chartCtrl.setData(auctionId, itemNameLabel.getText(),
-          currentPriceLabel.getText(), statusLabel.getText(), username, endTime);
+              currentPriceLabel.getText(), statusLabel.getText(), username, endTime);
       javafx.stage.Stage chartStage = new javafx.stage.Stage();
       chartStage.setTitle("Biểu đồ giá - " + itemNameLabel.getText());
       chartStage.setScene(new javafx.scene.Scene(root, 700, 450));
