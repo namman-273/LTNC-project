@@ -140,8 +140,6 @@ public class AutoBidProcessor {
             if (tempBackPrice > currentPrice && tempBackPrice <= second.getMaxBid()) {
               User loserUser = UserManager.getInstance().findUserByUsername(second.getBidderId());
               if (loserUser != null) {
-                System.out.println("[SHADOW HISTORY] Adding loser's last bid: "
-                    + second.getBidderId() + " at " + tempBackPrice);
                 auction.getBidHistory().add(new BidTransaction(loserUser, tempBackPrice));
               }
             }
