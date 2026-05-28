@@ -605,16 +605,13 @@ public class BidController extends BaseController implements Initializable {
             "auction", auctionId);
     removePushListener();
   }
-  // ✅ THÊM METHOD NÀY vào BidController.java
   private void onHistorySync(String[] parts) {
-    // parts[0]=HISTORY_RES | parts[1]=auctionId | parts[2]=jsonArray
     if (parts.length < 3 || !parts[1].equals(auctionId)) return;
 
-    // Ghép lại phòng trường hợp JSON có ký tự SEPARATOR (an toàn hơn)
-    String json = String.join(Protocol.SEPARATOR, java.util.Arrays.copyOfRange(parts, 2, parts.length));
+    String json = String.join(Protocol.SEPARATOR,
+            java.util.Arrays.copyOfRange(parts, 2, parts.length));
 
-    java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken
-    java.util.List<com.auction.model.entities.BidTransaction>>() {}.getType();
+    java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.List<com.auction.model.entities.BidTransaction>>() {}.getType();
     java.util.List<com.auction.model.entities.BidTransaction> newHistory =
             new com.google.gson.Gson().fromJson(json, type);
 
@@ -624,17 +621,11 @@ public class BidController extends BaseController implements Initializable {
       historyItems.clear();
       for (int i = newHistory.size() - 1; i >= 0; i--) {
         com.auction.model.entities.BidTransaction tx = newHistory.get(i);
+        boolean isMe = tx.getBidder().getUsername().equals(username);
+        boolean isLeading = (i == newHistory.size() - 1);
         historyItems.add(new HistoryEntry(
-                tx.getBidder().getUsername(),
-                tx.getAmount(),
-                false  // isLeading = false, sẽ được refresh lại ở dưới
-        ));
+                tx.getBidder().getUsername(), tx.getAmount(), isMe, isLeading));
       }
-      // Đánh dấu dòng đầu là người đang dẫn đầu
-      if (!historyItems.isEmpty()) {
-        historyItems.get(0).isLeading = true;
-      }
-      bidHistoryListView.refresh();
     });
   }
 
