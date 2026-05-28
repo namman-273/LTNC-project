@@ -487,6 +487,10 @@ public class BidController extends BaseController implements Initializable {
     Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, newBal));
   }
 
+  // [REFACTOR] Bỏ prependHistoryEntry() thủ công.
+  // Khi nhận Push BID_UPDATE (kể cả gói chốt giá cuối của Bot 3 sau chuỗi bid dồn dập),
+  // gọi loadHistory() để kéo toàn bộ sổ sử từ Server về — đảm bảo không bỏ sót
+  // bất kỳ bước giá nào bị "nuốt" giữa chừng.
   private void onBidUpdate(String[] parts) {
     if (parts.length < 4 || !parts[1].equals(auctionId)) return;
     String newPrice = parts[2];
@@ -495,11 +499,11 @@ public class BidController extends BaseController implements Initializable {
       updateCurrentPrice(newPrice);
       if (!bidder.equals(username)) {
         showWarning(bidder + " vừa đặt " + AuctionUtils.formatPrice(newPrice));
-        // Chỉ thêm vào history khi là người khác bid.
-        // Nếu là chính mình: handleBid() đã thêm rồi, tránh lặp.
-        prependHistoryEntry(bidder, currentPriceValue, false);
       }
     });
+    // Kéo lại toàn bộ history từ Server thay vì chèn thủ công 1 dòng.
+    // AtomicBoolean trong loadHistory() đảm bảo không gọi chồng chéo.
+    loadHistory();
   }
 
   private void onSnipingUpdate(String[] parts) {
@@ -515,16 +519,15 @@ public class BidController extends BaseController implements Initializable {
     }
   }
 
-  // Message format: OUTBID|auctionId|newBidder|newAmount|refundAmount|newBalance
-  // Server gộp OUTBID + REFUND thành 1 message để tránh client nhận 2 notification riêng lẻ
-  // và bị hiển thị lặp (outbid + số dư cập nhật 2 lần).
+  // Message format thực tế từ AuctionFinancialProcessor:
+  //   OUTBID | auctionId | newBidder | newAmount          (4 trường)
+  // Server KHÔNG gộp REFUND vào đây. Sau OUTBID, server gửi riêng:
+  //   REFUND | auctionId | refundAmount | newBalance       (4 trường)
+  // → onRefund() xử lý balance. onOutbid() chỉ cập nhật giá + toast + loadHistory.
   private void onOutbid(String[] parts) {
     if (parts.length < 4 || !parts[1].equals(auctionId)) return;
     String newBidder = parts[2];
     String newAmt = parts[3];
-    // parts[4] = refundAmount, parts[5] = newBalance (từ message gộp mới)
-    String refundAmt = parts.length >= 5 ? parts[4] : null;
-    String newBal = parts.length >= 6 ? parts[5] : null;
 
     Platform.runLater(() -> {
       try {
@@ -532,42 +535,26 @@ public class BidController extends BaseController implements Initializable {
         currentPriceValue = amt;
         currentPriceLabel.setText(AuctionUtils.formatPrice(newAmt));
         updateBidSuggestion(amt);
-        boolean alreadyAppended = !historyItems.isEmpty()
-                && historyItems.get(0).bidder.equals(newBidder)
-                && historyItems.get(0).amount == amt;
-        if (!alreadyAppended) {
-          prependHistoryEntry(newBidder, amt, false);
-        }
       } catch (NumberFormatException ignored) {
         ignored.printStackTrace();
       }
       showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
-      // Cập nhật số dư ngay trong cùng event (không cần REFUND riêng)
-      if (newBal != null) {
-        updateBalanceLabelFromPush(balanceLabel, newBal);
-      }
+      // Balance sẽ được cập nhật khi onRefund() nhận NOTI_REFUND tiếp theo
     });
 
-    // 1 notification duy nhất gộp thông tin outbid + hoàn tiền
-    String notifMsg = "⚠️ Bị vượt giá trong phiên " + auctionId
-            + " — Giá mới: " + AuctionUtils.formatPrice(newAmt);
-    if (refundAmt != null) {
-      notifMsg += " | Hoàn: " + AuctionUtils.formatPrice(refundAmt);
-    }
-    NotificationManager.getInstance().add(notifMsg, "auction", auctionId);
+    // Kéo lại toàn bộ history từ Server thay vì chèn thủ công 1 dòng.
+    // AtomicBoolean trong loadHistory() đảm bảo không gọi chồng chéo.
+    loadHistory();
 
-    // Cập nhật số dư trong NotificationManager nếu có (thay thế REFUND riêng)
-    if (refundAmt != null && newBal != null) {
-      NotificationManager.getInstance().add(
-              "Hoàn " + AuctionUtils.formatPrice(refundAmt)
-                      + " → Số dư: " + AuctionUtils.formatPrice(newBal),
-              "balance", auctionId);
-    }
+    NotificationManager.getInstance().add(
+            "⚠️ Bị vượt giá trong phiên " + auctionId
+                    + " — Giá mới: " + AuctionUtils.formatPrice(newAmt),
+            "auction", auctionId);
   }
 
-  // onRefund được giữ lại để backward-compatible nhưng không còn được gọi
-  // trong flow bình thường (server đã gộp vào OUTBID).
-  // Chỉ trigger nếu có message REFUND độc lập từ các flow khác (ví dụ: auction cancelled).
+  // Server luôn gửi REFUND riêng sau OUTBID (AuctionFinancialProcessor).
+  // Handler này xử lý balance và notification hoàn tiền cho mọi trường hợp:
+  // bị vượt giá thông thường, auction cancelled, v.v.
   private void onRefund(String[] parts) {
     if (parts.length < 4 || !parts[1].equals(auctionId)) return;
     String refundAmt = parts[2];
@@ -849,7 +836,11 @@ public class BidController extends BaseController implements Initializable {
               ignored.printStackTrace();
             }
           }
-          prependHistoryEntry(username, currentPriceValue, true);
+          // Không dùng prependHistoryEntry() vì server sẽ broadcast NOTI_BID_UPDATE
+          // ngay sau RES_BID_SUCCESS, kích hoạt onBidUpdate() → loadHistory().
+          // loadHistory() kéo đủ toàn bộ sổ (kể cả shadow history autobid),
+          // tránh duplicate nếu push đến trước Platform.runLater chạy xong.
+          loadHistory();
         } else {
           showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
         }
@@ -898,6 +889,11 @@ public class BidController extends BaseController implements Initializable {
     }
   }
 
+  // [REFACTOR] Đổi điều kiện từ `price > currentPriceValue` → `price >= currentPriceValue`.
+  // Lý do: khi Push Handler (onBidUpdate/onOutbid) chạy trước đã gán currentPriceValue
+  // bằng giá mới nhất, vòng quét 2 giây sẽ thấy price == currentPriceValue và bị bỏ qua.
+  // Dùng >= đảm bảo loadHistory() vẫn được gọi để đồng bộ sổ lịch sử,
+  // kể cả khi giá không thay đổi so với lần quét trước.
   private void startPriceRefresh() {
     if (priceRefreshTimeline != null)
       priceRefreshTimeline.stop();
@@ -917,7 +913,7 @@ public class BidController extends BaseController implements Initializable {
               double price = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
               String status = obj.has("status") ? obj.get("status").getAsString() : "";
               Platform.runLater(() -> {
-                if (price > currentPriceValue) {
+                if (price >= currentPriceValue) {   // [REFACTOR] >= thay cho >
                   currentPriceValue = price;
                   currentPriceLabel.setText(AuctionUtils.formatPrice(price));
                   updateBidSuggestion(price);
