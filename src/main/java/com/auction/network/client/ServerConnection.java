@@ -259,7 +259,8 @@ public class ServerConnection {
         || header.equals(Protocol.NOTI_OUTBID)
         || header.equals(Protocol.NOTI_REFUND)
         || header.equals(Protocol.NOTI_AUCTION_CANCELLED)
-        || header.equals(Protocol.RES_END_SUCCESS);
+        || header.equals(Protocol.RES_END_SUCCESS)
+        || header.equals(Protocol.RES_HISTORY);
   }
 
   /**
