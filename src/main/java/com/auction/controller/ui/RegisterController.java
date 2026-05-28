@@ -6,6 +6,7 @@ import com.auction.views.java.LoginView;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -15,20 +16,9 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 /**
- * Controller xử lý luồng đăng ký tài khoản.
- *
- * <p>
- * SOLID / DRY so với bản cũ:
- * <ul>
- * <li>OCP — extends {@link BaseController} thay vì class độc lập.</li>
- * <li>SRP — {@code showMessage} thay thế {@code showError} /
- * {@code showSuccess} trùng lặp.</li>
- * <li>DRY — logic success/error tập trung vào một method duy nhất.</li>
- * <li>Thread naming — "register-thread" và "register-navigate-thread" thay vì
- * anonymous.</li>
- * </ul>
+ * Controller màn đăng ký.
  */
-public class RegisterController extends BaseController implements Initializable {
+public class RegisterController implements Initializable {
 
   @FXML
   private TextField usernameField;
@@ -57,29 +47,32 @@ public class RegisterController extends BaseController implements Initializable 
       + "-fx-background-radius: 10; -fx-cursor: hand;"
       + "-fx-border-color: #334155; -fx-border-radius: 10; -fx-border-width: 2;";
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
-
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-    btnBidder.setStyle(STYLE_ACTIVE);
-    btnSeller.setStyle(STYLE_INACTIVE);
+    // Mặc định BIDDER được chọn
+    setRoleStyle("BIDDER");
   }
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
+  // ── Role selection ─────────────────────────────────────────────────────────
   @FXML
-  private void handleRoleSelect(javafx.event.ActionEvent e) {
+  private void handleRoleSelect(ActionEvent e) {
     if (e.getSource() == btnBidder) {
       selectedRole = "BIDDER";
-      btnBidder.setStyle(STYLE_ACTIVE);
-      btnSeller.setStyle(STYLE_INACTIVE);
     } else {
       selectedRole = "SELLER";
-      btnSeller.setStyle(STYLE_ACTIVE);
-      btnBidder.setStyle(STYLE_INACTIVE);
     }
+    setRoleStyle(selectedRole); // DRY: không lặp 2 lần set style
   }
 
+  /**
+   * DRY: tập trung toàn bộ logic active/inactive style cho 2 nút role.
+   */
+  private void setRoleStyle(String activeRole) {
+    btnBidder.setStyle("BIDDER".equals(activeRole) ? STYLE_ACTIVE : STYLE_INACTIVE);
+    btnSeller.setStyle("SELLER".equals(activeRole) ? STYLE_ACTIVE : STYLE_INACTIVE);
+  }
+
+  // ── Register flow ──────────────────────────────────────────────────────────
   @FXML
   private void handleRegister() {
     String username = usernameField.getText().trim();
@@ -87,12 +80,14 @@ public class RegisterController extends BaseController implements Initializable 
     String password = passwordField.getText().trim();
     String confirmPassword = confirmPasswordField.getText().trim();
 
-    if (!password.equals(confirmPassword)) {
-      showMessage("Mật khẩu xác nhận không khớp!", false);
+    // SRP: validation tách riêng
+    String validationError = validateInputs(username, email, password, confirmPassword);
+    if (validationError != null) {
+      showMessage(validationError, false);
       return;
     }
 
-    showMessage("Đang kết nối server...", true);
+    showMessage("Đang kết nối server...", null);
 
     new Thread(() -> {
       ServerConnection conn = ServerConnection.getInstance();
@@ -117,17 +112,7 @@ public class RegisterController extends BaseController implements Initializable 
         if (response.startsWith(Protocol.RES_REGISTER_SUCCESS)) {
           String msg = parts.length > 1 ? parts[1] : "Đăng ký thành công!";
           showMessage(msg + " Đang chuyển về đăng nhập...", true);
-          new Thread(() -> {
-            try {
-              Thread.sleep(1000);
-              Platform.runLater(() -> {
-                Stage stage = (Stage) usernameField.getScene().getWindow();
-                new LoginView(stage).show();
-              });
-            } catch (InterruptedException ex) {
-              Thread.currentThread().interrupt();
-            }
-          }, "register-navigate-thread").start();
+          redirectToLoginAfterDelay();
         } else {
           showMessage(parts.length > 1 ? parts[1] : "Đăng ký thất bại!", false);
         }
@@ -141,13 +126,48 @@ public class RegisterController extends BaseController implements Initializable 
     new LoginView(stage).show();
   }
 
-  // ── UI helper ──────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
-  /** SRP: một điểm duy nhất hiển thị kết quả thao tác. */
-  private void showMessage(String msg, boolean success) {
-    messageLabel.setStyle(success
-        ? "-fx-text-fill: #34D399; -fx-font-size: 12px;"
-        : "-fx-text-fill: #F87171; -fx-font-size: 12px;");
+  private String validateInputs(String username, String email,
+      String password, String confirmPassword) {
+    if (username.isEmpty())
+      return "Vui lòng nhập tên đăng nhập!";
+    if (username.length() < 3)
+      return "Tên đăng nhập tối thiểu 3 ký tự!";
+    if (password.isEmpty())
+      return "Vui lòng nhập mật khẩu!";
+    if (password.length() < 6)
+      return "Mật khẩu tối thiểu 6 ký tự!";
+    if (!password.equals(confirmPassword))
+      return "Mật khẩu xác nhận không khớp!";
+    if (!email.isEmpty() && !email.contains("@"))
+      return "Email không hợp lệ!";
+    return null;
+  }
+
+  private void showMessage(String msg, Boolean success) {
+    if (success == null) {
+      messageLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
+    } else if (success) {
+      messageLabel.setStyle("-fx-text-fill: #34D399; -fx-font-size: 12px;");
+    } else {
+      messageLabel.setStyle("-fx-text-fill: #F87171; -fx-font-size: 12px;");
+    }
     messageLabel.setText(msg);
+  }
+
+  /** Delay 1 giây rồi chuyển về LoginView trên JavaFX thread. */
+  private void redirectToLoginAfterDelay() {
+    new Thread(() -> {
+      try {
+        Thread.sleep(1000);
+        Platform.runLater(() -> {
+          Stage stage = (Stage) usernameField.getScene().getWindow();
+          new LoginView(stage).show();
+        });
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      }
+    }, "redirect-login-thread").start();
   }
 }
