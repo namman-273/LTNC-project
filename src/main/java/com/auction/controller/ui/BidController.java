@@ -552,21 +552,22 @@ public class BidController extends BaseController implements Initializable {
             "auction", auctionId);
   }
 
-  // Server luôn gửi REFUND riêng sau OUTBID (AuctionFinancialProcessor).
-  // Handler này xử lý balance và notification hoàn tiền cho mọi trường hợp:
-  // bị vượt giá thông thường, auction cancelled, v.v.
+  // Server gửi REFUND trong 2 trường hợp:
+  //   1. Sau OUTBID (AuctionFinancialProcessor): newBal là số thực
+  //   2. Khi Admin cancel (PaymentProcessor.processRefund): newBal là string mô tả
+  // onRefund chỉ cập nhật balance label — KHÔNG add notification để tránh lặp:
+  //   - Trường hợp 1: notification outbid đã được add trong onOutbid()
+  //   - Trường hợp 2: notification cancel đã được add trong onAuctionCancelled()
   private void onRefund(String[] parts) {
     if (parts.length < 4 || !parts[1].equals(auctionId)) return;
     String refundAmt = parts[2];
     String newBal = parts[3];
     Platform.runLater(() -> {
-      showInfo("💰 Hoàn tiền vào ví");
+      showInfo("💰 Hoàn tiền: " + AuctionUtils.formatPrice(refundAmt));
       updateBalanceLabelFromPush(balanceLabel, newBal);
     });
-    NotificationManager.getInstance().add(
-            "Hoàn " + AuctionUtils.formatPrice(refundAmt)
-                    + " → Số dư: " + AuctionUtils.formatPrice(newBal),
-            "balance", auctionId);
+    // Không add notification ở đây — mỗi flow đã có notification riêng
+    // tránh lặp thông báo khi người dùng bị vượt giá hoặc phiên bị hủy
   }
 
   private void onAuctionEnded(String[] parts) {
@@ -586,9 +587,10 @@ public class BidController extends BaseController implements Initializable {
       handleCancelledState();
       showWarning("❌ " + reason);
     });
+    // 1 notification duy nhất cho sự kiện cancel — onRefund() sẽ không add thêm
     NotificationManager.getInstance().add(
-            "❌ Phiên " + auctionId + " " + reason + ". Tiền đã được hoàn.",
-            "auction", auctionId);
+            "❌ Phiên " + auctionId + ": " + reason + ". Tiền đã được hoàn.",
+            "system", auctionId);
     removePushListener();
   }
 
