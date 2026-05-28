@@ -135,8 +135,9 @@ public class ServerConnection {
 
   private void closeQuietly() {
     try {
-      if (socket != null && !socket.isClosed())
+      if (socket != null && !socket.isClosed()) {
         socket.close();
+      }
     } catch (Exception ignored) {
     }
     socket = null;
@@ -205,8 +206,9 @@ public class ServerConnection {
   // ─── 3. LISTENER THREAD (Lock-free) ────────────────────────────────────
 
   private void startInternalListener() {
-    if (isListening)
+    if (isListening) {
       return;
+    }
 
     isListening = true;
     final Socket currentSocket = this.socket;
@@ -228,8 +230,9 @@ public class ServerConnection {
           }
         }
       } catch (Exception e) {
-        if (isListening)
+        if (isListening) {
           System.err.println("Mất kết nối Thread lắng nghe.");
+        }
       } finally {
         // Dọn dẹp với connectionLock
         connectionLock.lock();
@@ -249,8 +252,9 @@ public class ServerConnection {
   }
 
   private boolean isPushMessage(String line) {
-    if (line == null || line.isEmpty())
+    if (line == null || line.isEmpty()) {
       return false;
+    }
     String[] parts = line.split("\\|");
     String header = parts[0];
 

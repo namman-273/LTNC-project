@@ -114,7 +114,8 @@ public class AutoBidProcessor {
 
         // Chỉ add vào loop nếu chưa đến finalPrice
         if (tempPrice <= currentTurnBot.getMaxBid()) {
-          User intermediateUser = UserManager.getInstance().findUserByUsername(currentTurnBot.getBidderId());
+          User intermediateUser = UserManager.getInstance()
+              .findUserByUsername(currentTurnBot.getBidderId());
           if (intermediateUser != null) {
             auction.getBidHistory().add(new BidTransaction(intermediateUser, tempPrice));
           }
