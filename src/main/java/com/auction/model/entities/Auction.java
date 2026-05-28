@@ -306,13 +306,41 @@ public class Auction extends Entity {
     }
   }
 
-  private void executeAutoBids() {
+  
+private void executeAutoBids() {
     if (autoBidProcessor == null) {
-      restoreTransients();
+        restoreTransients();
     }
     autoBidProcessor.executeAutoBids(this.autoBidQueue,
         this, (user, price) -> this.updateAuctionState(user, price));
-  }
+
+    broadcastFullHistory();
+}
+
+private void broadcastFullHistory() {
+    if (observers == null || observers.isEmpty()) return;
+
+    // Dùng Gson để serialize — cần import com.google.gson.Gson
+    com.google.gson.Gson gson = new com.google.gson.Gson();
+    String jsonHistory = gson.toJson(this.history);
+    String msg = com.auction.network.protocol.Protocol.RES_HISTORY
+            + com.auction.network.protocol.Protocol.SEPARATOR
+            + this.getId()
+            + com.auction.network.protocol.Protocol.SEPARATOR
+            + jsonHistory;
+
+    for (Observer obs : observers) {
+        notifyExecutor.submit(() -> {
+            try {
+                obs.update(msg);
+            } catch (Exception e) {
+                removeObserver(obs);
+            }
+        });
+    }
+}
+
+
 
   private void handleAntiSniping(User bidder) {
     if (snipingProcessor == null) {
