@@ -6,16 +6,8 @@ import com.auction.network.protocol.Protocol;
 
 /**
  * Service xử lý logic xóa auction (Admin only).
- * Tuân thủ Single Responsibility Principle.
- * 
- * Các bước xử lý:
- * 1. Kiểm tra auction tồn tại
- * 2. Hoàn tiền cho người dẫn đầu (nếu có)
- * 3. Broadcast thông báo xóa đến tất cả users
- * 4. Xóa khỏi watchlist của tất cả users
- * 5. Đóng auction và xóa khỏi repository
- * 6. Mark dirty để save data
  */
+
 public class AuctionDeletionHandler {
 
   private final AuctionRepository auctionRepository;
@@ -54,7 +46,6 @@ public class AuctionDeletionHandler {
       // Bước 1: Hoàn tiền cho người dẫn đầu (nếu có)
       paymentProcessor.processRefund(auction);
 
-      paymentProcessor.processRefund(auction);
       String cancelMsg = Protocol.NOTI_AUCTION_CANCELLED
           + Protocol.SEPARATOR
           + auctionId

@@ -26,7 +26,7 @@ public class AutoBidProcessor {
       return;
     }
 
-    // 1. GIẢI QUYẾT TRUY CẬP: Lấy Validator thông qua Factory 
+    // 1. GIẢI QUYẾT TRUY CẬP: Lấy Validator thông qua Factory
     AuctionValidator validator = AuctionHelperFactory.getInstance().createValidator();
 
     double currentPrice = auction.getCurrentPrice();
@@ -61,11 +61,11 @@ public class AutoBidProcessor {
       finalPrice = currentPrice + effectiveStep;
     } else {
       // Tình huống B: Có từ 2 Bot trở lên tranh chấp giằng co
-      second = queue.peek(); // Chỉ xem trước (peek) chứ không poll Bot thứ hai ra khỏi Heap
+      second = queue.peek(); // Chỉ xem trước (peek) hứ không poll Bot thứ hai ra khỏi Heap
       double effectiveStep = Math.max(top.getbidStep(), minIncrement);
 
       if (top.getMaxBid() == second.getMaxBid()) {
-        // LUẬT TIE-BREAKER: 2 Bot trùng giá trần ->  'top' ăn nhờ lợi thế thời
+        // LUẬT TIE-BREAKER: 2 Bot trùng giá trần -> 'top' ăn nhờ lợi thế thời
         // gian (timestamp nhỏ hơn)
         // Đẩy giá lên thẳng mức Trần tối đa của đối thủ để loại bỏ cuộc chơi ngay lập
         // tức
@@ -94,25 +94,25 @@ public class AutoBidProcessor {
       return;
     }
 
-    // 4. SHADOW HISTORY TRAIL: Giả lập các bước giằng co lưu vào RAM trước
     if (second != null && finalPrice > (currentPrice + minIncrement)) {
       double tempPrice = currentPrice;
       // Xác định lượt nổ súng: Thằng nào không giữ vị trí dẫn đầu sẽ chủ động nâng
       // giá trước
       AutoBid currentTurnBot = top.getBidderId().equals(lastBidderId) ? second : top;
 
+      AutoBid lastBotInLoop = null;
+
       while (true) {
         double loopMinInc = validator.getMinimumIncrement(tempPrice);
         double loopStep = Math.max(currentTurnBot.getbidStep(), loopMinInc);
         tempPrice += loopStep;
 
-        // Điểm dừng: Nếu bước ảo vượt ngưỡng hoặc bằng giá chốt hạ thực tế
         if (tempPrice >= finalPrice) {
+          lastBotInLoop = currentTurnBot;
           break;
         }
 
-        // Tạo Transaction ảo đẩy trực tiếp vào List History của Auction (Thao tác RAM
-        // siêu tốc)
+        // Chỉ add vào loop nếu chưa đến finalPrice
         if (tempPrice <= currentTurnBot.getMaxBid()) {
           User intermediateUser = UserManager.getInstance().findUserByUsername(currentTurnBot.getBidderId());
           if (intermediateUser != null) {
@@ -123,14 +123,37 @@ public class AutoBidProcessor {
         // Đổi lượt luân phiên (Ping-pong) giữa 2 Bot hàng đầu
         currentTurnBot = (currentTurnBot == top) ? second : top;
       }
+
+      if (lastBotInLoop == second) {
+        // Loser là bot cuối trước finalPrice
+        // Tính giá của loser tại bước cuối trước finalPrice
+        double tempBackPrice = currentPrice;
+
+        while (true) {
+          double backLoopMinInc = validator.getMinimumIncrement(tempBackPrice);
+          double backLoopStep = Math.max(second.getbidStep(), backLoopMinInc);
+          double nextPrice = tempBackPrice + backLoopStep;
+
+          if (nextPrice >= finalPrice) {
+            // tempBackPrice là giá cuối của loser trước finalPrice
+            if (tempBackPrice > currentPrice && tempBackPrice <= second.getMaxBid()) {
+              User loserUser = UserManager.getInstance().findUserByUsername(second.getBidderId());
+              if (loserUser != null) {
+                System.out.println("[SHADOW HISTORY] Adding loser's last bid: "
+                    + second.getBidderId() + " at " + tempBackPrice);
+                auction.getBidHistory().add(new BidTransaction(loserUser, tempBackPrice));
+              }
+            }
+            break;
+          }
+          tempBackPrice = nextPrice;
+        }
+      }
     }
 
-    // 5. CHỐT HẠ GIAO DỊCH THẬT (GỌI UPDATE STATE QUA LAMBDA)
     try {
       // Hàm này thực thi updateState của Auction -> gọi FinancialProcessor trừ tiền
       // thật,
-      // cập nhật currentPrice thật của Item và add nốt DÒNG LOG CUỐI CÙNG vào
-      // History.
       updater.updateState(winnerUser, finalPrice);
 
       // Đánh giá xem Winner có còn đủ tiền để chiến đấu tiếp ở các lượt đặt tay sau
