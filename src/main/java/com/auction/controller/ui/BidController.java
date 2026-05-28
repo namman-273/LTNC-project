@@ -606,14 +606,23 @@ public class BidController extends BaseController implements Initializable {
     removePushListener();
   }
   private void onHistorySync(String[] parts) {
-    if (parts.length < 3 || !parts[1].equals(auctionId)) return;
+    if (parts.length < 4 || !parts[1].equals(auctionId)) return;
 
-    String json = String.join(Protocol.SEPARATOR,
-            java.util.Arrays.copyOfRange(parts, 2, parts.length));
+    String source = parts[2];
+    if (!"AUTO".equals(source)) return;
 
-    java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.List<com.auction.model.entities.BidTransaction>>() {}.getType();
+    String jsonStr = String.join(Protocol.SEPARATOR,
+            java.util.Arrays.copyOfRange(parts, 3, parts.length));
+
+    com.google.gson.Gson gson = new com.google.gson.GsonBuilder()
+            .registerTypeAdapter(java.time.LocalDateTime.class,
+                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>)
+                            (json, type, ctx) -> java.time.LocalDateTime.parse(json.getAsString()))
+            .create();
+
+    java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<com.auction.model.entities.BidTransaction>>() {}.getType();
     java.util.List<com.auction.model.entities.BidTransaction> newHistory =
-            new com.google.gson.Gson().fromJson(json, type);
+            gson.fromJson(jsonStr, listType);
 
     if (newHistory == null) return;
 
