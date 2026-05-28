@@ -2,7 +2,6 @@ package com.auction.controller.command;
 
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.Auction;
-import com.auction.model.entities.BidTransaction;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
