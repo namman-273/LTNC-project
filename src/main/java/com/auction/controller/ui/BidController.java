@@ -475,7 +475,6 @@ public class BidController extends BaseController implements Initializable {
       case Protocol.NOTI_REFUND           -> onRefund(parts);
       case Protocol.RES_END_SUCCESS       -> onAuctionEnded(parts);
       case Protocol.NOTI_AUCTION_CANCELLED -> onAuctionCancelled(parts);
-      case Protocol.RES_HISTORY           -> onHistorySync(parts);
       default -> { /* unknown message, bỏ qua */ }
     }
   }
@@ -604,38 +603,6 @@ public class BidController extends BaseController implements Initializable {
             "❌ Phiên " + auctionId + " " + reason + ". Tiền đã được hoàn.",
             "auction", auctionId);
     removePushListener();
-  }
-  private void onHistorySync(String[] parts) {
-    if (parts.length < 4 || !parts[1].equals(auctionId)) return;
-
-    String source = parts[2];
-    if (!"AUTO".equals(source)) return;
-
-    String jsonStr = String.join(Protocol.SEPARATOR,
-            java.util.Arrays.copyOfRange(parts, 3, parts.length));
-
-    com.google.gson.Gson gson = new com.google.gson.GsonBuilder()
-            .registerTypeAdapter(java.time.LocalDateTime.class,
-                    (com.google.gson.JsonDeserializer<java.time.LocalDateTime>)
-                            (json, type, ctx) -> java.time.LocalDateTime.parse(json.getAsString()))
-            .create();
-
-    java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<com.auction.model.entities.BidTransaction>>() {}.getType();
-    java.util.List<com.auction.model.entities.BidTransaction> newHistory =
-            gson.fromJson(jsonStr, listType);
-
-    if (newHistory == null) return;
-
-    Platform.runLater(() -> {
-      historyItems.clear();
-      for (int i = newHistory.size() - 1; i >= 0; i--) {
-        com.auction.model.entities.BidTransaction tx = newHistory.get(i);
-        boolean isMe = tx.getBidder().getUsername().equals(username);
-        boolean isLeading = (i == newHistory.size() - 1);
-        historyItems.add(new HistoryEntry(
-                tx.getBidder().getUsername(), tx.getAmount(), isMe, isLeading));
-      }
-    });
   }
 
   // ── Shared UI helpers (tránh lặp code trong các handler) ─────────────────
