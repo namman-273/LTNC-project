@@ -515,10 +515,17 @@ public class BidController extends BaseController implements Initializable {
     }
   }
 
+  // Message format: OUTBID|auctionId|newBidder|newAmount|refundAmount|newBalance
+  // Server gộp OUTBID + REFUND thành 1 message để tránh client nhận 2 notification riêng lẻ
+  // và bị hiển thị lặp (outbid + số dư cập nhật 2 lần).
   private void onOutbid(String[] parts) {
     if (parts.length < 4 || !parts[1].equals(auctionId)) return;
     String newBidder = parts[2];
     String newAmt = parts[3];
+    // parts[4] = refundAmount, parts[5] = newBalance (từ message gộp mới)
+    String refundAmt = parts.length >= 5 ? parts[4] : null;
+    String newBal = parts.length >= 6 ? parts[5] : null;
+
     Platform.runLater(() -> {
       try {
         double amt = Double.parseDouble(newAmt);
@@ -535,18 +542,40 @@ public class BidController extends BaseController implements Initializable {
         ignored.printStackTrace();
       }
       showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
+      // Cập nhật số dư ngay trong cùng event (không cần REFUND riêng)
+      if (newBal != null) {
+        updateBalanceLabelFromPush(balanceLabel, newBal);
+      }
     });
-    NotificationManager.getInstance().add(
-            "⚠️ Bị vượt giá trong phiên " + auctionId
-                    + " — Giá mới: " + AuctionUtils.formatPrice(newAmt),
-            "auction", auctionId);
+
+    // 1 notification duy nhất gộp thông tin outbid + hoàn tiền
+    String notifMsg = "⚠️ Bị vượt giá trong phiên " + auctionId
+            + " — Giá mới: " + AuctionUtils.formatPrice(newAmt);
+    if (refundAmt != null) {
+      notifMsg += " | Hoàn: " + AuctionUtils.formatPrice(refundAmt);
+    }
+    NotificationManager.getInstance().add(notifMsg, "auction", auctionId);
+
+    // Cập nhật số dư trong NotificationManager nếu có (thay thế REFUND riêng)
+    if (refundAmt != null && newBal != null) {
+      NotificationManager.getInstance().add(
+              "Hoàn " + AuctionUtils.formatPrice(refundAmt)
+                      + " → Số dư: " + AuctionUtils.formatPrice(newBal),
+              "balance", auctionId);
+    }
   }
 
+  // onRefund được giữ lại để backward-compatible nhưng không còn được gọi
+  // trong flow bình thường (server đã gộp vào OUTBID).
+  // Chỉ trigger nếu có message REFUND độc lập từ các flow khác (ví dụ: auction cancelled).
   private void onRefund(String[] parts) {
     if (parts.length < 4 || !parts[1].equals(auctionId)) return;
     String refundAmt = parts[2];
     String newBal = parts[3];
-    Platform.runLater(() -> showInfo("💰 Hoàn tiền vào ví"));
+    Platform.runLater(() -> {
+      showInfo("💰 Hoàn tiền vào ví");
+      updateBalanceLabelFromPush(balanceLabel, newBal);
+    });
     NotificationManager.getInstance().add(
             "Hoàn " + AuctionUtils.formatPrice(refundAmt)
                     + " → Số dư: " + AuctionUtils.formatPrice(newBal),
