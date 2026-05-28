@@ -22,12 +22,7 @@ public class GetHistoryCommand implements ClientCommand {
 
     if (auction != null) {
       try {
-        String jsonHistory;
-        synchronized (auction) {
-          // Tạo một bản sao danh sách tại thời điểm hiện tại để Gson xử lý an toàn
-          java.util.List<BidTransaction> historyCopy = new java.util.ArrayList<>(auction.getBidHistory());
-          jsonHistory = client.gson.toJson(historyCopy);
-        }
+        String jsonHistory = client.gson.toJson(auction.getBidHistory());
 
         // Dùng client.sendMessage thay vì sendMessage
         client.sendMessage(Protocol.RES_HISTORY + Protocol.SEPARATOR
