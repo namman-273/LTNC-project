@@ -251,7 +251,17 @@ public class ServerConnection {
   private boolean isPushMessage(String line) {
     if (line == null || line.isEmpty())
       return false;
-    String header = line.split("\\|")[0];
+    String[] parts = line.split("\\|");
+    String header = parts[0];
+
+    // RES_HISTORY là push chỉ khi có flag AUTO ở parts[2]
+    if (header.equals(Protocol.RES_HISTORY)) {
+      // parts: [HISTORY_RES, auctionId, AUTO, json...]
+      // Nếu có "AUTO" ở vị trí [2] → là broadcast từ AutoBid → push
+      // Ngược lại → là response từ CMD_GET_HISTORY → vào responseQueue
+      return parts.length >= 3 && "AUTO".equals(parts[2]);
+    }
+
     return header.equals(Protocol.NOTI_BID_UPDATE)
         || header.equals(Protocol.NOTI_SNIPING_UPDATE)
         || header.equals(Protocol.NOTI_BALANCE_CHANGED)
@@ -259,8 +269,7 @@ public class ServerConnection {
         || header.equals(Protocol.NOTI_OUTBID)
         || header.equals(Protocol.NOTI_REFUND)
         || header.equals(Protocol.NOTI_AUCTION_CANCELLED)
-        || header.equals(Protocol.RES_END_SUCCESS)
-        || header.equals(Protocol.RES_HISTORY);
+        || header.equals(Protocol.RES_END_SUCCESS);
   }
 
   /**
