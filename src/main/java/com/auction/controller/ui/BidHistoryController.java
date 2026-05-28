@@ -289,7 +289,7 @@ public class BidHistoryController extends BaseController implements Initializabl
     leaveScreen();
     Stage s = getStage();
     if (s != null)
-      new SellerView(s, username).show();
+      {new SellerView(s, username).show();}
   }
 
   @FXML
@@ -297,7 +297,7 @@ public class BidHistoryController extends BaseController implements Initializabl
     leaveScreen();
     Stage s = getStage();
     if (s != null)
-      new NotificationView(s, username).show();
+      {new NotificationView(s, username).show();}
   }
 
   private Stage getStage() {
