@@ -312,38 +312,6 @@ public class Auction extends Entity {
     }
     autoBidProcessor.executeAutoBids(this.autoBidQueue,
         this, (user, price) -> this.updateAuctionState(user, price));
-
-    broadcastFullHistory("AUTO");
-  }
-
-  private void broadcastFullHistory(String source) {
-    if (observers == null || observers.isEmpty())
-      return;
-
-    com.google.gson.Gson gson = new com.google.gson.GsonBuilder()
-        .registerTypeAdapter(java.time.LocalDateTime.class,
-            (com.google.gson.JsonSerializer<java.time.LocalDateTime>) (src, typeOfSrc,
-                ctx) -> new com.google.gson.JsonPrimitive(src.toString()))
-        .create();
-
-    String jsonHistory = gson.toJson(this.history);
-    String msg = com.auction.network.protocol.Protocol.RES_HISTORY
-        + com.auction.network.protocol.Protocol.SEPARATOR
-        + this.getId()
-        + com.auction.network.protocol.Protocol.SEPARATOR
-        + source
-        + com.auction.network.protocol.Protocol.SEPARATOR
-        + jsonHistory;
-
-    for (Observer obs : observers) {
-      notifyExecutor.submit(() -> {
-        try {
-          obs.update(msg);
-        } catch (Exception e) {
-          removeObserver(obs);
-        }
-      });
-    }
   }
 
   private void handleAntiSniping(User bidder) {
