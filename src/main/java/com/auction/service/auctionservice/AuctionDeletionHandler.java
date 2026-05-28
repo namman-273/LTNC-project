@@ -28,9 +28,6 @@ public class AuctionDeletionHandler {
 
   /**
    * Xóa auction - chỉ Admin mới được phép.
-   * 
-   * @param auctionId ID của auction cần xóa
-   * @return true nếu xóa thành công, false nếu auction không tồn tại
    */
   public boolean deleteAuction(String auctionId) {
     Auction auction = auctionRepository.findById(auctionId);
