@@ -2,6 +2,7 @@ package com.auction.controller.command;
 
 import com.auction.controller.network.ClientHandler;
 import com.auction.model.entities.Auction;
+import com.auction.model.entities.BidTransaction;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
@@ -21,8 +22,12 @@ public class GetHistoryCommand implements ClientCommand {
 
     if (auction != null) {
       try {
-        // Dùng client.gson thay vì gson
-        String jsonHistory = client.gson.toJson(auction.getBidHistory());
+        String jsonHistory;
+        synchronized (auction) {
+          // Tạo một bản sao danh sách tại thời điểm hiện tại để Gson xử lý an toàn
+          java.util.List<BidTransaction> historyCopy = new java.util.ArrayList<>(auction.getBidHistory());
+          jsonHistory = client.gson.toJson(historyCopy);
+        }
 
         // Dùng client.sendMessage thay vì sendMessage
         client.sendMessage(Protocol.RES_HISTORY + Protocol.SEPARATOR
