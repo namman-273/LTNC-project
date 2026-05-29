@@ -35,6 +35,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ * Bidcontroller.
+ */
 public class BidController extends BaseController implements Initializable {
 
   @FXML
@@ -110,6 +113,9 @@ public class BidController extends BaseController implements Initializable {
   private final AtomicBoolean pendingHistoryReload = new AtomicBoolean(false);
 
   // ── HistoryEntry DTO ─────────────────────────────────────────────────────
+  /**
+   * history entry.
+   */
   public static class HistoryEntry {
     final String bidder;
     final double amount;
@@ -217,6 +223,10 @@ public class BidController extends BaseController implements Initializable {
     setData(auctionId, itemName, currentPrice, status, username, endTime,
         imageUrl, description, "", 0, "");
   }
+
+  /**
+   * setdata.
+   */
 
   public void setData(String auctionId, String itemName, String currentPrice,
       String status, String username, long endTime,
@@ -460,6 +470,8 @@ public class BidController extends BaseController implements Initializable {
   }
 
   // ── Push Listener ────────────────────────────────────────────────────────
+  // Dispatcher đơn giản: chỉ route, không chứa logic.
+  // OCP: thêm message type mới → thêm method handler mới, không sửa method này.
   private void handleServerPush(String message) {
     System.out.println("PUSH RECEIVED: " + message);
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
@@ -467,153 +479,186 @@ public class BidController extends BaseController implements Initializable {
       return;
 
     switch (parts[0]) {
+      case Protocol.NOTI_BALANCE_CHANGED -> onBalanceChanged(parts);
+      case Protocol.NOTI_BID_UPDATE -> onBidUpdate(parts);
+      case Protocol.NOTI_SNIPING_UPDATE -> onSnipingUpdate(parts);
+      case Protocol.NOTI_OUTBID -> onOutbid(parts);
+      case Protocol.NOTI_REFUND -> onRefund(parts);
+      case Protocol.RES_END_SUCCESS -> onAuctionEnded(parts);
+      case Protocol.NOTI_AUCTION_CANCELLED -> onAuctionCancelled(parts);
+      default -> {
+        /* unknown message, bỏ qua */ }
+    }
+  }
 
-      case Protocol.NOTI_BALANCE_CHANGED:
-        if (parts.length >= 2) {
-          String newBal = parts[1];
-          Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, newBal)); // BaseController
-        }
-        break;
+  // Mỗi method dưới đây chỉ xử lý đúng 1 loại event (SRP).
 
-      case Protocol.NOTI_BID_UPDATE:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String newPrice = parts[2];
-          String bidder = parts[3];
-          Platform.runLater(() -> {
-            try {
-              currentPriceValue = Double.parseDouble(newPrice);
-            } catch (Exception ignored) {
-              ignored.printStackTrace();
-            }
-            currentPriceLabel.setText(AuctionUtils.formatPrice(newPrice));
-            updateBidSuggestion(currentPriceValue);
-            if (!bidder.equals(username)) {
-              showWarning(bidder + " vừa đặt " + AuctionUtils.formatPrice(newPrice));
-            }
-            double amt = currentPriceValue;
-            boolean isMe = bidder.equals(username);
-            if (!historyItems.isEmpty()) {
-              HistoryEntry old = historyItems.get(0);
-              historyItems.set(0, new HistoryEntry(old.bidder, old.amount, old.isMe, false));
-            }
-            historyItems.add(0, new HistoryEntry(bidder, amt, isMe, true));
-          });
-        }
-        break;
+  private void onBalanceChanged(String[] parts) {
+    if (parts.length < 2)
+      return;
+    String newBal = parts[1];
+    Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, newBal));
+  }
 
-      case Protocol.NOTI_SNIPING_UPDATE:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String count = parts[3];
-          try {
-            long newEndTime = Long.parseLong(parts[2]);
-            this.endTime = newEndTime;
-            Platform.runLater(() -> showSnipingAlert(count));
-            NotificationManager.getInstance().add(
-                "⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
-          } catch (NumberFormatException ignored) {
-            ignored.printStackTrace();
-          }
-        }
-        break;
+  private void onBidUpdate(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId))
+      return;
+    String newPrice = parts[2];
+    String bidder = parts[3];
+    Platform.runLater(() -> {
+      updateCurrentPrice(newPrice);
+      if (!bidder.equals(username)) {
+        showWarning(bidder + " vừa đặt " + AuctionUtils.formatPrice(newPrice));
+      }
+    });
 
-      case Protocol.NOTI_OUTBID:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String newBidder = parts[2];
-          String newAmt = parts[3];
-          Platform.runLater(() -> {
-            try {
-              double amt = Double.parseDouble(newAmt);
-              currentPriceValue = amt;
-              currentPriceLabel.setText(AuctionUtils.formatPrice(newAmt));
-              updateBidSuggestion(amt);
-              boolean alreadyAppended = !historyItems.isEmpty()
-                  && historyItems.get(0).bidder.equals(newBidder)
-                  && historyItems.get(0).amount == amt;
-              if (!alreadyAppended) {
-                if (!historyItems.isEmpty()) {
-                  HistoryEntry prev = historyItems.get(0);
-                  historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
-                }
-                historyItems.add(0, new HistoryEntry(newBidder, amt, false, true));
-              }
-            } catch (NumberFormatException ignored) {
-              ignored.printStackTrace();
-            }
-            showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
-          });
-          NotificationManager.getInstance().add(
-              "⚠️ Bị vượt giá trong phiên " + auctionId
-                  + " — Giá mới: " + AuctionUtils.formatPrice(newAmt),
-              "auction", auctionId);
-        }
-        break;
+    loadHistory();
+  }
 
-      case Protocol.NOTI_REFUND:
-        if (parts.length >= 4 && parts[1].equals(auctionId)) {
-          String refundAmt = parts[2];
-          String newBal = parts[3];
-          Platform.runLater(() -> showInfo("💰 Hoàn tiền vào ví"));
-          NotificationManager.getInstance().add(
-              "Hoàn " + AuctionUtils.formatPrice(refundAmt)
-                  + " → Số dư: " + AuctionUtils.formatPrice(newBal),
-              "balance", auctionId);
-        }
-        break;
+  private void onSnipingUpdate(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId))
+      return;
+    try {
+      this.endTime = Long.parseLong(parts[2]);
+      String count = parts[3];
+      Platform.runLater(() -> showSnipingAlert(count));
+      NotificationManager.getInstance().add(
+          "⏱ Phiên " + auctionId + " được gia hạn lần " + count, "auction", auctionId);
+    } catch (NumberFormatException ignored) {
+      ignored.printStackTrace();
+    }
+  }
 
-      case Protocol.RES_END_SUCCESS:
-        if (parts.length >= 2 && !parts[1].equals(auctionId))
-          break;
-        Platform.runLater(() -> {
-          statusLabel.setText("FINISHED");
-          stopSnipingCountdown();
-          if (countdownTimeline != null)
-            countdownTimeline.stop();
-          if (priceRefreshTimeline != null)
-            priceRefreshTimeline.stop();
-          if (countdownLabel != null) {
-            countdownLabel.setText("⏰ Hết giờ!");
-            countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
-          }
-          String detail = parts.length >= 3 ? parts[2] : "";
-          if (detail.contains("No winner")) {
-            showInfo("Phiên kết thúc - không có người thắng.");
-            NotificationManager.getInstance().add(
-                "⚠️ Phiên " + auctionId + " kết thúc. Không có người thắng.", "auction", auctionId);
-          } else {
-            boolean isWin = detail.contains("Winner:" + username)
-                || detail.contains("Winner: " + username);
-            if (isWin) {
-              showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
-              NotificationManager.getInstance().add(
-                  "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
-            } else {
-              String winnerDisplay = AuctionUtils.extractWinner(detail); // AuctionUtils
-              String name = "N/A".equals(winnerDisplay) ? "---" : winnerDisplay;
-              showInfo("Phiên kết thúc. Người chiến thắng: " + name);
-              NotificationManager.getInstance().add(
-                  "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + name,
-                  "auction", auctionId);
-            }
-          }
-        });
-        removePushListener(); // BaseController
-        break;
+  private void onOutbid(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId))
+      return;
+    String newBidder = parts[2];
+    String newAmt = parts[3];
 
-      case Protocol.NOTI_AUCTION_CANCELLED:
-        if (parts.length >= 2) {
-          String reason = parts.length >= 3 ? parts[2] : "Admin hủy";
-          String notiMsg = "❌ Phiên " + auctionId + " " + reason + ". Tiền đã được hoàn.";
-          Platform.runLater(() -> {
-            handleCancelledState();
-            showWarning("❌ " + reason);
-          });
-          NotificationManager.getInstance().add(notiMsg, "auction", auctionId);
-        }
-        removePushListener(); // BaseController
-        break;
+    Platform.runLater(() -> {
+      try {
+        double amt = Double.parseDouble(newAmt);
+        currentPriceValue = amt;
+        currentPriceLabel.setText(AuctionUtils.formatPrice(newAmt));
+        updateBidSuggestion(amt);
+      } catch (NumberFormatException ignored) {
+        ignored.printStackTrace();
+      }
+      showWarning("⚠️ Bị vượt giá bởi " + newBidder + "!");
+      // Balance sẽ được cập nhật khi onRefund() nhận NOTI_REFUND tiếp theo
+    });
 
-      default:
-        break;
+    // Kéo lại toàn bộ history từ Server thay vì chèn thủ công 1 dòng.
+    // AtomicBoolean trong loadHistory() đảm bảo không gọi chồng chéo.
+    loadHistory();
+
+    NotificationManager.getInstance().add(
+        "⚠️ Bị vượt giá trong phiên " + auctionId
+            + " — Giá mới: " + AuctionUtils.formatPrice(newAmt),
+        "auction", auctionId);
+  }
+
+  // Server gửi REFUND trong 2 trường hợp:
+  // 1. Sau OUTBID (AuctionFinancialProcessor): newBal là số thực
+  // 2. Khi Admin cancel (PaymentProcessor.processRefund): newBal là string mô tả
+  // onRefund chỉ cập nhật balance label — KHÔNG add notification để tránh lặp:
+  // - Trường hợp 1: notification outbid đã được add trong onOutbid()
+  // - Trường hợp 2: notification cancel đã được add trong onAuctionCancelled()
+  private void onRefund(String[] parts) {
+    if (parts.length < 4 || !parts[1].equals(auctionId))
+      return;
+    String refundAmt = parts[2];
+    String newBal = parts[3];
+    Platform.runLater(() -> {
+      showInfo("💰 Hoàn tiền: " + AuctionUtils.formatPrice(refundAmt));
+      updateBalanceLabelFromPush(balanceLabel, newBal);
+    });
+
+  }
+
+  private void onAuctionEnded(String[] parts) {
+    if (parts.length >= 2 && !parts[1].equals(auctionId))
+      return;
+    String detail = parts.length >= 3 ? parts[2] : "";
+    Platform.runLater(() -> {
+      markAuctionFinished();
+      notifyAuctionEndResult(detail);
+    });
+    removePushListener();
+  }
+
+  private void onAuctionCancelled(String[] parts) {
+    if (parts.length < 2)
+      return;
+    String reason = parts.length >= 3 ? parts[2] : "Admin hủy";
+    Platform.runLater(() -> {
+      handleCancelledState();
+      showWarning("❌ " + reason);
+    });
+    // 1 notification duy nhất cho sự kiện cancel — onRefund() sẽ không add thêm
+    NotificationManager.getInstance().add(
+        "❌ Phiên " + auctionId + ": " + reason + ". Tiền đã được hoàn.",
+        "system", auctionId);
+    removePushListener();
+  }
+
+  // ── Shared UI helpers (tránh lặp code trong các handler) ─────────────────
+
+  /** Cập nhật currentPriceValue và UI label + gợi ý giá tối thiểu. */
+  private void updateCurrentPrice(String rawPrice) {
+    try {
+      currentPriceValue = Double.parseDouble(rawPrice);
+    } catch (NumberFormatException ignored) {
+      ignored.printStackTrace();
+    }
+    currentPriceLabel.setText(AuctionUtils.formatPrice(rawPrice));
+    updateBidSuggestion(currentPriceValue);
+  }
+
+  /** Thêm 1 entry mới lên đầu historyItems, đẩy entry trước xuống non-leading. */
+  private void prependHistoryEntry(String bidder, double amount, boolean isMe) {
+    if (!historyItems.isEmpty()) {
+      HistoryEntry prev = historyItems.get(0);
+      historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
+    }
+    historyItems.add(0, new HistoryEntry(bidder, amount, isMe, true));
+  }
+
+  /** Cập nhật UI khi phiên kết thúc bình thường. */
+  private void markAuctionFinished() {
+    statusLabel.setText("FINISHED");
+    stopSnipingCountdown();
+    if (countdownTimeline != null)
+      countdownTimeline.stop();
+    if (priceRefreshTimeline != null)
+      priceRefreshTimeline.stop();
+    if (countdownLabel != null) {
+      countdownLabel.setText("⏰ Hết giờ!");
+      countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+    }
+  }
+
+  /** Hiển thị thông báo thắng/thua/không có winner sau khi phiên kết thúc. */
+  private void notifyAuctionEndResult(String detail) {
+    if (detail.contains("No winner")) {
+      showInfo("Phiên kết thúc - không có người thắng.");
+      NotificationManager.getInstance().add(
+          "⚠️ Phiên " + auctionId + " kết thúc. Không có người thắng.", "auction", auctionId);
+      return;
+    }
+    boolean isWin = detail.contains("Winner:" + username)
+        || detail.contains("Winner: " + username);
+    if (isWin) {
+      showSuccess("🎉 Chúc mừng! Bạn đã thắng phiên đấu giá!");
+      NotificationManager.getInstance().add(
+          "🎉 Chúc mừng! Bạn đã thắng phiên: " + auctionId, "auction", auctionId);
+    } else {
+      String winnerDisplay = AuctionUtils.extractWinner(detail);
+      String name = "N/A".equals(winnerDisplay) ? "---" : winnerDisplay;
+      showInfo("Phiên kết thúc. Người chiến thắng: " + name);
+      NotificationManager.getInstance().add(
+          "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + name,
+          "auction", auctionId);
     }
   }
 
@@ -803,11 +848,11 @@ public class BidController extends BaseController implements Initializable {
               ignored.printStackTrace();
             }
           }
-          if (!historyItems.isEmpty()) {
-            HistoryEntry prev = historyItems.get(0);
-            historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
-          }
-          historyItems.add(0, new HistoryEntry(username, currentPriceValue, true, true));
+          // Không dùng prependHistoryEntry() vì server sẽ broadcast NOTI_BID_UPDATE
+          // ngay sau RES_BID_SUCCESS, kích hoạt onBidUpdate() → loadHistory().
+          // loadHistory() kéo đủ toàn bộ sổ (kể cả shadow history autobid),
+          // tránh duplicate nếu push đến trước Platform.runLater chạy xong.
+          loadHistory();
         } else {
           showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
         }
@@ -875,7 +920,7 @@ public class BidController extends BaseController implements Initializable {
               double price = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0;
               String status = obj.has("status") ? obj.get("status").getAsString() : "";
               Platform.runLater(() -> {
-                if (price > currentPriceValue) {
+                if (price >= currentPriceValue) { // [REFACTOR] >= thay cho >
                   currentPriceValue = price;
                   currentPriceLabel.setText(AuctionUtils.formatPrice(price));
                   updateBidSuggestion(price);

@@ -17,12 +17,9 @@ public class PaymentProcessor {
 
   /**
    * Xử lý thanh toán khi auction kết thúc BÌNH THƯỜNG (không bị Admin đóng sớm).
-   * 
    * LOGIC:
    * - Có winner → Cộng tiền cho seller → Set status = PAID
    * - Không có winner → Giữ nguyên status = FINISHED
-   * 
-   * @return WinnerInfo chứa thông tin winner và giá thắng
    */
   public WinnerInfo processPayment(Auction auction) {
     if (auction == null) {
@@ -70,14 +67,12 @@ public class PaymentProcessor {
   }
 
   /**
-   * Hoàn tiền cho người dẫn đầu khi auction bị Admin đóng sớm.
-   * 
+   * Hoàn tiền cho người dẫn đầu khi auction bị Admin đóng sớm. 
    * LOGIC:
    * - Tìm người dẫn đầu → Hoàn tiền
    * - Set status = CANCELED
    * - Return WinnerInfo(null, 0) vì KHÔNG CÓ WINNER (chỉ có refund)
-   * 
-   * @return WinnerInfo với winner=null và price=0
+  với winner=null và price=0
    */
   public WinnerInfo processRefund(Auction auction) {
     if (auction == null) {

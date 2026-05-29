@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * DataManager refactored theo SOLID principles.
- * 
  * SOLID Compliance:
  * - SRP: Delegate công việc cho các helper classes chuyên biệt
  * - OCP: Có thể extend qua interface DataPersistence

@@ -21,7 +21,6 @@ public class GetHistoryCommand implements ClientCommand {
 
     if (auction != null) {
       try {
-        // Dùng client.gson thay vì gson
         String jsonHistory = client.gson.toJson(auction.getBidHistory());
 
         // Dùng client.sendMessage thay vì sendMessage

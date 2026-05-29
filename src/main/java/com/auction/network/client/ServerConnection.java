@@ -74,8 +74,9 @@ public class ServerConnection {
   public boolean connect() {
     connectionLock.lock();
     try {
-      if (isConnected())
+      if (isConnected()) {
         return true;
+      }
 
       closeQuietly(); // Dọn dẹp an toàn trước khi tạo mới
 
@@ -102,8 +103,9 @@ public class ServerConnection {
   public boolean connectWithRetry() {
     for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
       System.out.println("Đang kết nối server... (lần " + attempt + "/" + MAX_RETRY + ")");
-      if (connect())
+      if (connect()) {
         return true;
+      }
       if (attempt < MAX_RETRY) {
         try {
           Thread.sleep(RETRY_DELAY_MS);
@@ -135,9 +137,11 @@ public class ServerConnection {
 
   private void closeQuietly() {
     try {
-      if (socket != null && !socket.isClosed())
+      if (socket != null && !socket.isClosed()) {
         socket.close();
+      }
     } catch (Exception ignored) {
+      ignored.printStackTrace();
     }
     socket = null;
     out = null;
@@ -180,12 +184,14 @@ public class ServerConnection {
 
     try {
       String response = responseQueue.poll(5, TimeUnit.SECONDS);
-      if (response != null)
+      if (response != null) {
         return response;
+      }
 
       // Nếu không cho phép thử lại nữa
-      if (!allowRetry)
+      if (!allowRetry) {
         return "ERROR|Server không phản hồi sau khi kết nối lại!";
+      }
 
       // Nếu Timeout -> Thử kết nối lại và gửi đệ quy 1 lần duy nhất
       System.out.println("Timeout 5s, đang thử kết nối lại...");
@@ -205,8 +211,9 @@ public class ServerConnection {
   // ─── 3. LISTENER THREAD (Lock-free) ────────────────────────────────────
 
   private void startInternalListener() {
-    if (isListening)
+    if (isListening) {
       return;
+    }
 
     isListening = true;
     final Socket currentSocket = this.socket;
@@ -221,6 +228,7 @@ public class ServerConnection {
               try {
                 listener.accept(line);
               } catch (Exception ignored) {
+                ignored.printStackTrace();
               }
             }
           } else {
@@ -228,8 +236,9 @@ public class ServerConnection {
           }
         }
       } catch (Exception e) {
-        if (isListening)
+        if (isListening) {
           System.err.println("Mất kết nối Thread lắng nghe.");
+        }
       } finally {
         // Dọn dẹp với connectionLock
         connectionLock.lock();
@@ -249,9 +258,12 @@ public class ServerConnection {
   }
 
   private boolean isPushMessage(String line) {
-    if (line == null || line.isEmpty())
+    if (line == null || line.isEmpty()) {
       return false;
-    String header = line.split("\\|")[0];
+    }
+    String[] parts = line.split("\\|");
+    String header = parts[0];
+
     return header.equals(Protocol.NOTI_BID_UPDATE)
         || header.equals(Protocol.NOTI_SNIPING_UPDATE)
         || header.equals(Protocol.NOTI_BALANCE_CHANGED)

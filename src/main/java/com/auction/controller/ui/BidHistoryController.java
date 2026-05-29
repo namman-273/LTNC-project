@@ -34,6 +34,9 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+/**
+ * bidhistorycontroller.
+ */
 public class BidHistoryController extends BaseController implements Initializable {
 
   @FXML
@@ -81,6 +84,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     historyList.setCellFactory(lv -> new HistoryCell());
   }
 
+  /**
+   * set users name.
+   */
   public void setUsername(String u) {
     initToastManager(historyList); // BaseController — loại bỏ bản copy
     this.username = u;
@@ -234,6 +240,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     removePushListener(); // BaseController
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleProfile() {
     leaveScreen();
@@ -241,6 +250,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     new ProfileView(stage, username).show();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleWatchlist() {
     leaveScreen();
@@ -248,6 +260,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     new WatchlistView(stage, username).show();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleBalance() {
     leaveScreen();
@@ -255,6 +270,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     new BalanceView(stage, username).show();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleNotification() {
     leaveScreen();
@@ -262,6 +280,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     new NotificationView(stage, username).show();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleHome() {
     leaveScreen();
@@ -269,6 +290,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     new AuctionListView(stage, username).show();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleBack() {
     leaveScreen();
@@ -276,6 +300,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     new AuctionListView(stage, username).show();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleGoBalance() {
     leaveScreen();
@@ -284,20 +311,28 @@ public class BidHistoryController extends BaseController implements Initializabl
       new BalanceView(s, username).show();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleSellerDashboard() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new SellerView(s, username).show();
+    }
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleGoNotification() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new NotificationView(s, username).show();
+    }
   }
 
   private Stage getStage() {

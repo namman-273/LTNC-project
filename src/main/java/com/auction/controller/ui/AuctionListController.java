@@ -40,6 +40,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ * Auctionlistcontroller.
+ */
 public class AuctionListController extends BaseController implements Initializable {
 
   @FXML
@@ -104,6 +107,9 @@ public class AuctionListController extends BaseController implements Initializab
               .parse(json.getAsString()))
       .create();
 
+  /**
+ * set users name.
+ */
   public void setUsername(String username) {
     this.username = username;
     if (welcomeLabel != null)
@@ -534,7 +540,8 @@ public class AuctionListController extends BaseController implements Initializab
     new Thread(() -> {
       try {
         javafx.scene.image.Image img;
-        final double reqW = 187, reqH = 120;
+        final double reqW = 187;
+        final double reqH = 120;
         if (imgUrl.startsWith("data:image")) {
           String base64 = imgUrl.substring(imgUrl.indexOf(",") + 1);
           byte[] bytes = java.util.Base64.getDecoder().decode(base64);
@@ -580,6 +587,9 @@ public class AuctionListController extends BaseController implements Initializab
   }
 
   // ── Watchlist ─────────────────────────────────────────────────────────────
+  /**
+ * handele watch.
+ */
   @FXML
   public void handleWatch() {
     if (selectedRow == null) {
@@ -600,6 +610,9 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleUnwatch() {
     if (selectedRow == null) {
@@ -616,6 +629,9 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleGetWatchlist() {
     stopAutoRefresh();
@@ -652,6 +668,9 @@ public class AuctionListController extends BaseController implements Initializab
     }
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleLogout() {
     stopAutoRefresh();
@@ -696,6 +715,9 @@ public class AuctionListController extends BaseController implements Initializab
     });
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleNotification() {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();

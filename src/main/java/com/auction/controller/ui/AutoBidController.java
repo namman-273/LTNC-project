@@ -13,6 +13,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+/**
+ * autobidcontroller.
+ */
 public class AutoBidController extends BaseController implements Initializable {
 
   @FXML
@@ -41,6 +44,9 @@ public class AutoBidController extends BaseController implements Initializable {
   private double startingPrice = 0;
   private String sellerId = "";
 
+  /**
+   * setdata.
+   */
   public void setData(String auctionId, String itemName, String currentPrice,
       String status, String username, long endTime,
       String imageUrl, String description,

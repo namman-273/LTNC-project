@@ -18,6 +18,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+/**
+ * .
+ */
 public class ProfileController extends BaseController implements Initializable {
 
   // ── Avatar card ───────────────────────────────────────────────────────────
@@ -64,6 +67,9 @@ public class ProfileController extends BaseController implements Initializable {
 
   private String username;
 
+  /**
+ * .
+ */
   public void setUsername(String u) {
     initToastManager(avatarLabel); // BaseController — loại bỏ bản copy
     this.username = u;

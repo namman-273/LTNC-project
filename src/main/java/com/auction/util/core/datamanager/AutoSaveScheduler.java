@@ -18,7 +18,6 @@ public class AutoSaveScheduler {
   /**
    * Constructor.
    * 
-   * @param intervalMs Interval giữa các lần auto-save (milliseconds)
    */
   public AutoSaveScheduler(long intervalMs) {
     this.intervalMs = intervalMs;
@@ -31,8 +30,7 @@ public class AutoSaveScheduler {
 
   /**
    * Bắt đầu auto-save với task được cung cấp.
-   * 
-   * @param saveTask Task sẽ chạy định kỳ
+   * saveTask Task sẽ chạy định kỳ
    */
   public void start(Runnable saveTask) {
     if (isRunning.compareAndSet(false, true)) {
@@ -52,8 +50,7 @@ public class AutoSaveScheduler {
 
   /**
    * Dừng scheduler gracefully.
-   * 
-   * @param timeoutSeconds Thời gian chờ tối đa (giây)
+   * timeoutSeconds Thời gian chờ tối đa (giây)
    */
   public void shutdown(int timeoutSeconds) {
     if (isRunning.compareAndSet(true, false)) {

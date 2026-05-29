@@ -17,14 +17,15 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
+/**
+ * Bidchartcontroller.
+ */
 public class BidChartController extends BaseController implements Initializable {
 
   @FXML
   private LineChart<Number, Number> bidChart;
-  @FXML
-  private NumberAxis axisX;
-  @FXML
-  private NumberAxis axisY;
+  // axisX/axisY không inject qua @FXML vì FXML dùng xAxis/yAxis property element —
+  // lấy trực tiếp qua bidChart.getXAxis() / getYAxis() trong initialize()
   @FXML
   private Label titleLabel;
 
@@ -35,8 +36,11 @@ public class BidChartController extends BaseController implements Initializable 
   private String username;
   private long endTime;
 
+  /**
+ * setdata.
+ */
   public void setData(String auctionId, String itemName, String currentPrice,
-      String status, String username, long endTime) {
+                      String status, String username, long endTime) {
     this.auctionId = auctionId;
     this.itemName = itemName;
     this.currentPrice = currentPrice;
@@ -46,20 +50,22 @@ public class BidChartController extends BaseController implements Initializable 
 
     initToastManager(titleLabel); // BaseController — loại bỏ bản copy
     titleLabel.setText("Biểu đồ giá - " + itemName);
+    // Lấy axes qua getter sau khi bidChart đã được inject
+    if (bidChart.getXAxis() != null) bidChart.getXAxis().setLabel("Lần đặt giá");
+    if (bidChart.getYAxis() != null) bidChart.getYAxis().setLabel("Giá (VNĐ)");
     loadChartData();
     registerPushListener(this::handlePushMessage); // BaseController
   }
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-    axisX.setLabel("Lần đặt giá");
-    axisY.setLabel("Giá (VNĐ)");
+    // bidChart chưa inject ở initialize() (inject sau), đặt label trong setData()
   }
 
   private void loadChartData() {
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
-          Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+              Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
       System.out.println("Chart history: " + response);
 
       if (response == null || !response.startsWith(Protocol.RES_HISTORY))
@@ -108,7 +114,7 @@ public class BidChartController extends BaseController implements Initializable 
           Platform.runLater(() -> {
             appendPoint(newPrice);
             ToastManager.show(ToastManager.Type.INFO,
-                "🔨 Giá mới: " + AuctionUtils.formatPrice(newPrice)); // AuctionUtils
+                    "🔨 Giá mới: " + AuctionUtils.formatPrice(newPrice)); // AuctionUtils
           });
         } catch (NumberFormatException ignored) {
           ignored.printStackTrace();

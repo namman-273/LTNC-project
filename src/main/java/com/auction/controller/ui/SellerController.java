@@ -74,10 +74,10 @@ public class SellerController extends BaseController implements Initializable {
   private Timeline autoRefreshTimeline;
 
   private final Gson gson = new GsonBuilder()
-      .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
-              .parse(json.getAsString()))
-      .create();
+          .registerTypeAdapter(java.time.LocalDateTime.class,
+                  (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
+                          .parse(json.getAsString()))
+          .create();
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
@@ -113,10 +113,10 @@ public class SellerController extends BaseController implements Initializable {
     historyList.setCellFactory(lv -> new HistoryRowCell());
 
     auctionTable.getSelectionModel().selectedItemProperty()
-        .addListener((obs, oldVal, newVal) -> {
-          if (newVal != null)
-            loadHistory(newVal.getId(), newVal.getItemName());
-        });
+            .addListener((obs, oldVal, newVal) -> {
+              if (newVal != null)
+                loadHistory(newVal.getId(), newVal.getItemName());
+            });
 
     loadMyAuctions();
     loadBalance(balanceLabel); // BaseController
@@ -140,9 +140,9 @@ public class SellerController extends BaseController implements Initializable {
           String bidder = parts[3];
           // Reload xong mới check ownership để tránh race condition
           Platform.runLater(() -> loadMyAuctionsThenNotify(auctionId,
-              "🔔 Có bid mới tại phiên: " + auctionId,
-              bidder + " vừa đặt giá " + AuctionUtils.formatPrice(newPrice) // AuctionUtils
-                  + " tại phiên: " + auctionId));
+                  "🔔 Có bid mới tại phiên: " + auctionId,
+                  bidder + " vừa đặt giá " + AuctionUtils.formatPrice(newPrice) // AuctionUtils
+                          + " tại phiên: " + auctionId));
         }
         break;
 
@@ -167,9 +167,9 @@ public class SellerController extends BaseController implements Initializable {
               balanceFormatted = newBalance + " VNĐ";
             }
             showNotification("💰 Tiền đã về tài khoản!",
-                "Phiên " + auctionId + " đã kết thúc thành công.\n"
-                    + "Số tiền nhận: " + deltaFormatted + "\n"
-                    + "Số dư mới: " + balanceFormatted);
+                    "Phiên " + auctionId + " đã kết thúc thành công.\n"
+                            + "Số tiền nhận: " + deltaFormatted + "\n"
+                            + "Số dư mới: " + balanceFormatted);
           });
         }
         break;
@@ -180,11 +180,11 @@ public class SellerController extends BaseController implements Initializable {
           final String reason = parts[2];
           Platform.runLater(() -> {
             boolean wasMine = auctionData.stream()
-                .anyMatch(r -> r.getId().equals(cancelledId));
+                    .anyMatch(r -> r.getId().equals(cancelledId));
             loadMyAuctions();
             if (wasMine) {
               showNotification("⚠️ Phiên của bạn: " + reason,
-                  "Phiên " + cancelledId + ".\nLý do: " + reason);
+                      "Phiên " + cancelledId + ".\nLý do: " + reason);
             }
           });
         }
@@ -200,10 +200,10 @@ public class SellerController extends BaseController implements Initializable {
       String response = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
       if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
         String json = response.substring(
-            Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
+                Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
         AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
         boolean isMine = rows != null && java.util.Arrays.stream(rows)
-            .anyMatch(r -> r.getId().equals(auctionId) && username.equals(r.getSellerId()));
+                .anyMatch(r -> r.getId().equals(auctionId) && username.equals(r.getSellerId()));
         Platform.runLater(() -> {
           loadMyAuctions();
           if (isMine)
@@ -218,7 +218,7 @@ public class SellerController extends BaseController implements Initializable {
       String response = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
       if (response != null && response.startsWith(Protocol.RES_LIST_SUCCESS)) {
         String json = response.substring(
-            Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
+                Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
         AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
         if (rows != null) {
           ObservableList<AuctionRow> data = FXCollections.observableArrayList();
@@ -228,11 +228,11 @@ public class SellerController extends BaseController implements Initializable {
           }
           long open = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
           long finished = data.stream()
-              .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())) // AuctionUtils
-              .count();
+                  .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())) // AuctionUtils
+                  .count();
           double revenue = data.stream()
-              .filter(r -> "PAID".equals(r.getStatus()))
-              .mapToDouble(AuctionRow::getCurrentPrice).sum();
+                  .filter(r -> "PAID".equals(r.getStatus()))
+                  .mapToDouble(AuctionRow::getCurrentPrice).sum();
           Platform.runLater(() -> {
             auctionData.setAll(data);
             if (statsLabel != null)
@@ -245,7 +245,7 @@ public class SellerController extends BaseController implements Initializable {
               statFinished.setText(String.valueOf(finished));
             if (statRevenue != null)
               statRevenue.setText(
-                  revenue > 0 ? AuctionUtils.formatPrice(revenue) : "---"); // AuctionUtils
+                      revenue > 0 ? AuctionUtils.formatPrice(revenue) : "---"); // AuctionUtils
           });
         }
       } else {
@@ -263,7 +263,7 @@ public class SellerController extends BaseController implements Initializable {
     historyData.add("Đang tải...");
     new Thread(() -> {
       String response = ServerConnection.getInstance().sendAndReceive(
-          Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
+              Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
       Platform.runLater(() -> {
         historyData.clear();
         if (response == null || !response.startsWith(Protocol.RES_HISTORY)) {
@@ -310,8 +310,8 @@ public class SellerController extends BaseController implements Initializable {
         return;
       }
       if (item.equals("Đang tải...")
-          || item.equals("Chưa có lịch sử đặt giá.")
-          || item.equals("Lỗi tải lịch sử.")) {
+              || item.equals("Chưa có lịch sử đặt giá.")
+              || item.equals("Lỗi tải lịch sử.")) {
         setText(null);
         javafx.scene.control.Label lbl = new javafx.scene.control.Label(item);
         lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-padding: 8 0;");
@@ -330,7 +330,7 @@ public class SellerController extends BaseController implements Initializable {
       row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
       row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
       row.setStyle("-fx-background-color: white; -fx-background-radius: 10;"
-          + "-fx-border-color: #F3F4F6; -fx-border-radius: 10; -fx-border-width: 0.5;");
+              + "-fx-border-color: #F3F4F6; -fx-border-radius: 10; -fx-border-width: 0.5;");
 
       javafx.scene.layout.StackPane numCircle = new javafx.scene.layout.StackPane();
       numCircle.setPrefSize(28, 28);
@@ -374,7 +374,7 @@ public class SellerController extends BaseController implements Initializable {
   @FXML
   private void startAutoRefresh() {
     autoRefreshTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(10), e -> loadMyAuctions()));
+            new KeyFrame(Duration.seconds(10), e -> loadMyAuctions()));
     autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
     autoRefreshTimeline.play();
   }
@@ -435,6 +435,11 @@ public class SellerController extends BaseController implements Initializable {
     alert.setTitle(title);
     alert.setHeaderText(null);
     alert.setContentText(message);
+    // Fix: gắn owner để alert luôn hiện trên cửa sổ chính, không bị khuất phía sau
+    try {
+      javafx.stage.Stage owner = (javafx.stage.Stage) auctionTable.getScene().getWindow();
+      alert.initOwner(owner);
+    } catch (Exception ignored) {}
     alert.show();
   }
 }

@@ -11,19 +11,12 @@ public interface DataPersistence<K, V> {
   
   /**
    * Lưu data xuống storage.
-   * 
-   * @param data Map cần lưu
-   * @param identifier Identifier cho loại data (vd: "users", "auctions")
-   * @throws DataPersistenceException nếu lưu thất bại
    */
   void save(Map<K, V> data, String identifier) throws DataPersistenceException;
   
   /**
    * Load data từ storage.
    * 
-   * @param identifier Identifier cho loại data
-   * @return Map data đã load, hoặc null nếu không tồn tại
-   * @throws DataPersistenceException nếu load thất bại
    */
   Map<K, V> load(String identifier) throws DataPersistenceException;
   

@@ -2,7 +2,6 @@ package com.auction.service.bidhistorymanager;
 
 import com.auction.model.dto.BidHistoryEntry;
 import com.auction.util.core.datamanager.DataManager;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
