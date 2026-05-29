@@ -111,27 +111,18 @@ public class NotificationManager {
   }
 
   public void add(String message, String category, String auctionId) {
-    // Dedup: không add nếu đã có cùng auctionId + cùng loại thắng/thua trong 10s
-    // gần nhất
-    // BUG FIX: dùng toàn bộ message để dedup, tránh bỏ sót thông báo gia hạn lần 2+
-    // (lần 1: "...gia hạn lần 1", lần 2: "...gia hạn lần 2" — khác nhau ở cuối)
+    // Dedup chính xác bằng auctionId + full message string.
+    // Không dùng fuzzy dedup "vượt giá" vì sẽ chặn nhầm notification
+    // của phiên thứ 2 trở đi (cùng auctionId nhưng giá khác nhau).
+    // Format message đã được chuẩn hóa qua AuctionUtils.formatPrice() ở tất cả
+    // controller → hai message cùng sự kiện sẽ trùng chính xác → dedup tự nhiên.
     String dedupeKey = (auctionId != null ? auctionId : "") + "|"
             + (message != null ? message : "");
-    // Dedup bổ sung: nếu message là "vượt giá" cho cùng auctionId,
-    // bỏ qua dù format message khác nhau (BidController vs AuctionListController
-    // cùng nhận NOTI_OUTBID và add với format số khác nhau)
-    boolean isOutbidMsg = message != null && message.contains("vượt giá");
     for (NotificationItem existing : items) {
       String existKey = (existing.getAuctionId() != null ? existing.getAuctionId() : "") + "|"
               + (existing.getMessage() != null ? existing.getMessage() : "");
       if (dedupeKey.equals(existKey))
         return; // bỏ qua nếu trùng chính xác
-      // Dedup mờ: cùng auctionId + cùng loại "vượt giá" → chỉ giữ cái đầu tiên
-      if (isOutbidMsg
-              && auctionId != null && auctionId.equals(existing.getAuctionId())
-              && existing.getMessage() != null && existing.getMessage().contains("vượt giá")) {
-        return;
-      }
     }
     NotificationItem item = new NotificationItem(message, category, auctionId);
     items.add(0, item);
