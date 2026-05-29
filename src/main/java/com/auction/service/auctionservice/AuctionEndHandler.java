@@ -1,8 +1,8 @@
 package com.auction.service.auctionservice;
  
+import com.auction.controller.network.ConnectionManager;
 import com.auction.model.entities.Auction;
 import com.auction.model.enums.AuctionStatus;
-import com.auction.controller.network.ConnectionManager;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.PaymentProcessor.WinnerInfo;
 import com.auction.service.bidhistorymanager.BidHistoryManager;

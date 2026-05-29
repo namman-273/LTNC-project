@@ -11,7 +11,9 @@ public final class AuctionUtils {
   }
 
   // ── Minimum bid increment (mirror AuctionValidator phía server) ───────────
-  // Trước đây copy y hệt trong BidController VÀ AutoBidController.
+  /**
+   * minimum bid.
+   */
   public static long getMinimumIncrement(double price) {
     if (price < 1_000_000)
       return 50_000;
@@ -23,8 +25,10 @@ public final class AuctionUtils {
   }
 
   // ── Extract winner name từ RES_END_SUCCESS detail string ─────────────────
-  // Trước đây có 3 phiên bản hơi khác nhau trong AuctionList, Bid, AutoBid.
-  // Phiên bản hợp nhất xử lý cả "Winner: X" lẫn "Winner:X".
+
+  /**
+   * extractwinner.
+   */
   public static String extractWinner(String detail) {
     if (detail == null)
       return "N/A";
@@ -47,6 +51,9 @@ public final class AuctionUtils {
   }
 
   // ── Format giá từ chuỗi thô (có thể chứa dấu phẩy, "VND", "VNĐ") ────────
+  /**
+   * formatprice.
+   */
   public static String formatPrice(String raw) {
     if (raw == null)
       return "N/A";

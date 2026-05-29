@@ -53,17 +53,12 @@ public class Protocol {
   public static final String NOTI_BID_UPDATE = "BID_UPDATE";
 
   /**
-   * NOTI_OUTBID: Thông báo riêng cho người bị vượt giá
-   * Format: OUTBID|auctionId|newBidder|newAmount
-   * NEW: Notification đặc biệt chỉ gửi cho người đang giữ giá cao nhất
-   * khi họ bị vượt giá bởi người khác.
+   * NOTI_OUTBID: Thông báo riêng cho người bị vượt giá.
    */
   public static final String NOTI_OUTBID = "OUTBID";
 
   /**
-   * NOTI_REFUND: Thông báo khi tiền được hoàn lại vào ví
-   * Format: REFUND|auctionId|refundAmount|reason
-   * NEW: Notification khi user nhận lại tiền do bị outbid hoặc auction bị hủy.
+   * NOTI_REFUND: Thông báo khi tiền được hoàn lại vào ví.
    * Reasons:
    * - "OUTBID": Bị người khác vượt giá
    * - "AUCTION_CANCELLED": Phiên đấu giá bị hủy
@@ -73,12 +68,11 @@ public class Protocol {
 
   /**
    * NOTI_AUCTION_CANCELLED: Thông báo phiên đấu giá bị hủy bởi Admin
-   * Format: AUCTION_CANCELLED|auctionId|reason
    * NEW: Gửi cho TẤT CẢ participants khi Admin đóng phiên sớm.
    */
   public static final String NOTI_AUCTION_CANCELLED = "AUCTION_CANCELLED";
 
-  // FIX: Thêm thông báo gia hạn thời gian (Anti-Sniping)
+  //  Thêm thông báo gia hạn thời gian (Anti-Sniping)
   public static final String NOTI_SNIPING_UPDATE = "SNIPING_UPDATE";
 
   // tất cả Client đang mở App sẽ thấy món hàng đó tự động hiện ra
