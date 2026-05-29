@@ -12,7 +12,7 @@ import java.net.SocketException;
 /**
  * Server Auction
  * - Lắng nghe kết nối từ Client
- * - Tối ưu: In IP máy server để Client kết nối
+ * - Tối ưu: In IP máy server để Client kết nối.
  */
 public class AuctionServer {
   private final int port;
@@ -72,8 +72,8 @@ public class AuctionServer {
       while (running) {
         try {
           Socket clientSocket = serverSocket.accept();
-          System.out.println("✓ Client kết nối từ: " +
-              clientSocket.getInetAddress().getHostAddress());
+          System.out.println("Client kết nối từ: "
+              + clientSocket.getInetAddress().getHostAddress());
           ClientHandler handler = new ClientHandler(clientSocket);
           new Thread(handler).start();
         } catch (SocketException e) {
@@ -93,7 +93,7 @@ public class AuctionServer {
   }
 
   /**
-   * Main entry point
+   * Main entry point.
    */
   public static void main(String[] args) {
     // Khởi tạo các Manager
