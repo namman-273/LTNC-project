@@ -122,8 +122,10 @@ LTNC-project/
                 │   └── ui/                       
                 │       ├── AdminDashboardController.java
                 │       ├── AuctionListController.java
+                │       ├── AuctionUtils.java                
                 │       ├── AutoBidController.java
                 │       ├── BalanceController.java
+                │       ├── BaseController.java                
                 │       ├── BidChartController.java
                 │       ├── BidController.java
                 │       ├── BidHistoryController.java
@@ -187,6 +189,7 @@ LTNC-project/
                 │   │   ├── AuctionRepository.java
                 │   │   ├── AuctionScheduler.java
                 │   │   ├── AuctionEndHandler.java
+                │   │   ├── AuctionDeletionHandler.java                
                 │   │   ├── AuctionFactory.java
                 │   │   ├── AuctionNotificationService.java
                 │   │   ├── AuctionDataPersistenceService.java
