@@ -275,12 +275,13 @@ public class AuctionListController extends BaseController implements Initializab
         if (parts.length >= 3) {
           String refundAmt = parts[2];
           String auctionId = parts.length >= 2 ? parts[1] : "";
-          // Không add notification — BidController.onRefund() đã xử lý khi đang ở BidView.
-          // Khi không ở BidView, notification outbid phía trên đã đủ.
-          // Chỉ cập nhật balance label và toast.
+          // Dùng formatPrice để tránh số thô (vd "5005000.0 VNĐ")
+          // add notification để hiển thị "Cập nhật số dư ví" trong panel
           String fmtAmt = AuctionUtils.formatPrice(refundAmt); // AuctionUtils
+          String detailMsg = "💰 Hoàn tiền: " + fmtAmt;
+          NotificationManager.getInstance().add(detailMsg, "balance", auctionId);
           Platform.runLater(() -> {
-            ToastManager.show(ToastManager.Type.SUCCESS, "💰 Hoàn tiền: " + fmtAmt);
+            ToastManager.show(ToastManager.Type.SUCCESS, detailMsg);
             loadBalance(balanceLabel); // BaseController
           });
         }
