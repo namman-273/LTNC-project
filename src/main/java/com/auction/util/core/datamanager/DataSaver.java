@@ -17,13 +17,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Tuân thủ Single Responsibility Principle - chỉ làm việc save data.
  */
 public class DataSaver {
-  
+
   private final DataPersistence<String, User> userPersistence;
   private final DataPersistence<String, Auction> auctionPersistence;
   private final DataPersistence<String, List<BidHistoryEntry>> historyPersistence;
-  
+
   private final DirtyFlagTracker dirtyTracker;
-  
+
   // Lock riêng cho từng loại data
   private final ReentrantReadWriteLock usersLock = new ReentrantReadWriteLock();
   private final ReentrantReadWriteLock auctionsLock = new ReentrantReadWriteLock();
@@ -45,8 +45,6 @@ public class DataSaver {
 
   /**
    * Save users data nếu dirty.
-   * 
-   * @return true nếu đã save, false nếu không dirty
    */
   public boolean saveUsersIfDirty() {
     if (!dirtyTracker.clearUsersDirty()) {
@@ -140,13 +138,13 @@ public class DataSaver {
    */
   public void saveAll() {
     dirtyTracker.markAllDirty();
-    
+
     boolean usersSaved = saveUsersIfDirty();
     boolean auctionsSaved = saveAuctionsIfDirty();
     boolean historySaved = saveHistoryIfDirty();
-    
+
     if (usersSaved || auctionsSaved || historySaved) {
-      System.out.println("[DataSaver] Saved: users=" + usersSaved 
+      System.out.println("[DataSaver] Saved: users=" + usersSaved
           + ", auctions=" + auctionsSaved + ", history=" + historySaved);
     }
   }
@@ -158,7 +156,7 @@ public class DataSaver {
     boolean usersSaved = saveUsersIfDirty();
     boolean auctionsSaved = saveAuctionsIfDirty();
     boolean historySaved = saveHistoryIfDirty();
-    
+
     if (usersSaved || auctionsSaved || historySaved) {
       System.out.println("[DataSaver] Auto-save complete");
     }

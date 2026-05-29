@@ -17,6 +17,9 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
+/**
+ * Bidchartcontroller.
+ */
 public class BidChartController extends BaseController implements Initializable {
 
   @FXML
@@ -33,6 +36,9 @@ public class BidChartController extends BaseController implements Initializable 
   private String username;
   private long endTime;
 
+  /**
+ * setdata.
+ */
   public void setData(String auctionId, String itemName, String currentPrice,
                       String status, String username, long endTime) {
     this.auctionId = auctionId;

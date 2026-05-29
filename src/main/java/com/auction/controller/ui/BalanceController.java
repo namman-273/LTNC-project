@@ -26,6 +26,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ * Balancecontroller.
+ */
 public class BalanceController extends BaseController implements Initializable {
 
   @FXML
@@ -45,6 +48,9 @@ public class BalanceController extends BaseController implements Initializable {
   private Timeline autoRefreshTimeline;
 
   // ── Transaction DTO ───────────────────────────────────────────────────────
+  /**
+ * transaction dto.
+ */
   public static class TransactionItem {
     final String amount;
     final String type;
@@ -132,6 +138,9 @@ public class BalanceController extends BaseController implements Initializable {
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
+  /**
+ * set users names.
+ */
   public void setUsername(String username) {
     initToastManager(balanceLabel); // BaseController — loại bỏ bản copy
     this.username = username;

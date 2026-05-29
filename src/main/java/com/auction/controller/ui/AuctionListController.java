@@ -40,6 +40,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ * Auctionlistcontroller.
+ */
 public class AuctionListController extends BaseController implements Initializable {
 
   @FXML
@@ -104,6 +107,9 @@ public class AuctionListController extends BaseController implements Initializab
                           .parse(json.getAsString()))
           .create();
 
+  /**
+ * set users name.
+ */
   public void setUsername(String username) {
     this.username = username;
     if (welcomeLabel != null)
@@ -589,6 +595,9 @@ public class AuctionListController extends BaseController implements Initializab
   }
 
   // ── Watchlist ─────────────────────────────────────────────────────────────
+  /**
+ * handele watch.
+ */
   @FXML
   public void handleWatch() {
     if (selectedRow == null) {
@@ -609,6 +618,9 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleUnwatch() {
     if (selectedRow == null) {
@@ -625,6 +637,9 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleGetWatchlist() {
     stopAutoRefresh();
@@ -661,6 +676,9 @@ public class AuctionListController extends BaseController implements Initializab
     }
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleLogout() {
     stopAutoRefresh();
@@ -707,6 +725,9 @@ public class AuctionListController extends BaseController implements Initializab
     });
   }
 
+  /**
+ * handle.
+ */
   @FXML
   public void handleNotification() {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();

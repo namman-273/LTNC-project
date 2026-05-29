@@ -27,6 +27,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ * admindashboardcontroller.
+ */
 public class AdminDashboardController extends BaseController implements Initializable {
 
   @FXML
@@ -118,6 +121,9 @@ public class AdminDashboardController extends BaseController implements Initiali
     }
   }
 
+  /**
+   * loadfromserver.
+   */
   public void loadFromServer() {
     showMessage("Đang tải danh sách...", "gray");
     new Thread(() -> {
@@ -158,6 +164,9 @@ public class AdminDashboardController extends BaseController implements Initiali
       statFinishedLabel.setText(String.valueOf(finishedCount));
   }
 
+  /**
+   * handle.
+   */
   @FXML
   public void handleDeposit() {
     String amount = depositAmountField != null ? depositAmountField.getText().trim() : "";
@@ -187,6 +196,9 @@ public class AdminDashboardController extends BaseController implements Initiali
     loadFromServer();
   }
 
+  /**
+ * .
+ */
   @FXML
   public void handleEndAuction() {
     AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
@@ -222,6 +234,9 @@ public class AdminDashboardController extends BaseController implements Initiali
     }).start();
   }
 
+  /**
+ * .
+ */
   @FXML
   public void handleDeleteAuction() {
     AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
@@ -288,6 +303,9 @@ public class AdminDashboardController extends BaseController implements Initiali
     }
   }
 
+  /**
+ * .
+ */
   public void handleBack() {
     stopAutoRefresh();
     removePushListener(); // BaseController — trước đây inline, không extract ra method

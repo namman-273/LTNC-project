@@ -16,11 +16,17 @@ import java.util.PriorityQueue;
  */
 public class AutoBidProcessor {
 
+  /**
+   * sử dụng lambda.
+   */
   @FunctionalInterface
   public interface BidUpdater {
     void updateState(User user, double amount) throws InvalidBidException;
   }
 
+  /**
+   * method bot tự động.
+   */
   public void executeAutoBids(PriorityQueue<AutoBid> queue, Auction auction, BidUpdater updater) {
     if (queue == null || queue.isEmpty()) {
       return;

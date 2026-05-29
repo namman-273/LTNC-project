@@ -25,7 +25,7 @@ public class AuctionServer {
   }
 
   /**
-   *  * .
+   *  * server chạy.
    *  
    */
   public void start() {
