@@ -2,10 +2,13 @@ package com.auction.network.client;
 
 import com.auction.network.protocol.Protocol;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -14,13 +17,16 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 /**
- *  * kết nối với clienthandler.
- *  
+ * Kết nối với ClientHandler.
+ * - Tối ưu: 2 ReentrantLock (connectionLock + requestLock)
+ * - Hỗ trợ: Đọc cấu hình server từ file server.properties
  */
 public class ServerConnection {
 
-  private static final String HOST = "localhost";
-  private static final int PORT = 9999;
+  // ===== THÊM: Đọc từ file properties =====
+  private static String DEFAULT_HOST = "localhost";
+  private static int DEFAULT_PORT = 9999;
+  
   private static final int MAX_RETRY = 3;
   private static final int RETRY_DELAY_MS = 1000;
 
@@ -45,14 +51,50 @@ public class ServerConnection {
 
   private static volatile ServerConnection instance;
 
+  // ===== SỬA: CONSTRUCTOR - THÊM LOAD CONFIG =====
   private ServerConnection() {
-    this.host = HOST;
-    this.port = PORT;
+    loadServerConfig();  // ← THÊM DÒNG NÀY
+    this.host = DEFAULT_HOST;
+    this.port = DEFAULT_PORT;
   }
 
   /**
-   *  * Singleton.
-   *  
+   * Đọc cấu hình server từ file server.properties
+   * File phải đặt ở thư mục project root (cùng pom.xml)
+   */
+  private void loadServerConfig() {
+    try {
+      File configFile = new File("server.properties");
+      
+      if (configFile.exists()) {
+        Properties props = new Properties();
+        try (FileInputStream fis = new FileInputStream(configFile)) {
+          props.load(fis);
+          DEFAULT_HOST = props.getProperty("server.host", "localhost");
+          String portStr = props.getProperty("server.port", "9999");
+          try {
+            DEFAULT_PORT = Integer.parseInt(portStr);
+          } catch (NumberFormatException e) {
+            DEFAULT_PORT = 9999;
+            System.out.println("⚠ Port không hợp lệ, dùng 9999");
+          }
+          System.out.println("✓ Đã load config từ server.properties");
+          System.out.println("  → Server: " + DEFAULT_HOST + ":" + DEFAULT_PORT);
+        }
+      } else {
+        System.out.println("⚠ Không tìm thấy server.properties");
+        System.out.println("  → Sẽ dùng: localhost:9999 (mặc định)");
+      }
+    } catch (Exception e) {
+      System.out.println("⚠ Lỗi đọc config: " + e.getMessage());
+      System.out.println("  → Sẽ dùng: localhost:9999 (mặc định)");
+    }
+  }
+
+  
+
+  /**
+   * Singleton.
    */
   public static ServerConnection getInstance() {
     if (instance == null) {
@@ -68,8 +110,7 @@ public class ServerConnection {
   // ─── 1. QUẢN LÝ KẾT NỐI (Dùng connectionLock) ─────────────────────────
 
   /**
-   *  * kết nối.
-   *  
+   * Kết nối.
    */
   public boolean connect() {
     connectionLock.lock();
@@ -85,10 +126,11 @@ public class ServerConnection {
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
       startInternalListener();
-      System.out.println("Kết nối server thành công!");
+      System.out.println("✓ Kết nối server thành công: " + host + ":" + port);
       return true;
     } catch (Exception e) {
-      System.err.println("Không thể kết nối server: " + e.getMessage());
+      System.err.println("✗ Không thể kết nối " + host + ":" + port);
+      System.err.println("  Lỗi: " + e.getMessage());
       closeQuietly();
       return false;
     } finally {
@@ -97,8 +139,7 @@ public class ServerConnection {
   }
 
   /**
-   *  * kết nối lại.
-   *  
+   * Kết nối lại.
    */
   public boolean connectWithRetry() {
     for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
@@ -120,8 +161,7 @@ public class ServerConnection {
   }
 
   /**
-   *  * bỏ kết nối.
-   *  
+   * Bỏ kết nối.
    */
   public void disconnect() {
     connectionLock.lock();
@@ -275,8 +315,7 @@ public class ServerConnection {
   }
 
   /**
-   *  * cài nghe tin push.
-   *  
+   * Cài nghe tin push.
    */
   public void addPushListener(Consumer<String> listener) {
     if (listener != null && !pushListeners.contains(listener)) {
