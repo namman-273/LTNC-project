@@ -40,9 +40,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-/**
- * Auctionlistcontroller.
- */
 public class AuctionListController extends BaseController implements Initializable {
 
   @FXML
@@ -107,9 +104,6 @@ public class AuctionListController extends BaseController implements Initializab
                           .parse(json.getAsString()))
           .create();
 
-  /**
- * set users name.
- */
   public void setUsername(String username) {
     this.username = username;
     if (welcomeLabel != null)
@@ -188,15 +182,7 @@ public class AuctionListController extends BaseController implements Initializab
           String delta = parts[3];
           Platform.runLater(() -> {
             updateBalanceLabelFromPush(balanceLabel, newBal); // BaseController
-            // delta từ server là số thô (vd "+1.0005E9") — parse và format trước khi hiển thị
-            String deltaClean = delta.startsWith("+") ? delta.substring(1) : delta;
-            String deltaFormatted;
-            try {
-              deltaFormatted = AuctionUtils.formatPrice(Double.parseDouble(deltaClean)); // AuctionUtils
-            } catch (NumberFormatException e) {
-              deltaFormatted = deltaClean + " VNĐ";
-            }
-            String msg = "🎉 Phiên " + auctionId + " đã kết thúc! Nhận " + deltaFormatted;
+            String msg = "🎉 Phiên " + auctionId + " đã kết thúc! Nhận " + delta + " VNĐ";
             NotificationManager.getInstance().add(msg, "auction", auctionId);
             ToastManager.show(ToastManager.Type.SUCCESS, msg);
             loadFromServer();
@@ -275,8 +261,9 @@ public class AuctionListController extends BaseController implements Initializab
           String newBidder = parts[2];
           String newAmt = parts[3];
           biddedAuctions.add(auctionId);
+          // Dùng AuctionUtils.formatPrice() — format khớp BidController → dedup chặn lặp
           String detailMsg = "⚠️ Bị vượt giá trong phiên " + auctionId
-                  + " — Giá mới: " + newAmt + " VNĐ";
+                  + " — Giá mới: " + AuctionUtils.formatPrice(newAmt); // AuctionUtils
           NotificationManager.getInstance().add(detailMsg, "auction", auctionId);
           Platform.runLater(() -> ToastManager.show(ToastManager.Type.WARNING,
                   "⚠️ Bị vượt giá bởi " + newBidder + "!"));
@@ -288,10 +275,14 @@ public class AuctionListController extends BaseController implements Initializab
         if (parts.length >= 3) {
           String refundAmt = parts[2];
           String auctionId = parts.length >= 2 ? parts[1] : "";
-          String detailMsg = "💰 Hoàn tiền " + refundAmt + " VNĐ vào ví";
-          NotificationManager.getInstance().add(detailMsg, "balance", auctionId);
-          Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, "💰 Hoàn tiền vào ví"));
-          loadBalance(balanceLabel); // BaseController
+          // Không add notification — BidController.onRefund() đã xử lý khi đang ở BidView.
+          // Khi không ở BidView, notification outbid phía trên đã đủ.
+          // Chỉ cập nhật balance label và toast.
+          String fmtAmt = AuctionUtils.formatPrice(refundAmt); // AuctionUtils
+          Platform.runLater(() -> {
+            ToastManager.show(ToastManager.Type.SUCCESS, "💰 Hoàn tiền: " + fmtAmt);
+            loadBalance(balanceLabel); // BaseController
+          });
         }
         break;
       }
@@ -595,9 +586,6 @@ public class AuctionListController extends BaseController implements Initializab
   }
 
   // ── Watchlist ─────────────────────────────────────────────────────────────
-  /**
- * handele watch.
- */
   @FXML
   public void handleWatch() {
     if (selectedRow == null) {
@@ -618,9 +606,6 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
-  /**
- * handle.
- */
   @FXML
   public void handleUnwatch() {
     if (selectedRow == null) {
@@ -637,9 +622,6 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
-  /**
- * handle.
- */
   @FXML
   public void handleGetWatchlist() {
     stopAutoRefresh();
@@ -676,17 +658,12 @@ public class AuctionListController extends BaseController implements Initializab
     }
   }
 
-  /**
- * handle.
- */
   @FXML
   public void handleLogout() {
     stopAutoRefresh();
     removePushListener(); // BaseController
     ServerConnection.getInstance().disconnect();
     SessionManager.getInstance().clear();
-    // Xóa notifications của user cũ — tránh user mới đăng nhập thấy thông báo của user trước
-    NotificationManager.getInstance().clear();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new LoginView(stage).show();
   }
@@ -725,9 +702,6 @@ public class AuctionListController extends BaseController implements Initializab
     });
   }
 
-  /**
- * handle.
- */
   @FXML
   public void handleNotification() {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
