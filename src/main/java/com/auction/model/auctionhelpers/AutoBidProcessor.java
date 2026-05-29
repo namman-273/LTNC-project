@@ -100,15 +100,12 @@ public class AutoBidProcessor {
       // giá trước
       AutoBid currentTurnBot = top.getBidderId().equals(lastBidderId) ? second : top;
 
-      AutoBid lastBotInLoop = null;
-
       while (true) {
         double loopMinInc = validator.getMinimumIncrement(tempPrice);
         double loopStep = Math.max(currentTurnBot.getbidStep(), loopMinInc);
         tempPrice += loopStep;
 
         if (tempPrice >= finalPrice) {
-          lastBotInLoop = currentTurnBot;
           break;
         }
 
@@ -125,31 +122,6 @@ public class AutoBidProcessor {
         currentTurnBot = (currentTurnBot == top) ? second : top;
       }
 
-      if (lastBotInLoop == second) {
-        // Loser là bot cuối trước finalPrice
-        // Tính giá của loser tại bước cuối trước finalPrice
-        double tempBackPrice = currentPrice;
-
-        while (true) {
-          double backLoopMinInc = validator.getMinimumIncrement(tempBackPrice);
-          double backLoopStep = Math.max(second.getbidStep(), backLoopMinInc);
-          double nextPrice = tempBackPrice + backLoopStep;
-
-          if (nextPrice >= finalPrice) {
-            // tempBackPrice là giá cuối của loser trước finalPrice
-            if (tempBackPrice > currentPrice && tempBackPrice <= second.getMaxBid()) {
-              User loserUser = UserManager.getInstance().findUserByUsername(second.getBidderId());
-              if (loserUser != null) {
-                System.out.println("[SHADOW HISTORY] Adding loser's last bid: "
-                    + second.getBidderId() + " at " + tempBackPrice);
-                auction.getBidHistory().add(new BidTransaction(loserUser, tempBackPrice));
-              }
-            }
-            break;
-          }
-          tempBackPrice = nextPrice;
-        }
-      }
     }
 
     try {

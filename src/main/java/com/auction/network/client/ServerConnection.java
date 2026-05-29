@@ -74,8 +74,9 @@ public class ServerConnection {
   public boolean connect() {
     connectionLock.lock();
     try {
-      if (isConnected())
+      if (isConnected()) {
         return true;
+      }
 
       closeQuietly(); // Dọn dẹp an toàn trước khi tạo mới
 
@@ -102,8 +103,9 @@ public class ServerConnection {
   public boolean connectWithRetry() {
     for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
       System.out.println("Đang kết nối server... (lần " + attempt + "/" + MAX_RETRY + ")");
-      if (connect())
+      if (connect()) {
         return true;
+      }
       if (attempt < MAX_RETRY) {
         try {
           Thread.sleep(RETRY_DELAY_MS);
@@ -139,6 +141,7 @@ public class ServerConnection {
         socket.close();
       }
     } catch (Exception ignored) {
+      ignored.printStackTrace();
     }
     socket = null;
     out = null;
@@ -181,12 +184,14 @@ public class ServerConnection {
 
     try {
       String response = responseQueue.poll(5, TimeUnit.SECONDS);
-      if (response != null)
+      if (response != null) {
         return response;
+      }
 
       // Nếu không cho phép thử lại nữa
-      if (!allowRetry)
+      if (!allowRetry) {
         return "ERROR|Server không phản hồi sau khi kết nối lại!";
+      }
 
       // Nếu Timeout -> Thử kết nối lại và gửi đệ quy 1 lần duy nhất
       System.out.println("Timeout 5s, đang thử kết nối lại...");
@@ -223,6 +228,7 @@ public class ServerConnection {
               try {
                 listener.accept(line);
               } catch (Exception ignored) {
+                ignored.printStackTrace();
               }
             }
           } else {

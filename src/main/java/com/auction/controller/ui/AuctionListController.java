@@ -534,7 +534,8 @@ public class AuctionListController extends BaseController implements Initializab
     new Thread(() -> {
       try {
         javafx.scene.image.Image img;
-        final double reqW = 187, reqH = 120;
+        final double reqW = 187;
+        final double reqH = 120;
         if (imgUrl.startsWith("data:image")) {
           String base64 = imgUrl.substring(imgUrl.indexOf(",") + 1);
           byte[] bytes = java.util.Base64.getDecoder().decode(base64);
