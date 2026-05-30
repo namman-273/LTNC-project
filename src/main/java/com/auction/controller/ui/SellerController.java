@@ -35,6 +35,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ *.
+     */
 public class SellerController extends BaseController implements Initializable {
 
   @FXML
@@ -75,8 +78,9 @@ public class SellerController extends BaseController implements Initializable {
 
   private final Gson gson = new GsonBuilder()
           .registerTypeAdapter(java.time.LocalDateTime.class,
-                  (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
-                          .parse(json.getAsString()))
+                  (com.google.gson.JsonDeserializer<java.time.LocalDateTime>)
+                          (json, type, ctx) -> java.time.LocalDateTime
+                                  .parse(json.getAsString()))
           .create();
 
   @Override
@@ -114,8 +118,9 @@ public class SellerController extends BaseController implements Initializable {
 
     auctionTable.getSelectionModel().selectedItemProperty()
             .addListener((obs, oldVal, newVal) -> {
-              if (newVal != null)
+              if (newVal != null) {
                 loadHistory(newVal.getId(), newVal.getItemName());
+              }
             });
 
     loadMyAuctions();
@@ -128,8 +133,9 @@ public class SellerController extends BaseController implements Initializable {
   private void handleServerPush(String message) {
     System.out.println("[Seller Push]: " + message);
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     switch (parts[0]) {
 
@@ -155,7 +161,8 @@ public class SellerController extends BaseController implements Initializable {
             loadMyAuctions();
             updateBalanceLabelFromPush(balanceLabel, newBalance); // BaseController
             String deltaClean = delta.startsWith("+") ? delta.substring(1) : delta;
-            String deltaFormatted, balanceFormatted;
+            String deltaFormatted;
+            String balanceFormatted;
             try {
               deltaFormatted = AuctionUtils.formatPrice(Double.parseDouble(deltaClean));
             } catch (NumberFormatException e) {
@@ -209,8 +216,9 @@ public class SellerController extends BaseController implements Initializable {
                 .anyMatch(r -> r.getId().equals(auctionId) && username.equals(r.getSellerId()));
         Platform.runLater(() -> {
           loadMyAuctions();
-          if (isMine)
+          if (isMine) {
             showNotification(title, body);
+          }
         });
       }
     }).start();
@@ -226,8 +234,9 @@ public class SellerController extends BaseController implements Initializable {
         if (rows != null) {
           ObservableList<AuctionRow> data = FXCollections.observableArrayList();
           for (AuctionRow row : rows) {
-            if (username.equals(row.getSellerId()))
+            if (username.equals(row.getSellerId())) {
               data.add(row);
+            }
           }
           long open = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
           long finished = data.stream()
@@ -238,23 +247,29 @@ public class SellerController extends BaseController implements Initializable {
                   .mapToDouble(AuctionRow::getCurrentPrice).sum();
           Platform.runLater(() -> {
             auctionData.setAll(data);
-            if (statsLabel != null)
+            if (statsLabel != null) {
               statsLabel.setText("(" + data.size() + " phiên)");
-            if (statTotal != null)
+            }
+            if (statTotal != null) {
               statTotal.setText(String.valueOf(data.size()));
-            if (statOpen != null)
+            }
+            if (statOpen != null) {
               statOpen.setText(String.valueOf(open));
-            if (statFinished != null)
+            }
+            if (statFinished != null) {
               statFinished.setText(String.valueOf(finished));
-            if (statRevenue != null)
+            }
+            if (statRevenue != null) {
               statRevenue.setText(
                       revenue > 0 ? AuctionUtils.formatPrice(revenue) : "---"); // AuctionUtils
+            }
           });
         }
       } else {
         Platform.runLater(() -> {
-          if (statsLabel != null)
+          if (statsLabel != null) {
             statsLabel.setText("Lỗi tải dữ liệu");
+          }
         });
       }
     }).start();
@@ -289,11 +304,13 @@ public class SellerController extends BaseController implements Initializable {
             String bidder = "---";
             if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
               JsonObject bo = obj.get("bidder").getAsJsonObject();
-              if (bo.has("username"))
+              if (bo.has("username")) {
                 bidder = bo.get("username").getAsString();
+              }
             }
             double amount = obj.has("amount") ? obj.get("amount").getAsDouble() : 0;
-            historyData.add((i + 1) + ". " + bidder + "  →  " + AuctionUtils.formatPrice(amount)); // AuctionUtils
+            historyData.add((i + 1) + ". " + bidder
+                    + "  →  " + AuctionUtils.formatPrice(amount)); // AuctionUtils
           }
         } catch (Exception e) {
           historyData.add("Lỗi tải lịch sử.");
@@ -361,6 +378,9 @@ public class SellerController extends BaseController implements Initializable {
   }
 
   // ── Navigation & Actions ───────────────────────────────────────────────────
+  /**
+ *.
+     */
   @FXML
   public void handleRefresh() {
     historyData.clear();
@@ -382,19 +402,27 @@ public class SellerController extends BaseController implements Initializable {
     autoRefreshTimeline.play();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleBack() {
     removePushListener(); // BaseController
-    if (autoRefreshTimeline != null)
+    if (autoRefreshTimeline != null) {
       autoRefreshTimeline.stop();
+    }
     Stage stage = (Stage) auctionTable.getScene().getWindow();
     new AuctionListView(stage, username).show();
   }
 
+  /**
+ *.
+     */
   public void setUsername(String username) {
     this.username = username;
-    if (welcomeLabel != null)
+    if (welcomeLabel != null) {
       welcomeLabel.setText("Xin chào, " + username + "!");
+    }
   }
 
   @FXML
@@ -421,11 +449,15 @@ public class SellerController extends BaseController implements Initializable {
     new NotificationView(stage, username).show();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleLogout() {
     removePushListener(); // BaseController
-    if (autoRefreshTimeline != null)
+    if (autoRefreshTimeline != null) {
       autoRefreshTimeline.stop();
+    }
     ServerConnection.getInstance().disconnect();
     SessionManager.getInstance().clear();
     Stage stage = (Stage) auctionTable.getScene().getWindow();
@@ -442,7 +474,9 @@ public class SellerController extends BaseController implements Initializable {
     try {
       javafx.stage.Stage owner = (javafx.stage.Stage) auctionTable.getScene().getWindow();
       alert.initOwner(owner);
-    } catch (Exception ignored) {}
+    } catch (Exception ignored) {
+      ignored.printStackTrace();
+    }
     alert.show();
   }
 }
