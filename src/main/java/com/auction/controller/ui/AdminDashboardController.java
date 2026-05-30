@@ -62,7 +62,8 @@ public class AdminDashboardController extends BaseController implements Initiali
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
+          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time
+          .LocalDateTime
               .parse(json.getAsString()))
       .create();
 
@@ -98,15 +99,15 @@ public class AdminDashboardController extends BaseController implements Initiali
 
     loadFromServer();
     startAutoRefresh();
-    registerPushListener(this::handlePushMessage); // BaseController — loại bỏ bản copy
-    initToastManager(auctionTable); // BaseController — loại bỏ bản copy
+    registerPushListener(this::handlePushMessage);
+    initToastManager(auctionTable);
   }
 
-  // ── Push Listener ─────────────────────────────────────────────────────────
   private void handlePushMessage(String message) {
     String[] parts = message.split("\\|");
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     if (Protocol.NOTI_AUCTION_CANCELLED.equals(parts[0])) {
       String cancelledId = parts.length >= 2 ? parts[1] : "";
@@ -134,8 +135,9 @@ public class AdminDashboardController extends BaseController implements Initiali
         String json = response.substring(
             Protocol.RES_LIST_SUCCESS.length() + Protocol.SEPARATOR.length());
         AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-        if (rows != null)
+        if (rows != null) {
           data.addAll(rows);
+        }
       }
       final ObservableList<AuctionRow> finalData = data;
       Platform.runLater(() -> {
@@ -156,12 +158,15 @@ public class AdminDashboardController extends BaseController implements Initiali
     long finishedCount = items.stream()
         .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())) // AuctionUtils
         .count();
-    if (statTotalLabel != null)
+    if (statTotalLabel != null) {
       statTotalLabel.setText(String.valueOf(items.size()));
-    if (statOpenLabel != null)
+    }
+    if (statOpenLabel != null) {
       statOpenLabel.setText(String.valueOf(openCount));
-    if (statFinishedLabel != null)
+    }
+    if (statFinishedLabel != null) {
       statFinishedLabel.setText(String.valueOf(finishedCount));
+    }
   }
 
   /**
@@ -181,8 +186,9 @@ public class AdminDashboardController extends BaseController implements Initiali
         String[] parts = response.split("\\" + Protocol.SEPARATOR);
         if (response.startsWith(Protocol.RES_DEPOSIT_SUCCESS)) {
           showMessage("✅ " + (parts.length > 2 ? parts[2] : "Nạp tiền thành công!"), "green");
-          if (depositAmountField != null)
+          if (depositAmountField != null) {
             depositAmountField.clear();
+          }
           loadBalanceWithPrefix(balanceLabel, "Số dư: "); // BaseController
         } else {
           showMessage("❌ " + (parts.length > 1 ? parts[1] : "Nạp tiền thất bại!"), "red");
@@ -197,8 +203,8 @@ public class AdminDashboardController extends BaseController implements Initiali
   }
 
   /**
- * .
- */
+   * .
+   */
   @FXML
   public void handleEndAuction() {
     AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
@@ -235,8 +241,8 @@ public class AdminDashboardController extends BaseController implements Initiali
   }
 
   /**
- * .
- */
+   * .
+   */
   @FXML
   public void handleDeleteAuction() {
     AuctionRow selected = auctionTable.getSelectionModel().getSelectedItem();
@@ -252,8 +258,9 @@ public class AdminDashboardController extends BaseController implements Initiali
     confirm.setContentText("Bạn có chắc muốn xóa phiên:\n"
         + selected.getItemName() + "?\nHành động này không thể hoàn tác!");
     java.util.Optional<javafx.scene.control.ButtonType> result = confirm.showAndWait();
-    if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK)
+    if (result.isEmpty() || result.get() != javafx.scene.control.ButtonType.OK) {
       return;
+    }
 
     final String delAuctionId = selected.getId();
     final String delAuctionName = selected.getItemName();
@@ -304,8 +311,8 @@ public class AdminDashboardController extends BaseController implements Initiali
   }
 
   /**
- * .
- */
+   * .
+   */
   public void handleBack() {
     stopAutoRefresh();
     removePushListener(); // BaseController — trước đây inline, không extract ra method

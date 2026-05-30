@@ -634,15 +634,6 @@ public class BidController extends BaseController implements Initializable {
     updateBidSuggestion(currentPriceValue);
   }
 
-  /** Thêm 1 entry mới lên đầu historyItems, đẩy entry trước xuống non-leading. */
-  private void prependHistoryEntry(String bidder, double amount, boolean isMe) {
-    if (!historyItems.isEmpty()) {
-      HistoryEntry prev = historyItems.get(0);
-      historyItems.set(0, new HistoryEntry(prev.bidder, prev.amount, prev.isMe, false));
-    }
-    historyItems.add(0, new HistoryEntry(bidder, amount, isMe, true));
-  }
-
   /** Cập nhật UI khi phiên kết thúc bình thường. */
   private void markAuctionFinished() {
     statusLabel.setText("FINISHED");

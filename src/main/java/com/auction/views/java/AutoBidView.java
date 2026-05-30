@@ -61,12 +61,12 @@ public class AutoBidView {
       controller.setData(auctionId, itemName, currentPrice, status, username, endTime,
           imageUrl, description, itemType, startingPrice, sellerId);
 
-      boolean wasMaximized = stage.isMaximized();
       double prevW = stage.getScene() != null ? stage.getScene().getWidth() : 0;
       double prevH = stage.getScene() != null ? stage.getScene().getHeight() : 0;
       stage.setTitle("Auto-Bid - " + itemName);
       stage.setScene(prevW > 100 ? new Scene(root, prevW, prevH) : new Scene(root));
       stage.show();
+      boolean wasMaximized = stage.isMaximized();
       if (wasMaximized) {
         stage.setMaximized(true);
       }

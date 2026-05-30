@@ -31,12 +31,12 @@ public class AuctionListView {
       AuctionListController controller = loader.getController();
       controller.setUsername(username);
 
-      boolean wasMaximized = stage.isMaximized();
       double prevW = stage.getScene() != null ? stage.getScene().getWidth() : 0;
       double prevH = stage.getScene() != null ? stage.getScene().getHeight() : 0;
       stage.setTitle("Danh sách phiên - Auction System");
       stage.setScene(prevW > 100 ? new Scene(root, prevW, prevH) : new Scene(root));
       stage.show();
+      boolean wasMaximized = stage.isMaximized();
       if (wasMaximized) {
         stage.setMaximized(true);
       }

@@ -157,7 +157,7 @@
                         failOnViolation=true => Build THỰC SỰ fail khi có vi phạm.
                     -->
                     <failOnViolation>true</failOnViolation>
-                    <violationSeverity>error</violationSeverity>
+                    <violationSeverity>warning</violationSeverity>
                     <linkXRef>false</linkXRef>
                     <!-- Bỏ qua file generated, test và JavaFX controller/view -->
                     <excludes>
@@ -220,7 +220,7 @@
                                     </limits>
                                 </rule>
                             </rules>
-                            <!--
+                             <!--
                                 Loại trừ các class JavaFX (Controller/View/MainApp)
                                 khỏi tính coverage vì chúng cần màn hình thật để test.
                                 Logic nghiệp vụ (model/service/util) vẫn bị tính.
