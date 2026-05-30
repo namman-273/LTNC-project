@@ -103,9 +103,8 @@ public class BidHistoryController extends BaseController implements Initializabl
     }
 
     loadFromServer();
-    // Push: balance realtime + sniping + session end
-    registerPushListener(this::handlePushMessage); // BaseController
-    loadBalance(balanceLabel); // BaseController
+    registerPushListener(this::handlePushMessage);
+    loadBalance(balanceLabel);
   }
 
   // ── Push ──────────────────────────────────────────────────────────────────
@@ -115,9 +114,7 @@ public class BidHistoryController extends BaseController implements Initializabl
 
     if (Protocol.NOTI_BALANCE_CHANGED.equals(header)) {
       if (parts.length >= 2) {
-        // balanceLabel ở BidHistory không cần prefix
-        Platform.runLater(() 
-            -> updateBalanceLabelFromPush(balanceLabel, parts[1])); // BaseController
+        Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, parts[1]));
       }
 
     } else if (Protocol.NOTI_SNIPING_UPDATE.equals(header)) {
@@ -224,6 +221,9 @@ public class BidHistoryController extends BaseController implements Initializabl
     long wins = allEntries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
     long loses = total - wins;
     String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
+    if (rateLabel != null) {
+      rateLabel.setText(rate);
+    }
     if (totalLabel != null) {
       totalLabel.setText(String.valueOf(total));
     }
@@ -232,9 +232,6 @@ public class BidHistoryController extends BaseController implements Initializabl
     }
     if (loseLabel != null) {
       loseLabel.setText(String.valueOf(loses));
-    }
-    if (rateLabel != null) {
-      rateLabel.setText(rate);
     }
     if (subtitleLabel != null) {
       subtitleLabel.setText(total + " phiên đã tham gia");
