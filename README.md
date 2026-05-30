@@ -122,8 +122,10 @@ LTNC-project/
                 │   └── ui/                       
                 │       ├── AdminDashboardController.java
                 │       ├── AuctionListController.java
+                │       ├── AuctionUtils.java                
                 │       ├── AutoBidController.java
                 │       ├── BalanceController.java
+                │       ├── BaseController.java                
                 │       ├── BidChartController.java
                 │       ├── BidController.java
                 │       ├── BidHistoryController.java
@@ -187,6 +189,7 @@ LTNC-project/
                 │   │   ├── AuctionRepository.java
                 │   │   ├── AuctionScheduler.java
                 │   │   ├── AuctionEndHandler.java
+                │   │   ├── AuctionDeletionHandler.java                
                 │   │   ├── AuctionFactory.java
                 │   │   ├── AuctionNotificationService.java
                 │   │   ├── AuctionDataPersistenceService.java
@@ -437,5 +440,5 @@ Cửa sổ đăng nhập sẽ hiện ra. Để chạy nhiều client cùng lúc,
 
 | Nội dung | Link |
 |---|---|
-| Báo cáo PDF | [Xem báo cáo](https://drive.google.com/file/d/17WOzZ34HddMsGmz3yICag0Q89ragLNtM/view?usp=drive_link) |
+| Báo cáo PDF | [Xem báo cáo](https://drive.google.com/file/d/1SzLp6xhrwIa9EIf3QhNhy0gg_4h7LGpG/view?usp=sharing) |
 | Video demo | [Xem video](https://link-to-video) |

@@ -57,7 +57,8 @@ public class NotificationController extends BaseController implements Initializa
   private static final String TAB_ACTIVE = "-fx-background-color: #111827; -fx-text-fill: white; "
       + "-fx-font-weight: bold; -fx-background-radius: 20; "
       + "-fx-padding: 7 18; -fx-cursor: hand; -fx-font-size: 12px;";
-  private static final String TAB_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #6B7280; "
+  private static final String TAB_INACTIVE = 
+      "-fx-background-color: transparent; -fx-text-fill: #6B7280; "
       + "-fx-background-radius: 20; -fx-padding: 7 18; "
       + "-fx-cursor: hand; -fx-font-size: 12px;";
 
@@ -77,7 +78,8 @@ public class NotificationController extends BaseController implements Initializa
 
     // Cập nhật realtime khi có notification mới từ push listener ở màn khác
     NotificationManager.getInstance().getObservableItems()
-        .addListener((javafx.collections.ListChangeListener<NotificationItem>) c -> Platform.runLater(() -> {
+        .addListener((
+        javafx.collections.ListChangeListener<NotificationItem>) c -> Platform.runLater(() -> {
           updateCount();
           applyTab(activeTab);
         }));
@@ -175,8 +177,9 @@ public class NotificationController extends BaseController implements Initializa
    * thấy.
    */
   private void openBidView(String auctionId) {
-    if (auctionId == null || auctionId.isEmpty())
+    if (auctionId == null || auctionId.isEmpty()) {
       return;
+    }
     Stage stage = (Stage) notificationList.getScene().getWindow();
     new Thread(() -> {
       try {
@@ -323,8 +326,9 @@ public class NotificationController extends BaseController implements Initializa
           + "-fx-effect: dropshadow(gaussian, rgba(234,108,10,0.3), 6, 0, 0, 2);");
       bidBtn.setOnAction(e -> {
         NotificationItem item = getItem();
-        if (item == null)
+        if (item == null) {
           return;
+        }
         item.markRead();
         openBidView(item.getAuctionId()); // enclosing class method
       });
@@ -333,8 +337,9 @@ public class NotificationController extends BaseController implements Initializa
           + "-fx-font-size: 15px; -fx-cursor: hand; -fx-padding: 0 2;");
       delBtn.setOnAction(e -> {
         NotificationItem item = getItem();
-        if (item == null)
+        if (item == null) {
           return;
+        }
         NotificationManager.getInstance().remove(item);
         updateCount(); // enclosing class method
         applyTab(activeTab); // enclosing class method
@@ -354,8 +359,9 @@ public class NotificationController extends BaseController implements Initializa
 
       card.setOnMouseClicked(e -> {
         NotificationItem item = getItem();
-        if (item == null)
+        if (item == null) {
           return;
+        }
         if (!item.isRead()) {
           item.markRead();
           updateCount();
@@ -381,14 +387,14 @@ public class NotificationController extends BaseController implements Initializa
       NotificationCellStyle s = NotificationCellStyle.from(item);
       boolean unread = !item.isRead();
 
+      title.setText(s.titleTxt());
+      title.setStyle("-fx-font-size: 13px; -fx-text-fill: #111827;"
+          + (unread ? "-fx-font-weight: bold;" : "-fx-font-weight: normal;"));
+
       iconLabel.setText(s.iconTxt());
       iconLabel.setStyle("-fx-font-size: 17px; -fx-font-weight: bold;"
           + "-fx-text-fill: " + s.borderColor() + ";");
       iconWrap.setStyle("-fx-background-color: " + s.iconBg() + "; -fx-background-radius: 23;");
-
-      title.setText(s.titleTxt());
-      title.setStyle("-fx-font-size: 13px; -fx-text-fill: #111827;"
-          + (unread ? "-fx-font-weight: bold;" : "-fx-font-weight: normal;"));
 
       subtitle.setText(s.subtitleTxt());
 

@@ -102,7 +102,8 @@ public class BidController extends BaseController implements Initializable {
   private String descriptionCached = "";
   private String sellerIdCached = "";
 
-  private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache =
+          new ConcurrentHashMap<>();
 
   private ObservableList<HistoryEntry> historyItems;
   private Timeline snipingTimeline;
@@ -172,13 +173,16 @@ public class BidController extends BaseController implements Initializable {
       avatar.setText(initials);
 
       if (entry.isMe) {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
+        avatar.setStyle(avatar.getStyle()
+                + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
         setStyle("-fx-background-color: #F0F7FF; -fx-background-radius: 10;");
       } else if (entry.isLeading) {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;");
+        avatar.setStyle(avatar.getStyle()
+                + "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;");
         setStyle("-fx-background-color: #F0FFF4; -fx-background-radius: 10;");
       } else {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280;");
+        avatar.setStyle(avatar.getStyle()
+                + "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280;");
         setStyle("-fx-background-color: transparent;");
       }
 
@@ -219,7 +223,8 @@ public class BidController extends BaseController implements Initializable {
   }
 
   public void setData(String auctionId, String itemName, String currentPrice,
-                      String status, String username, long endTime, String imageUrl, String description) {
+                      String status, String username, long endTime,
+                      String imageUrl, String description) {
     setData(auctionId, itemName, currentPrice, status, username, endTime,
             imageUrl, description, "", 0, "");
   }
@@ -280,8 +285,9 @@ public class BidController extends BaseController implements Initializable {
     if (resolvedDescription != null && !resolvedDescription.isEmpty()
             && !resolvedDescription.startsWith("http")
             && !resolvedDescription.startsWith("data:image")) {
-      if (descriptionLabel != null)
+      if (descriptionLabel != null) {
         descriptionLabel.setText(resolvedDescription);
+      }
       if (descriptionBox != null) {
         descriptionBox.setVisible(true);
         descriptionBox.setManaged(true);
@@ -298,7 +304,8 @@ public class BidController extends BaseController implements Initializable {
       detailSeller.setText((sellerId != null && !sellerId.isEmpty()) ? sellerId : "—");
     }
 
-    historyItems = historyCache.computeIfAbsent(auctionId, k -> FXCollections.observableArrayList());
+    historyItems = historyCache.computeIfAbsent(
+            auctionId, k -> FXCollections.observableArrayList());
     bidHistoryList.setItems(historyItems);
     bidHistoryList.setCellFactory(lv -> new HistoryCell());
 
@@ -311,11 +318,13 @@ public class BidController extends BaseController implements Initializable {
     if (AuctionUtils.isFinishedStatus(status)) {
       Platform.runLater(() -> {
         statusLabel.setText("FINISHED");
-        if (countdownTimeline != null)
+        if (countdownTimeline != null) {
           countdownTimeline.stop();
+        }
         if (countdownLabel != null) {
           countdownLabel.setText("⏰ Hết giờ!");
-          countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+          countdownLabel.setStyle(
+                  "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
         }
         checkWinnerFromHistory();
       });
@@ -432,8 +441,9 @@ public class BidController extends BaseController implements Initializable {
   private String extractBidderName(JsonObject obj) {
     if (obj.has("bidder") && obj.get("bidder").isJsonObject()) {
       JsonObject bo = obj.get("bidder").getAsJsonObject();
-      if (bo.has("username"))
+      if (bo.has("username")) {
         return bo.get("username").getAsString();
+      }
     }
     return "---";
   }
@@ -459,8 +469,9 @@ public class BidController extends BaseController implements Initializable {
 
   @FXML
   private void handleToggleDetail() {
-    if (productDetailPanel == null)
+    if (productDetailPanel == null) {
       return;
+    }
     boolean show = !productDetailPanel.isVisible();
     productDetailPanel.setVisible(show);
     productDetailPanel.setManaged(show);
@@ -475,8 +486,9 @@ public class BidController extends BaseController implements Initializable {
   private void handleServerPush(String message) {
     System.out.println("PUSH RECEIVED: " + message);
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     switch (parts[0]) {
       case Protocol.NOTI_BALANCE_CHANGED -> onBalanceChanged(parts);
@@ -494,15 +506,17 @@ public class BidController extends BaseController implements Initializable {
   // Mỗi method dưới đây chỉ xử lý đúng 1 loại event (SRP).
 
   private void onBalanceChanged(String[] parts) {
-    if (parts.length < 2)
+    if (parts.length < 2) {
       return;
+    }
     String newBal = parts[1];
     Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, newBal));
   }
 
   private void onBidUpdate(String[] parts) {
-    if (parts.length < 4 || !parts[1].equals(auctionId))
+    if (parts.length < 4 || !parts[1].equals(auctionId)) {
       return;
+    }
     String newPrice = parts[2];
     String bidder = parts[3];
     Platform.runLater(() -> {
@@ -516,8 +530,9 @@ public class BidController extends BaseController implements Initializable {
   }
 
   private void onSnipingUpdate(String[] parts) {
-    if (parts.length < 4 || !parts[1].equals(auctionId))
+    if (parts.length < 4 || !parts[1].equals(auctionId)) {
       return;
+    }
     try {
       this.endTime = Long.parseLong(parts[2]);
       String count = parts[3];
@@ -530,8 +545,9 @@ public class BidController extends BaseController implements Initializable {
   }
 
   private void onOutbid(String[] parts) {
-    if (parts.length < 4 || !parts[1].equals(auctionId))
+    if (parts.length < 4 || !parts[1].equals(auctionId)) {
       return;
+    }
     String newBidder = parts[2];
     String newAmt = parts[3];
 
@@ -565,8 +581,9 @@ public class BidController extends BaseController implements Initializable {
   // - Trường hợp 1: notification outbid đã được add trong onOutbid()
   // - Trường hợp 2: notification cancel đã được add trong onAuctionCancelled()
   private void onRefund(String[] parts) {
-    if (parts.length < 4 || !parts[1].equals(auctionId))
+    if (parts.length < 4 || !parts[1].equals(auctionId)) {
       return;
+    }
     String refundAmt = parts[2];
     String newBal = parts[3];
     Platform.runLater(() -> {
@@ -577,8 +594,9 @@ public class BidController extends BaseController implements Initializable {
   }
 
   private void onAuctionEnded(String[] parts) {
-    if (parts.length >= 2 && !parts[1].equals(auctionId))
+    if (parts.length >= 2 && !parts[1].equals(auctionId)) {
       return;
+    }
     String detail = parts.length >= 3 ? parts[2] : "";
     Platform.runLater(() -> {
       markAuctionFinished();
@@ -588,8 +606,9 @@ public class BidController extends BaseController implements Initializable {
   }
 
   private void onAuctionCancelled(String[] parts) {
-    if (parts.length < 2)
+    if (parts.length < 2) {
       return;
+    }
     String reason = parts.length >= 3 ? parts[2] : "Admin hủy";
     Platform.runLater(() -> {
       handleCancelledState();
@@ -628,13 +647,16 @@ public class BidController extends BaseController implements Initializable {
   private void markAuctionFinished() {
     statusLabel.setText("FINISHED");
     stopSnipingCountdown();
-    if (countdownTimeline != null)
+    if (countdownTimeline != null) {
       countdownTimeline.stop();
-    if (priceRefreshTimeline != null)
+    }
+    if (priceRefreshTimeline != null) {
       priceRefreshTimeline.stop();
+    }
     if (countdownLabel != null) {
       countdownLabel.setText("⏰ Hết giờ!");
-      countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+      countdownLabel.setStyle(
+              "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
     }
   }
 
@@ -664,15 +686,19 @@ public class BidController extends BaseController implements Initializable {
 
   private void handleCancelledState() {
     stopSnipingCountdown();
-    if (countdownTimeline != null)
+    if (countdownTimeline != null) {
       countdownTimeline.stop();
-    if (priceRefreshTimeline != null)
+    }
+    if (priceRefreshTimeline != null) {
       priceRefreshTimeline.stop();
-    if (statusLabel != null)
+    }
+    if (statusLabel != null) {
       statusLabel.setText("CANCELED");
+    }
     if (countdownLabel != null) {
       countdownLabel.setText("❌ Bị hủy!");
-      countdownLabel.setStyle("-fx-text-fill: #888888; -fx-font-weight: bold; -fx-font-size: 28px;");
+      countdownLabel.setStyle(
+              "-fx-text-fill: #888888; -fx-font-weight: bold; -fx-font-size: 28px;");
     }
   }
 
@@ -716,15 +742,18 @@ public class BidController extends BaseController implements Initializable {
 
   // ── Countdown ────────────────────────────────────────────────────────────
   private void startCountdown() {
-    if (countdownTimeline != null)
+    if (countdownTimeline != null) {
       countdownTimeline.stop();
+    }
     countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
       long remaining = endTime - System.currentTimeMillis();
-      if (countdownLabel == null)
+      if (countdownLabel == null) {
         return;
+      }
       if (remaining <= 0) {
         countdownLabel.setText("⏰ Hết giờ!");
-        countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+        countdownLabel.setStyle(
+                "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
         countdownTimeline.stop();
         return;
       }
@@ -733,8 +762,10 @@ public class BidController extends BaseController implements Initializable {
       long seconds = (remaining % 60_000) / 1_000;
       countdownLabel.setText(String.format("%02d : %02d : %02d", hours, minutes, seconds));
       countdownLabel.setStyle(remaining < 300_000
-              ? "-fx-text-fill: #E65100; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;"
-              : "-fx-text-fill: #1565C0; -fx-font-weight: bold; -fx-font-size: 28px; -fx-font-family: monospace;");
+              ? "-fx-text-fill: #E65100; -fx-font-weight: bold;"
+                      + " -fx-font-size: 28px; -fx-font-family: monospace;"
+              : "-fx-text-fill: #1565C0; -fx-font-weight: bold;"
+                      + " -fx-font-size: 28px; -fx-font-family: monospace;");
     }));
     countdownTimeline.setCycleCount(Timeline.INDEFINITE);
     countdownTimeline.play();
@@ -742,15 +773,17 @@ public class BidController extends BaseController implements Initializable {
 
   // ── Sniping ──────────────────────────────────────────────────────────────
   private void showSnipingAlert(String extensionCount) {
-    if (snipingBox == null)
+    if (snipingBox == null) {
       return;
+    }
     snipingBox.setVisible(true);
     snipingBox.setManaged(true);
     snipingCountLabel.setText("Lần gia hạn thứ: " + extensionCount);
     snipingCountdownLabel.setText("⏱ +2 phút vừa được cộng thêm!");
     showWarning("Phiên gia hạn lần " + extensionCount + " (+2 phút)");
-    if (snipingTimeline != null)
+    if (snipingTimeline != null) {
       snipingTimeline.stop();
+    }
     snipingTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> stopSnipingAlert()));
     snipingTimeline.setCycleCount(1);
     snipingTimeline.play();
@@ -784,16 +817,19 @@ public class BidController extends BaseController implements Initializable {
         String response = ServerConnection.getInstance().sendAndReceive(
                 Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
         if (response == null || response.startsWith("ERROR")
-                || !response.startsWith(Protocol.RES_HISTORY))
+                || !response.startsWith(Protocol.RES_HISTORY)) {
           return;
+        }
 
         String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-        if (parts.length < 3)
+        if (parts.length < 3) {
           return;
+        }
 
         String json = parts[2].trim();
-        if (json.isEmpty() || json.equals("[]"))
+        if (json.isEmpty() || json.equals("[]")) {
           return;
+        }
 
         JsonArray array = JsonParser.parseString(json).getAsJsonArray();
         Platform.runLater(() -> {
@@ -903,16 +939,19 @@ public class BidController extends BaseController implements Initializable {
   }
 
   private void startPriceRefresh() {
-    if (priceRefreshTimeline != null)
+    if (priceRefreshTimeline != null) {
       priceRefreshTimeline.stop();
+    }
     priceRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(2), e -> {
       new Thread(() -> {
         String resp = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_LIST_AUCTIONS);
-        if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS))
+        if (resp == null || !resp.startsWith(Protocol.RES_LIST_SUCCESS)) {
           return;
+        }
         String json = resp.substring(resp.indexOf(Protocol.SEPARATOR) + 1);
         try {
-          com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(json).getAsJsonArray();
+          com.google.gson.JsonArray arr =
+                  com.google.gson.JsonParser.parseString(json).getAsJsonArray();
           boolean found = false;
           for (com.google.gson.JsonElement el : arr) {
             com.google.gson.JsonObject obj = el.getAsJsonObject();
@@ -927,11 +966,13 @@ public class BidController extends BaseController implements Initializable {
                   updateBidSuggestion(price);
                   loadHistory();
                 }
-                if (statusLabel != null && !status.isEmpty())
+                if (statusLabel != null && !status.isEmpty()) {
                   statusLabel.setText(status);
+                }
                 if (AuctionUtils.isCancelledStatus(status)) {
-                  if (priceRefreshTimeline != null)
+                  if (priceRefreshTimeline != null) {
                     priceRefreshTimeline.stop();
+                  }
                   handleCancelledState();
                 }
               });
@@ -940,8 +981,9 @@ public class BidController extends BaseController implements Initializable {
           }
           if (!found) {
             Platform.runLater(() -> {
-              if (priceRefreshTimeline != null)
+              if (priceRefreshTimeline != null) {
                 priceRefreshTimeline.stop();
+              }
             });
           }
         } catch (Exception ex) {
@@ -956,10 +998,12 @@ public class BidController extends BaseController implements Initializable {
   private void stopAll() {
     removePushListener(); // BaseController
     stopSnipingCountdown();
-    if (countdownTimeline != null)
+    if (countdownTimeline != null) {
       countdownTimeline.stop();
-    if (priceRefreshTimeline != null)
+    }
+    if (priceRefreshTimeline != null) {
       priceRefreshTimeline.stop();
+    }
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────

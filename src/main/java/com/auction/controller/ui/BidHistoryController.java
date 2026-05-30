@@ -116,7 +116,8 @@ public class BidHistoryController extends BaseController implements Initializabl
     if (Protocol.NOTI_BALANCE_CHANGED.equals(header)) {
       if (parts.length >= 2) {
         // balanceLabel ở BidHistory không cần prefix
-        Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, parts[1])); // BaseController
+        Platform.runLater(() 
+            -> updateBalanceLabelFromPush(balanceLabel, parts[1])); // BaseController
       }
 
     } else if (Protocol.NOTI_SNIPING_UPDATE.equals(header)) {
@@ -223,16 +224,21 @@ public class BidHistoryController extends BaseController implements Initializabl
     long wins = allEntries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
     long loses = total - wins;
     String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
-    if (totalLabel != null)
+    if (totalLabel != null) {
       totalLabel.setText(String.valueOf(total));
-    if (winLabel != null)
+    }
+    if (winLabel != null) {
       winLabel.setText(String.valueOf(wins));
-    if (loseLabel != null)
+    }
+    if (loseLabel != null) {
       loseLabel.setText(String.valueOf(loses));
-    if (rateLabel != null)
+    }
+    if (rateLabel != null) {
       rateLabel.setText(rate);
-    if (subtitleLabel != null)
+    }
+    if (subtitleLabel != null) {
       subtitleLabel.setText(total + " phiên đã tham gia");
+    }
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
@@ -307,8 +313,9 @@ public class BidHistoryController extends BaseController implements Initializabl
   public void handleGoBalance() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new BalanceView(s, username).show();
+    }
   }
 
   /**
@@ -366,7 +373,8 @@ public class BidHistoryController extends BaseController implements Initializabl
       iconWrap.getChildren().add(iconLabel);
       itemName.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #111827;");
       itemName.setMaxWidth(280);
-      badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 2 8;");
+      badge.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;"
+          + " -fx-background-radius: 12; -fx-padding: 2 8;");
       detail.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
       timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
       priceLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");

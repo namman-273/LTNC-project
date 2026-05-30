@@ -160,8 +160,9 @@ public class CreateAuctionController implements Initializable {
   private static class ItemTypeConverter extends StringConverter<String> {
     @Override
     public String toString(String s) {
-      if (s == null)
+      if (s == null) {
         return "";
+      }
       return switch (s) {
         case "ART" -> "🎨 Nghệ thuật";
         case "ELECTRONICS" -> "⚡ Điện tử";

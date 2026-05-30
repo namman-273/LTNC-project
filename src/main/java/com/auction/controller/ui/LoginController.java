@@ -98,10 +98,12 @@ public class LoginController {
    * @return chuỗi lỗi nếu không hợp lệ, null nếu OK.
    */
   private String validateInput(String username, String password) {
-    if (username.isEmpty())
+    if (username.isEmpty()) {
       return "Vui lòng nhập tên đăng nhập!";
-    if (password.isEmpty())
+    }
+    if (password.isEmpty()) {
       return "Vui lòng nhập mật khẩu!";
+    }
     return null;
   }
 

@@ -3,13 +3,14 @@ package com.auction.controller.ui;
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.ui.ToastManager;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
-import java.util.function.Consumer;
+
 
 /**
  * Base controller chứa các hàm dùng chung cho toàn bộ controller trong package ui.
@@ -65,7 +66,9 @@ public abstract class BaseController {
   // Controller cần prefix ("Số dư: ") hoặc style riêng → override hoặc dùng
   // loadBalanceWithPrefix / updateBalanceLabelFromValue.
   protected void loadBalance(Label balanceLabel) {
-    if (balanceLabel == null) return;
+    if (balanceLabel == null) {
+      return;
+    }
     new Thread(() -> {
       String res = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
       Platform.runLater(() -> {
@@ -87,7 +90,9 @@ public abstract class BaseController {
 
   /** Variant dùng khi label cần prefix, ví dụ AdminDashboard: "Số dư: 1.000.000 VNĐ". */
   protected void loadBalanceWithPrefix(Label balanceLabel, String prefix) {
-    if (balanceLabel == null) return;
+    if (balanceLabel == null) {
+      return;
+    }
     new Thread(() -> {
       String res = ServerConnection.getInstance().sendAndReceive(Protocol.CMD_GET_BALANCE);
       Platform.runLater(() -> {
@@ -109,7 +114,9 @@ public abstract class BaseController {
    * Tránh gọi server thêm 1 lần khi đã có giá trị mới trong push payload.
    */
   protected void updateBalanceLabelFromPush(Label balanceLabel, String rawValue) {
-    if (balanceLabel == null || rawValue == null) return;
+    if (balanceLabel == null || rawValue == null) {
+      return;
+    }
     try {
       double v = Double.parseDouble(rawValue);
       balanceLabel.setText(String.format("%,.0f VNĐ", v));
