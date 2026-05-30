@@ -677,12 +677,16 @@ public class AuctionListController extends BaseController implements Initializab
 
   @FXML
   public void handleAdminDashboard() {
+    stopAutoRefresh();
+    removePushListener(); // tránh AuctionListController vẫn nhận push khi AdminDashboard active
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new AdminDashboardView(stage, username).show();
   }
 
   @FXML
   public void handleSellerDashboard() {
+    stopAutoRefresh();
+    removePushListener(); // tránh AuctionListController vẫn nhận push khi SellerView active
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new SellerView(stage, username).show();
   }
