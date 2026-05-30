@@ -43,8 +43,10 @@ public class BalanceController extends BaseController implements Initializable {
   private ListView<TransactionItem> transactionList;
 
   private String username;
-  private static final ObservableList<TransactionItem> transactions = FXCollections.observableArrayList();
-  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+  private static final ObservableList<TransactionItem> transactions = 
+      FXCollections.observableArrayList();
+  private static final DateTimeFormatter FORMATTER = 
+      DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
   private Timeline autoRefreshTimeline;
 
   // ── Transaction DTO ───────────────────────────────────────────────────────
@@ -175,7 +177,8 @@ public class BalanceController extends BaseController implements Initializable {
           try {
             double balance = Double.parseDouble(parts[1]);
             balanceLabel.setText(String.format("%,.0f VNĐ", balance));
-            balanceLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
+            balanceLabel.setStyle(
+                "-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
           } catch (NumberFormatException e) {
             balanceLabel.setText(parts[1]);
           }
@@ -195,7 +198,8 @@ public class BalanceController extends BaseController implements Initializable {
         try {
           double v = Double.parseDouble(newBal);
           balanceLabel.setText(String.format("%,.0f VNĐ", v));
-          balanceLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
+          balanceLabel.setStyle(
+              "-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #60A5FA;");
         } catch (NumberFormatException ignored) {
           ignored.printStackTrace();
         }
