@@ -217,24 +217,27 @@ public class BidHistoryController extends BaseController implements Initializabl
   }
 
   private void updateStats() {
-    long total = allEntries.size();
     long wins = allEntries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
-    long loses = total - wins;
-    String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
-    if (rateLabel != null) {
-      rateLabel.setText(rate);
+    if (winLabel != null) {
+      winLabel.setText(String.valueOf(wins));
+    }
+    long total = allEntries.size();
+    if (subtitleLabel != null) {
+      subtitleLabel.setText(total + " phiên đã tham gia");
     }
     if (totalLabel != null) {
       totalLabel.setText(String.valueOf(total));
     }
-    if (winLabel != null) {
-      winLabel.setText(String.valueOf(wins));
-    }
+    long loses = total - wins;
     if (loseLabel != null) {
       loseLabel.setText(String.valueOf(loses));
     }
-    if (subtitleLabel != null) {
-      subtitleLabel.setText(total + " phiên đã tham gia");
+    if (totalLabel != null) {
+      totalLabel.setText(String.valueOf(total));
+    }
+    String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
+    if (rateLabel != null) {
+      rateLabel.setText(rate);
     }
   }
 
