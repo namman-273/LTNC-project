@@ -13,6 +13,7 @@
 - [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
 - [Vị trí các file .jar](#-vị-trí-các-file-jar)
 - [Hướng dẫn chạy Server & Client](#-hướng-dẫn-chạy-server--client)
+- [Kết nối liên máy tính (LAN)](#-kết-nối-liên-máy-tính-lan--nhiều-máy)
 - [Chức năng đã hoàn thành](#-chức-năng-đã-hoàn-thành)
 
 ---
@@ -356,11 +357,21 @@ java -jar target/server.jar
 **Kết quả mong đợi:**
 
 ```
-Khởi động server tại port 9999...
+╔════════════════════════════════════════════╗
+║     🟢 SERVER AUCTION ĐANG CHẠY          ║
+╠════════════════════════════════════════════╣
+║  Port: 9999
+║  IP máy này: 192.168.1.10
+║
+║  📝 Client hãy sửa server.properties:
+║     server.host=192.168.1.10
+║     server.port=9999
+╚════════════════════════════════════════════╝
+
 SERVER: Đang chạy trên cổng 9999
 ```
 
-Server lắng nghe tại **`localhost:9999`**. Dữ liệu được lưu vào `auctions.dat`, `users.dat`, `history.dat` khi server tắt (và định kỳ qua `AutoSaveScheduler`).
+Server tự động in **IP của mình** ra console khi khởi động. Dữ liệu được lưu vào `auctions.dat`, `users.dat`, `history.dat` khi server tắt (và định kỳ qua `AutoSaveScheduler`).
 
 ### Bước 3 – Chạy Client (JavaFX)
 
@@ -381,6 +392,73 @@ java -jar target/client.jar
 ```
 
 Cửa sổ đăng nhập sẽ hiện ra. Để chạy nhiều client cùng lúc, mở thêm terminal mới và chạy lại lệnh trên.
+
+---
+
+### 🌐 Kết nối liên máy tính (LAN / nhiều máy)
+
+Hệ thống hỗ trợ sẵn kết nối liên máy qua file cấu hình `server.properties` 
+
+#### Bước 1 – Khởi động Server, đọc IP
+
+Chạy Server trên máy A. Console sẽ in ra IP của máy đó, ví dụ:
+
+```
+║  IP máy này: 192.168.1.10
+║  📝 Client hãy sửa server.properties:
+║     server.host=192.168.1.10
+║     server.port=9999
+```
+
+#### Bước 2 – Sửa file `server.properties` trên máy Client
+
+File `server.properties` đã có sẵn trong thư mục gốc `LTNC-project/`. Mở file và thay IP `localhost` bằng IP của máy Server in ra ở Bước 1:
+
+```properties
+# Trước (mặc định)
+server.host=localhost
+server.port=9999
+
+# Sau (ví dụ IP máy Server là 192.168.1.10)
+server.host=192.168.1.10
+server.port=9999
+```
+
+Khi Client khởi động sẽ thông báo:
+
+```
+✓ Đã load config từ server.properties → Server: 192.168.1.10:9999
+```
+
+Nếu để nguyên `localhost`, Client chỉ kết nối được với Server trên cùng một máy.
+
+#### Bước 3 – Mở port 9999 trên máy Server (nếu Client không kết nối được)
+
+**Windows (PowerShell — chạy với quyền Administrator):**
+```powershell
+New-NetFirewallRule -DisplayName "AuctionServer 9999" `
+    -Direction Inbound -Protocol TCP -LocalPort 9999 -Action Allow
+```
+
+**Linux (ufw):**
+```bash
+sudo ufw allow 9999/tcp
+```
+
+**macOS:** Vào **System Settings → Network → Firewall → Options**, thêm ngoại lệ cho Java hoặc tắt firewall tạm thời khi demo.
+
+#### Sơ đồ kết nối
+
+```
+[Máy A – Server]                  [Máy B – Client]          [Máy C – Client]
+  java -jar server.jar    ←TCP 9999─  java -jar client.jar    java -jar client.jar
+  192.168.1.10:9999                   server.properties         server.properties
+                                      server.host=192.168.1.10  server.host=192.168.1.10
+```
+
+> ⚠️ **Lưu ý:** Tất cả các máy phải cùng mạng LAN (cùng router/switch). Nếu demo qua Internet, cần cấu hình **Port Forwarding** trên router hoặc dùng VPN như ZeroTier, Tailscale.
+
+---
 
 ### Tài khoản mặc định
 
