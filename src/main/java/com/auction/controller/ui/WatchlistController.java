@@ -35,6 +35,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ *.
+     */
 public class WatchlistController extends BaseController implements Initializable {
 
   @FXML
@@ -68,14 +71,19 @@ public class WatchlistController extends BaseController implements Initializable
   private final java.util.Set<String> watchedAuctionIds = java.util.Collections
       .synchronizedSet(new java.util.HashSet<>());
   // Track số lần gia hạn per auctionId
-  private final java.util.Map<String, Integer> extensionCountMap = new java.util.concurrent.ConcurrentHashMap<>();
+  private final java.util.Map<String, Integer> extensionCountMap = 
+      new java.util.concurrent.ConcurrentHashMap<>();
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
+          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) 
+            -> java.time.LocalDateTime
               .parse(json.getAsString()))
       .create();
 
+  /**
+ *.
+     */
   public void setUsername(String username) {
     this.username = username;
     initToastManager(watchlistCards); // BaseController — loại bỏ bản copy
@@ -87,27 +95,33 @@ public class WatchlistController extends BaseController implements Initializable
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     registerPushListener(this::handlePushMessage); // BaseController
-    if (idCol != null)
+    if (idCol != null) {
       idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
-    if (nameCol != null)
+    }
+    if (nameCol != null) {
       nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-    if (priceCol != null)
+    }
+    if (priceCol != null) {
       priceCol.setCellValueFactory(new PropertyValueFactory<>("currentPriceFormatted"));
-    if (statusCol != null)
+    }
+    if (statusCol != null) {
       statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+    }
   }
 
   // ── Push ──────────────────────────────────────────────────────────────────
   private void handlePushMessage(String message) {
     String[] parts = message.split("\\|");
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     switch (parts[0]) {
 
       case Protocol.NOTI_BALANCE_CHANGED:
         if (parts.length >= 3) {
-          Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, parts[2])); // BaseController
+          Platform.runLater(() 
+              -> updateBalanceLabelFromPush(balanceLabel, parts[2])); // BaseController
         }
         break;
 
@@ -129,8 +143,10 @@ public class WatchlistController extends BaseController implements Initializable
               });
             } catch (NumberFormatException e) {
               NotificationManager.getInstance().add(
-                  "🔨 Giá mới tại phiên " + auctionId + ": " + amount + " VNĐ", "auction", auctionId);
-              Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, "Giá mới: " + amount + " VNĐ"));
+                  "🔨 Giá mới tại phiên " + auctionId + ": " 
+                  + amount + " VNĐ", "auction", auctionId);
+              Platform.runLater(() 
+                  -> ToastManager.show(ToastManager.Type.INFO, "Giá mới: " + amount + " VNĐ"));
             }
           }
         }
@@ -202,8 +218,9 @@ public class WatchlistController extends BaseController implements Initializable
           String json = response.substring(
               Protocol.RES_WATCHLIST.length() + Protocol.SEPARATOR.length());
           AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
-          if (rows != null)
+          if (rows != null) {
             data.addAll(rows);
+          }
         } else {
           String[] parts = response.split("\\" + Protocol.SEPARATOR);
           showMessage("❌ " + (parts.length > 1 ? parts[1] : "Lỗi tải watchlist!"), "#DC2626");
@@ -211,10 +228,12 @@ public class WatchlistController extends BaseController implements Initializable
         }
         currentData.setAll(data);
         watchedAuctionIds.clear();
-        for (AuctionRow row : data)
+        for (AuctionRow row : data) {
           watchedAuctionIds.add(row.getId());
-        if (watchlistTable != null)
+        }
+        if (watchlistTable != null) {
           watchlistTable.setItems(data);
+        }
         updateCards(data);
         showMessage(data.isEmpty()
             ? "Chưa có phiên nào trong watchlist."
@@ -225,19 +244,23 @@ public class WatchlistController extends BaseController implements Initializable
   }
 
   private void updateCards(ObservableList<AuctionRow> data) {
-    if (watchlistCards == null)
+    if (watchlistCards == null) {
       return;
+    }
     watchlistCards.getChildren().clear();
 
     long open = data.stream().filter(r -> "OPEN".equals(r.getStatus())).count();
     long finished = data.stream()
         .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())).count(); // AuctionUtils
-    if (totalCountLabel != null)
+    if (totalCountLabel != null) {
       totalCountLabel.setText(String.valueOf(data.size()));
-    if (openCountLabel != null)
+    }
+    if (openCountLabel != null) {
       openCountLabel.setText(String.valueOf(open));
-    if (finishedCountLabel != null)
+    }
+    if (finishedCountLabel != null) {
       finishedCountLabel.setText(String.valueOf(finished));
+    }
 
     if (data.isEmpty()) {
       VBox empty = new VBox();
@@ -249,8 +272,9 @@ public class WatchlistController extends BaseController implements Initializable
       watchlistCards.getChildren().add(empty);
       return;
     }
-    for (AuctionRow row : data)
+    for (AuctionRow row : data) {
       watchlistCards.getChildren().add(buildCard(row));
+    }
   }
 
   private HBox buildCard(AuctionRow row) {
@@ -281,7 +305,8 @@ public class WatchlistController extends BaseController implements Initializable
       info.getChildren().add(extBadge);
     }
 
-    String badgeBg, badgeFg;
+    String badgeBg; 
+    String badgeFg;
     switch (row.getStatus()) {
       case "OPEN" -> {
         badgeBg = "#D1FAE5";
@@ -311,8 +336,9 @@ public class WatchlistController extends BaseController implements Initializable
         + "-fx-border-color: #DBEAFE; -fx-border-radius: 6; -fx-border-width: 1;"
         + "-fx-background-radius: 6; -fx-padding: 4 10;");
     btnSelect.setOnAction(e -> {
-      if (watchlistTable != null)
+      if (watchlistTable != null) {
         watchlistTable.getSelectionModel().select(row);
+      }
       highlightSelected(row);
     });
 
@@ -324,16 +350,18 @@ public class WatchlistController extends BaseController implements Initializable
         + "-fx-cursor: hand;");
     VBox.setMargin(card, new Insets(0, 0, 8, 0));
     card.setOnMouseClicked(e -> {
-      if (watchlistTable != null)
+      if (watchlistTable != null) {
         watchlistTable.getSelectionModel().select(row);
+      }
       highlightSelected(row);
     });
     return card;
   }
 
   private void highlightSelected(AuctionRow selected) {
-    if (watchlistCards == null)
+    if (watchlistCards == null) {
       return;
+    }
     watchlistCards.getChildren().forEach(node -> {
       if (node instanceof HBox card) {
         card.setStyle(card.getStyle().replace(
@@ -354,6 +382,9 @@ public class WatchlistController extends BaseController implements Initializable
     loadWatchlist();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleUnwatch() {
     AuctionRow selected = watchlistTable != null
@@ -382,6 +413,9 @@ public class WatchlistController extends BaseController implements Initializable
     }).start();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleViewDetail() {
     AuctionRow selected = watchlistTable != null
@@ -419,75 +453,109 @@ public class WatchlistController extends BaseController implements Initializable
     stopAutoRefresh();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleProfile() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new ProfileView(s, username).show();
+    }
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleBidHistory() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new BidHistoryView(s, username).show();
+    }
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleBalance() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new BalanceView(s, username).show();
+    }
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleNotification() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new NotificationView(s, username).show();
+    }
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleHome() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new AuctionListView(s, username).show();
+    }
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleBack() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new AuctionListView(s, username).show();
+    }
   }
 
+  /**
+ *.
+     */
   public void handleGoBalance() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new BalanceView(s, username).show();
+    }
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleGoNotification() {
     leaveScreen();
     Stage s = getStage();
-    if (s != null)
+    if (s != null) {
       new NotificationView(s, username).show();
+    }
   }
 
   private Stage getStage() {
     try {
-      if (watchlistCards != null)
+      if (watchlistCards != null) {
         return (Stage) watchlistCards.getScene().getWindow();
-      if (watchlistTable != null)
+      }
+      if (watchlistTable != null) {
         return (Stage) watchlistTable.getScene().getWindow();
+      }
     } catch (Exception ignored) {
       ignored.printStackTrace();
     }
