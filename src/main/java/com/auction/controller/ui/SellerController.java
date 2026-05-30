@@ -170,6 +170,9 @@ public class SellerController extends BaseController implements Initializable {
                     "Phiên " + auctionId + " đã kết thúc thành công.\n"
                             + "Số tiền nhận: " + deltaFormatted + "\n"
                             + "Số dư mới: " + balanceFormatted);
+            // Thêm vào NotificationManager để hiển thị trong panel thông báo
+            String notifMsg = "💰 Phiên " + auctionId + " kết thúc. Nhận " + deltaFormatted;
+            NotificationManager.getInstance().add(notifMsg, "balance", auctionId);
           });
         }
         break;

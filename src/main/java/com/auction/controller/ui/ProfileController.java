@@ -1,9 +1,11 @@
 package com.auction.controller.ui;
 
 import com.auction.model.dto.BidHistoryEntry;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.bidhistorymanager.BidHistoryManager;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.BidHistoryView;
@@ -165,35 +167,52 @@ public class ProfileController extends BaseController implements Initializable {
       case "ADMIN" -> {
         roleDetailLabel.setText("Quản trị viên (Admin)");
         roleLabel.setStyle("-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;"
-            + "-fx-font-size: 11px; -fx-font-weight: bold;"
-            + "-fx-background-radius: 12; -fx-padding: 3 10;");
+                + "-fx-font-size: 11px; -fx-font-weight: bold;"
+                + "-fx-background-radius: 12; -fx-padding: 3 10;");
       }
       case "SELLER" -> {
         roleDetailLabel.setText("Người bán (Seller)");
         roleLabel.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;"
-            + "-fx-font-size: 11px; -fx-font-weight: bold;"
-            + "-fx-background-radius: 12; -fx-padding: 3 10;");
+                + "-fx-font-size: 11px; -fx-font-weight: bold;"
+                + "-fx-background-radius: 12; -fx-padding: 3 10;");
       }
       default -> {
         roleDetailLabel.setText("Người đấu giá (Bidder)");
         roleLabel.setStyle("-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;"
-            + "-fx-font-size: 11px; -fx-font-weight: bold;"
-            + "-fx-background-radius: 12; -fx-padding: 3 10;");
+                + "-fx-font-size: 11px; -fx-font-weight: bold;"
+                + "-fx-background-radius: 12; -fx-padding: 3 10;");
       }
     }
   }
 
   private void refreshStats() {
-    java.util.List<BidHistoryEntry> entries = BidHistoryManager.getInstance().getHistoryForUser(username);
-    long total = entries.size();
-    long wins = entries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
-    String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
-    if (statTotal != null)
-      statTotal.setText(String.valueOf(total));
-    if (statWin != null)
-      statWin.setText(String.valueOf(wins));
-    if (statRate != null)
-      statRate.setText(rate);
+    // ProfileController chạy phía client — BidHistoryManager là server-side singleton,
+    // luôn rỗng trên client → thống kê luôn hiện 0/0/0%.
+    // Fix: gọi CMD_GET_BID_HISTORY qua network, giống BidHistoryController.
+    new Thread(() -> {
+      try {
+        String res = ServerConnection.getInstance()
+                .sendAndReceive(Protocol.CMD_GET_BID_HISTORY);
+        if (res == null || !res.startsWith(Protocol.RES_BID_HISTORY)) return;
+        String json = res.substring(
+                Protocol.RES_BID_HISTORY.length() + Protocol.SEPARATOR.length());
+        com.google.gson.reflect.TypeToken<java.util.List<BidHistoryEntry>> token =
+                new com.google.gson.reflect.TypeToken<java.util.List<BidHistoryEntry>>() {};
+        java.util.List<BidHistoryEntry> entries =
+                new com.google.gson.Gson().fromJson(json, token.getType());
+        if (entries == null) entries = new java.util.ArrayList<>();
+        long total = entries.size();
+        long wins = entries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
+        String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
+        Platform.runLater(() -> {
+          if (statTotal != null) statTotal.setText(String.valueOf(total));
+          if (statWin != null)   statWin.setText(String.valueOf(wins));
+          if (statRate != null)  statRate.setText(rate);
+        });
+      } catch (Exception e) {
+        System.err.println("[ProfileController] Lỗi load stats: " + e.getMessage());
+      }
+    }, "profile-stats-thread").start();
   }
 
   @FXML
@@ -209,7 +228,7 @@ public class ProfileController extends BaseController implements Initializable {
     }
     new Thread(() -> {
       String res = ServerConnection.getInstance()
-          .sendAndReceive(Protocol.CMD_UPDATE_EMAIL + Protocol.SEPARATOR + newEmail);
+              .sendAndReceive(Protocol.CMD_UPDATE_EMAIL + Protocol.SEPARATOR + newEmail);
       Platform.runLater(() -> {
         if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
           showMessage("✅ Cập nhật email thành công!", true);
@@ -265,7 +284,7 @@ public class ProfileController extends BaseController implements Initializable {
 
     new Thread(() -> {
       String res = ServerConnection.getInstance().sendAndReceive(
-          Protocol.CMD_UPDATE_PASSWORD + Protocol.SEPARATOR + oldPass + Protocol.SEPARATOR + newPass);
+              Protocol.CMD_UPDATE_PASSWORD + Protocol.SEPARATOR + oldPass + Protocol.SEPARATOR + newPass);
       Platform.runLater(() -> {
         if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
           showMessage("✅ Đổi mật khẩu thành công!", true);
@@ -299,7 +318,7 @@ public class ProfileController extends BaseController implements Initializable {
       return;
     messageLabel.setText(msg);
     messageLabel.setStyle(success
-        ? "-fx-font-size: 12px; -fx-text-fill: #22C55E;"
-        : "-fx-font-size: 12px; -fx-text-fill: #EF4444;");
+            ? "-fx-font-size: 12px; -fx-text-fill: #22C55E;"
+            : "-fx-font-size: 12px; -fx-text-fill: #EF4444;");
   }
 }
