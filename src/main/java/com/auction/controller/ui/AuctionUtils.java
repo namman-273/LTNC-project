@@ -15,12 +15,15 @@ public final class AuctionUtils {
    * minimum bid.
    */
   public static long getMinimumIncrement(double price) {
-    if (price < 1_000_000)
+    if (price < 1_000_000) {
       return 50_000;
-    if (price < 5_000_000)
+    }
+    if (price < 5_000_000) {
       return 100_000;
-    if (price < 10_000_000)
+    }
+    if (price < 10_000_000) {
       return 250_000;
+    }
     return 500_000;
   }
 
@@ -30,8 +33,9 @@ public final class AuctionUtils {
    * extractwinner.
    */
   public static String extractWinner(String detail) {
-    if (detail == null)
+    if (detail == null) {
       return "N/A";
+    }
 
     // Thử "Winner: " trước (có space)
     int idx = detail.indexOf("Winner: ");
@@ -55,13 +59,15 @@ public final class AuctionUtils {
    * formatprice.
    */
   public static String formatPrice(String raw) {
-    if (raw == null)
+    if (raw == null) {
       return "N/A";
+    }
     try {
       double val = Double.parseDouble(
           raw.replace(",", "").replace(" VND", "").replace(" VNĐ", "").trim());
-      if (val > 999_000_000_000.0 || val < 0)
+      if (val > 999_000_000_000.0 || val < 0) {
         return "N/A";
+      }
       return String.format("%,.0f VNĐ", val);
     } catch (NumberFormatException e) {
       return raw;
