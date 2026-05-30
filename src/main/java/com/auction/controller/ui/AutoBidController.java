@@ -85,8 +85,9 @@ public class AutoBidController extends BaseController implements Initializable {
   // ── Push Listener ────────────────────────────────────────────────────────
   private void handleServerPush(String message) {
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
-    if (parts.length == 0)
+    if (parts.length == 0) {
       return;
+    }
 
     switch (parts[0]) {
 
@@ -103,8 +104,9 @@ public class AutoBidController extends BaseController implements Initializable {
         break;
 
       case Protocol.RES_END_SUCCESS:
-        if (parts.length >= 2 && !parts[1].equals(auctionId))
+        if (parts.length >= 2 && !parts[1].equals(auctionId)) {
           break;
+        }
         String detail = parts.length >= 3 ? parts[2] : "";
         boolean isWin = detail.contains("Winner:" + username)
             || detail.contains("Winner: " + username);

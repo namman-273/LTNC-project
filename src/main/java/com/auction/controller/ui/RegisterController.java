@@ -42,7 +42,8 @@ public class RegisterController implements Initializable {
       + "-fx-background-radius: 10; -fx-cursor: hand;"
       + "-fx-border-color: #3B82F6; -fx-border-radius: 10; -fx-border-width: 2;";
 
-  private static final String STYLE_INACTIVE = "-fx-background-color: transparent; -fx-text-fill: #94A3B8;"
+  private static final String STYLE_INACTIVE = 
+      "-fx-background-color: transparent; -fx-text-fill: #94A3B8;"
       + "-fx-font-size: 12px; -fx-font-weight: bold;"
       + "-fx-background-radius: 10; -fx-cursor: hand;"
       + "-fx-border-color: #334155; -fx-border-radius: 10; -fx-border-width: 2;";
@@ -130,18 +131,24 @@ public class RegisterController implements Initializable {
 
   private String validateInputs(String username, String email,
       String password, String confirmPassword) {
-    if (username.isEmpty())
+    if (username.isEmpty()) {
       return "Vui lòng nhập tên đăng nhập!";
-    if (username.length() < 3)
+    }
+    if (username.length() < 3) {
       return "Tên đăng nhập tối thiểu 3 ký tự!";
-    if (password.isEmpty())
+    }
+    if (password.isEmpty()) {
       return "Vui lòng nhập mật khẩu!";
-    if (password.length() < 6)
+    }
+    if (password.length() < 6) {
       return "Mật khẩu tối thiểu 6 ký tự!";
-    if (!password.equals(confirmPassword))
+    }
+    if (!password.equals(confirmPassword)) {
       return "Mật khẩu xác nhận không khớp!";
-    if (!email.isEmpty() && !email.contains("@"))
+    }
+    if (!email.isEmpty() && !email.contains("@")) {
       return "Email không hợp lệ!";
+    }
     return null;
   }
 

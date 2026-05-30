@@ -1,9 +1,6 @@
 package com.auction.controller.ui;
 
 import com.auction.model.dto.BidHistoryEntry;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
 import com.auction.util.core.SessionManager;
@@ -108,8 +105,9 @@ public class ProfileController extends BaseController implements Initializable {
 
   // ── Load toàn bộ profile ─────────────────────────────────────────────────
   private void loadProfile() {
-    if (username == null || username.isEmpty())
+    if (username == null || username.isEmpty()) {
       return;
+    }
 
     String initials = username.substring(0, Math.min(2, username.length())).toUpperCase();
     avatarLabel.setText(initials);
@@ -130,16 +128,18 @@ public class ProfileController extends BaseController implements Initializable {
           String balance = p.length >= 5 ? p[4] : "0";
           String joinDate = p.length >= 6 ? p[5] : "";
           Platform.runLater(() -> {
-            if (emailField != null)
+            if (emailField != null) {
               emailField.setText(email);
+            }
             try {
               double b = Double.parseDouble(balance);
               balanceLabel.setText(String.format("Số dư: %,.0f VNĐ", b));
             } catch (NumberFormatException e) {
               balanceLabel.setText("Số dư: " + balance + " VNĐ");
             }
-            if (joinDateLabel != null && !joinDate.isEmpty())
+            if (joinDateLabel != null && !joinDate.isEmpty()) {
               joinDateLabel.setText(joinDate);
+            }
           });
         }
 
@@ -149,8 +149,9 @@ public class ProfileController extends BaseController implements Initializable {
           String json = p.length >= 2 ? p[1] : "[]";
           long count = json.chars().filter(c -> c == '{').count();
           Platform.runLater(() -> {
-            if (statWatchlist != null)
+            if (statWatchlist != null) {
               statWatchlist.setText(String.valueOf(count));
+            }
           });
         }
       } catch (Exception e) {
@@ -160,8 +161,9 @@ public class ProfileController extends BaseController implements Initializable {
   }
 
   private void applyRole(String role) {
-    if (role == null)
+    if (role == null) {
       return;
+    }
     roleLabel.setText(role);
     switch (role) {
       case "ADMIN" -> {
@@ -193,21 +195,31 @@ public class ProfileController extends BaseController implements Initializable {
       try {
         String res = ServerConnection.getInstance()
                 .sendAndReceive(Protocol.CMD_GET_BID_HISTORY);
-        if (res == null || !res.startsWith(Protocol.RES_BID_HISTORY)) return;
+        if (res == null || !res.startsWith(Protocol.RES_BID_HISTORY)) {
+          return;
+        }
         String json = res.substring(
                 Protocol.RES_BID_HISTORY.length() + Protocol.SEPARATOR.length());
         com.google.gson.reflect.TypeToken<java.util.List<BidHistoryEntry>> token =
                 new com.google.gson.reflect.TypeToken<java.util.List<BidHistoryEntry>>() {};
         java.util.List<BidHistoryEntry> entries =
                 new com.google.gson.Gson().fromJson(json, token.getType());
-        if (entries == null) entries = new java.util.ArrayList<>();
+        if (entries == null) {
+          entries = new java.util.ArrayList<>();
+        }
         long total = entries.size();
         long wins = entries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
         String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
         Platform.runLater(() -> {
-          if (statTotal != null) statTotal.setText(String.valueOf(total));
-          if (statWin != null)   statWin.setText(String.valueOf(wins));
-          if (statRate != null)  statRate.setText(rate);
+          if (statTotal != null) { 
+            statTotal.setText(String.valueOf(total)); 
+          }
+          if (statWin != null)  { 
+            statWin.setText(String.valueOf(wins)); 
+          }
+          if (statRate != null) { 
+            statRate.setText(rate); 
+          }
         });
       } catch (Exception e) {
         System.err.println("[ProfileController] Lỗi load stats: " + e.getMessage());
@@ -233,7 +245,8 @@ public class ProfileController extends BaseController implements Initializable {
         if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
           showMessage("✅ Cập nhật email thành công!", true);
         } else {
-          showMessage("❌ " + (res != null ? res.replace("ERROR|", "") : "Không kết nối được server"), false);
+          showMessage("❌ " + (res != null ? res.replace("ERROR|", "") :
+              "Không kết nối được server"), false);
         }
       });
     }, "update-email-thread").start();
@@ -241,26 +254,31 @@ public class ProfileController extends BaseController implements Initializable {
 
   @FXML
   private void handleChangePassword() {
-    if (passwordPanel == null)
+    if (passwordPanel == null) {
       return;
+    }
     boolean show = !passwordPanel.isVisible();
     passwordPanel.setVisible(show);
     passwordPanel.setManaged(show);
     if (!show) {
-      if (oldPasswordField != null)
+      if (oldPasswordField != null) {
         oldPasswordField.clear();
-      if (newPasswordField != null)
+      }
+      if (newPasswordField != null) {
         newPasswordField.clear();
-      if (confirmPasswordField != null)
+      }
+      if (confirmPasswordField != null) {
         confirmPasswordField.clear();
+      }
       messageLabel.setText("");
     }
   }
 
   @FXML
   private void handleConfirmChangePassword() {
-    if (oldPasswordField == null || newPasswordField == null || confirmPasswordField == null)
+    if (oldPasswordField == null || newPasswordField == null || confirmPasswordField == null) {
       return;
+    }
     String oldPass = oldPasswordField.getText().trim();
     String newPass = newPasswordField.getText().trim();
     String confirmPass = confirmPasswordField.getText().trim();
@@ -284,7 +302,8 @@ public class ProfileController extends BaseController implements Initializable {
 
     new Thread(() -> {
       String res = ServerConnection.getInstance().sendAndReceive(
-              Protocol.CMD_UPDATE_PASSWORD + Protocol.SEPARATOR + oldPass + Protocol.SEPARATOR + newPass);
+              Protocol.CMD_UPDATE_PASSWORD + Protocol.SEPARATOR 
+             + oldPass + Protocol.SEPARATOR + newPass);
       Platform.runLater(() -> {
         if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
           showMessage("✅ Đổi mật khẩu thành công!", true);
@@ -294,7 +313,8 @@ public class ProfileController extends BaseController implements Initializable {
           newPasswordField.clear();
           confirmPasswordField.clear();
         } else {
-          showMessage("❌ " + (res != null ? res.replace("ERROR|", "") : "Lỗi kết nối server"), false);
+          showMessage("❌ " + (res != null ? res.replace("ERROR|", "") : 
+              "Lỗi kết nối server"), false);
         }
       });
     }, "change-password-thread").start();
@@ -314,8 +334,9 @@ public class ProfileController extends BaseController implements Initializable {
   }
 
   private void showMessage(String msg, boolean success) {
-    if (messageLabel == null)
+    if (messageLabel == null) {
       return;
+    }
     messageLabel.setText(msg);
     messageLabel.setStyle(success
             ? "-fx-font-size: 12px; -fx-text-fill: #22C55E;"
