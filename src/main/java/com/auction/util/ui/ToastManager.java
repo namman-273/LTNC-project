@@ -12,24 +12,31 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+/**
+ * .
+ */
 public class ToastManager {
-
+  /**
+   * .
+   */
   public enum Type {
     SUCCESS, WARNING, INFO, DANGER
   }
 
   private static VBox container;
   private static javafx.scene.layout.StackPane initializedRoot;
-
-  // FIX: dedup guard — chặn toast cùng TYPE trong 2 giây
-  // Key = type + 40 ký tự đầu message (bỏ số tiền thay đổi liên tục ở cuối)
   private static final java.util.Map<String, Long> recentToasts =
-          new java.util.concurrent.ConcurrentHashMap<>();
+       new java.util.concurrent.ConcurrentHashMap<>();
   private static final long DEDUP_WINDOW_MS = 2000;
 
+  /**
+   * .
+   */
   public static void init(javafx.scene.layout.StackPane root) {
     // Nếu đã init trên đúng root này rồi thì không làm gì
-    if (root == initializedRoot && container != null) return;
+    if (root == initializedRoot && container != null) {
+      return;
+    }
     // Xóa container cũ khỏi root cũ nếu có
     if (container != null && initializedRoot != null) {
       initializedRoot.getChildren().remove(container);
@@ -44,15 +51,21 @@ public class ToastManager {
     root.getChildren().add(container);
   }
 
+  /**
+   * .
+   */
   public static void show(Type type, String message) {
-    if (container == null)
+    if (container == null) {
       return;
-    // FIX: key = type + 35 ký tự đầu, tránh bị bypass khi số tiền thay đổi
+    }
+    // key = type + 35 ký tự đầu, tránh bị bypass khi số tiền thay đổi
     String msgPrefix = message.length() > 35 ? message.substring(0, 35) : message;
     String key = type.name() + "|" + msgPrefix;
     long now = System.currentTimeMillis();
     Long lastShown = recentToasts.get(key);
-    if (lastShown != null && (now - lastShown) < DEDUP_WINDOW_MS) return;
+    if (lastShown != null && (now - lastShown) < DEDUP_WINDOW_MS) {
+      return;
+    }
     recentToasts.put(key, now);
     // Dọn entry cũ để tránh map phình to
     recentToasts.entrySet().removeIf(e -> (now - e.getValue()) > DEDUP_WINDOW_MS * 4);
@@ -63,11 +76,11 @@ public class ToastManager {
       container.getChildren().add(0, toast);
 
       Timeline fadeIn = new Timeline(
-              new KeyFrame(Duration.ZERO, new KeyValue(toast.opacityProperty(), 0)),
-              new KeyFrame(Duration.millis(220), new KeyValue(toast.opacityProperty(), 1)));
+          new KeyFrame(Duration.ZERO, new KeyValue(toast.opacityProperty(), 0)),
+          new KeyFrame(Duration.millis(220), new KeyValue(toast.opacityProperty(), 1)));
       Timeline fadeOut = new Timeline(
-              new KeyFrame(Duration.ZERO, new KeyValue(toast.opacityProperty(), 1)),
-              new KeyFrame(Duration.millis(300), new KeyValue(toast.opacityProperty(), 0)));
+          new KeyFrame(Duration.ZERO, new KeyValue(toast.opacityProperty(), 1)),
+          new KeyFrame(Duration.millis(300), new KeyValue(toast.opacityProperty(), 0)));
       fadeOut.setDelay(Duration.seconds(3.5));
       fadeOut.setOnFinished(e -> container.getChildren().remove(toast));
 
@@ -77,7 +90,11 @@ public class ToastManager {
   }
 
   private static HBox buildToast(Type type, String message) {
-    String bg, borderLeft, textColor, iconText, iconBg;
+    String bg;
+    String borderLeft;
+    String textColor;
+    String iconText;
+    String iconBg;
     switch (type) {
       case SUCCESS:
         bg = "#F0FFF4";
@@ -112,24 +129,28 @@ public class ToastManager {
     // Icon circle
     Label iconLabel = new Label(iconText);
     iconLabel.setStyle(
-            "-fx-font-size: 11px;" +
-                    "-fx-font-weight: bold;" +
-                    "-fx-text-fill: white;");
+        "-fx-font-size: 11px;"
+            +
+            "-fx-font-weight: bold;"
+            + "-fx-text-fill: white;");
 
     StackPane iconCircle = new StackPane(iconLabel);
     iconCircle.setPrefSize(26, 26);
     iconCircle.setMinSize(26, 26);
     iconCircle.setMaxSize(26, 26);
     iconCircle.setStyle(
-            "-fx-background-color: " + iconBg + ";" +
-                    "-fx-background-radius: 13;");
+        "-fx-background-color: " + iconBg + ";"
+            +
+            "-fx-background-radius: 13;");
 
     // Message
     Label msgLabel = new Label(message);
     msgLabel.setStyle(
-            "-fx-font-size: 12px;" +
-                    "-fx-text-fill: " + textColor + ";" +
-                    "-fx-wrap-text: true;");
+        "-fx-font-size: 12px;" 
+        +
+            "-fx-text-fill: " + textColor + ";" 
+            +
+            "-fx-wrap-text: true;");
     msgLabel.setMaxWidth(270);
     msgLabel.setWrapText(true);
 
@@ -138,11 +159,15 @@ public class ToastManager {
     toast.setPadding(new Insets(10, 16, 10, 12));
     toast.setMaxWidth(340);
     toast.setStyle(
-            "-fx-background-color: " + bg + ";" +
-                    "-fx-border-color: transparent transparent transparent " + borderLeft + ";" +
-                    "-fx-border-width: 0 0 0 4;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 10, 0, 0, 3);");
+        "-fx-background-color: " + bg + ";" 
+        +
+            "-fx-border-color: transparent transparent transparent " + borderLeft + ";"
+             +
+            "-fx-border-width: 0 0 0 4;" 
+            +
+            "-fx-background-radius: 10;" 
+            +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 10, 0, 0, 3);");
     return toast;
   }
 }

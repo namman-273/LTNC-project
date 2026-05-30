@@ -1,20 +1,20 @@
 package com.auction.util.ui;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 /**
  * Singleton quản lý thông báo toàn app.
  * Hỗ trợ đọc/chưa đọc, phân loại tab, lưu auctionId để mở BidView.
  */
 public class NotificationManager {
-
-  // ── Inner model ──────────────────────────────────────────────────────────
+  /**
+   * .
+   */
   public static class NotificationItem {
     private final String message;
     private final String time;
@@ -22,13 +22,16 @@ public class NotificationManager {
     private final String auctionId;
     private boolean read;
 
+    /**
+     * .
+     */
     public NotificationItem(String message, String category, String auctionId) {
       this.message = message;
       this.category = (category != null) ? category : detectCategory(message);
       this.auctionId = auctionId;
       this.read = false;
       this.time = LocalDateTime.now()
-              .format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
+          .format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
     }
 
     public NotificationItem(String message, String category) {
@@ -37,18 +40,19 @@ public class NotificationManager {
 
     // ── FIX: nhận dạng đúng "thắng" từ AutoBid + các keyword còn thiếu ──
     private static String detectCategory(String msg) {
-      if (msg == null)
+      if (msg == null) {
         return "system";
+      }
       String lower = msg.toLowerCase();
       if (lower.contains("thắng") || lower.contains("winner")
-              || lower.contains("vượt giá") || lower.contains("outbid")
-              || lower.contains("gia hạn") || lower.contains("đặt giá")
-              || lower.contains("bid") || lower.contains("phiên")) {
+          || lower.contains("vượt giá") || lower.contains("outbid")
+          || lower.contains("gia hạn") || lower.contains("đặt giá")
+          || lower.contains("bid") || lower.contains("phiên")) {
         return "auction";
       } else if (lower.contains("nạp") || lower.contains("số dư")
-              || lower.contains("hoàn") || lower.contains("balance")
-              || lower.contains("refund") || lower.contains("vnđ")
-              || lower.contains("vnd") || lower.contains("tiền")) {
+          || lower.contains("hoàn") || lower.contains("balance")
+          || lower.contains("refund") || lower.contains("vnđ")
+          || lower.contains("vnd") || lower.contains("tiền")) {
         return "balance";
       }
       return "system";
@@ -88,15 +92,20 @@ public class NotificationManager {
   private static NotificationManager instance;
 
   private final List<NotificationItem> items = new ArrayList<>();
-  private final ObservableList<NotificationItem> observableItems = FXCollections.observableArrayList();
+  private final ObservableList<NotificationItem> observableItems = FXCollections
+      .observableArrayList();
   private final ObservableList<String> legacyList = FXCollections.observableArrayList();
 
   private NotificationManager() {
   }
 
+  /**
+   * .
+   */
   public static NotificationManager getInstance() {
-    if (instance == null)
+    if (instance == null) {
       instance = new NotificationManager();
+    }
     return instance;
   }
 
@@ -110,19 +119,18 @@ public class NotificationManager {
     add(message, category, null);
   }
 
+  /**
+   * .
+   */
   public void add(String message, String category, String auctionId) {
-    // Dedup chính xác bằng auctionId + full message string.
-    // Không dùng fuzzy dedup "vượt giá" vì sẽ chặn nhầm notification
-    // của phiên thứ 2 trở đi (cùng auctionId nhưng giá khác nhau).
-    // Format message đã được chuẩn hóa qua AuctionUtils.formatPrice() ở tất cả
-    // controller → hai message cùng sự kiện sẽ trùng chính xác → dedup tự nhiên.
     String dedupeKey = (auctionId != null ? auctionId : "") + "|"
-            + (message != null ? message : "");
+        + (message != null ? message : "");
     for (NotificationItem existing : items) {
       String existKey = (existing.getAuctionId() != null ? existing.getAuctionId() : "") + "|"
-              + (existing.getMessage() != null ? existing.getMessage() : "");
-      if (dedupeKey.equals(existKey))
-        return; // bỏ qua nếu trùng chính xác
+          + (existing.getMessage() != null ? existing.getMessage() : "");
+      if (dedupeKey.equals(existKey)) {
+        return;
+      }
     }
     NotificationItem item = new NotificationItem(message, category, auctionId);
     items.add(0, item);
@@ -151,22 +159,33 @@ public class NotificationManager {
     observableItems.setAll(new ArrayList<>(items));
   }
 
+  /**
+   * .
+   */
   public void remove(NotificationItem item) {
     items.remove(item);
     observableItems.remove(item);
     legacyList.remove(item.toString());
   }
 
+  /**
+   * .
+   */
   public void clearRead() {
     List<NotificationItem> dead = new ArrayList<>();
-    for (NotificationItem i : items)
-      if (i.isRead())
+    for (NotificationItem i : items) {
+      if (i.isRead()) {
         dead.add(i);
+      }
+    }
     items.removeAll(dead);
     observableItems.removeAll(dead);
     dead.forEach(i -> legacyList.remove(i.toString()));
   }
 
+  /**
+   * .
+   */
   public void clear() {
     items.clear();
     observableItems.clear();
