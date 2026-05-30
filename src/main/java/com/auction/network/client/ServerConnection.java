@@ -26,7 +26,7 @@ public class ServerConnection {
   // ===== THÊM: Đọc từ file properties =====
   private static String DEFAULT_HOST = "localhost";
   private static int DEFAULT_PORT = 9999;
-  
+
   private static final int MAX_RETRY = 3;
   private static final int RETRY_DELAY_MS = 1000;
 
@@ -51,21 +51,19 @@ public class ServerConnection {
 
   private static volatile ServerConnection instance;
 
-  // ===== SỬA: CONSTRUCTOR - THÊM LOAD CONFIG =====
   private ServerConnection() {
-    loadServerConfig();  // ← THÊM DÒNG NÀY
+    loadServerConfig();
     this.host = DEFAULT_HOST;
     this.port = DEFAULT_PORT;
   }
 
   /**
-   * Đọc cấu hình server từ file server.properties
-   * File phải đặt ở thư mục project root (cùng pom.xml)
+   * Đọc cấu hình server từ file server.properties.
    */
   private void loadServerConfig() {
     try {
       File configFile = new File("server.properties");
-      
+
       if (configFile.exists()) {
         Properties props = new Properties();
         try (FileInputStream fis = new FileInputStream(configFile)) {
@@ -78,20 +76,18 @@ public class ServerConnection {
             DEFAULT_PORT = 9999;
             System.out.println("⚠ Port không hợp lệ, dùng 9999");
           }
-          System.out.println("✓ Đã load config từ server.properties");
-          System.out.println("  → Server: " + DEFAULT_HOST + ":" + DEFAULT_PORT);
+          System.out.println("✓ Đã load config từ server.properties"
+              + "  → Server: " + DEFAULT_HOST + ":" + DEFAULT_PORT);
         }
       } else {
-        System.out.println("⚠ Không tìm thấy server.properties");
-        System.out.println("  → Sẽ dùng: localhost:9999 (mặc định)");
+        System.out.println("Không tìm thấy server.properties"
+            + "→ Sẽ dùng: localhost:9999 (mặc định)");
       }
     } catch (Exception e) {
-      System.out.println("⚠ Lỗi đọc config: " + e.getMessage());
-      System.out.println("  → Sẽ dùng: localhost:9999 (mặc định)");
+      System.out.println("⚠ Lỗi đọc config: " + e.getMessage()
+          + "  → Sẽ dùng: localhost:9999 (mặc định)");
     }
   }
-
-  
 
   /**
    * Singleton.
@@ -194,14 +190,13 @@ public class ServerConnection {
   }
 
   // ─── 2. GIAO TIẾP MẠNG (Dùng requestLock) ─────────────────────────────
-
   /**
    * Gửi và nhận đồng bộ (Chỉ có requestLock, không hold connectionLock).
    */
   public String sendAndReceive(String message) {
     // Nếu mất kết nối thì thử connect ngay từ đầu
     if (!isConnected() && !connectWithRetry()) {
-      return "ERROR|Không thể kết nối server!";
+      return Protocol.ERROR + Protocol.SEPARATOR + "Không thể kết nối server!";
     }
 
     requestLock.lock();
@@ -217,7 +212,7 @@ public class ServerConnection {
   private String doSendAndReceive(String message, boolean allowRetry) {
     PrintWriter localOut = this.out;
     if (localOut == null || !isConnected()) {
-      return "ERROR|Mất kết nối!";
+      return Protocol.ERROR + Protocol.SEPARATOR + "Mất kết nối!";
     }
 
     localOut.println(message);
@@ -230,13 +225,13 @@ public class ServerConnection {
 
       // Nếu không cho phép thử lại nữa
       if (!allowRetry) {
-        return "ERROR|Server không phản hồi sau khi kết nối lại!";
+        return Protocol.ERROR + Protocol.SEPARATOR + "Server không phản hồi sau khi kết nối lại!";
       }
 
       // Nếu Timeout -> Thử kết nối lại và gửi đệ quy 1 lần duy nhất
       System.out.println("Timeout 5s, đang thử kết nối lại...");
       if (!connectWithRetry()) {
-        return "ERROR|Mất kết nối server!";
+        return Protocol.ERROR + Protocol.SEPARATOR + "Mất kết nối server!";
       }
 
       // Gọi lại với allowRetry = false, KHÔNG GỌI responseQueue.clear() nữa
@@ -244,7 +239,7 @@ public class ServerConnection {
 
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      return "ERROR|Luồng bị gián đoạn!";
+      return Protocol.ERROR + Protocol.SEPARATOR + "Luồng bị gián đoạn!";
     }
   }
 
