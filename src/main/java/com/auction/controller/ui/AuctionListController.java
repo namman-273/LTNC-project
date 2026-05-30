@@ -40,6 +40,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ *.
+     */
 public class AuctionListController extends BaseController implements Initializable {
 
   @FXML
@@ -100,14 +103,19 @@ public class AuctionListController extends BaseController implements Initializab
 
   private final Gson gson = new GsonBuilder()
           .registerTypeAdapter(java.time.LocalDateTime.class,
-                  (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
-                          .parse(json.getAsString()))
+                  (com.google.gson.JsonDeserializer<java.time.LocalDateTime>)
+                          (json, type, ctx) -> java.time.LocalDateTime
+                                  .parse(json.getAsString()))
           .create();
+  /**
+ *.
+     */
 
   public void setUsername(String username) {
     this.username = username;
-    if (welcomeLabel != null)
+    if (welcomeLabel != null) {
       welcomeLabel.setText("Xin chào, " + username + "!");
+    }
     String role = SessionManager.getInstance().getRole();
     applyRoleVisibility(role);
   }
@@ -118,12 +126,12 @@ public class AuctionListController extends BaseController implements Initializab
     boolean isSeller = "SELLER".equalsIgnoreCase(role);
     boolean isBidder = !isSeller && !isAdmin;
 
+    setVisible(watchlistButton, isBidder);
+    setVisible(watchlistIconButton, isBidder);
     setVisible(adminButton, isAdmin);
     setVisible(adminIconButton, isAdmin);
     setVisible(sellerButton, isSeller);
     setVisible(sellerIconButton, isSeller);
-    setVisible(watchlistButton, isBidder);
-    setVisible(watchlistIconButton, isBidder);
   }
 
   private static void setVisible(Button btn, boolean visible) {
@@ -143,12 +151,13 @@ public class AuctionListController extends BaseController implements Initializab
             .addListener((javafx.collections.ListChangeListener<Object>) c -> updateNotifBadge());
     updateNotifBadge();
     Platform.runLater(() -> {
-      if (rootBox != null)
+      if (rootBox != null) {
         ToastManager.init(rootBox);
+      }
     });
   }
 
-  // ── Push Listener ─────────────────────────────────────────────────────────
+  // ── Push Listener ──────────────────────────────────────────────────────
   private void handlePushMessage(String message) {
     String[] parts = message.split("\\|");
     String header = parts[0];
@@ -182,14 +191,16 @@ public class AuctionListController extends BaseController implements Initializab
           String delta = parts[3];
           Platform.runLater(() -> {
             updateBalanceLabelFromPush(balanceLabel, newBal); // BaseController
-            String msg = "🎉 Phiên " + auctionId + " đã kết thúc! Nhận " + delta + " VNĐ";
+            String msg = "🎉 Phiên " + auctionId
+                    + " đã kết thúc! Nhận " + delta + " VNĐ";
             NotificationManager.getInstance().add(msg, "auction", auctionId);
             ToastManager.show(ToastManager.Type.SUCCESS, msg);
             loadFromServer();
           });
         } else if (parts.length >= 3) {
           String newBal = parts[2];
-          Platform.runLater(() -> updateBalanceLabelFromPush(balanceLabel, newBal)); // BaseController
+          Platform.runLater(
+              () -> updateBalanceLabelFromPush(balanceLabel, newBal)); // BaseController
         }
         break;
 
@@ -216,11 +227,13 @@ public class AuctionListController extends BaseController implements Initializab
           boolean isSeller = "SELLER".equalsIgnoreCase(SessionManager.getInstance().getRole());
           String msg = isSeller
                   ? "🏆 Phiên đấu giá " + auctionId + " của bạn đã kết thúc."
-                  : "🔔 Phiên " + auctionId + " đã kết thúc. Người thắng: " + winnerName;
+                  : "🔔 Phiên " + auctionId
+                          + " đã kết thúc. Người thắng: " + winnerName;
           NotificationManager.getInstance().add(msg, "auction", auctionId);
           Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
         } else if (!auctionId.isEmpty()) {
-          String msg = "🔔 Phiên " + auctionId + " đã kết thúc. Không có người thắng.";
+          String msg = "🔔 Phiên " + auctionId
+                  + " đã kết thúc. Không có người thắng.";
           NotificationManager.getInstance().add(msg, "auction", auctionId);
           Platform.runLater(() -> ToastManager.show(ToastManager.Type.INFO, msg));
         }
@@ -232,7 +245,8 @@ public class AuctionListController extends BaseController implements Initializab
         if (parts.length >= 4) {
           String auctionId = parts[1];
           String count = parts[3];
-          String msg = "⏱ Phiên " + auctionId + " được gia hạn lần " + count + " (+2 phút)";
+          String msg = "⏱ Phiên " + auctionId
+                  + " được gia hạn lần " + count + " (+2 phút)";
           NotificationManager.getInstance().add(msg, "auction", auctionId);
           Platform.runLater(() -> ToastManager.show(ToastManager.Type.WARNING, msg));
         }
@@ -298,10 +312,11 @@ public class AuctionListController extends BaseController implements Initializab
     return "SELLER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
   }
 
-  // ── Load data ─────────────────────────────────────────────────────────────
+  // ── Load data ──────────────────────────────────────────────────────────
   private void loadFromServer() {
-    if (!listLoading.compareAndSet(false, true))
+    if (!listLoading.compareAndSet(false, true)) {
       return;
+    }
     setStatusBar("Đang tải danh sách phiên...");
     new Thread(() -> {
       try {
@@ -350,11 +365,12 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
-  // ── Search ────────────────────────────────────────────────────────────────
+  // ── Search ─────────────────────────────────────────────────────────────
   @FXML
   private void handleSearch(KeyEvent e) {
-    if (searchField == null)
+    if (searchField == null) {
       return;
+    }
     String keyword = searchField.getText().trim().toLowerCase();
     if (keyword.isEmpty()) {
       applyFilter();
@@ -367,12 +383,14 @@ public class AuctionListController extends BaseController implements Initializab
     renderCards(filtered);
   }
 
-  private static final String FILTER_ACTIVE_STYLE = "-fx-background-color: rgba(59,130,246,0.3); -fx-text-fill: #93C5FD;"
+  private static final String FILTER_ACTIVE_STYLE =
+          "-fx-background-color: rgba(59,130,246,0.3); -fx-text-fill: #93C5FD;"
           + "-fx-font-size: 11px; -fx-font-weight: bold;"
           + "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;"
           + "-fx-border-color: #3B82F6; -fx-border-radius: 8; -fx-border-width: 1;";
 
-  private static final String FILTER_INACTIVE_STYLE = "-fx-background-color: transparent; -fx-text-fill: #64748B;"
+  private static final String FILTER_INACTIVE_STYLE =
+          "-fx-background-color: transparent; -fx-text-fill: #64748B;"
           + "-fx-font-size: 11px; -fx-background-radius: 8; -fx-cursor: hand;"
           + "-fx-padding: 0 12; -fx-border-color: #1E3A5F;"
           + "-fx-border-radius: 8; -fx-border-width: 1;";
@@ -383,16 +401,17 @@ public class AuctionListController extends BaseController implements Initializab
     List.of(btnFilterAll, btnFilterArt, btnFilterElec, btnFilterVehicle, btnFilterOther)
             .forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
     clicked.setStyle(FILTER_ACTIVE_STYLE);
-    if (clicked == btnFilterArt)
+    if (clicked == btnFilterArt) {
       activeTypeFilter = "Art";
-    else if (clicked == btnFilterElec)
+    } else if (clicked == btnFilterElec) {
       activeTypeFilter = "Electronics";
-    else if (clicked == btnFilterVehicle)
+    } else if (clicked == btnFilterVehicle) {
       activeTypeFilter = "Vehicle";
-    else if (clicked == btnFilterOther)
+    } else if (clicked == btnFilterOther) {
       activeTypeFilter = "OTHER";
-    else
+    } else {
       activeTypeFilter = "ALL";
+    }
     applyFilter();
   }
 
@@ -402,14 +421,15 @@ public class AuctionListController extends BaseController implements Initializab
     List.of(btnPriceAll, btnPriceUnder5, btnPriceMid, btnPriceOver50)
             .forEach(b -> b.setStyle(FILTER_INACTIVE_STYLE));
     clicked.setStyle(FILTER_ACTIVE_STYLE);
-    if (clicked == btnPriceUnder5)
+    if (clicked == btnPriceUnder5) {
       activePriceFilter = "UNDER5";
-    else if (clicked == btnPriceMid)
+    } else if (clicked == btnPriceMid) {
       activePriceFilter = "MID";
-    else if (clicked == btnPriceOver50)
+    } else if (clicked == btnPriceOver50) {
       activePriceFilter = "OVER50";
-    else
+    } else {
       activePriceFilter = "ALL";
+    }
     applyFilter();
   }
 
@@ -441,7 +461,7 @@ public class AuctionListController extends BaseController implements Initializab
     renderCards(filtered);
   }
 
-  // ── Card rendering ────────────────────────────────────────────────────────
+  // ── Card rendering ─────────────────────────────────────────────────────
   private void renderCards(List<AuctionRow> rows) {
     auctionGrid.getChildren().clear();
     selectedRow = null;
@@ -462,7 +482,8 @@ public class AuctionListController extends BaseController implements Initializab
       case "OPEN" -> "#2E7D32";
       default -> "#888888";
     };
-    Label badge = new Label("RUNNING".equals(row.getStatus()) ? "🔴 LIVE" : "⬤ " + row.getStatus());
+    Label badge = new Label(
+            "RUNNING".equals(row.getStatus()) ? "🔴 LIVE" : "⬤ " + row.getStatus());
     badge.setStyle("-fx-background-color: " + statusColor + "22;"
             + "-fx-text-fill: " + statusColor + ";"
             + "-fx-font-size: 10px; -fx-font-weight: bold;"
@@ -489,7 +510,8 @@ public class AuctionListController extends BaseController implements Initializab
       imgView.setClip(clip);
       Label placeholderIcon = new Label(typeIcon);
       placeholderIcon.setStyle("-fx-font-size: 40px;");
-      javafx.scene.layout.StackPane imgContainer = new javafx.scene.layout.StackPane(placeholderIcon, imgView);
+      javafx.scene.layout.StackPane imgContainer =
+              new javafx.scene.layout.StackPane(placeholderIcon, imgView);
       imgContainer.setPrefWidth(187);
       imgContainer.setPrefHeight(120);
       imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");
@@ -504,7 +526,8 @@ public class AuctionListController extends BaseController implements Initializab
     }
 
     Label name = new Label(row.getItemName());
-    name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0; -fx-wrap-text: true;");
+    name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;"
+            + " -fx-text-fill: #E2E8F0; -fx-wrap-text: true;");
     name.setMaxWidth(185);
     Label priceLabel = new Label("Giá hiện tại");
     priceLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: #475569;");
@@ -527,16 +550,21 @@ public class AuctionListController extends BaseController implements Initializab
     card.setOnMouseClicked(e -> {
       auctionGrid.getChildren().forEach(n -> {
         if (n instanceof VBox v) {
-          v.setStyle(v.getStyle().replace("-fx-background-color: #162236;", "-fx-background-color: #0B1120;"));
+          v.setStyle(v.getStyle().replace(
+                  "-fx-background-color: #162236;",
+                  "-fx-background-color: #0B1120;"));
         }
       });
-      card.setStyle(card.getStyle().replace("-fx-background-color: #0B1120;", "-fx-background-color: #162236;"));
+      card.setStyle(card.getStyle().replace(
+              "-fx-background-color: #0B1120;",
+              "-fx-background-color: #162236;"));
       selectedRow = row;
     });
     return card;
   }
 
-  private void loadCardImage(String imgUrl, javafx.scene.image.ImageView imgView, Label placeholder) {
+  private void loadCardImage(
+          String imgUrl, javafx.scene.image.ImageView imgView, Label placeholder) {
     new Thread(() -> {
       try {
         javafx.scene.image.Image img;
@@ -545,7 +573,8 @@ public class AuctionListController extends BaseController implements Initializab
         if (imgUrl.startsWith("data:image")) {
           String base64 = imgUrl.substring(imgUrl.indexOf(",") + 1);
           byte[] bytes = java.util.Base64.getDecoder().decode(base64);
-          img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(bytes), reqW, reqH, true, true);
+          img = new javafx.scene.image.Image(
+                  new java.io.ByteArrayInputStream(bytes), reqW, reqH, true, true);
         } else {
           java.net.URL url = java.net.URI.create(imgUrl).toURL();
           java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
@@ -556,7 +585,9 @@ public class AuctionListController extends BaseController implements Initializab
           conn.setReadTimeout(6000);
           conn.connect();
           try (java.io.InputStream is = conn.getInputStream()) {
-            img = new javafx.scene.image.Image(new java.io.ByteArrayInputStream(is.readAllBytes()), reqW, reqH, true,
+            img = new javafx.scene.image.Image(
+                    new java.io.ByteArrayInputStream(is.readAllBytes()),
+                    reqW, reqH, true,
                     true);
           } finally {
             conn.disconnect();
@@ -586,7 +617,10 @@ public class AuctionListController extends BaseController implements Initializab
             row.getItemType(), row.getStartingPrice(), row.getSellerId()).show();
   }
 
-  // ── Watchlist ─────────────────────────────────────────────────────────────
+  // ── Watchlist ──────────────────────────────────────────────────────────
+  /**
+ *.
+     */
   @FXML
   public void handleWatch() {
     if (selectedRow == null) {
@@ -599,7 +633,8 @@ public class AuctionListController extends BaseController implements Initializab
       Platform.runLater(() -> {
         if (response != null && response.startsWith(Protocol.RES_WATCH_SUCCESS)) {
           setStatusBar("✅ Đã theo dõi phiên!");
-          AlertUtil.showSuccess("Theo dõi thành công", "✅ Đang theo dõi: " + selectedRow.getItemName());
+          AlertUtil.showSuccess(
+                  "Theo dõi thành công", "✅ Đang theo dõi: " + selectedRow.getItemName());
         } else {
           setStatusBar("❌ Theo dõi thất bại!");
         }
@@ -607,6 +642,9 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleUnwatch() {
     if (selectedRow == null) {
@@ -623,6 +661,9 @@ public class AuctionListController extends BaseController implements Initializab
     }).start();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleGetWatchlist() {
     stopAutoRefresh();
@@ -631,10 +672,11 @@ public class AuctionListController extends BaseController implements Initializab
     new WatchlistView(stage, username).show();
   }
 
-  // ── Navigation ────────────────────────────────────────────────────────────
+  // ── Navigation ─────────────────────────────────────────────────────────
   private void setStatusBar(String msg) {
-    if (statusBarLabel != null)
+    if (statusBarLabel != null) {
       statusBarLabel.setText(msg);
+    }
   }
 
   @FXML
@@ -659,6 +701,9 @@ public class AuctionListController extends BaseController implements Initializab
     }
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleLogout() {
     stopAutoRefresh();
@@ -675,25 +720,34 @@ public class AuctionListController extends BaseController implements Initializab
     new CreateAuctionView(stage, username).show();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleAdminDashboard() {
     stopAutoRefresh();
-    removePushListener(); // tránh AuctionListController vẫn nhận push khi AdminDashboard active
+    // tránh AuctionListController vẫn nhận push khi AdminDashboard active
+    removePushListener();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new AdminDashboardView(stage, username).show();
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleSellerDashboard() {
     stopAutoRefresh();
-    removePushListener(); // tránh AuctionListController vẫn nhận push khi SellerView active
+    // tránh AuctionListController vẫn nhận push khi SellerView active
+    removePushListener();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new SellerView(stage, username).show();
   }
 
   private void updateNotifBadge() {
-    if (notifBadge == null)
+    if (notifBadge == null) {
       return;
+    }
     long count = NotificationManager.getInstance().unreadCount();
     Platform.runLater(() -> {
       if (count > 0) {
@@ -707,6 +761,9 @@ public class AuctionListController extends BaseController implements Initializab
     });
   }
 
+  /**
+ *.
+     */
   @FXML
   public void handleNotification() {
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
