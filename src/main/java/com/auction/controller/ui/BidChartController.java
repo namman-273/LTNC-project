@@ -12,7 +12,6 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
@@ -51,8 +50,12 @@ public class BidChartController extends BaseController implements Initializable 
     initToastManager(titleLabel); // BaseController — loại bỏ bản copy
     titleLabel.setText("Biểu đồ giá - " + itemName);
     // Lấy axes qua getter sau khi bidChart đã được inject
-    if (bidChart.getXAxis() != null) bidChart.getXAxis().setLabel("Lần đặt giá");
-    if (bidChart.getYAxis() != null) bidChart.getYAxis().setLabel("Giá (VNĐ)");
+    if (bidChart.getXAxis() != null) {
+      bidChart.getXAxis().setLabel("Lần đặt giá");
+    }
+    if (bidChart.getYAxis() != null) {
+      bidChart.getYAxis().setLabel("Giá (VNĐ)");
+    }
     loadChartData();
     registerPushListener(this::handlePushMessage); // BaseController
   }
@@ -68,17 +71,20 @@ public class BidChartController extends BaseController implements Initializable 
               Protocol.CMD_GET_HISTORY + Protocol.SEPARATOR + auctionId);
       System.out.println("Chart history: " + response);
 
-      if (response == null || !response.startsWith(Protocol.RES_HISTORY))
+      if (response == null || !response.startsWith(Protocol.RES_HISTORY)) {
         return;
+      }
 
       String[] parts = response.split("\\" + Protocol.SEPARATOR, 3);
-      if (parts.length < 3 || parts[2].trim().equals("[]"))
+      if (parts.length < 3 || parts[2].trim().equals("[]")) {
         return;
+      }
 
       try {
         JsonArray array = JsonParser.parseString(parts[2].trim()).getAsJsonArray();
-        if (array.size() == 0)
+        if (array.size() == 0) {
           return;
+        }
 
         final int maxPoints = 20;
         int startIdx = Math.max(0, array.size() - maxPoints);
@@ -96,8 +102,9 @@ public class BidChartController extends BaseController implements Initializable 
 
         Platform.runLater(() -> {
           bidChart.getData().clear();
-          if (!series.getData().isEmpty())
+          if (!series.getData().isEmpty()) {
             bidChart.getData().add(series);
+          }
         });
       } catch (Exception e) {
         System.err.println("Lỗi parse chart data: " + e.getMessage());
@@ -124,8 +131,9 @@ public class BidChartController extends BaseController implements Initializable 
   }
 
   private void appendPoint(double price) {
-    if (bidChart.getData().isEmpty())
+    if (bidChart.getData().isEmpty()) {
       return;
+    }
     XYChart.Series<Number, Number> series = bidChart.getData().get(0);
     int nextIndex = series.getData().size() + 1;
     series.getData().add(new XYChart.Data<>(nextIndex, price));
