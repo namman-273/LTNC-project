@@ -102,7 +102,8 @@ public class BidController extends BaseController implements Initializable {
   private String descriptionCached = "";
   private String sellerIdCached = "";
 
-  private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, ObservableList<HistoryEntry>> historyCache = 
+      new ConcurrentHashMap<>();
 
   private ObservableList<HistoryEntry> historyItems;
   private Timeline snipingTimeline;
@@ -172,13 +173,16 @@ public class BidController extends BaseController implements Initializable {
       avatar.setText(initials);
 
       if (entry.isMe) {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
+        avatar.setStyle(
+            avatar.getStyle() + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
         setStyle("-fx-background-color: #F0F7FF; -fx-background-radius: 10;");
       } else if (entry.isLeading) {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;");
+        avatar.setStyle(
+            avatar.getStyle() + "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;");
         setStyle("-fx-background-color: #F0FFF4; -fx-background-radius: 10;");
       } else {
-        avatar.setStyle(avatar.getStyle() + "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280;");
+        avatar.setStyle(
+            avatar.getStyle() + "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280;");
         setStyle("-fx-background-color: transparent;");
       }
 
@@ -219,7 +223,8 @@ public class BidController extends BaseController implements Initializable {
   }
 
   public void setData(String auctionId, String itemName, String currentPrice,
-                      String status, String username, long endTime, String imageUrl, String description) {
+                      String status, String username, 
+                      long endTime, String imageUrl, String description) {
     setData(auctionId, itemName, currentPrice, status, username, endTime,
             imageUrl, description, "", 0, "");
   }
@@ -280,8 +285,9 @@ public class BidController extends BaseController implements Initializable {
     if (resolvedDescription != null && !resolvedDescription.isEmpty()
             && !resolvedDescription.startsWith("http")
             && !resolvedDescription.startsWith("data:image")) {
-      if (descriptionLabel != null)
+      if (descriptionLabel != null) {
         descriptionLabel.setText(resolvedDescription);
+      }
       if (descriptionBox != null) {
         descriptionBox.setVisible(true);
         descriptionBox.setManaged(true);
@@ -298,7 +304,8 @@ public class BidController extends BaseController implements Initializable {
       detailSeller.setText((sellerId != null && !sellerId.isEmpty()) ? sellerId : "—");
     }
 
-    historyItems = historyCache.computeIfAbsent(auctionId, k -> FXCollections.observableArrayList());
+    historyItems = historyCache.computeIfAbsent(auctionId, k -> 
+      FXCollections.observableArrayList());
     bidHistoryList.setItems(historyItems);
     bidHistoryList.setCellFactory(lv -> new HistoryCell());
 
@@ -311,11 +318,13 @@ public class BidController extends BaseController implements Initializable {
     if (AuctionUtils.isFinishedStatus(status)) {
       Platform.runLater(() -> {
         statusLabel.setText("FINISHED");
-        if (countdownTimeline != null)
+        if (countdownTimeline != null) {
           countdownTimeline.stop();
+        }
         if (countdownLabel != null) {
           countdownLabel.setText("⏰ Hết giờ!");
-          countdownLabel.setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
+          countdownLabel.setStyle(
+              "-fx-text-fill: #C62828; -fx-font-weight: bold; -fx-font-size: 28px;");
         }
         checkWinnerFromHistory();
       });
