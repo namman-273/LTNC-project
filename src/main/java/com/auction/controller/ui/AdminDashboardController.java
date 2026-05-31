@@ -235,6 +235,7 @@ public class AdminDashboardController extends BaseController implements Initiali
           showMessage("❌ " + msg, "red");
           ToastManager.show(ToastManager.Type.DANGER, "❌ " + msg);
         }
+        startAutoRefresh();
         loadFromServer();
       });
     }).start();
@@ -295,6 +296,7 @@ public class AdminDashboardController extends BaseController implements Initiali
    */
   @FXML
   public void handleCreateAuction() {
+    stopAutoRefresh();
     Stage stage = (Stage) auctionTable.getScene().getWindow();
     new CreateAuctionView(stage, username).show();
   }

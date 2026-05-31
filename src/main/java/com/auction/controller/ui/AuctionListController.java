@@ -717,6 +717,7 @@ public class AuctionListController extends BaseController implements Initializab
    */
   @FXML
   public void handleCreateAuction() {
+    stopAutoRefresh();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new CreateAuctionView(stage, username).show();
   }
@@ -765,6 +766,7 @@ public class AuctionListController extends BaseController implements Initializab
    */
   @FXML
   public void handleNotification() {
+    stopAutoRefresh();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new NotificationView(stage, username).show();
     updateNotifBadge();
@@ -775,6 +777,7 @@ public class AuctionListController extends BaseController implements Initializab
    */
   @FXML
   public void handleBidHistory() {
+    stopAutoRefresh();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new BidHistoryView(stage, username).show();
   }
@@ -784,6 +787,7 @@ public class AuctionListController extends BaseController implements Initializab
    */
   @FXML
   public void handleProfile() {
+    stopAutoRefresh();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new ProfileView(stage, username).show();
   }
@@ -792,6 +796,7 @@ public class AuctionListController extends BaseController implements Initializab
    * .
    */
   public void handleBalance() {
+    stopAutoRefresh();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new BalanceView(stage, username).show();
   }
