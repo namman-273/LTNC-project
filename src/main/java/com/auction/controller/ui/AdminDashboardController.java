@@ -303,7 +303,7 @@ public class AdminDashboardController extends BaseController implements Initiali
 
   @FXML
   private void startAutoRefresh() {
-    autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(3), e -> loadFromServer()));
+    autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> loadFromServer()));
     autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
     autoRefreshTimeline.play();
   }
