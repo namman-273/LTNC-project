@@ -103,7 +103,8 @@ public class AuctionListController extends BaseController implements Initializab
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
+          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) 
+          (json, type, ctx) -> java.time.LocalDateTime
               .parse(json.getAsString()))
       .create();
 
@@ -380,12 +381,14 @@ public class AuctionListController extends BaseController implements Initializab
     renderCards(filtered);
   }
 
-  private static final String FILTER_ACTIVE_STYLE = "-fx-background-color: rgba(59,130,246,0.3); -fx-text-fill: #93C5FD;"
+  private static final String FILTER_ACTIVE_STYLE = 
+      "-fx-background-color: rgba(59,130,246,0.3); -fx-text-fill: #93C5FD;"
       + "-fx-font-size: 11px; -fx-font-weight: bold;"
       + "-fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 12;"
       + "-fx-border-color: #3B82F6; -fx-border-radius: 8; -fx-border-width: 1;";
 
-  private static final String FILTER_INACTIVE_STYLE = "-fx-background-color: transparent; -fx-text-fill: #64748B;"
+  private static final String FILTER_INACTIVE_STYLE = 
+      "-fx-background-color: transparent; -fx-text-fill: #64748B;"
       + "-fx-font-size: 11px; -fx-background-radius: 8; -fx-cursor: hand;"
       + "-fx-padding: 0 12; -fx-border-color: #1E3A5F;"
       + "-fx-border-radius: 8; -fx-border-width: 1;";
@@ -505,7 +508,8 @@ public class AuctionListController extends BaseController implements Initializab
       imgView.setClip(clip);
       Label placeholderIcon = new Label(typeIcon);
       placeholderIcon.setStyle("-fx-font-size: 40px;");
-      javafx.scene.layout.StackPane imgContainer = new javafx.scene.layout.StackPane(placeholderIcon, imgView);
+      javafx.scene.layout.StackPane imgContainer =
+          new javafx.scene.layout.StackPane(placeholderIcon, imgView);
       imgContainer.setPrefWidth(187);
       imgContainer.setPrefHeight(120);
       imgContainer.setStyle("-fx-background-color: #162236; -fx-background-radius: 8;");

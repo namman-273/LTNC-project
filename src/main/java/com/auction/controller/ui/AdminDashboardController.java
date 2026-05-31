@@ -62,7 +62,8 @@ public class AdminDashboardController extends BaseController implements Initiali
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
+          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) 
+           (json, type, ctx) -> java.time.LocalDateTime
               .parse(json.getAsString()))
       .create();
 
