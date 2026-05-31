@@ -1,6 +1,7 @@
 package com.auction.controller.command;
 
 import com.auction.controller.network.ClientHandler;
+import com.auction.controller.network.ConnectionManager;
 import com.auction.network.protocol.Protocol;
 import com.auction.service.auctionservice.AuctionService;
 
@@ -46,6 +47,7 @@ public class CreateAuctionCommand implements ClientCommand {
       // Báo thành công
       client.sendMessage(Protocol.RES_SUCCESS + Protocol.SEPARATOR
           + "Sản phẩm " + name + " đã được đăng sàn.");
+      ConnectionManager.getInstance().broadcastToAll(Protocol.NOTI_NEW_AUCTION);
 
     } catch (NumberFormatException e) {
       // Tách riêng lỗi NumberFormat để thông báo rõ ràng hơn

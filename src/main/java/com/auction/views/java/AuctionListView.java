@@ -13,10 +13,17 @@ public class AuctionListView {
 
   private Stage stage;
   private String username;
+  private String successToastMessage;
 
   public AuctionListView(Stage stage, String username) {
     this.stage = stage;
     this.username = username;
+  }
+
+  public AuctionListView(Stage stage, String username, String successToastMessage) {
+    this.stage = stage;
+    this.username = username;
+    this.successToastMessage = successToastMessage;
   }
 
   /**
@@ -25,7 +32,7 @@ public class AuctionListView {
   public void show() {
     try {
       FXMLLoader loader = new FXMLLoader(
-          getClass().getResource("/com/auction/views/fxml/AuctionListView.fxml"));
+              getClass().getResource("/com/auction/views/fxml/AuctionListView.fxml"));
       Parent root = loader.load();
 
       AuctionListController controller = loader.getController();
@@ -48,10 +55,17 @@ public class AuctionListView {
       }
 
       // Load lại sau 500ms để đảm bảo socket sẵn sàng
+      final String toastMsg = successToastMessage;
       new Thread(() -> {
         try {
           Thread.sleep(800);
-          javafx.application.Platform.runLater(() -> controller.refreshList());
+          javafx.application.Platform.runLater(() -> {
+            controller.refreshList();
+            if (toastMsg != null && !toastMsg.isEmpty()) {
+              com.auction.util.ui.ToastManager.show(
+                      com.auction.util.ui.ToastManager.Type.SUCCESS, toastMsg);
+            }
+          });
         } catch (InterruptedException ignored) {
         }
       }).start();
