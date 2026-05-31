@@ -1,278 +1,341 @@
 package com.auction.controller.ui;
 
+import com.auction.model.dto.BidHistoryEntry;
 import com.auction.network.client.ServerConnection;
 import com.auction.network.protocol.Protocol;
-import com.auction.service.bidhistorymanager.BidHistoryManager;
-import com.auction.model.dto.BidHistoryEntry;
 import com.auction.util.core.SessionManager;
 import com.auction.views.java.AuctionListView;
 import com.auction.views.java.BidHistoryView;
-
+import java.net.URL;
+import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.net.URL;
-import java.util.ResourceBundle;
+/**
+ * .
+ */
+public class ProfileController extends BaseController implements Initializable {
 
-public class ProfileController implements Initializable {
+  // ── Avatar card ───────────────────────────────────────────────────────────
+  @FXML
+  private Label avatarLabel;
+  @FXML
+  private Label usernameLabel;
+  @FXML
+  private Label roleLabel;
+  @FXML
+  private Label balanceLabel;
 
-    // ── Avatar card ───────────────────────────────────────────────────────────
-    @FXML private Label avatarLabel;
-    @FXML private Label usernameLabel;
-    @FXML private Label roleLabel;
-    @FXML private Label balanceLabel;
+  // ── Thông tin cá nhân ─────────────────────────────────────────────────────
+  @FXML
+  private Label usernameFieldLabel;
+  @FXML
+  private TextField emailField;
+  @FXML
+  private Label roleDetailLabel;
+  @FXML
+  private Label joinDateLabel;
 
-    // ── Thông tin cá nhân ─────────────────────────────────────────────────────
-    @FXML private Label     usernameFieldLabel;
-    @FXML private TextField emailField;
-    @FXML private Label     roleDetailLabel;
-    @FXML private Label     joinDateLabel;      // MỚI — hiển thị ngày tham gia
+  // ── Panel đổi mật khẩu ────────────────────────────────────────────────────
+  @FXML
+  private VBox passwordPanel;
+  @FXML
+  private PasswordField oldPasswordField;
+  @FXML
+  private PasswordField newPasswordField;
+  @FXML
+  private PasswordField confirmPasswordField;
 
-    // ── Panel đổi mật khẩu (MỚI) ─────────────────────────────────────────────
-    @FXML private VBox          passwordPanel;   // ẩn/hiện khi bấm nút Đổi
-    @FXML private PasswordField oldPasswordField;
-    @FXML private PasswordField newPasswordField;
-    @FXML private PasswordField confirmPasswordField;
+  // ── Thống kê ─────────────────────────────────────────────────────────────
+  @FXML
+  private Label statTotal;
+  @FXML
+  private Label statWin;
+  @FXML
+  private Label statWatchlist;
+  @FXML
+  private Label statRate;
+  @FXML
+  private Label messageLabel;
 
-    // ── Thống kê ─────────────────────────────────────────────────────────────
-    @FXML private Label statTotal;
-    @FXML private Label statWin;
-    @FXML private Label statWatchlist;
-    @FXML private Label statRate;
+  private String username;
 
-    // ── Thông báo ─────────────────────────────────────────────────────────────
-    @FXML private Label messageLabel;
+  /**
+   * .
+   */
+  public void setUsername(String u) {
+    initToastManager(avatarLabel);
+    this.username = u;
+    loadProfile();
+    registerPushListener(this::handlePushMessage);
+  }
 
-    private String username;
-
-    // ─────────────────────────────────────────────────────────────────────────
-
-    public void setUsername(String u) {
-        this.username = u;
-        loadProfile();
+  @Override
+  public void initialize(URL url, ResourceBundle rb) {
+    if (passwordPanel != null) {
+      passwordPanel.setVisible(false);
+      passwordPanel.setManaged(false);
     }
+  }
 
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
-        // Ẩn password panel mặc định
-        if (passwordPanel != null) {
-            passwordPanel.setVisible(false);
-            passwordPanel.setManaged(false);
+  // ── Push ──────────────────────────────────────────────────────────────────
+  private void handlePushMessage(String message) {
+    String[] parts = message.split("\\|");
+    if (parts.length >= 2 && Protocol.NOTI_BALANCE_CHANGED.equals(parts[0])) {
+      Platform.runLater(() -> {
+        // balanceLabel ở đây cần prefix "Số dư: "
+        try {
+          double b = Double.parseDouble(parts[1]);
+          if (balanceLabel != null) {
+            balanceLabel.setText(String.format("Số dư: %,.0f VNĐ", b));
+          }
+        } catch (NumberFormatException ignored) {
+          ignored.printStackTrace();
         }
+      });
+    }
+  }
+
+  // ── Load toàn bộ profile ─────────────────────────────────────────────────
+  private void loadProfile() {
+    if (username == null || username.isEmpty()) {
+      return;
     }
 
-    // ── Load toàn bộ profile ─────────────────────────────────────────────────
-    private void loadProfile() {
-        if (username == null || username.isEmpty()) return;
+    String initials = username.substring(0, Math.min(2, username.length())).toUpperCase();
+    avatarLabel.setText(initials);
+    usernameLabel.setText(username);
+    usernameFieldLabel.setText(username);
 
-        // 1. Avatar + username (local, không cần server)
-        String initials = username.substring(0, Math.min(2, username.length())).toUpperCase();
-        avatarLabel.setText(initials);
-        usernameLabel.setText(username);
-        usernameFieldLabel.setText(username);
+    applyRole(SessionManager.getInstance().getRole());
+    refreshStats();
 
-        // 2. Role từ SessionManager (local)
-        applyRole(SessionManager.getInstance().getRole());
+    new Thread(() -> {
+      try {
+        ServerConnection conn = ServerConnection.getInstance();
 
-        // 3. Thống kê từ BidHistoryManager (local)
-        refreshStats();
-
-        // 4. Gọi server — dùng 1 thread duy nhất, gọi tuần tự
-        new Thread(() -> {
+        String profRes = conn.sendAndReceive(Protocol.CMD_GET_PROFILE);
+        if (profRes != null && profRes.startsWith(Protocol.RES_PROFILE_INFO)) {
+          String[] p = profRes.split("\\|", -1);
+          String email = p.length >= 3 ? p[2] : "";
+          String balance = p.length >= 5 ? p[4] : "0";
+          String joinDate = p.length >= 6 ? p[5] : "";
+          Platform.runLater(() -> {
+            if (emailField != null) {
+              emailField.setText(email);
+            }
             try {
-                ServerConnection conn = ServerConnection.getInstance();
-
-                // ── GET_PROFILE: lấy email + balance + joinDate ──────────────
-                // Format BE trả về: PROFILE_INFO|username|email|role|balance|joinDate
-                String profRes = conn.sendAndReceive(Protocol.CMD_GET_PROFILE);
-                if (profRes != null && profRes.startsWith(Protocol.RES_PROFILE_INFO)) {
-                    String[] p = profRes.split("\\|", -1);
-                    String email    = p.length >= 3 ? p[2] : "";
-                    String balance  = p.length >= 5 ? p[4] : "0";
-                    String joinDate = p.length >= 6 ? p[5] : "";
-
-                    Platform.runLater(() -> {
-                        if (emailField != null) emailField.setText(email);
-
-                        try {
-                            double b = Double.parseDouble(balance);
-                            balanceLabel.setText(String.format("Số dư: %,.0f VNĐ", b));
-                        } catch (NumberFormatException e) {
-                            balanceLabel.setText("Số dư: " + balance + " VNĐ");
-                        }
-
-                        if (joinDateLabel != null && !joinDate.isEmpty()) {
-                            joinDateLabel.setText(joinDate);
-                        }
-                    });
-                }
-
-                // ── GET_WATCHLIST: đếm số phiên theo dõi ────────────────────
-                String wlRes = conn.sendAndReceive(Protocol.CMD_GET_WATCHLIST);
-                if (wlRes != null && wlRes.startsWith(Protocol.RES_WATCHLIST)) {
-                    String[] p = wlRes.split("\\|", 2);
-                    String json = p.length >= 2 ? p[1] : "[]";
-                    long count = json.chars().filter(c -> c == '{').count();
-                    Platform.runLater(() -> {
-                        if (statWatchlist != null) statWatchlist.setText(String.valueOf(count));
-                    });
-                }
-
-            } catch (Exception e) {
-                System.err.println("[ProfileController] Lỗi load: " + e.getMessage());
+              double b = Double.parseDouble(balance);
+              balanceLabel.setText(String.format("Số dư: %,.0f VNĐ", b));
+            } catch (NumberFormatException e) {
+              balanceLabel.setText("Số dư: " + balance + " VNĐ");
             }
-        }, "profile-load-thread").start();
-    }
-
-    // ── Role style ────────────────────────────────────────────────────────────
-    private void applyRole(String role) {
-        if (role == null) return;
-        roleLabel.setText(role);
-        switch (role) {
-            case "ADMIN" -> {
-                roleDetailLabel.setText("Quản trị viên (Admin)");
-                roleLabel.setStyle(
-                        "-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;" +
-                                "-fx-font-size: 11px; -fx-font-weight: bold;" +
-                                "-fx-background-radius: 12; -fx-padding: 3 10;");
+            if (joinDateLabel != null && !joinDate.isEmpty()) {
+              joinDateLabel.setText(joinDate);
             }
-            case "SELLER" -> {
-                roleDetailLabel.setText("Người bán (Seller)");
-                roleLabel.setStyle(
-                        "-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;" +
-                                "-fx-font-size: 11px; -fx-font-weight: bold;" +
-                                "-fx-background-radius: 12; -fx-padding: 3 10;");
-            }
-            default -> {
-                roleDetailLabel.setText("Người đấu giá (Bidder)");
-                roleLabel.setStyle(
-                        "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;" +
-                                "-fx-font-size: 11px; -fx-font-weight: bold;" +
-                                "-fx-background-radius: 12; -fx-padding: 3 10;");
-            }
+          });
         }
-    }
 
-    // ── Refresh thống kê local ────────────────────────────────────────────────
-    private void refreshStats() {
-        java.util.List<BidHistoryEntry> entries =
-                BidHistoryManager.getInstance().getHistoryForUser(username);
+        String wlRes = conn.sendAndReceive(Protocol.CMD_GET_WATCHLIST);
+        if (wlRes != null && wlRes.startsWith(Protocol.RES_WATCHLIST)) {
+          String[] p = wlRes.split("\\|", 2);
+          String json = p.length >= 2 ? p[1] : "[]";
+          long count = json.chars().filter(c -> c == '{').count();
+          Platform.runLater(() -> {
+            if (statWatchlist != null) {
+              statWatchlist.setText(String.valueOf(count));
+            }
+          });
+        }
+      } catch (Exception e) {
+        System.err.println("[ProfileController] Lỗi load: " + e.getMessage());
+      }
+    }, "profile-load-thread").start();
+  }
+
+  private void applyRole(String role) {
+    if (role == null) {
+      return;
+    }
+    roleLabel.setText(role);
+    switch (role) {
+      case "ADMIN" -> {
+        roleDetailLabel.setText("Quản trị viên (Admin)");
+        roleLabel.setStyle("-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;"
+            + "-fx-font-size: 11px; -fx-font-weight: bold;"
+            + "-fx-background-radius: 12; -fx-padding: 3 10;");
+      }
+      case "SELLER" -> {
+        roleDetailLabel.setText("Người bán (Seller)");
+        roleLabel.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;"
+            + "-fx-font-size: 11px; -fx-font-weight: bold;"
+            + "-fx-background-radius: 12; -fx-padding: 3 10;");
+      }
+      default -> {
+        roleDetailLabel.setText("Người đấu giá (Bidder)");
+        roleLabel.setStyle("-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;"
+            + "-fx-font-size: 11px; -fx-font-weight: bold;"
+            + "-fx-background-radius: 12; -fx-padding: 3 10;");
+      }
+    }
+  }
+
+  private void refreshStats() {
+    new Thread(() -> {
+      try {
+        String res = ServerConnection.getInstance()
+            .sendAndReceive(Protocol.CMD_GET_BID_HISTORY);
+        if (res == null || !res.startsWith(Protocol.RES_BID_HISTORY)) {
+          return;
+        }
+        String json = res.substring(
+            Protocol.RES_BID_HISTORY.length() + Protocol.SEPARATOR.length());
+        com.google.gson.reflect.TypeToken<java.util.List<BidHistoryEntry>> token =
+            new com.google.gson.reflect.TypeToken<java.util.List<BidHistoryEntry>>() {};
+        java.util.List<BidHistoryEntry> entries = 
+            new com.google.gson.Gson().fromJson(json, token.getType());
+        if (entries == null) {
+          entries = new java.util.ArrayList<>();
+        }
         long total = entries.size();
-        long wins  = entries.stream()
-                .filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
-        String rate = total > 0
-                ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
-        if (statTotal != null) statTotal.setText(String.valueOf(total));
-        if (statWin   != null) statWin.setText(String.valueOf(wins));
-        if (statRate  != null) statRate.setText(rate);
+        long wins = entries.stream().filter(e -> "WIN".equalsIgnoreCase(e.getResult())).count();
+        String rate = total > 0 ? String.format("%.0f%%", wins * 100.0 / total) : "0%";
+        Platform.runLater(() -> {
+          if (statTotal != null) {
+            statTotal.setText(String.valueOf(total));
+          }
+          if (statWin != null) {
+            statWin.setText(String.valueOf(wins));
+          }
+          if (statRate != null) {
+            statRate.setText(rate);
+          }
+        });
+      } catch (Exception e) {
+        System.err.println("[ProfileController] Lỗi load stats: " + e.getMessage());
+      }
+    }, "profile-stats-thread").start();
+  }
+
+  @FXML
+  private void handleUpdateEmail() {
+    String newEmail = emailField.getText().trim();
+    if (newEmail.isEmpty()) {
+      showMessage("Vui lòng nhập email!", false);
+      return;
     }
-
-    // ── Cập nhật email ────────────────────────────────────────────────────────
-    @FXML
-    private void handleUpdateEmail() {
-        String newEmail = emailField.getText().trim();
-        if (newEmail.isEmpty()) { showMessage("Vui lòng nhập email!", false); return; }
-        if (!newEmail.contains("@")) { showMessage("Email không hợp lệ!", false); return; }
-
-        new Thread(() -> {
-            String res = ServerConnection.getInstance()
-                    .sendAndReceive(Protocol.CMD_UPDATE_EMAIL + Protocol.SEPARATOR + newEmail);
-            Platform.runLater(() -> {
-                if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
-                    showMessage("✅ Cập nhật email thành công!", true);
-                } else {
-                    showMessage("❌ " + (res != null ? res.replace("ERROR|","") : "Không kết nối được server"), false);
-                }
-            });
-        }, "update-email-thread").start();
+    if (!newEmail.contains("@")) {
+      showMessage("Email không hợp lệ!", false);
+      return;
     }
-
-    // ── Toggle panel đổi mật khẩu (MỚI) ─────────────────────────────────────
-    @FXML
-    private void handleChangePassword() {
-        if (passwordPanel == null) return;
-        boolean show = !passwordPanel.isVisible();
-        passwordPanel.setVisible(show);
-        passwordPanel.setManaged(show);
-        // Xóa field khi đóng lại
-        if (!show) {
-            if (oldPasswordField    != null) oldPasswordField.clear();
-            if (newPasswordField    != null) newPasswordField.clear();
-            if (confirmPasswordField != null) confirmPasswordField.clear();
-            messageLabel.setText("");
+    new Thread(() -> {
+      String res = ServerConnection.getInstance()
+          .sendAndReceive(Protocol.CMD_UPDATE_EMAIL + Protocol.SEPARATOR + newEmail);
+      Platform.runLater(() -> {
+        if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
+          showMessage("✅ Cập nhật email thành công!", true);
+        } else {
+          showMessage("❌ "
+              + (res != null ? res.replace("ERROR|", "") : "Không kết nối được server"), false);
         }
+      });
+    }, "update-email-thread").start();
+  }
+
+  @FXML
+  private void handleChangePassword() {
+    if (passwordPanel == null) {
+      return;
+    }
+    boolean show = !passwordPanel.isVisible();
+    passwordPanel.setVisible(show);
+    passwordPanel.setManaged(show);
+    if (!show) {
+      if (oldPasswordField != null) {
+        oldPasswordField.clear();
+      }
+      if (newPasswordField != null) {
+        newPasswordField.clear();
+      }
+      if (confirmPasswordField != null) {
+        confirmPasswordField.clear();
+      }
+      messageLabel.setText("");
+    }
+  }
+
+  @FXML
+  private void handleConfirmChangePassword() {
+    if (oldPasswordField == null || newPasswordField == null || confirmPasswordField == null) {
+      return;
+    }
+    String oldPass = oldPasswordField.getText().trim();
+    String newPass = newPasswordField.getText().trim();
+    String confirmPass = confirmPasswordField.getText().trim();
+
+    if (oldPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
+      showMessage("Vui lòng điền đủ các trường mật khẩu!", false);
+      return;
+    }
+    if (!newPass.equals(confirmPass)) {
+      showMessage("Mật khẩu xác nhận không khớp!", false);
+      return;
+    }
+    if (newPass.length() < 6) {
+      showMessage("Mật khẩu mới phải ít nhất 6 ký tự!", false);
+      return;
+    }
+    if (newPass.equals(oldPass)) {
+      showMessage("Mật khẩu mới phải khác mật khẩu cũ!", false);
+      return;
     }
 
-    // ── Xác nhận đổi mật khẩu (MỚI) ─────────────────────────────────────────
-    @FXML
-    private void handleConfirmChangePassword() {
-        if (oldPasswordField == null || newPasswordField == null || confirmPasswordField == null) return;
-
-        String oldPass     = oldPasswordField.getText().trim();
-        String newPass     = newPasswordField.getText().trim();
-        String confirmPass = confirmPasswordField.getText().trim();
-
-        if (oldPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
-            showMessage("Vui lòng điền đủ các trường mật khẩu!", false); return;
+    new Thread(() -> {
+      String res = ServerConnection.getInstance().sendAndReceive(
+          Protocol.CMD_UPDATE_PASSWORD + Protocol.SEPARATOR
+              + oldPass + Protocol.SEPARATOR + newPass);
+      Platform.runLater(() -> {
+        if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
+          showMessage("✅ Đổi mật khẩu thành công!", true);
+          passwordPanel.setVisible(false);
+          passwordPanel.setManaged(false);
+          oldPasswordField.clear();
+          newPasswordField.clear();
+          confirmPasswordField.clear();
+        } else {
+          showMessage("❌ "
+              + (res != null ? res.replace("ERROR|", "") : "Lỗi kết nối server"), false);
         }
-        if (!newPass.equals(confirmPass)) {
-            showMessage("Mật khẩu xác nhận không khớp!", false); return;
-        }
-        if (newPass.length() < 6) {
-            showMessage("Mật khẩu mới phải ít nhất 6 ký tự!", false); return;
-        }
-        if (newPass.equals(oldPass)) {
-            showMessage("Mật khẩu mới phải khác mật khẩu cũ!", false); return;
-        }
+      });
+    }, "change-password-thread").start();
+  }
 
-        // Format: UPDATE_PASSWORD|oldPass|newPass
-        new Thread(() -> {
-            String res = ServerConnection.getInstance().sendAndReceive(
-                    Protocol.CMD_UPDATE_PASSWORD + Protocol.SEPARATOR + oldPass
-                            + Protocol.SEPARATOR + newPass);
-            Platform.runLater(() -> {
-                if (res != null && res.startsWith(Protocol.RES_SUCCESS)) {
-                    showMessage("✅ Đổi mật khẩu thành công!", true);
-                    // Ẩn panel sau khi thành công
-                    passwordPanel.setVisible(false);
-                    passwordPanel.setManaged(false);
-                    oldPasswordField.clear();
-                    newPasswordField.clear();
-                    confirmPasswordField.clear();
-                } else {
-                    String msg = (res != null) ? res.replace("ERROR|", "") : "Lỗi kết nối server";
-                    showMessage("❌ " + msg, false);
-                }
-            });
-        }, "change-password-thread").start();
-    }
+  @FXML
+  private void handleViewHistory() {
+    Stage stage = (Stage) usernameLabel.getScene().getWindow();
+    new BidHistoryView(stage, username).show();
+  }
 
-    // ── Navigation ────────────────────────────────────────────────────────────
-    @FXML
-    private void handleViewHistory() {
-        Stage stage = (Stage) usernameLabel.getScene().getWindow();
-        new BidHistoryView(stage, username).show();
-    }
+  @FXML
+  private void handleBack() {
+    removePushListener(); // BaseController
+    Stage stage = (Stage) usernameLabel.getScene().getWindow();
+    new AuctionListView(stage, username).show();
+  }
 
-    @FXML
-    private void handleBack() {
-        Stage stage = (Stage) usernameLabel.getScene().getWindow();
-        new AuctionListView(stage, username).show();
+  private void showMessage(String msg, boolean success) {
+    if (messageLabel == null) {
+      return;
     }
-
-    // ── Helper ───────────────────────────────────────────────────────────────
-    private void showMessage(String msg, boolean success) {
-        if (messageLabel == null) return;
-        messageLabel.setText(msg);
-        messageLabel.setStyle(success
-                ? "-fx-font-size: 12px; -fx-text-fill: #22C55E;"
-                : "-fx-font-size: 12px; -fx-text-fill: #EF4444;");
-    }
+    messageLabel.setText(msg);
+    messageLabel.setStyle(success
+        ? "-fx-font-size: 12px; -fx-text-fill: #22C55E;"
+        : "-fx-font-size: 12px; -fx-text-fill: #EF4444;");
+  }
 }

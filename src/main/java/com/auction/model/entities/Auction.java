@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -214,7 +215,10 @@ public class Auction extends Entity {
   }
 
   // --- LOGIC PHIÊN ĐẤU GIÁ ---
-  private double getMinimumIncrement(double price) {
+  /**
+   * lấy giá sàn.
+   */
+  public double getMinimumIncrement(double price) {
     if (validator == null) {
       restoreTransients();
     }
@@ -330,20 +334,25 @@ public class Auction extends Entity {
    * 
    */
   public void closeAuction() {
-   
-    
-    //  CHỈ CLEANUP RESOURCES
+    // Phải chờ notifyExecutor drain hết task trước khi clear
+    // observers, vì notifyAllParticipants() submit task async vào executor.
+    // Nếu clear observers trước thì task notify chạy nhưng observers rỗng -> mất
+    // thông báo.
+    if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
+      notifyExecutor.shutdown();
+      try {
+        notifyExecutor.awaitTermination(3, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    // Sau khi executor drain xong mới clear observers
     if (observers != null) {
       observers.clear();
     }
     if (autoBidQueue != null) {
       autoBidQueue.clear();
     }
-    if (notifyExecutor != null && !notifyExecutor.isShutdown()) {
-      notifyExecutor.shutdown();
-    }
-    
-    System.out.println("[AUCTION] Đã giải phóng tài nguyên cho phiên: " + getId() 
-        + " - Status cuối: " + status);
+    System.out.println("[AUCTION] Đã giải phóng tài nguyên cho phiên: " + getId());
   }
 }

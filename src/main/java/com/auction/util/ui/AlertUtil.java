@@ -1,10 +1,10 @@
 package com.auction.util.ui;
 
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
-import java.util.Optional;
 
 /**
  * Utility class hiển thị thông báo dialog cho user.

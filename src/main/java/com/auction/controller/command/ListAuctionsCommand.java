@@ -16,7 +16,9 @@ public class ListAuctionsCommand implements ClientCommand {
   public void execute(String[] parts, ClientHandler client, AuctionService auctionService) {
     List<AuctionRow> dtoList = new ArrayList<>();
     for (Auction a : auctionService.getAllAuctions()) {
+
       dtoList.add(new AuctionRow(a));
+
     }
     // Gọi client.gson để parse JSON
     client.sendMessage(Protocol.RES_LIST_SUCCESS

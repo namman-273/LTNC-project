@@ -1,6 +1,24 @@
 package com.auction.controller.network;
 
-import com.auction.controller.command.*;
+import com.auction.controller.command.AddAutoBidCommand;
+import com.auction.controller.command.BidCommand;
+import com.auction.controller.command.ChangePasswordCommand;
+import com.auction.controller.command.ClientCommand;
+import com.auction.controller.command.CreateAuctionCommand;
+import com.auction.controller.command.DeleteAuctionCommand;
+import com.auction.controller.command.DepositCommand;
+import com.auction.controller.command.EndAuctionCommand;
+import com.auction.controller.command.GetBalanceCommand;
+import com.auction.controller.command.GetBidHistoryCommand;
+import com.auction.controller.command.GetHistoryCommand;
+import com.auction.controller.command.GetProfileCommand;
+import com.auction.controller.command.GetWatchlistCommand;
+import com.auction.controller.command.ListAuctionsCommand;
+import com.auction.controller.command.LoginCommand;
+import com.auction.controller.command.RegisterCommand;
+import com.auction.controller.command.UnwatchCommand;
+import com.auction.controller.command.UpdateEmailCommand;
+import com.auction.controller.command.WatchCommand;
 import com.auction.model.entities.user.User;
 import com.auction.model.observer.AuctionParticipant;
 import com.auction.network.protocol.Protocol;
@@ -50,6 +68,7 @@ public class ClientHandler implements Runnable, AuctionParticipant {
     commandMap.put(Protocol.CMD_GET_BALANCE, new GetBalanceCommand());
     commandMap.put(Protocol.CMD_WATCH, new WatchCommand());
     commandMap.put(Protocol.CMD_UNWATCH, new UnwatchCommand());
+    commandMap.put(Protocol.CMD_DELETE_AUCTION, new DeleteAuctionCommand());
     commandMap.put(Protocol.CMD_GET_HISTORY, new GetHistoryCommand());
     commandMap.put(Protocol.CMD_GET_WATCHLIST, new GetWatchlistCommand());
     commandMap.put(Protocol.CMD_ADD_AUTO_BID, new AddAutoBidCommand());

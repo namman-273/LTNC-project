@@ -17,12 +17,9 @@ public class PaymentProcessor {
 
   /**
    * Xử lý thanh toán khi auction kết thúc BÌNH THƯỜNG (không bị Admin đóng sớm).
-   * 
    * LOGIC:
    * - Có winner → Cộng tiền cho seller → Set status = PAID
    * - Không có winner → Giữ nguyên status = FINISHED
-   * 
-   * @return WinnerInfo chứa thông tin winner và giá thắng
    */
   public WinnerInfo processPayment(Auction auction) {
     if (auction == null) {
@@ -70,13 +67,12 @@ public class PaymentProcessor {
   }
 
   /**
-   * Hoàn tiền cho người dẫn đầu khi auction bị Admin đóng sớm.
-   * 
+   * Hoàn tiền cho người dẫn đầu khi auction bị Admin đóng sớm. 
    * LOGIC:
    * - Tìm người dẫn đầu → Hoàn tiền
-   * - Trạng thái vẫn là CANCELED (không phải PAID vì không thanh toán cho seller)
-   * 
-   * @return WinnerInfo chứa thông tin người được hoàn tiền
+   * - Set status = CANCELED
+   * - Return WinnerInfo(null, 0) vì KHÔNG CÓ WINNER (chỉ có refund)
+  với winner=null và price=0
    */
   public WinnerInfo processRefund(Auction auction) {
     if (auction == null) {
@@ -95,8 +91,6 @@ public class PaymentProcessor {
 
       // Hoàn tiền cho người dẫn đầu
       leadingBidder.addBalance(refundAmount);
-      // thông báo phiên bị hủy
-      auction.setStatus(AuctionStatus.CANCELED);
 
       // Gửi thông báo hoàn tiền
       String refundMsg = Protocol.NOTI_REFUND + Protocol.SEPARATOR
@@ -106,12 +100,18 @@ public class PaymentProcessor {
 
       auction.notifySpecificUser(leadingBidder.getUsername(), refundMsg);
 
-      System.out.println("[REFUND]  Đã hoàn " + refundAmount + "$ cho user: "
-          + leadingBidder.getUsername() + " - Trạng thái: CANCELED");
+      System.out.println("[REFUND]   Đã hoàn " + refundAmount + "$ cho user: "
+          + leadingBidder.getUsername());
     }
 
-    // Trạng thái  là CANCELED (không set PAID vì không thanh toán cho seller)
-    return new WinnerInfo(leadingBidder, refundAmount);
+    // Set status = CANCELED (phiên bị hủy bởi Admin)
+    auction.setStatus(AuctionStatus.CANCELED);
+
+    System.out.println("[REFUND] Phiên bị Admin đóng sớm - Trạng thái: CANCELED");
+
+    // QUAN TRỌNG: Return WinnerInfo(null, 0) vì KHÔNG có winner
+    // (Admin đóng sớm = không có người thắng thật sự)
+    return new WinnerInfo(null, 0);
   }
 
   /**

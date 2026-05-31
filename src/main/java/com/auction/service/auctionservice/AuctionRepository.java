@@ -49,6 +49,13 @@ public class AuctionRepository {
   }
 
   /**
+   * Xóa auction.
+   */
+  public boolean remove(String auctionId) {
+    return auctions.remove(auctionId) != null;
+  }
+
+  /**
    * Xóa toàn bộ và load lại từ file.
    */
   public void replaceAll(Map<String, Auction> loadedAuctions) {

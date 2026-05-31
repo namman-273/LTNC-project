@@ -26,6 +26,7 @@ public class AuctionService implements Serializable {
   private final AuctionNotificationService notificationService;
   private final WatchlistService watchlistService;
   private transient AuctionEndHandler endHandler;
+  private final AuctionDeletionHandler deletionHandler;
 
   // Data persistence service
   private final AuctionDataPersistenceService persistenceService;
@@ -42,6 +43,8 @@ public class AuctionService implements Serializable {
     this.persistenceService = new AuctionDataPersistenceService();
     this.endHandler = new AuctionEndHandler(auctionRepository, scheduler,
         paymentProcessor, notificationService, persistenceService);
+    this.deletionHandler = new AuctionDeletionHandler(auctionRepository,
+        paymentProcessor, persistenceService);
   }
 
   /**
@@ -219,7 +222,13 @@ public class AuctionService implements Serializable {
     }
   }
 
-  
+  /**
+   * Xóa phiên đấu giá - chỉ Admin.
+   * Delegate logic xóa cho AuctionDeletionHandler (SRP).
+   */
+  public boolean deleteAuction(String auctionId) {
+    return deletionHandler.deleteAuction(auctionId);
+  }
 
   /**
    * Ngắt bỏ mọi observer.

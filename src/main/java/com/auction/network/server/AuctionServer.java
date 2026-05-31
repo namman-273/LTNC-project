@@ -4,20 +4,20 @@ import com.auction.controller.network.ClientHandler;
 import com.auction.service.auctionservice.AuctionService;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.core.datamanager.DataManager;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 
 /**
- *  * .
- *  
+ * Server Auction
+ * - Lắng nghe kết nối từ Client
+ * - Tối ưu: In IP máy server để Client kết nối.
  */
 public class AuctionServer {
   private final int port;
 
-  // trường này để điều khiển việc dừng
+  // Trường này để điều khiển việc dừng
   private static volatile boolean running = true;
   private ServerSocket serverSocket;
 
@@ -26,8 +26,7 @@ public class AuctionServer {
   }
 
   /**
-   *  * .
-   *  
+   * Server chạy.
    */
   public void start() {
     // Đăng ký Shutdown Hook: Tự động chạy khi nhấn Stop/Ctrl+C
@@ -48,12 +47,33 @@ public class AuctionServer {
 
     try {
       serverSocket = new ServerSocket(port);
+
+      System.out.println("\n╔════════════════════════════════════════════╗");
+      System.out.println("║     🟢 SERVER AUCTION ĐANG CHẠY          ║");
+      System.out.println("╠════════════════════════════════════════════╣");
+      System.out.println("║  Port: " + port);
+
+      try {
+        // Lấy IP máy server
+        java.net.InetAddress localHost = java.net.InetAddress.getLocalHost();
+        String ipAddress = localHost.getHostAddress();
+        System.out.println("║  IP máy này: " + ipAddress);
+        System.out.println("║");
+        System.out.println("║  📝 Client hãy sửa server.properties:");
+        System.out.println("║     server.host=" + ipAddress);
+        System.out.println("║     server.port=" + port);
+      } catch (Exception e) {
+        System.out.println("║  (Không lấy được IP)");
+      }
+
+      System.out.println("╚════════════════════════════════════════════╝\n");
       System.out.println("SERVER: Đang chạy trên cổng " + port);
 
       while (running) {
         try {
           Socket clientSocket = serverSocket.accept();
-          System.out.println("SERVER: Có khách hàng mới kết nối!");
+          System.out.println("Client kết nối từ: "
+              + clientSocket.getInetAddress().getHostAddress());
           ClientHandler handler = new ClientHandler(clientSocket);
           new Thread(handler).start();
         } catch (SocketException e) {
@@ -73,8 +93,7 @@ public class AuctionServer {
   }
 
   /**
-   *  * .
-   *  
+   * Main entry point.
    */
   public static void main(String[] args) {
     // Khởi tạo các Manager
