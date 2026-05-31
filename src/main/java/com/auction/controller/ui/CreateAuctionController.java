@@ -13,8 +13,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
@@ -115,15 +113,8 @@ public class CreateAuctionController implements Initializable {
     String msg = parts.length > 1 ? parts[1] : "Tạo phiên thành công!";
     showMessage(msg + " Đang chuyển về danh sách...", true);
 
-    // Hiện Alert rõ ràng — người dùng bấm OK rồi mới navigate
-    Alert alert = new Alert(AlertType.INFORMATION);
-    alert.setTitle("Thành công");
-    alert.setHeaderText(null);
-    alert.setContentText("✅ " + msg);
-    alert.showAndWait();
-
     Stage stage = (Stage) nameField.getScene().getWindow();
-    new AuctionListView(stage, username).show();
+    new AuctionListView(stage, username, "✅ " + msg).show();
   }
 
   private void handleCreateFailure(String[] parts) {
@@ -155,7 +146,7 @@ public class CreateAuctionController implements Initializable {
   }
 
   /**
-   * OCP: thêm item type mới chỉ cần thêm case ở đây.
+   * OCP: thêm item type mới chỉ cần thêm case ở đây.mvn compile exec:java "-Dexec.mainClass=com.auction.network.server.AuctionServer"
    * Không ảnh hưởng bất kỳ logic nào khác.
    */
   private static class ItemTypeConverter extends StringConverter<String> {
