@@ -113,8 +113,17 @@ public class CreateAuctionController implements Initializable {
     String msg = parts.length > 1 ? parts[1] : "Tạo phiên thành công!";
     showMessage(msg + " Đang chuyển về danh sách...", true);
 
-    Stage stage = (Stage) nameField.getScene().getWindow();
-    new AuctionListView(stage, username, "✅ " + msg).show();
+    new Thread(() -> {
+      try {
+        Thread.sleep(1500);
+        Platform.runLater(() -> {
+          Stage stage = (Stage) nameField.getScene().getWindow();
+          new AuctionListView(stage, username, "✅ " + msg).show();
+        });
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }, "create-redirect-thread").start();
   }
 
   private void handleCreateFailure(String[] parts) {
@@ -146,14 +155,15 @@ public class CreateAuctionController implements Initializable {
   }
 
   /**
-   * OCP: thêm item type mới chỉ cần thêm case ở đây.mvn compile exec:java "-Dexec.mainClass=com.auction.network.server.AuctionServer"
+   * OCP: thêm item type mới chỉ cần thêm case ở đây.
    * Không ảnh hưởng bất kỳ logic nào khác.
    */
   private static class ItemTypeConverter extends StringConverter<String> {
     @Override
     public String toString(String s) {
-      if (s == null)
+      if (s == null) {
         return "";
+      }
       return switch (s) {
         case "ART" -> "🎨 Nghệ thuật";
         case "ELECTRONICS" -> "⚡ Điện tử";
