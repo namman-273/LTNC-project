@@ -62,14 +62,13 @@ public class AdminDashboardController extends BaseController implements Initiali
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(java.time.LocalDateTime.class,
-          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time
-          .LocalDateTime
+          (com.google.gson.JsonDeserializer<java.time.LocalDateTime>) (json, type, ctx) -> java.time.LocalDateTime
               .parse(json.getAsString()))
       .create();
 
   public void setUsername(String username) {
     this.username = username;
-    loadBalanceWithPrefix(balanceLabel, "Số dư: "); 
+    loadBalanceWithPrefix(balanceLabel, "Số dư: ");
   }
 
   @Override
@@ -156,7 +155,7 @@ public class AdminDashboardController extends BaseController implements Initiali
         .filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus()))
         .count();
     long finishedCount = items.stream()
-        .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())) 
+        .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus()))
         .count();
     if (statTotalLabel != null) {
       statTotalLabel.setText(String.valueOf(items.size()));
@@ -189,7 +188,7 @@ public class AdminDashboardController extends BaseController implements Initiali
           if (depositAmountField != null) {
             depositAmountField.clear();
           }
-          loadBalanceWithPrefix(balanceLabel, "Số dư: "); 
+          loadBalanceWithPrefix(balanceLabel, "Số dư: ");
         } else {
           showMessage("❌ " + (parts.length > 1 ? parts[1] : "Nạp tiền thất bại!"), "red");
         }
@@ -290,8 +289,12 @@ public class AdminDashboardController extends BaseController implements Initiali
     }).start();
   }
 
+  /**
+   * .
+   */
   @FXML
   public void handleCreateAuction() {
+    stopAutoRefresh();
     Stage stage = (Stage) auctionTable.getScene().getWindow();
     new CreateAuctionView(stage, username).show();
   }

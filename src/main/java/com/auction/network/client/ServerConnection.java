@@ -234,7 +234,7 @@ public class ServerConnection {
         return Protocol.ERROR + Protocol.SEPARATOR + "Mất kết nối server!";
       }
 
-      // Gọi lại với allowRetry = false, KHÔNG GỌI responseQueue.clear() nữa
+      // Gọi lại với allowRetry = false
       return doSendAndReceive(message, false);
 
     } catch (InterruptedException e) {
