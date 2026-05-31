@@ -519,4 +519,4 @@ sudo ufw allow 9999/tcp
 | Nội dung | Link |
 |---|---|
 | Báo cáo PDF | [Xem báo cáo](https://drive.google.com/file/d/1SzLp6xhrwIa9EIf3QhNhy0gg_4h7LGpG/view?usp=sharing) |
-| Video demo | [Xem video](https://link-to-video) |
+| Video demo | [Xem video](https://drive.google.com/file/d/1YcRAca-TEcxN9ISH5qb39fklSk7NeVIR/view?usp=drive_link) |
