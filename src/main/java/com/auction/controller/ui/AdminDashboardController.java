@@ -295,7 +295,6 @@ public class AdminDashboardController extends BaseController implements Initiali
    */
   @FXML
   public void handleCreateAuction() {
-    stopAutoRefresh();
     Stage stage = (Stage) auctionTable.getScene().getWindow();
     new CreateAuctionView(stage, username).show();
   }
