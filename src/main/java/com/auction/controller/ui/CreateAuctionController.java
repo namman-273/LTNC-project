@@ -13,8 +13,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
@@ -47,7 +45,7 @@ public class CreateAuctionController implements Initializable {
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     typeComboBox.setItems(FXCollections.observableArrayList(
-            "ART", "ELECTRONICS", "VEHICLE", "OTHER"));
+        "ART", "ELECTRONICS", "VEHICLE", "OTHER"));
     typeComboBox.setConverter(new ItemTypeConverter());
     typeComboBox.getSelectionModel().selectFirst();
   }
@@ -92,38 +90,40 @@ public class CreateAuctionController implements Initializable {
   /** Thu thập toàn bộ giá trị từ form vào một record bất biến. */
   private FormData collectForm() {
     return new FormData(
-            typeComboBox.getValue() != null ? typeComboBox.getValue() : "OTHER",
-            nameField.getText().trim(),
-            priceField.getText().trim(),
-            durationField.getText().trim(),
-            descriptionArea != null ? descriptionArea.getText().trim() : "",
-            imageUrlField != null ? imageUrlField.getText().trim() : "");
+        typeComboBox.getValue() != null ? typeComboBox.getValue() : "OTHER",
+        nameField.getText().trim(),
+        priceField.getText().trim(),
+        durationField.getText().trim(),
+        descriptionArea != null ? descriptionArea.getText().trim() : "",
+        imageUrlField != null ? imageUrlField.getText().trim() : "");
   }
 
   /** Tạo chuỗi lệnh gửi lên server — BE expect format này. */
   private String buildCommand(FormData f) {
     return Protocol.CMD_CREATE_AUCTION + Protocol.SEPARATOR
-            + f.type + Protocol.SEPARATOR
-            + f.name + Protocol.SEPARATOR
-            + f.price + Protocol.SEPARATOR
-            + f.duration + Protocol.SEPARATOR
-            + f.description + Protocol.SEPARATOR
-            + f.imageUrl;
+        + f.type + Protocol.SEPARATOR
+        + f.name + Protocol.SEPARATOR
+        + f.price + Protocol.SEPARATOR
+        + f.duration + Protocol.SEPARATOR
+        + f.description + Protocol.SEPARATOR
+        + f.imageUrl;
   }
 
   private void handleCreateSuccess(String[] parts) {
     String msg = parts.length > 1 ? parts[1] : "Tạo phiên thành công!";
     showMessage(msg + " Đang chuyển về danh sách...", true);
 
-    // Hiện Alert rõ ràng — người dùng bấm OK rồi mới navigate
-    Alert alert = new Alert(AlertType.INFORMATION);
-    alert.setTitle("Thành công");
-    alert.setHeaderText(null);
-    alert.setContentText("✅ " + msg);
-    alert.showAndWait();
-
-    Stage stage = (Stage) nameField.getScene().getWindow();
-    new AuctionListView(stage, username).show();
+    new Thread(() -> {
+      try {
+        Thread.sleep(1500);
+        Platform.runLater(() -> {
+          Stage stage = (Stage) nameField.getScene().getWindow();
+          new AuctionListView(stage, username).show();
+        });
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }, "create-redirect-thread").start();
   }
 
   private void handleCreateFailure(String[] parts) {
@@ -150,8 +150,8 @@ public class CreateAuctionController implements Initializable {
 
   /** Value object bất biến giữ dữ liệu form — tránh truyền 6 tham số rời. */
   private record FormData(
-          String type, String name, String price,
-          String duration, String description, String imageUrl) {
+      String type, String name, String price,
+      String duration, String description, String imageUrl) {
   }
 
   /**
@@ -161,8 +161,9 @@ public class CreateAuctionController implements Initializable {
   private static class ItemTypeConverter extends StringConverter<String> {
     @Override
     public String toString(String s) {
-      if (s == null)
+      if (s == null) {
         return "";
+      }
       return switch (s) {
         case "ART" -> "🎨 Nghệ thuật";
         case "ELECTRONICS" -> "⚡ Điện tử";
