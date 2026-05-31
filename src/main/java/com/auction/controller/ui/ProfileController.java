@@ -187,10 +187,6 @@ public class ProfileController extends BaseController implements Initializable {
   }
 
   private void refreshStats() {
-    // ProfileController chạy phía client — BidHistoryManager là server-side
-    // singleton,
-    // luôn rỗng trên client → thống kê luôn hiện 0/0/0%.
-    // Fix: gọi CMD_GET_BID_HISTORY qua network, giống BidHistoryController.
     new Thread(() -> {
       try {
         String res = ServerConnection.getInstance()

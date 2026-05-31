@@ -124,8 +124,8 @@ public class SellerController extends BaseController implements Initializable {
             });
 
     loadMyAuctions();
-    loadBalance(balanceLabel); // BaseController
-    registerPushListener(this::handleServerPush); // BaseController
+    loadBalance(balanceLabel); 
+    registerPushListener(this::handleServerPush);
     startAutoRefresh();
   }
 
@@ -177,7 +177,6 @@ public class SellerController extends BaseController implements Initializable {
                     "Phiên " + auctionId + " đã kết thúc thành công.\n"
                             + "Số tiền nhận: " + deltaFormatted + "\n"
                             + "Số dư mới: " + balanceFormatted);
-            // Thêm vào NotificationManager để hiển thị trong panel thông báo
             String notifMsg = "💰 Phiên " + auctionId + " kết thúc. Nhận " + deltaFormatted;
             NotificationManager.getInstance().add(notifMsg, "balance", auctionId);
           });
@@ -470,7 +469,6 @@ public class SellerController extends BaseController implements Initializable {
     alert.setTitle(title);
     alert.setHeaderText(null);
     alert.setContentText(message);
-    // Fix: gắn owner để alert luôn hiện trên cửa sổ chính, không bị khuất phía sau
     try {
       javafx.stage.Stage owner = (javafx.stage.Stage) auctionTable.getScene().getWindow();
       alert.initOwner(owner);

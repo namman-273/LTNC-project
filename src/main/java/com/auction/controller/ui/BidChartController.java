@@ -23,8 +23,6 @@ public class BidChartController extends BaseController implements Initializable 
 
   @FXML
   private LineChart<Number, Number> bidChart;
-  // axisX/axisY không inject qua @FXML vì FXML dùng xAxis/yAxis property element —
-  // lấy trực tiếp qua bidChart.getXAxis() / getYAxis() trong initialize()
   @FXML
   private Label titleLabel;
 
@@ -47,7 +45,7 @@ public class BidChartController extends BaseController implements Initializable 
     this.username = username;
     this.endTime = endTime;
 
-    initToastManager(titleLabel); // BaseController — loại bỏ bản copy
+    initToastManager(titleLabel); 
     titleLabel.setText("Biểu đồ giá - " + itemName);
     // Lấy axes qua getter sau khi bidChart đã được inject
     if (bidChart.getXAxis() != null) {
@@ -57,7 +55,7 @@ public class BidChartController extends BaseController implements Initializable 
       bidChart.getYAxis().setLabel("Giá (VNĐ)");
     }
     loadChartData();
-    registerPushListener(this::handlePushMessage); // BaseController
+    registerPushListener(this::handlePushMessage); 
   }
 
   @Override
@@ -121,7 +119,7 @@ public class BidChartController extends BaseController implements Initializable 
           Platform.runLater(() -> {
             appendPoint(newPrice);
             ToastManager.show(ToastManager.Type.INFO,
-                    "🔨 Giá mới: " + AuctionUtils.formatPrice(newPrice)); // AuctionUtils
+                    "🔨 Giá mới: " + AuctionUtils.formatPrice(newPrice)); 
           });
         } catch (NumberFormatException ignored) {
           ignored.printStackTrace();
@@ -141,7 +139,7 @@ public class BidChartController extends BaseController implements Initializable 
 
   @FXML
   private void handleBack() {
-    removePushListener(); // BaseController
+    removePushListener();
     Stage stage = (Stage) bidChart.getScene().getWindow();
     stage.close();
   }

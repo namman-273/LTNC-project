@@ -19,13 +19,9 @@ import javafx.scene.layout.StackPane;
  */
 public abstract class BaseController {
 
-  // ── Push listener — dùng chung cho mọi controller có realtime push ────────
-  // protected để controller con có thể kiểm tra null nếu cần
+ 
   protected Consumer<String> pushListener;
 
-  // ── ToastManager init ─────────────────────────────────────────────────────
-  // Trước đây copy-paste y hệt trong: AdminDashboard, Balance, Profile,
-  // BidHistory, WatchlistController, BidChartController (6 bản).
   protected void initToastManager(Node anchor) {
     Platform.runLater(() -> {
       try {
@@ -46,8 +42,7 @@ public abstract class BaseController {
     });
   }
 
-  // ── Push listener lifecycle ────────────────────────────────────────────────
-  // Trước đây copy-paste trong 10 controllers, đôi khi thiếu null-check.
+
   protected final void registerPushListener(Consumer<String> handler) {
     removePushListener(); // đảm bảo không đăng ký 2 lần
     this.pushListener = handler;
@@ -61,10 +56,6 @@ public abstract class BaseController {
     }
   }
 
-  // ── Balance loading — format chuẩn "%,.0f VNĐ" ────────────────────────────
-  // Trước đây copy-paste trong 7 controllers với logic gần như giống nhau.
-  // Controller cần prefix ("Số dư: ") hoặc style riêng → override hoặc dùng
-  // loadBalanceWithPrefix / updateBalanceLabelFromValue.
   protected void loadBalance(Label balanceLabel) {
     if (balanceLabel == null) {
       return;

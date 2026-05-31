@@ -25,97 +25,97 @@ import org.junit.jupiter.api.Test;
  */
 public class DataManagerRoundtripTest {
 
-    private static final long DURATION = 9999L;
-    private static final double PRICE = 500_000.0;
+  private static final long DURATION = 9999L;
+  private static final double PRICE = 500_000.0;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        cleanFiles();
-        resetAllSingletons();
-        UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
-    }
+  @BeforeEach
+  void setUp() throws Exception {
+    cleanFiles();
+    resetAllSingletons();
+    UserManager.getInstance().register("alice", "pw", "BIDDER", "alice@test.com");
+  }
 
-    @AfterEach
-    void tearDown() {
-        cleanFiles();
-    }
+  @AfterEach
+  void tearDown() {
+    cleanFiles();
+  }
 
-    private void injectAuction(Auction a) {
-        Map<String, Auction> map = new HashMap<>(AuctionService.getInstance().getAuctionsMap());
-        map.put(a.getId(), a);
-        AuctionService.getInstance().setAuctions(map);
-    }
+  private void injectAuction(Auction a) {
+    Map<String, Auction> map = new HashMap<>(AuctionService.getInstance().getAuctionsMap());
+    map.put(a.getId(), a);
+    AuctionService.getInstance().setAuctions(map);
+  }
 
-    // --- saveData không throw dù service rỗng ---
+  // --- saveData không throw dù service rỗng ---
 
-    @Test
-    void saveDataEmptyServiceDoesNotThrow() {
-        assertDoesNotThrow(() -> DataManager.getInstance().saveData());
-    }
+  @Test
+  void saveDataEmptyServiceDoesNotThrow() {
+    assertDoesNotThrow(() -> DataManager.getInstance().saveData());
+  }
 
-    @Test
-    void saveDataWithAuctionsDoesNotThrow() {
-        injectAuction(new Auction("a1", new Electronics("e1", "TV", PRICE), DURATION, null));
-        assertDoesNotThrow(() -> DataManager.getInstance().saveData());
-    }
+  @Test
+  void saveDataWithAuctionsDoesNotThrow() {
+    injectAuction(new Auction("a1", new Electronics("e1", "TV", PRICE), DURATION, null));
+    assertDoesNotThrow(() -> DataManager.getInstance().saveData());
+  }
 
-    @Test
-    void saveDataCalledTwiceDoesNotThrow() {
-        injectAuction(new Auction("a2", new Electronics("e2", "Phone", PRICE), DURATION, null));
-        assertDoesNotThrow(() -> {
-            DataManager.getInstance().saveData();
-            DataManager.getInstance().saveData();
-        });
-    }
+  @Test
+  void saveDataCalledTwiceDoesNotThrow() {
+    injectAuction(new Auction("a2", new Electronics("e2", "Phone", PRICE), DURATION, null));
+    assertDoesNotThrow(() -> {
+      DataManager.getInstance().saveData();
+      DataManager.getInstance().saveData();
+    });
+  }
 
-    // --- loadData khi không có file không throw và service vẫn hoạt động ---
+  // --- loadData khi không có file không throw và service vẫn hoạt động ---
 
-    @Test
-    void loadDataWithNoFilesDoesNotThrow() {
-        assertDoesNotThrow(() -> DataManager.getInstance().loadData());
-    }
+  @Test
+  void loadDataWithNoFilesDoesNotThrow() {
+    assertDoesNotThrow(() -> DataManager.getInstance().loadData());
+  }
 
-    @Test
-    void loadDataWithNoFilesLeavesServiceEmpty() {
-        DataManager.getInstance().loadData();
-        assertNull(AuctionService.getInstance().getAuctionById("anything"));
-    }
+  @Test
+  void loadDataWithNoFilesLeavesServiceEmpty() {
+    DataManager.getInstance().loadData();
+    assertNull(AuctionService.getInstance().getAuctionById("anything"));
+  }
 
-    @Test
-    void loadDataWithNoFilesDoesNotClearExistingAuctions() {
-        injectAuction(new Auction("existing", new Electronics("e3", "Watch", PRICE), DURATION, null));
-        DataManager.getInstance().loadData(); // không có file → không clear
-        // service vẫn có auction cũ
-        // (loadData chỉ setAuctions nếu loadedAuctions != null)
-        assertDoesNotThrow(() -> AuctionService.getInstance().getAuctionById("existing"));
-    }
+  @Test
+  void loadDataWithNoFilesDoesNotClearExistingAuctions() {
+    injectAuction(new Auction("existing", new Electronics("e3", "Watch", PRICE), DURATION, null));
+    DataManager.getInstance().loadData(); // không có file → không clear
+    // service vẫn có auction cũ
+    // (loadData chỉ setAuctions nếu loadedAuctions != null)
+    assertDoesNotThrow(() -> AuctionService.getInstance().getAuctionById("existing"));
+  }
 
-    // --- Singleton ---
+  // --- Singleton ---
 
-    @Test
-    void getInstanceReturnsSameObject() {
-        DataManager a = DataManager.getInstance();
-        DataManager b = DataManager.getInstance();
-        assert a == b;
-    }
+  @Test
+  void getInstanceReturnsSameObject() {
+    DataManager a = DataManager.getInstance();
+    DataManager b = DataManager.getInstance();
+    assert a == b;
+  }
 
-    // --- Helper ---
+  // --- Helper ---
 
-    private void cleanFiles() {
-        new File("auctions.dat").delete();
-        new File("users.dat").delete();
-        new File("auctions.dat.tmp").delete();
-        new File("users.dat.tmp").delete();
-    }
+  private void cleanFiles() {
+    new File("auctions.dat").delete();
+    new File("users.dat").delete();
+    new File("auctions.dat.tmp").delete();
+    new File("users.dat.tmp").delete();
+  }
 
-    private void resetAllSingletons() throws Exception {
-        // DataManager đã chuyển sang Holder idiom (không có field 'instance').
-        // Không cần reset vì DataManager không giữ business state.
-        Field as = AuctionService.class.getDeclaredField("instance");
-        as.setAccessible(true);
-        as.set(null, null);
+  private void resetAllSingletons() throws Exception {
+    // DataManager đã chuyển sang Holder idiom (không có field 'instance').
+    // Không cần reset vì DataManager không giữ business state.
+    Field as = AuctionService.class.getDeclaredField("instance");
+    as.setAccessible(true);
+    as.set(null, null);
 
-        // Holder idiom: clear users via setUsers() thay vì reflection.
-        UserManager.getInstance().setUsers(new HashMap<>());
-    }
+    // Holder idiom: clear users via setUsers() thay vì reflection.
+    UserManager.getInstance().setUsers(new HashMap<>());
+  }
 }

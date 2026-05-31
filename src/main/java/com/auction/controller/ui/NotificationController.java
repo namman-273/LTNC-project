@@ -215,10 +215,7 @@ public class NotificationController extends BaseController implements Initializa
     }, "open-bid-thread").start();
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // SRP: Value object chứa toàn bộ style cho một loại thông báo.
-  // OCP: Thêm loại mới → thêm case vào from(), không chạm cell.
-  // ══════════════════════════════════════════════════════════════════════════
+ 
   private record NotificationCellStyle(
       String iconTxt, String iconBg, String borderColor,
       String titleTxt, String subtitleTxt, boolean showBid) {

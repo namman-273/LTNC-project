@@ -309,10 +309,10 @@ public class BidController extends BaseController implements Initializable {
     bidHistoryList.setItems(historyItems);
     bidHistoryList.setCellFactory(lv -> new HistoryCell());
 
-    registerPushListener(this::handleServerPush); // BaseController
+    registerPushListener(this::handleServerPush);
     startCountdown();
     startPriceRefresh();
-    loadBalance(balanceLabel); // BaseController
+    loadBalance(balanceLabel); 
     loadHistory();
 
     if (AuctionUtils.isFinishedStatus(status)) {
@@ -480,9 +480,7 @@ public class BidController extends BaseController implements Initializable {
     }
   }
 
-  // ── Push Listener ────────────────────────────────────────────────────────
-  // Dispatcher đơn giản: chỉ route, không chứa logic.
-  // OCP: thêm message type mới → thêm method handler mới, không sửa method này.
+
   private void handleServerPush(String message) {
     System.out.println("PUSH RECEIVED: " + message);
     String[] parts = message.split("\\" + Protocol.SEPARATOR);
@@ -875,12 +873,8 @@ public class BidController extends BaseController implements Initializable {
               ignored.printStackTrace();
             }
           }
-          // Không dùng prependHistoryEntry() vì server sẽ broadcast NOTI_BID_UPDATE
-          // ngay sau RES_BID_SUCCESS, kích hoạt onBidUpdate() → loadHistory().
-          // loadHistory() kéo đủ toàn bộ sổ (kể cả shadow history autobid),
-          // tránh duplicate nếu push đến trước Platform.runLater chạy xong.
           loadHistory();
-          loadBalance(balanceLabel); // Reload balance — server đã trừ tiền khi bid thành công
+          loadBalance(balanceLabel); 
         } else {
           showError(parts.length > 1 ? parts[1] : "Đặt giá thất bại!");
         }
@@ -987,7 +981,7 @@ public class BidController extends BaseController implements Initializable {
   }
 
   private void stopAll() {
-    removePushListener(); // BaseController
+    removePushListener(); 
     stopSnipingCountdown();
     if (countdownTimeline != null) {
       countdownTimeline.stop();

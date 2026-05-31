@@ -69,7 +69,7 @@ public class AdminDashboardController extends BaseController implements Initiali
 
   public void setUsername(String username) {
     this.username = username;
-    loadBalanceWithPrefix(balanceLabel, "Số dư: "); // BaseController
+    loadBalanceWithPrefix(balanceLabel, "Số dư: "); 
   }
 
   @Override
@@ -156,7 +156,7 @@ public class AdminDashboardController extends BaseController implements Initiali
         .filter(r -> "OPEN".equals(r.getStatus()) || "RUNNING".equals(r.getStatus()))
         .count();
     long finishedCount = items.stream()
-        .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())) // AuctionUtils
+        .filter(r -> AuctionUtils.isFinishedStatus(r.getStatus())) 
         .count();
     if (statTotalLabel != null) {
       statTotalLabel.setText(String.valueOf(items.size()));
@@ -189,7 +189,7 @@ public class AdminDashboardController extends BaseController implements Initiali
           if (depositAmountField != null) {
             depositAmountField.clear();
           }
-          loadBalanceWithPrefix(balanceLabel, "Số dư: "); // BaseController
+          loadBalanceWithPrefix(balanceLabel, "Số dư: "); 
         } else {
           showMessage("❌ " + (parts.length > 1 ? parts[1] : "Nạp tiền thất bại!"), "red");
         }
@@ -315,7 +315,7 @@ public class AdminDashboardController extends BaseController implements Initiali
    */
   public void handleBack() {
     stopAutoRefresh();
-    removePushListener(); // BaseController — trước đây inline, không extract ra method
+    removePushListener();
     Stage stage = (Stage) auctionTable.getScene().getWindow();
     new AuctionListView(stage, username).show();
   }

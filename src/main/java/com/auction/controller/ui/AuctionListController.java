@@ -144,8 +144,8 @@ public class AuctionListController extends BaseController implements Initializab
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     loadFromServer();
-    registerPushListener(this::handlePushMessage); // BaseController
-    loadBalance(balanceLabel); // BaseController
+    registerPushListener(this::handlePushMessage); 
+    loadBalance(balanceLabel); 
     startAutoRefreshTimeline();
     NotificationManager.getInstance().getObservableItems()
             .addListener((javafx.collections.ListChangeListener<Object>) c -> updateNotifBadge());
@@ -190,7 +190,7 @@ public class AuctionListController extends BaseController implements Initializab
           String newBal = parts[2];
           String delta = parts[3];
           Platform.runLater(() -> {
-            updateBalanceLabelFromPush(balanceLabel, newBal); // BaseController
+            updateBalanceLabelFromPush(balanceLabel, newBal); 
             String msg = "🎉 Phiên " + auctionId
                     + " đã kết thúc! Nhận " + delta + " VNĐ";
             NotificationManager.getInstance().add(msg, "auction", auctionId);
@@ -200,7 +200,7 @@ public class AuctionListController extends BaseController implements Initializab
         } else if (parts.length >= 3) {
           String newBal = parts[2];
           Platform.runLater(
-              () -> updateBalanceLabelFromPush(balanceLabel, newBal)); // BaseController
+              () -> updateBalanceLabelFromPush(balanceLabel, newBal)); 
         }
         break;
 
@@ -223,7 +223,7 @@ public class AuctionListController extends BaseController implements Initializab
           NotificationManager.getInstance().add(msg, "auction", auctionId);
           Platform.runLater(() -> ToastManager.show(ToastManager.Type.SUCCESS, msg));
         } else if (!detail.contains("No winner") && !auctionId.isEmpty()) {
-          String winnerName = AuctionUtils.extractWinner(detail); // AuctionUtils
+          String winnerName = AuctionUtils.extractWinner(detail); 
           boolean isSeller = "SELLER".equalsIgnoreCase(SessionManager.getInstance().getRole());
           String msg = isSeller
                   ? "🏆 Phiên đấu giá " + auctionId + " của bạn đã kết thúc."
@@ -275,9 +275,8 @@ public class AuctionListController extends BaseController implements Initializab
           String newBidder = parts[2];
           String newAmt = parts[3];
           biddedAuctions.add(auctionId);
-          // Dùng AuctionUtils.formatPrice() — format khớp BidController → dedup chặn lặp
           String detailMsg = "⚠️ Bị vượt giá trong phiên " + auctionId
-                  + " — Giá mới: " + AuctionUtils.formatPrice(newAmt); // AuctionUtils
+                  + " — Giá mới: " + AuctionUtils.formatPrice(newAmt); 
           NotificationManager.getInstance().add(detailMsg, "auction", auctionId);
           Platform.runLater(() -> ToastManager.show(ToastManager.Type.WARNING,
                   "⚠️ Bị vượt giá bởi " + newBidder + "!"));
@@ -288,10 +287,8 @@ public class AuctionListController extends BaseController implements Initializab
       case Protocol.NOTI_REFUND: {
         if (parts.length >= 3) {
           String refundAmt = parts[2];
-          String auctionId = parts.length >= 2 ? parts[1] : "";
-          // Dùng formatPrice để tránh số thô (vd "5005000.0 VNĐ")
-          // add notification để hiển thị "Cập nhật số dư ví" trong panel
-          String fmtAmt = AuctionUtils.formatPrice(refundAmt); // AuctionUtils
+          String auctionId = parts.length >= 2 ? parts[1] : "";  
+          String fmtAmt = AuctionUtils.formatPrice(refundAmt); 
           String detailMsg = "💰 Hoàn tiền: " + fmtAmt;
           NotificationManager.getInstance().add(detailMsg, "balance", auctionId);
           Platform.runLater(() -> {
@@ -342,7 +339,7 @@ public class AuctionListController extends BaseController implements Initializab
           AuctionRow[] rows = gson.fromJson(json, AuctionRow[].class);
           if (rows != null) {
             for (AuctionRow row : rows) {
-              if (!AuctionUtils.isTerminalStatus(row.getStatus())) { // AuctionUtils
+              if (!AuctionUtils.isTerminalStatus(row.getStatus())) { 
                 data.add(row);
               }
             }
@@ -667,7 +664,7 @@ public class AuctionListController extends BaseController implements Initializab
   @FXML
   public void handleGetWatchlist() {
     stopAutoRefresh();
-    removePushListener(); // BaseController
+    removePushListener(); 
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new WatchlistView(stage, username).show();
   }
@@ -707,7 +704,7 @@ public class AuctionListController extends BaseController implements Initializab
   @FXML
   public void handleLogout() {
     stopAutoRefresh();
-    removePushListener(); // BaseController
+    removePushListener(); 
     ServerConnection.getInstance().disconnect();
     SessionManager.getInstance().clear();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
@@ -726,7 +723,6 @@ public class AuctionListController extends BaseController implements Initializab
   @FXML
   public void handleAdminDashboard() {
     stopAutoRefresh();
-    // tránh AuctionListController vẫn nhận push khi AdminDashboard active
     removePushListener();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new AdminDashboardView(stage, username).show();
@@ -738,7 +734,6 @@ public class AuctionListController extends BaseController implements Initializab
   @FXML
   public void handleSellerDashboard() {
     stopAutoRefresh();
-    // tránh AuctionListController vẫn nhận push khi SellerView active
     removePushListener();
     Stage stage = (Stage) auctionGrid.getScene().getWindow();
     new SellerView(stage, username).show();

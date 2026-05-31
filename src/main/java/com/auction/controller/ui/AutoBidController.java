@@ -67,7 +67,7 @@ public class AutoBidController extends BaseController implements Initializable {
 
     try {
       double price = Double.parseDouble(currentPrice.replaceAll("[^0-9.]", ""));
-      long minStep = AuctionUtils.getMinimumIncrement(price); // AuctionUtils — loại bỏ bản copy
+      long minStep = AuctionUtils.getMinimumIncrement(price); 
       if (minIncrementHintLabel != null) {
         minIncrementHintLabel.setText("💡 Bước tối thiểu: " + String.format("%,d VNĐ", minStep));
       }
@@ -75,7 +75,7 @@ public class AutoBidController extends BaseController implements Initializable {
       ignored.printStackTrace();
     }
 
-    registerPushListener(this::handleServerPush); // BaseController
+    registerPushListener(this::handleServerPush); 
   }
 
   @Override
@@ -92,7 +92,6 @@ public class AutoBidController extends BaseController implements Initializable {
     switch (parts[0]) {
 
       case Protocol.NOTI_BALANCE_CHANGED:
-        // Không có balanceLabel ở màn này nhưng không bỏ lỡ event
         break;
 
       case Protocol.NOTI_BID_UPDATE:
@@ -152,7 +151,7 @@ public class AutoBidController extends BaseController implements Initializable {
       double maxBidVal = Double.parseDouble(maxBid);
       double incVal = Double.parseDouble(increment);
       double price = Double.parseDouble(currentPrice.replaceAll("[^0-9.]", ""));
-      long minStep = AuctionUtils.getMinimumIncrement(price); // AuctionUtils
+      long minStep = AuctionUtils.getMinimumIncrement(price);
       if (incVal < minStep) {
         showMessage("❌ Bước tăng tối thiểu: " + String.format("%,d VNĐ", minStep), "red");
         return;
