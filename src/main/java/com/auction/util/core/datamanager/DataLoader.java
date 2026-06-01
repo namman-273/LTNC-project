@@ -66,12 +66,12 @@ public class DataLoader {
     try {
       Map<String, Auction> loadedAuctions = auctionPersistence.load("auctions");
       if (loadedAuctions != null) {
-        AuctionService.getInstance().setAuctions(loadedAuctions);
         
         // Khôi phục transient fields
         for (Auction auction : loadedAuctions.values()) {
           auction.restoreTransients();
         }
+        AuctionService.getInstance().setAuctions(loadedAuctions);
         
         System.out.println("[DataLoader] Loaded " + loadedAuctions.size() + " auctions");
       } else {
