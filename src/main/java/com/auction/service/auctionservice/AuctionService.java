@@ -3,7 +3,6 @@ package com.auction.service.auctionservice;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Item;
 import com.auction.model.observer.Observer;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -13,8 +12,7 @@ import java.util.Map;
  * Delegate các công việc cho các helper classes chuyên biệt.
  * Tuân thủ SOLID principles.
  */
-public class AuctionService implements Serializable {
-  private static final long serialVersionUID = 1L;
+public class AuctionService  {
 
   private static volatile AuctionService instance;
 
