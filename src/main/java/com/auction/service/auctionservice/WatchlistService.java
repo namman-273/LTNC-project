@@ -56,7 +56,7 @@ public class WatchlistService {
       return false;
     }
 
-    return bidder.getWatchlist().add(auctionId);
+    return bidder.addToWatchlist(auctionId);
   }
 
   /**
@@ -70,6 +70,7 @@ public class WatchlistService {
     }
 
     Bidder bidder = (Bidder) user;
-    return bidder.getWatchlist().remove(auctionId);
+    bidder.removeFromWatchlist(auctionId);
+    return true;
   }
 }
