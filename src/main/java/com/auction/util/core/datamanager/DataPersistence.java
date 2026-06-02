@@ -24,7 +24,6 @@ public interface DataPersistence<K, V> {
    * Exception cho data persistence operations.
    */
   class DataPersistenceException extends Exception {
-    private static final long serialVersionUID = 1L;
     
     public DataPersistenceException(String message) {
       super(message);
