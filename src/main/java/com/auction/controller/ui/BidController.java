@@ -916,6 +916,7 @@ public class BidController extends BaseController implements Initializable {
       chartStage.setScene(new javafx.scene.Scene(root, 700, 450));
       chartStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
       chartStage.initOwner((Stage) bidAmountField.getScene().getWindow());
+      chartStage.setOnHidden(e -> initToastManager(bidAmountField)); // ← thêm dòng này
       chartStage.setResizable(true);
       chartStage.show();
     } catch (Exception e) {
