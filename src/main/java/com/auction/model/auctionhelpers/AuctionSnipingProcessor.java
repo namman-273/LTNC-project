@@ -1,5 +1,6 @@
 package com.auction.model.auctionhelpers;
 
+import com.auction.controller.network.ConnectionManager;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.user.User;
 import com.auction.network.protocol.Protocol;
@@ -29,7 +30,7 @@ public class AuctionSnipingProcessor {
       String message = Protocol.NOTI_SNIPING_UPDATE + Protocol.SEPARATOR + auction.getId()
           + "|" + auction.getEndTime() + "|" + (currentExt + 1);
 
-      auction.notifyAllParticipants(message, null);
+      ConnectionManager.getInstance().broadcastToAll(message);
       System.out.println("[ANTI-SNIPING] Phiên " + auction.getId()
           + " được gia hạn thêm 2p bởi " + bidder.getUsername());
     }
