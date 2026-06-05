@@ -9,7 +9,7 @@ import java.io.Serializable;
 public class AutoBid implements Comparable<AutoBid>, Serializable {
   private static final long serialVersionUID = 1L;
   private final String bidderId;
-  private final double maxBid; // Giá tối đa người dùng sẵn sàng trả
+  private double maxBid; // Giá tối đa người dùng sẵn sàng trả
   private final long timestamp; // Thời điểm đăng ký để ưu tiên người đến trước
   private final double bidStep;
 
@@ -45,6 +45,10 @@ public class AutoBid implements Comparable<AutoBid>, Serializable {
 
   public double getbidStep() {
     return bidStep;
+  }
+
+  public void setMaxBid(double maxbid) {
+    this.maxBid = maxbid;
   }
 
 }

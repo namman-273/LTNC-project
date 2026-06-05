@@ -6,6 +6,9 @@ import com.auction.model.entities.BidTransaction;
 import com.auction.model.entities.user.User;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 
 /**
@@ -38,8 +41,23 @@ public class AutoBidProcessor {
     double currentPrice = auction.getCurrentPrice();
     double minIncrement = validator.getMinimumIncrement(currentPrice);
 
-    // 2. THANH LỌC TẬN GỐC: Xóa sạch các Bot rác đã hết ngân sách ở mọi ngóc ngách
-    queue.removeIf(bot -> (currentPrice + minIncrement > bot.getMaxBid()));
+    List<AutoBid> temp = new ArrayList<>(queue);
+    queue.clear();
+
+    for (AutoBid bot : temp) {
+      User u = UserManager.getInstance().findUserByUsername(bot.getBidderId());
+      if (u == null) {
+        continue;
+      }
+
+      if (bot.getMaxBid() > u.getBalance()) {
+        bot.setMaxBid(u.getBalance()); // cap về balance thực tế
+      }
+
+      if (bot.getMaxBid() >= currentPrice + minIncrement) {
+        queue.add(bot); // add lại → PriorityQueue tự heapify đúng thứ tự mới
+      }
+    }
 
     if (queue.isEmpty()) {
       return;
@@ -99,7 +117,7 @@ public class AutoBidProcessor {
       queue.add(top); // Trả lại cấu hình nếu không tìm thấy User
       return;
     }
-
+    List<BidTransaction> shadowList = new ArrayList<>();
     if (second != null && finalPrice > (currentPrice + minIncrement)) {
       double tempPrice = currentPrice;
       // Xác định lượt nổ súng: Thằng nào không giữ vị trí dẫn đầu sẽ chủ động nâng
@@ -120,7 +138,7 @@ public class AutoBidProcessor {
           User intermediateUser = UserManager.getInstance()
               .findUserByUsername(currentTurnBot.getBidderId());
           if (intermediateUser != null) {
-            auction.getBidHistory().add(new BidTransaction(intermediateUser, tempPrice));
+            shadowList.add(new BidTransaction(intermediateUser, tempPrice));
           }
         }
 
@@ -134,7 +152,10 @@ public class AutoBidProcessor {
       // Hàm này thực thi updateState của Auction -> gọi FinancialProcessor trừ tiền
       // thật,
       updater.updateState(winnerUser, finalPrice);
-
+      if (!shadowList.isEmpty()) {
+        int insertIndex = auction.getBidHistory().size() - 1;
+        auction.getBidHistory().addAll(insertIndex, shadowList);
+      }
       // Đánh giá xem Winner có còn đủ tiền để chiến đấu tiếp ở các lượt đặt tay sau
       // hay không
       double nextMinBid = finalPrice + validator.getMinimumIncrement(finalPrice);
@@ -145,7 +166,6 @@ public class AutoBidProcessor {
       }
     } catch (InvalidBidException e) {
       System.err.println("[AUTOBID CRITICAL ERROR] " + e.getMessage());
-      queue.add(top); // Trả lại hàng đợi đề phòng lỗi hệ thống logic tài chính ngoài ý muốn
     }
   }
 }
