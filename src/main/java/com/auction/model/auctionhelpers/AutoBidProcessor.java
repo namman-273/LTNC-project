@@ -6,7 +6,6 @@ import com.auction.model.entities.BidTransaction;
 import com.auction.model.entities.user.User;
 import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.InvalidBidException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;

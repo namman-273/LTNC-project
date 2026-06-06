@@ -1,6 +1,5 @@
 package com.auction.model.entities;
 
-import com.auction.controller.ui.AuctionUtils;
 import com.auction.model.auctionhelpers.AuctionFinancialProcessor;
 import com.auction.model.auctionhelpers.AuctionHelperFactory;
 import com.auction.model.auctionhelpers.AuctionNotifier;
