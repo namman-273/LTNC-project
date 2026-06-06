@@ -10,6 +10,7 @@ import com.auction.model.entities.item.Item;
 import com.auction.model.entities.user.User;
 import com.auction.model.enums.AuctionStatus;
 import com.auction.model.observer.Observer;
+import com.auction.service.usermanger.UserManager;
 import com.auction.util.exception.AuctionClosedException;
 import com.auction.util.exception.AuthenticationException;
 import com.auction.util.exception.InvalidBidException;
@@ -291,6 +292,22 @@ public class Auction extends Entity {
       if (customStep < systemMin) {
         throw new InvalidBidException("Bước giá tự động phải lớn hơn hoặc bằng "
             + (long) systemMin + " VNĐ");
+      }
+      User user = UserManager.getInstance().findUserByUsername(bidderId);
+      if (user == null) {
+        throw new InvalidBidException("Không tìm thấy người dùng!");
+      }
+      // Check đủ tiền ít nhất 1 bước
+      if (user.getBalance() < currentPrice + customStep) {
+        throw new InvalidBidException("Số dư không đủ để tham gia auto-bid!");
+      }
+      // Check maxBid không vượt balance — tránh đặt maxBid ảo
+      if (maxBid > user.getBalance()) {
+        throw new InvalidBidException("Giá trần không được vượt quá số dư hiện tại !");
+      }
+      // Check maxBid phải cao hơn giá hiện tại ít nhất 1 bước
+      if (maxBid < currentPrice + customStep) {
+        throw new InvalidBidException("Giá trần phải cao hơn giá hiện tại!");
       }
       if (this.autoBidQueue == null) {
         restoreTransients();

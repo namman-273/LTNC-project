@@ -36,7 +36,7 @@ public class DepositCommand implements ClientCommand {
         // Báo cáo thành công
         client.sendMessage(Protocol.RES_DEPOSIT_SUCCESS + Protocol.SEPARATOR
             + client.getCurrentUser().getBalance() + Protocol.SEPARATOR
-            + "Đã nạp thành công: " + amount);
+            + "Đã nạp thành công: " + client.getCurrentUser().getBalance());
       } else {
         client.sendMessage(Protocol.ERROR + Protocol.SEPARATOR + "Số tiền nạp không hợp lệ.");
       }

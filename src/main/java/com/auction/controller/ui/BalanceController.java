@@ -251,7 +251,7 @@ public class BalanceController extends BaseController implements Initializable {
           showMessage("✅ " + msg, "green");
           depositAmountField.clear();
           try {
-            double amt = Double.parseDouble(amount);
+            double amt = Double.parseDouble(parts[1]);
             transactions.add(0, new TransactionItem(
                 "+" + String.format("%,.0f VNĐ", amt), "Nạp tiền", time, true));
           } catch (NumberFormatException ignored) {

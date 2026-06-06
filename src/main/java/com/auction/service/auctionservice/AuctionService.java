@@ -3,7 +3,6 @@ package com.auction.service.auctionservice;
 import com.auction.model.entities.Auction;
 import com.auction.model.entities.item.Item;
 import com.auction.model.observer.Observer;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -13,8 +12,7 @@ import java.util.Map;
  * Delegate các công việc cho các helper classes chuyên biệt.
  * Tuân thủ SOLID principles.
  */
-public class AuctionService implements Serializable {
-  private static final long serialVersionUID = 1L;
+public class AuctionService  {
 
   private static volatile AuctionService instance;
 
@@ -99,33 +97,6 @@ public class AuctionService implements Serializable {
         auctionId -> endAuction(auctionId));
   }
 
-  /**
-   * FIX LỖI: Singleton bị phá khi deserialize.
-   * Java (JVM) sẽ tự động quét qua class AuctionService xem có
-   * hàm nào tên là readResolve() hay không. Nếu có, JVM sẽ ngầm kích hoạt hàm
-   * này.
-   * (khi he thong doc file .dat)
-   */
-  protected Object readResolve() {
-    // Khi load từ file, gán instance hiện tại
-    instance = this;
-
-    // Khôi phục transient fields
-
-    if (this.scheduler == null) {
-      this.scheduler = new AuctionScheduler();
-    }
-
-    // Tạo lại endHandler với dependencies (dùng persistenceService thay vì
-    // dataStorage)
-    this.endHandler = new AuctionEndHandler(auctionRepository, scheduler,
-        paymentProcessor, notificationService, persistenceService);
-
-    // Khôi phục scheduled tasks
-    recoverScheduledTasks();
-
-    return instance;
-  }
 
   /**
    * Kết thúc auction tự động (hết thời gian).
